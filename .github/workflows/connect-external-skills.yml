@@ -1,0 +1,54 @@
+name: Connect External Skills
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  connect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Terranex
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: false
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add external skill repositories as submodules
+        run: |
+          mkdir -p external/skills
+
+          if [ ! -d external/skills/knowledge-work-plugins/.git ]; then
+            git submodule add https://github.com/anthropics/knowledge-work-plugins.git external/skills/knowledge-work-plugins
+          fi
+
+          if [ ! -d external/skills/andrej-karpathy-skills/.git ]; then
+            git submodule add https://github.com/multica-ai/andrej-karpathy-skills.git external/skills/andrej-karpathy-skills
+          fi
+
+          if [ ! -d external/skills/Understand-Anything/.git ]; then
+            git submodule add https://github.com/Lum1104/Understand-Anything.git external/skills/Understand-Anything
+          fi
+
+          if [ ! -d external/skills/ui-ux-pro-max-skill/.git ]; then
+            git submodule add https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git external/skills/ui-ux-pro-max-skill
+          fi
+
+          git submodule update --init --recursive
+
+      - name: Commit changes
+        run: |
+          git add .gitmodules external/skills
+          if git diff --cached --quiet; then
+            echo "No submodule changes to commit."
+          else
+            git commit -m "Connect external skill repositories"
+            git push
+          fi
