@@ -1,0 +1,13 @@
+{
+  "name": "ui-ux-pro-max",
+  "version": "0.1.0",
+  "description": "[TODO: Describe the ui-ux-pro-max plugin]",
+  "interface": {
+    "displayName": "UI UX Pro Max",
+    "summary": "[TODO: Add a short summary for UI UX Pro Max]",
+    "icon": ""
+  },
+  "entry": {
+    "type": "skill_only"
+  }
+}
