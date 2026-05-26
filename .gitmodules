@@ -1,0 +1,12 @@
+[submodule "external/skills/knowledge-work-plugins"]
+	path = external/skills/knowledge-work-plugins
+	url = https://github.com/anthropics/knowledge-work-plugins.git
+[submodule "external/skills/andrej-karpathy-skills"]
+	path = external/skills/andrej-karpathy-skills
+	url = https://github.com/multica-ai/andrej-karpathy-skills.git
+[submodule "external/skills/Understand-Anything"]
+	path = external/skills/Understand-Anything
+	url = https://github.com/Lum1104/Understand-Anything.git
+[submodule "external/skills/ui-ux-pro-max-skill"]
+	path = external/skills/ui-ux-pro-max-skill
+	url = https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git
