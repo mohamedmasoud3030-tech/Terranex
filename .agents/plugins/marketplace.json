@@ -1,0 +1,20 @@
+{
+  "name": "Terranex Local Marketplace",
+  "interface": {
+    "displayName": "Terranex Plugins"
+  },
+  "plugins": [
+    {
+      "name": "ui-ux-pro-max",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ui-ux-pro-max"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
