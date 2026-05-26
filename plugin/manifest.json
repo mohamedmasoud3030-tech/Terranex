@@ -1,0 +1,18 @@
+{
+  "name": "terranex-investment-os",
+  "version": "0.1.0",
+  "description": "Terranex investment operating system skills and agents for product, domain, data, analysis, and UI planning.",
+  "author": {
+    "name": "Terranex"
+  },
+  "keywords": [
+    "investment",
+    "operations",
+    "real-estate",
+    "agriculture",
+    "livestock",
+    "finance",
+    "agents",
+    "skills"
+  ]
+}
