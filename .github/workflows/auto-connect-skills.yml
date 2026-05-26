@@ -1,0 +1,40 @@
+name: Auto Connect Skills
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  connect:
+    if: ${{ !contains(github.event.head_commit.message, 'Connect external skill repositories') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - run: |
+          mkdir -p external/skills
+          [ -e external/skills/knowledge-work-plugins ] || git submodule add https://github.com/anthropics/knowledge-work-plugins.git external/skills/knowledge-work-plugins
+          [ -e external/skills/andrej-karpathy-skills ] || git submodule add https://github.com/multica-ai/andrej-karpathy-skills.git external/skills/andrej-karpathy-skills
+          [ -e external/skills/Understand-Anything ] || git submodule add https://github.com/Lum1104/Understand-Anything.git external/skills/Understand-Anything
+          [ -e external/skills/ui-ux-pro-max-skill ] || git submodule add https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git external/skills/ui-ux-pro-max-skill
+          git submodule update --init --recursive
+
+      - run: |
+          git add .gitmodules external/skills
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Connect external skill repositories"
+            git push
+          fi
