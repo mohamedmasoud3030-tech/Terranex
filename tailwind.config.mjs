@@ -12,6 +12,7 @@ export default {
         border: 'rgb(var(--color-border) / <alpha-value>)',
         primary: 'rgb(var(--color-primary) / <alpha-value>)',
         muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        'muted-foreground': 'rgb(var(--color-muted-foreground) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
         danger: 'rgb(var(--color-danger) / <alpha-value>)',
