@@ -4,6 +4,8 @@
 
 Terranex will use the uploaded UI/UX Pro Max sources as a design intelligence layer, not as a visual theme dump.
 
+The stable Terranex vendoring and adapter contract now lives in `docs/design-system/ui-ux-pro-max-vendoring.md` and `.ai/skills/terranex-ui-ux-pro-max/SKILL.md`. Future UI tasks must use the Terranex adapter first and must not import UI/UX Pro Max references into runtime React code.
+
 The goal is to turn the design source into enforceable product rules for an Arabic-first investment operating system covering:
 
 1. real estate assets and projects,
