@@ -105,7 +105,6 @@ export const en: Record<TranslationKey, string> = {
 
   currency_EGP: 'Egyptian pound',
   currency_USD: 'US dollar',
-  currency_OMR: 'Omani rial',
   currency_SAR: 'Saudi riyal',
   currency_AED: 'UAE dirham',
   currency_EUR: 'Euro',

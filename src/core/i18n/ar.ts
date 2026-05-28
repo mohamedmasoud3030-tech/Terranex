@@ -117,7 +117,6 @@ export const ar = {
   // Currencies
   currency_EGP: 'جنيه مصري',
   currency_USD: 'دولار أمريكي',
-  currency_OMR: 'ريال عُماني',
   currency_SAR: 'ريال سعودي',
   currency_AED: 'درهم إماراتي',
   currency_EUR: 'يورو',
