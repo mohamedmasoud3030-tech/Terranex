@@ -1,152 +1,170 @@
-export type Currency = 'OMR' | 'EGP' | 'SAR';
+/**
+ * Fixture data for UI scaffolding only.
+ * Replace with TanStack Query calls when Supabase is connected.
+ * ADR-007: this module is the single source of mock data — nowhere else.
+ */
 
-export type Kpi = {
-  id: string;
-  title: string;
-  value: number;
-  currency?: Currency;
-  period: string;
-  trendLabel: string;
-  status: 'neutral' | 'positive' | 'negative' | 'warning';
-  sourceLabel: string;
-};
+import type { KpiCardVM, SectorCardVM, ObligationRowVM } from '../core/types/ui';
 
-export type Sector = {
-  id: string;
-  title: string;
-  description: string;
-  metric: string;
-  value: string;
-  status: 'active' | 'review' | 'stable';
-  href: string;
-};
-
-export type Obligation = {
-  id: string;
-  date: string;
-  type: string;
-  sector: string;
-  counterparty: string;
-  amount: number;
-  currency: Currency;
-  status: 'مستحق' | 'مدفوع' | 'قيد المراجعة';
-  document: string;
-};
-
-export const dashboardKpis: Kpi[] = [
+export const dashboardKpis: KpiCardVM[] = [
   {
     id: 'assets-total',
-    title: 'إجمالي الأصول',
-    value: 1250000,
-    currency: 'OMR',
-    period: 'الربع الحالي',
-    trendLabel: 'قابل للتفصيل حسب القطاع',
+    title_ar: 'إجمالي الأصول',
+    title_en: 'Total assets',
+    value: 6_250_000,
+    currency: 'EGP',
+    period_ar: 'الربع الحالي',
+    period_en: 'This quarter',
+    trend_ar: 'قابل للتفصيل حسب القطاع',
+    trend_en: 'Drillable by sector',
     status: 'neutral',
-    sourceLabel: 'سجل الأصول',
+    source_ar: 'سجل الأصول',
+    source_en: 'Asset registry',
+    drill_route: '/real-estate',
   },
   {
     id: 'expenses-total',
-    title: 'إجمالي المصروفات',
-    value: 186000,
-    currency: 'OMR',
-    period: 'آخر 90 يوم',
-    trendLabel: 'تحتاج تصنيف نهائي',
+    title_ar: 'إجمالي المصروفات',
+    title_en: 'Total expenses',
+    value: 930_000,
+    currency: 'EGP',
+    period_ar: 'آخر 90 يوم',
+    period_en: 'Last 90 days',
+    trend_ar: 'تحتاج تصنيف نهائي',
+    trend_en: 'Needs final classification',
     status: 'warning',
-    sourceLabel: 'سجل المصروفات',
+    source_ar: 'سجل المصروفات',
+    source_en: 'Expense register',
   },
   {
     id: 'revenue-total',
-    title: 'إجمالي الإيرادات',
-    value: 244000,
-    currency: 'OMR',
-    period: 'آخر 90 يوم',
-    trendLabel: 'إيرادات تشغيلية ومبيعات',
+    title_ar: 'إجمالي الإيرادات',
+    title_en: 'Total revenue',
+    value: 1_220_000,
+    currency: 'EGP',
+    period_ar: 'آخر 90 يوم',
+    period_en: 'Last 90 days',
+    trend_ar: 'إيرادات تشغيلية ومبيعات',
+    trend_en: 'Operating revenue and sales',
     status: 'positive',
-    sourceLabel: 'سجل الإيرادات',
+    source_ar: 'سجل الإيرادات',
+    source_en: 'Revenue register',
   },
   {
     id: 'profit-net',
-    title: 'صافي الربح / الخسارة',
-    value: 58000,
-    currency: 'OMR',
-    period: 'آخر 90 يوم',
-    trendLabel: 'قبل اعتماد القيود النهائية',
+    title_ar: 'صافي الربح / الخسارة',
+    title_en: 'Net profit / loss',
+    value: 290_000,
+    currency: 'EGP',
+    period_ar: 'آخر 90 يوم',
+    period_en: 'Last 90 days',
+    trend_ar: 'قبل اعتماد القيود النهائية',
+    trend_en: 'Before final closing entries',
     status: 'positive',
-    sourceLabel: 'ملخص الربحية',
+    source_ar: 'ملخص الربحية',
+    source_en: 'Profitability summary',
+    drill_route: '/finance/profitability',
   },
 ];
 
-export const sectors: Sector[] = [
+export const sectorCards: SectorCardVM[] = [
   {
     id: 'real-estate',
-    title: 'الاستثمار العقاري',
-    description: 'أراضي، أصول، شراء، تطوير، بيع، مستندات ملكية وربحية.',
-    metric: 'أصول مسجلة',
-    value: '12',
+    name_ar: 'الاستثمار العقاري',
+    name_en: 'Real Estate',
+    description_ar: 'أراضي، أصول، شراء، تطوير، بيع، مستندات ملكية وربحية.',
+    description_en: 'Land, assets, acquisition, development, sale, ownership documents, and profitability.',
+    metric_label_ar: 'أصول مسجلة',
+    metric_label_en: 'Registered assets',
+    metric_value: '12',
     status: 'active',
-    href: '#real-estate',
+    href: '/real-estate',
   },
   {
     id: 'agriculture',
-    title: 'الاستثمار الزراعي',
-    description: 'مزارع، محاصيل، مواسم، إنتاج، مصروفات ومبيعات.',
-    metric: 'مواسم نشطة',
-    value: '5',
+    name_ar: 'الاستثمار الزراعي',
+    name_en: 'Agriculture',
+    description_ar: 'مزارع، محاصيل، مواسم، إنتاج، مصروفات ومبيعات.',
+    description_en: 'Farms, crops, seasons, production, expenses, and sales.',
+    metric_label_ar: 'مواسم نشطة',
+    metric_label_en: 'Active seasons',
+    metric_value: '5',
     status: 'review',
-    href: '#agriculture',
+    href: '/agriculture',
   },
   {
     id: 'livestock',
-    title: 'الاستثمار الحيواني',
-    description: 'قطعان، أعلاف، علاج، تحصينات، ولادات، نفوق ومبيعات.',
-    metric: 'قطعان متابعة',
-    value: '8',
+    name_ar: 'الاستثمار الحيواني',
+    name_en: 'Livestock',
+    description_ar: 'قطعان، أعلاف، علاج، تحصينات، ولادات، نفوق ومبيعات.',
+    description_en: 'Herds, feed, treatment, vaccination, births, mortality, and sales.',
+    metric_label_ar: 'قطعان متابعة',
+    metric_label_en: 'Active herds',
+    metric_value: '8',
     status: 'stable',
-    href: '#livestock',
-  },
-  {
-    id: 'finance',
-    title: 'المالية والالتزامات',
-    description: 'إيرادات، مصروفات، ذمم مدينة، ذمم دائنة، وربط بالمستندات.',
-    metric: 'بنود مراجعة',
-    value: '17',
-    status: 'review',
-    href: '#finance',
+    href: '/livestock',
   },
 ];
 
-export const obligations: Obligation[] = [
+export const obligationRows: ObligationRowVM[] = [
   {
     id: 'obl-001',
     date: '2026-05-01',
-    type: 'ذمة مدينة',
-    sector: 'عقاري',
-    counterparty: 'شريك تطوير',
-    amount: 32000,
-    currency: 'OMR',
-    status: 'مستحق',
-    document: 'عقد تطوير رقم 12',
+    direction: 'receivable',
+    sector_ar: 'عقاري',
+    sector_en: 'Real Estate',
+    counterparty_ar: 'شريك تطوير',
+    counterparty_en: 'Development partner',
+    amount: 160_000,
+    currency: 'EGP',
+    amount_egp: 160_000,
+    status: 'open',
+    document_title: 'عقد تطوير رقم 12',
+    project_name_ar: 'مشروع الواجهة البحرية',
   },
   {
     id: 'obl-002',
     date: '2026-05-09',
-    type: 'ذمة دائنة',
-    sector: 'زراعي',
-    counterparty: 'مورد مدخلات',
-    amount: 8400,
-    currency: 'OMR',
-    status: 'قيد المراجعة',
-    document: 'فاتورة مدخلات موسم 2026',
+    direction: 'payable',
+    sector_ar: 'زراعي',
+    sector_en: 'Agriculture',
+    counterparty_ar: 'مورد مدخلات',
+    counterparty_en: 'Inputs supplier',
+    amount: 42_000,
+    currency: 'EGP',
+    amount_egp: 42_000,
+    status: 'partial',
+    document_title: 'فاتورة مدخلات موسم 2026',
+    project_name_ar: 'موسم القمح 2026',
   },
   {
     id: 'obl-003',
     date: '2026-05-14',
-    type: 'ذمة دائنة',
-    sector: 'حيواني',
-    counterparty: 'عيادة بيطرية',
-    amount: 2150,
+    direction: 'payable',
+    sector_ar: 'حيواني',
+    sector_en: 'Livestock',
+    counterparty_ar: 'عيادة بيطرية',
+    counterparty_en: 'Veterinary clinic',
+    amount: 10_750,
+    currency: 'EGP',
+    amount_egp: 10_750,
+    status: 'settled',
+    document_title: 'إيصال علاج وتحصينات',
+    project_name_ar: 'قطيع الأبقار — المزرعة الشمالية',
+  },
+  {
+    id: 'obl-004',
+    date: '2026-04-22',
+    direction: 'receivable',
+    sector_ar: 'عقاري',
+    sector_en: 'Real Estate',
+    counterparty_ar: 'مستأجر تجاري',
+    counterparty_en: 'Commercial tenant',
+    amount: 8_500,
     currency: 'OMR',
-    status: 'مدفوع',
-    document: 'إيصال علاج وتحصينات',
+    amount_egp: 736_450,
+    status: 'open',
+    document_title: 'عقد إيجار — الوحدة 3-ب',
+    project_name_ar: 'مجمع الإيجارات التجارية',
   },
 ];
