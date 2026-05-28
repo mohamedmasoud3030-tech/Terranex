@@ -1,29 +1,7 @@
 import { useRouter, useLocation } from '@tanstack/react-router';
-import {
-  Building2, Wheat, PawPrint, Banknote,
-  FolderOpen, Users, Settings, LayoutDashboard,
-} from 'lucide-react';
 import { useI18n } from '../../core/i18n';
 import { cn } from '../../core/lib/cn';
-
-interface NavItem {
-  id: string;
-  label_ar: string;
-  label_en: string;
-  icon: React.ComponentType<{ className?: string }>;
-  to: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard',   label_ar: 'لوحة القيادة', label_en: 'Dashboard',   icon: LayoutDashboard, to: '/dashboard'   },
-  { id: 'real-estate', label_ar: 'العقاري',        label_en: 'Real Estate', icon: Building2,       to: '/real-estate' },
-  { id: 'agriculture', label_ar: 'الزراعي',        label_en: 'Agriculture', icon: Wheat,           to: '/agriculture' },
-  { id: 'livestock',   label_ar: 'الحيواني',       label_en: 'Livestock',   icon: PawPrint,        to: '/livestock'   },
-  { id: 'finance',     label_ar: 'المالية',         label_en: 'Finance',     icon: Banknote,        to: '/finance'     },
-  { id: 'documents',   label_ar: 'المستندات',      label_en: 'Documents',   icon: FolderOpen,      to: '/documents'   },
-  { id: 'partners',    label_ar: 'الشركاء',        label_en: 'Partners',    icon: Users,           to: '/partners'    },
-  { id: 'settings',    label_ar: 'الإعدادات',      label_en: 'Settings',    icon: Settings,        to: '/settings'    },
-];
+import { getNavItemLabel, isNavItemActive, NAV_ITEMS } from './navigation';
 
 export function Sidebar() {
   const { t, locale } = useI18n();
@@ -43,9 +21,7 @@ export function Sidebar() {
         <ul className="space-y-1" role="list">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              pathname === item.to ||
-              (item.to !== '/dashboard' && pathname.startsWith(item.to));
+            const isActive = isNavItemActive(pathname, item);
             return (
               <li key={item.id}>
                 <button
@@ -59,7 +35,7 @@ export function Sidebar() {
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                  <span>{locale === 'ar' ? item.label_ar : item.label_en}</span>
+                  <span>{getNavItemLabel(item, locale)}</span>
                 </button>
               </li>
             );
