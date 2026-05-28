@@ -11,7 +11,7 @@ export const financeRoute = createRoute({
 });
 
 const TABS = [
-  { to: '/finance/obligations',   label_ar: 'الذمم والالتزامات', label_en: 'Obligations'   },
+  { to: '/finance/obligations',   label_ar: 'السجلات المالية', label_en: 'Financial records'   },
   { to: '/finance/profitability', label_ar: 'الربحية',            label_en: 'Profitability' },
 ] as const;
 

@@ -19,7 +19,6 @@ export function PlaceholderPage({ titleKey, descriptionKey, icon }: PlaceholderP
         title={t('state_empty_title')}
         description={t('state_empty_description')}
         icon={icon}
-        action={{ label: t('action_add_record'), onClick: () => {} }}
       />
     </>
   );
