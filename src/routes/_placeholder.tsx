@@ -2,6 +2,7 @@ import { type ComponentType } from 'react';
 import { useI18n } from '../core/i18n';
 import { PageHeader } from '../components/layout/PageHeader';
 import { EmptyState } from '../components/ui/States';
+import { RealEstatePage } from '../features/real-estate/RealEstatePage';
 import type { TranslationKey } from '../core/i18n/ar';
 
 interface PlaceholderPageProps {
@@ -12,6 +13,11 @@ interface PlaceholderPageProps {
 
 export function PlaceholderPage({ titleKey, descriptionKey, icon }: PlaceholderPageProps) {
   const { t } = useI18n();
+
+  if (titleKey === 'sector_real_estate_name') {
+    return <RealEstatePage />;
+  }
+
   return (
     <>
       <PageHeader title={t(titleKey)} description={t(descriptionKey)} />
