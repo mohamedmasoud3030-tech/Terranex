@@ -53,7 +53,7 @@ export interface NavItem {
   id: string;
   label_ar: string;
   label_en: string;
-  icon: string; // lucide icon name
+  icon: string;
   href: string;
   badge?: number;
   children?: NavItem[];
@@ -76,7 +76,9 @@ export interface KpiCardVM {
   title_ar: string;
   title_en: string;
   value: number;
-  currency: Currency;
+  currency?: Currency;
+  unit_ar?: string;
+  unit_en?: string;
   period_ar: string;
   period_en: string;
   trend_ar: string;
@@ -118,6 +120,30 @@ export interface ObligationRowVM {
   status: ObligationStatus;
   document_title?: string;
   project_name_ar?: string;
+}
+
+// ─── Asset row view model (macro investment level) ────────────────────────────
+
+export type AssetRowType = 'land' | 'building' | 'mixed_property' | 'farm' | 'equipment' | 'crop' | 'herd' | 'animal_group' | 'vehicle' | 'other';
+export type AssetRowStatus = 'owned' | 'under_development' | 'for_sale' | 'sold' | 'leased_out' | 'disposed';
+
+export interface AssetRowVM {
+  id: string;
+  project_name_ar: string;
+  project_name_en?: string;
+  name_ar: string;
+  name_en?: string;
+  type: AssetRowType;
+  status: AssetRowStatus;
+  location?: string;
+  acquisition_cost_egp: number;
+  development_cost_egp: number;
+  current_valuation_egp: number;
+  sale_price_egp?: number;
+  profit_loss_egp: number;
+  profit_loss_pct: number;
+  document_count: number;
+  sector_id: SectorId;
 }
 
 // ─── Transaction row view model ───────────────────────────────────────────────
