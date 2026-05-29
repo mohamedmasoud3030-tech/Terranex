@@ -3,6 +3,7 @@ import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { MoneyValue } from '../ui/MoneyValue';
 import { useI18n } from '../../core/i18n';
+import { formatNumber } from '../../core/lib/format';
 import type { KpiCardVM } from '../../core/types/ui';
 
 interface KpiCardProps {
@@ -16,6 +17,7 @@ export function KpiCard({ kpi }: KpiCardProps) {
   const period = locale === 'ar' ? kpi.period_ar : kpi.period_en;
   const trend = locale === 'ar' ? kpi.trend_ar : kpi.trend_en;
   const source = locale === 'ar' ? kpi.source_ar : kpi.source_en;
+  const unit = locale === 'ar' ? kpi.unit_ar : kpi.unit_en;
 
   return (
     <Card>
@@ -24,7 +26,14 @@ export function KpiCard({ kpi }: KpiCardProps) {
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
             <div className="mt-3">
-              <MoneyValue amount={kpi.value} currency={kpi.currency} size="xl" />
+              {kpi.currency ? (
+                <MoneyValue amount={kpi.value} currency={kpi.currency} size="xl" />
+              ) : (
+                <p className="text-2xl font-bold tabular-nums">
+                  {formatNumber(kpi.value, locale)}
+                  {unit && <span className="ms-2 text-sm font-semibold text-muted-foreground">{unit}</span>}
+                </p>
+              )}
             </div>
           </div>
           <Badge tone={kpi.status}>{period}</Badge>
