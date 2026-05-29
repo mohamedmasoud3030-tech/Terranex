@@ -1,6 +1,6 @@
 ---
 name: terranex-ui-ux-pro-max
-description: Use this skill before any Terranex UI/UX design, review, or implementation task. It adapts the vendored UI/UX Pro Max design-intelligence references for Arabic-first, RTL-first, mobile-first, financial operating system work without changing runtime behavior by default.
+description: Use this skill before any Terranex UI/UX design, review, or implementation task. It adapts Terranex's manifest-only UI/UX Pro Max source contracts for Arabic-first, RTL-first, mobile-first, financial operating system work without changing runtime behavior by default.
 ---
 
 # Terranex UI/UX Pro Max Adapter
@@ -14,12 +14,13 @@ This adapter is a development-time design gate. It does not provide runtime Reac
 ## Read Order Before UI Work
 
 1. Read `docs/design-system/MASTER.md` as the Terranex source of truth.
-2. Read `docs/design-system/ui-ux-pro-max-vendoring.md` for the vendoring boundary.
-3. Review the vendored upstream references under `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/`.
-4. Start with `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/ui-ux-pro-max/` for broad UI/UX guidance.
-5. Add `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/design-system/` for design-system rules.
-6. Add `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/ui-styling/` for styling, hierarchy, spacing, and polish checks.
-7. Add `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/brand/` and `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/design/` only when brand or broader design decisions are relevant.
+2. Read `docs/design-system/ui-ux-pro-max-vendoring.md` for the manifest-only source-contract boundary.
+3. Review the source manifests under `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/` to understand the intended upstream folders and runtime boundaries.
+4. Treat those folders as manifest-only unless actual upstream UI/UX Pro Max source files are later added.
+5. Start with `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/ui-ux-pro-max/SOURCE.md` for the broad upstream folder contract.
+6. Add `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/design-system/SOURCE.md` for the design-system folder contract.
+7. Add `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/ui-styling/SOURCE.md` for the styling folder contract.
+8. Add `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/brand/SOURCE.md` and `.ai/vendor/ui-ux-pro-max/upstream/.claude/skills/design/SOURCE.md` only when brand or broader design folder contracts are relevant.
 
 ## Terranex Constraints
 
@@ -38,13 +39,13 @@ This adapter is a development-time design gate. It does not provide runtime Reac
 
 Before editing UI runtime files, answer these questions in the task notes or implementation plan:
 
-- Which vendored upstream folders were consulted?
+- Which manifest-only upstream source contracts were consulted, or which actual upstream files were consulted if they have been added later?
 - Which Terranex constraints apply to this UI surface?
 - Does the change preserve existing routes, storage, calculations, EGP behavior, and domain data?
 - What mobile, RTL, accessibility, and financial auditability checks will be run?
 - Is any data shown from existing real application state rather than fake/demo fixtures?
 
-If this is a vendoring/setup task only, do not edit `src/**` and do not change application behavior.
+If this is a source-manifest/setup task only, do not edit `src/**` and do not change application behavior.
 
 ## Terranex UI Checklists
 
