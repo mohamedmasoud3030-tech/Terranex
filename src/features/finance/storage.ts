@@ -6,7 +6,6 @@ export const FINANCIAL_RECORDS_STORAGE_KEY = 'terranex.financialRecords.v1';
 function isRecord(value: unknown): value is FinancialRecord {
   if (!value || typeof value !== 'object') return false;
   const record = value as FinancialRecord;
-
   return (
     typeof record.id === 'string' &&
     typeof record.date === 'string' &&
@@ -30,7 +29,6 @@ function createId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
-
   return `record-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
@@ -60,29 +58,25 @@ export function createFinancialRecord(input: FinancialRecordInput) {
     createdAt: now,
     updatedAt: now,
   };
-
-  financialRecordsStore.setSnapshot([nextRecord, ...financialRecordsStore.getSnapshot()]);
+  financialRecordsStore.update((records) => [nextRecord, ...records]);
   return nextRecord;
 }
 
 export function updateFinancialRecord(id: string, input: FinancialRecordInput) {
   const normalized = normalizeInput(input);
-  const records = financialRecordsStore.getSnapshot();
-  const nextRecords = records.map((record) =>
-    record.id === id
-      ? { ...record, ...normalized, currency: BASE_CURRENCY, updatedAt: new Date().toISOString() }
-      : record,
+  financialRecordsStore.update((records) =>
+    records.map((record) =>
+      record.id === id
+        ? { ...record, ...normalized, currency: BASE_CURRENCY, updatedAt: new Date().toISOString() }
+        : record,
+    ),
   );
-
-  financialRecordsStore.setSnapshot(nextRecords);
 }
 
 export function deleteFinancialRecord(id: string) {
-  financialRecordsStore.setSnapshot(
-    financialRecordsStore.getSnapshot().filter((record) => record.id !== id),
-  );
+  financialRecordsStore.update((records) => records.filter((record) => record.id !== id));
 }
 
 export function resetFinancialRecords() {
-  financialRecordsStore.clear();
+  financialRecordsStore.reset();
 }

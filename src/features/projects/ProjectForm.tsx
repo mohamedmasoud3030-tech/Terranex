@@ -50,7 +50,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading }: Props) {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit({ name_ar, name_en, sector_id, status, start_date, end_date: end_date || undefined, base_currency, description_ar, description_en: undefined, created_at: '', updated_at: '' });
+    onSubmit({ name_ar, name_en, sector_id, status, start_date, end_date: end_date || undefined, base_currency, description_ar, description_en: undefined });
   }
 
   const labelClass = 'block text-sm font-medium text-foreground mb-1';

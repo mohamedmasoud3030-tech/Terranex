@@ -87,9 +87,10 @@ export function PartnersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titleKey="partners_title"
-        descriptionKey="projects_description"
-        actions={<Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> شريك جديد</Button>}
+        title="الشركاء والأطراف"
+        description="كل مشروع هو حاوية الأصول والمعاملات والمستندات والشركاء."
+        children={<Button onClick={() => setShowForm(true)}
+      /> شريك جديد</Button>}
       />
 
       {showForm && (
@@ -100,7 +101,7 @@ export function PartnersPage() {
       )}
 
       {partners.length === 0 ? (
-        <EmptyState titleKey="state_empty_title" descriptionKey="state_empty_description" />
+        <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {partners.map(partner => {

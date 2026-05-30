@@ -40,7 +40,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-muted-foreground">المشروع غير موجود</p>
-        <Button onClick={() => router.navigate({ to: '/projects' } as any)} tone="secondary">
+        <Button onClick={() => router.navigate({ to: '/projects' } as any)} variant="secondary">
           <ArrowRight className="h-4 w-4" /> العودة للمشاريع
         </Button>
       </div>

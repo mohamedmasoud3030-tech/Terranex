@@ -164,9 +164,10 @@ export function ObligationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titleKey="obligations_title"
-        descriptionKey="obligations_description"
-        actions={<Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> التزام جديد</Button>}
+        title="الذمم والالتزامات"
+        description="يربط كل سجل بالمال والقطاع والطرف والمستند."
+        children={<Button onClick={() => setShowForm(true)}
+      /> التزام جديد</Button>}
       />
 
       {/* Summary strip */}
@@ -212,7 +213,7 @@ export function ObligationsPage() {
 
       {/* Open obligations */}
       {open.length === 0 && closed.length === 0 ? (
-        <EmptyState titleKey="state_empty_title" descriptionKey="state_empty_description" />
+        <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
       ) : (
         <>
           {open.length > 0 && (
@@ -236,7 +237,7 @@ export function ObligationsPage() {
                                 {obl.direction === 'receivable' ? 'مدين' : 'دائن'}
                               </Badge>
                               <Badge tone={meta.tone}>{meta.ar}</Badge>
-                              {isOverdue && <Badge tone="negative">متأخر</Badge>}
+                              {isOverdue && <Badge variant="danger">متأخر</Badge>}
                             </div>
                             {getProjectName(obl.project_id) && (
                               <p className="mt-0.5 text-xs text-muted-foreground">{getProjectName(obl.project_id)}</p>
@@ -270,8 +271,8 @@ export function ObligationsPage() {
                               value={settleAmt}
                               onChange={(e) => setSettleAmt(e.target.value)}
                             />
-                            <Button size="sm" tone="positive" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
-                            <Button size="sm" tone="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); }}>إلغاء</Button>
+                            <Button size="sm" variant="success" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
+                            <Button size="sm" variant="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); }}>إلغاء</Button>
                           </div>
                         ) : (
                           <button
@@ -299,7 +300,7 @@ export function ObligationsPage() {
                       <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                       <span className="flex-1 text-sm truncate">{getPartnerName(obl.partner_id)}</span>
                       <span className="text-sm font-medium">{formatEgp(obl.amount_egp)} EGP</span>
-                      <Badge tone="positive">مسدد</Badge>
+                      <Badge variant="success">مسدد</Badge>
                     </div>
                   ))}
                 </div>

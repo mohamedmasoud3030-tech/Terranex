@@ -76,9 +76,10 @@ export function DocumentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titleKey="documents_title"
-        descriptionKey="projects_description"
-        actions={<Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> مستند جديد</Button>}
+        title="إدارة المستندات"
+        description="كل مشروع هو حاوية الأصول والمعاملات والمستندات والشركاء."
+        children={<Button onClick={() => setShowForm(true)}
+      /> مستند جديد</Button>}
       />
 
       {showForm && (
@@ -97,7 +98,7 @@ export function DocumentsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState titleKey="state_empty_title" descriptionKey="state_empty_description" />
+        <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
       ) : (
         <Card>
           <div className="divide-y divide-border">

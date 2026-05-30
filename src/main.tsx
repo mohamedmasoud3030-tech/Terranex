@@ -6,6 +6,7 @@ import { I18nProvider } from './core/i18n';
 import { queryClient } from './core/query';
 import { createAppRouter } from './router';
 import './styles.css';
+import './core/lib/seedData'; // exposes window.seedTerranexDemo for dev
 
 const router = createAppRouter(queryClient);
 

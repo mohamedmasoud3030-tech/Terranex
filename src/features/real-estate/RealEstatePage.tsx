@@ -32,9 +32,10 @@ export function RealEstatePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titleKey="sector_real_estate_name"
-        descriptionKey="sector_real_estate_desc"
-        actions={<Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> مشروع عقاري جديد</Button>}
+        title="الاستثمار العقاري"
+        description="أراضي، أصول، شراء، تطوير، بيع، مستندات ملكية وربحية."
+        children={<Button onClick={() => setShowForm(true)}
+      /> مشروع عقاري جديد</Button>}
       />
 
       {/* Sector KPIs */}
@@ -83,7 +84,7 @@ export function RealEstatePage() {
       <div>
         <h3 className="mb-3 font-semibold">مشاريع القطاع ({reProjects.length})</h3>
         {reProjects.length === 0 ? (
-          <EmptyState titleKey="state_empty_title" descriptionKey="state_empty_description" />
+          <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {reProjects.map((project) => {
