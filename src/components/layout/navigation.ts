@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import {
   Banknote,
   Building2,
+  FolderKanban,
   FolderOpen,
   LayoutDashboard,
   PawPrint,
@@ -22,6 +23,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label_ar: 'لوحة القيادة', label_en: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+  { id: 'projects', label_ar: 'المشاريع', label_en: 'Projects', icon: FolderKanban, to: '/projects' },
   { id: 'real-estate', label_ar: 'العقاري', label_en: 'Real Estate', icon: Building2, to: '/real-estate' },
   { id: 'agriculture', label_ar: 'الزراعي', label_en: 'Agriculture', icon: Wheat, to: '/agriculture' },
   { id: 'livestock', label_ar: 'الحيواني', label_en: 'Livestock', icon: PawPrint, to: '/livestock' },
