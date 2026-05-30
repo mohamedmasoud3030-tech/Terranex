@@ -1,197 +1,226 @@
 import { useState } from 'react';
+import { Plus, TrendingUp, TrendingDown, Building2, Wheat, PawPrint, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../../components/layout/PageHeader';
-import { KpiCard } from '../../components/domain/KpiCard';
-import { EmptyState } from '../../components/ui/States';
+import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { FinancialRecordDialog } from '../finance/FinancialRecordDialog';
-import { FinancialRecordsTable } from '../finance/FinancialRecordsTable';
-import { calculateFinancialSummary } from '../finance/calculations';
-import { useFinancialRecords } from '../finance/hooks';
-import { SECTOR_LABELS_AR, type FinancialRecord, type FinancialRecordInput } from '../finance/types';
-import type { KpiCardVM } from '../../core/types/ui';
+import { Badge } from '../../components/ui/Badge';
+import { useProjects } from '../projects/hooks';
+import { useTransactions } from '../transactions/hooks';
+import { useObligations } from '../obligations/hooks';
+import { usePartners } from '../partners/hooks';
+import { computeGlobalSummary, formatEgp } from '../../core/lib/profitability';
+import type { SectorId } from '../../core/types/domain';
 
-const sectorDescriptions: Record<keyof typeof SECTOR_LABELS_AR, string> = {
-  real_estate: 'أراضي وأصول وتطوير ومبيعات عقارية.',
-  agriculture: 'مزارع ومحاصيل ومواسم ومدخلات وإنتاج.',
-  livestock: 'قطعان وأعلاف وعلاج وتحصينات ومبيعات.',
-  general: 'حركة مالية عامة غير مرتبطة بقطاع محدد.',
+const SECTOR_META: Record<SectorId, { icon: typeof Building2; label: string; color: string; bg: string; route: string }> = {
+  'real-estate': { icon: Building2, label: 'العقاري',  color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', route: '/real-estate' },
+  agriculture:   { icon: Wheat,     label: 'الزراعي',  color: 'text-green-700', bg: 'bg-green-50 border-green-200', route: '/agriculture' },
+  livestock:     { icon: PawPrint,  label: 'الحيواني', color: 'text-blue-700',  bg: 'bg-blue-50 border-blue-200',   route: '/livestock' },
 };
 
 export function DashboardPage() {
-  const { records, createRecord, updateRecord, deleteRecord, resetRecords } = useFinancialRecords();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
-  const summary = calculateFinancialSummary(records);
-  const hasRecords = records.length > 0;
+  const router = useRouter();
+  const { projects } = useProjects();
+  const { transactions } = useTransactions();
+  const { obligations, open: openObls } = useObligations();
+  const { partners } = usePartners();
 
-  function openCreateDialog() {
-    setEditingRecord(null);
-    setIsDialogOpen(true);
-  }
+  const global = computeGlobalSummary(projects, transactions, obligations);
+  const isProfit = global.gross_profit_egp >= 0;
 
-  function handleSubmit(input: FinancialRecordInput) {
-    if (editingRecord) {
-      updateRecord(editingRecord.id, input);
-    } else {
-      createRecord(input);
-    }
-    setIsDialogOpen(false);
-    setEditingRecord(null);
-  }
-
-  function handleEdit(record: FinancialRecord) {
-    setEditingRecord(record);
-    setIsDialogOpen(true);
-  }
-
-  function handleDelete(id: string) {
-    if (window.confirm('هل تريد حذف هذا السجل المالي؟')) {
-      deleteRecord(id);
-    }
-  }
-
-  function handleReset() {
-    if (window.confirm('سيتم حذف كل السجلات المالية المحلية من هذا المتصفح. هل أنت متأكد؟')) {
-      resetRecords();
-    }
-  }
-
-  const kpis: KpiCardVM[] = [
-    {
-      id: 'income-total',
-      title_ar: 'إجمالي الإيرادات',
-      title_en: 'Total income',
-      value: summary.totalIncome,
-      currency: 'EGP',
-      period_ar: 'كل السجلات المحلية',
-      period_en: 'All local records',
-      trend_ar: hasRecords ? 'محسوب من سجلات الإيراد فقط' : 'لا توجد إيرادات مسجلة بعد',
-      trend_en: hasRecords ? 'Calculated from income records only' : 'No income records yet',
-      status: 'positive',
-      source_ar: 'السجلات التي أدخلها المستخدم',
-      source_en: 'User-entered records',
-    },
-    {
-      id: 'expense-total',
-      title_ar: 'إجمالي المصروفات',
-      title_en: 'Total expenses',
-      value: summary.totalExpenses,
-      currency: 'EGP',
-      period_ar: 'كل السجلات المحلية',
-      period_en: 'All local records',
-      trend_ar: hasRecords ? 'محسوب من سجلات المصروفات فقط' : 'لا توجد مصروفات مسجلة بعد',
-      trend_en: hasRecords ? 'Calculated from expense records only' : 'No expense records yet',
-      status: 'warning',
-      source_ar: 'السجلات التي أدخلها المستخدم',
-      source_en: 'User-entered records',
-    },
-    {
-      id: 'net-profit',
-      title_ar: 'صافي الربح / الخسارة',
-      title_en: 'Net profit / loss',
-      value: summary.netProfit,
-      currency: 'EGP',
-      period_ar: 'إيرادات ناقص مصروفات',
-      period_en: 'Income minus expenses',
-      trend_ar: hasRecords ? 'حساب أولي غير نهائي من السجلات المحلية' : 'يظهر بعد إضافة الإيرادات والمصروفات',
-      trend_en: hasRecords ? 'Preliminary local calculation' : 'Shown after adding income and expenses',
-      status: summary.netProfit < 0 ? 'negative' : 'neutral',
-      source_ar: 'السجلات التي أدخلها المستخدم',
-      source_en: 'User-entered records',
-    },
-    {
-      id: 'open-obligations',
-      title_ar: 'الذمم المفتوحة',
-      title_en: 'Open obligations',
-      value: summary.openReceivables - summary.openPayables,
-      currency: 'EGP',
-      period_ar: 'مدينة ناقص دائنة',
-      period_en: 'Receivable minus payable',
-      trend_ar: `مدينة: ${summary.openReceivables.toLocaleString('ar-EG')} ج.م، دائنة: ${summary.openPayables.toLocaleString('ar-EG')} ج.م`,
-      trend_en: 'Receivables and payables summary',
-      status: 'info',
-      source_ar: 'سجلات الذمم المحلية',
-      source_en: 'Local obligation records',
-    },
-  ];
-
-  const sectorCards = Object.entries(SECTOR_LABELS_AR).map(([sector, label]) => ({
-    name_ar: label,
-    description_ar: sectorDescriptions[sector as keyof typeof SECTOR_LABELS_AR],
-    description_en: sector,
-    metric_label_ar: 'سجلات مالية محلية',
-    metric_value: summary.bySector[sector as keyof typeof SECTOR_LABELS_AR].toLocaleString('ar-EG'),
-  }));
+  // Overdue obligations
+  const today = new Date().toISOString().slice(0, 10);
+  const overdue = openObls.filter((o) => o.due_date && o.due_date < today);
+  const dueSoon = openObls.filter((o) => o.due_date && o.due_date >= today && o.due_date <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
 
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
-        title="لوحة القيادة"
-        description="تبدأ Terranex فارغة. كل رقم هنا محسوب فقط من السجلات التي تضيفها محليًا في هذا المتصفح."
-        action={{ label: 'إضافة سجل جديد', onClick: openCreateDialog }}
-      >
-        {hasRecords && <Button type="button" variant="danger" onClick={handleReset}>مسح بيانات المتصفح</Button>}
-      </PageHeader>
+        titleKey="dashboard_title"
+        descriptionKey="dashboard_description"
+        actions={
+          <Button onClick={() => router.navigate({ to: '/projects' } as any)}>
+            <Plus className="h-4 w-4" /> مشروع جديد
+          </Button>
+        }
+      />
 
-      <section aria-labelledby="kpi-section" className="mb-6">
-        <h2 id="kpi-section" className="sr-only">مؤشرات مالية محلية</h2>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {kpis.map((kpi) => <KpiCard kpi={kpi} key={kpi.id} />)}
+      {/* Overdue alert */}
+      {overdue.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3">
+          <AlertCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-danger">{overdue.length} التزام متأخر عن الاستحقاق</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              تأكد من مراجعة صفحة الذمم والالتزامات
+            </p>
+          </div>
+          <button
+            onClick={() => router.navigate({ to: '/finance/obligations' } as any)}
+            className="ms-auto text-xs text-danger hover:underline flex-shrink-0"
+          >
+            عرض التفاصيل
+          </button>
         </div>
-      </section>
-
-      {!hasRecords && (
-        <section className="mb-6">
-          <EmptyState
-            title="لا توجد بيانات بعد"
-            description="ابدأ بإضافة أول سجل مالي لتظهر الأرقام هنا"
-            action={{ label: 'إضافة سجل جديد', onClick: openCreateDialog }}
-          />
-        </section>
       )}
 
-      <section aria-labelledby="sectors-section" className="mb-6 rounded-3xl border border-border bg-card p-4 shadow-sm">
-        <h2 id="sectors-section" className="text-xl font-bold">القطاعات الاستثمارية</h2>
-        <p className="mt-1 text-sm text-muted-foreground">هذه العدادات تبدأ من صفر وتزيد فقط عند إضافة سجلات مالية محلية.</p>
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {sectorCards.map((sector) => (
-            <div key={sector.description_en} className="rounded-2xl border border-border bg-background p-4">
-              <p className="text-lg font-bold">{sector.name_ar}</p>
-              <p className="mt-2 min-h-12 text-sm leading-7 text-muted-foreground">{sector.description_ar}</p>
-              <div className="mt-4 rounded-2xl bg-muted p-3">
-                <p className="text-xs text-muted-foreground">{sector.metric_label_ar}</p>
-                <p className="mt-1 text-2xl font-bold">{sector.metric_value}</p>
+      {/* Global KPIs */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          { label: 'إجمالي الإيرادات', value: global.total_income_egp, color: 'text-success', Icon: TrendingUp },
+          { label: 'إجمالي المصروفات', value: global.total_expense_egp, color: 'text-danger', Icon: TrendingDown },
+          { label: 'إجمالي الربح', value: global.gross_profit_egp, color: isProfit ? 'text-success' : 'text-danger', Icon: isProfit ? TrendingUp : TrendingDown },
+          { label: 'ذمم مدينة مفتوحة', value: global.open_receivables_egp, color: 'text-warning', Icon: AlertCircle },
+        ].map((kpi) => (
+          <Card key={kpi.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{kpi.label}</span>
+                <kpi.Icon className={`h-4 w-4 ${kpi.color}`} />
               </div>
+              <p className={`text-xl font-bold ${kpi.color}`}>{formatEgp(kpi.value, true)}</p>
+              <p className="text-xs text-muted-foreground">EGP</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Sector breakdown */}
+      <div>
+        <h3 className="mb-3 font-semibold">الأداء بالقطاع</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {(Object.keys(SECTOR_META) as SectorId[]).map((sId) => {
+            const meta = SECTOR_META[sId];
+            const s = global.by_sector[sId];
+            const Icon = meta.icon;
+            const positive = s.gross_profit_egp >= 0;
+            const sectorProjects = projects.filter((p) => p.sector_id === sId);
+
+            return (
+              <button
+                key={sId}
+                onClick={() => router.navigate({ to: meta.route } as any)}
+                className="group text-start rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-primary/30 hover:shadow-md transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${meta.bg}`}>
+                    <Icon className={`h-5 w-5 ${meta.color}`} />
+                  </div>
+                  <ArrowLeft className="h-4 w-4 text-muted-foreground transition group-hover:text-primary" />
+                </div>
+                <p className="mb-1 font-semibold">{meta.label}</p>
+                <p className="text-xs text-muted-foreground mb-3">{sectorProjects.length} مشروع</p>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">إيرادات</span>
+                    <span className="font-medium text-success">{formatEgp(s.total_income_egp, true)} EGP</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">مصروفات</span>
+                    <span className="font-medium text-danger">{formatEgp(s.total_expense_egp, true)} EGP</span>
+                  </div>
+                  <div className={`flex justify-between rounded-lg px-2 py-1.5 text-xs font-bold mt-1 ${positive ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+                    <span>الربح</span>
+                    <span>{positive ? '+' : ''}{formatEgp(s.gross_profit_egp, true)} EGP</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recent projects & obligations side by side */}
+      <div className="grid gap-4 lg:grid-cols-2">
+
+        {/* Recent Projects */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">آخر المشاريع</h3>
+              <button onClick={() => router.navigate({ to: '/projects' } as any)} className="text-xs text-primary hover:underline">عرض الكل</button>
             </div>
-          ))}
-        </div>
-      </section>
+          </CardHeader>
+          <CardContent className="p-0">
+            {projects.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">لا توجد مشاريع بعد</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {projects.slice(0, 5).map((p) => {
+                  const meta = SECTOR_META[p.sector_id];
+                  const Icon = meta.icon;
+                  const txCount = transactions.filter(t => t.project_id === p.id).length;
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${meta.bg} flex-shrink-0`}>
+                        <Icon className={`h-4 w-4 ${meta.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{p.name_ar}</p>
+                        <p className="text-xs text-muted-foreground">{txCount} معاملة</p>
+                      </div>
+                      <Badge tone={p.status === 'active' ? 'positive' : 'neutral'}>{p.status === 'active' ? 'نشط' : p.status}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <section aria-labelledby="records-section" className="rounded-3xl border border-border bg-card p-4 shadow-sm">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 id="records-section" className="text-xl font-bold">السجلات المالية المحلية</h2>
-            <p className="mt-1 text-sm text-muted-foreground">لا تظهر أي صفوف إلا بعد إدخالها يدويًا من الواجهة.</p>
-          </div>
-          {hasRecords && <Button type="button" onClick={openCreateDialog}>إضافة سجل جديد</Button>}
-        </div>
+        {/* Open Obligations */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">الالتزامات المفتوحة</h3>
+              <button onClick={() => router.navigate({ to: '/finance/obligations' } as any)} className="text-xs text-primary hover:underline">عرض الكل</button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {openObls.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">لا توجد التزامات مفتوحة</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {[...overdue, ...dueSoon].slice(0, 5).map((o) => {
+                  const partnerName = partners.find(p => p.id === o.partner_id)?.name_ar ?? o.partner_id;
+                  const isLate = o.due_date && o.due_date < today;
+                  const remaining = o.amount_egp - o.amount_settled_egp;
+                  return (
+                    <div key={o.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className={`h-2 w-2 rounded-full flex-shrink-0 ${isLate ? 'bg-danger' : 'bg-warning'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{partnerName}</p>
+                        <p className={`text-xs ${isLate ? 'text-danger' : 'text-muted-foreground'}`}>
+                          {isLate ? 'متأخر — ' : ''}{o.due_date}
+                        </p>
+                      </div>
+                      <span className={`text-sm font-bold flex-shrink-0 ${o.direction === 'receivable' ? 'text-success' : 'text-danger'}`}>
+                        {formatEgp(remaining, true)} EGP
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-        {hasRecords ? (
-          <FinancialRecordsTable records={records} onEdit={handleEdit} onDelete={handleDelete} />
-        ) : (
-          <EmptyState title="لا توجد بيانات بعد" description="ابدأ بإضافة أول سجل مالي لتظهر الأرقام هنا" />
-        )}
-      </section>
-
-      <FinancialRecordDialog
-        open={isDialogOpen}
-        record={editingRecord}
-        onSubmit={handleSubmit}
-        onClose={() => {
-          setIsDialogOpen(false);
-          setEditingRecord(null);
-        }}
-      />
-    </>
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'المشاريع', value: projects.length, sub: `${projects.filter(p => p.status === 'active').length} نشط` },
+          { label: 'المعاملات', value: transactions.length, sub: `${transactions.filter(t => t.direction === 'income').length} إيراد / ${transactions.filter(t => t.direction === 'expense').length} مصروف` },
+          { label: 'الشركاء', value: partners.length, sub: `${openObls.length} التزام مفتوح` },
+        ].map((stat) => (
+          <Card key={stat.label}><CardContent className="p-4 text-center">
+            <p className="text-3xl font-bold">{stat.value}</p>
+            <p className="text-sm font-medium mt-1">{stat.label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{stat.sub}</p>
+          </CardContent></Card>
+        ))}
+      </div>
+    </div>
   );
 }

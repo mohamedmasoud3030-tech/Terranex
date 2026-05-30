@@ -40,7 +40,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <p className="text-muted-foreground">المشروع غير موجود</p>
-        <Button onClick={() => router.navigate({ to: '/projects' } as any)} variant="secondary">
+        <Button onClick={() => router.navigate({ to: '/projects' } as any)} tone="secondary">
           <ArrowRight className="h-4 w-4" /> العودة للمشاريع
         </Button>
       </div>
@@ -84,7 +84,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             <h1 className="text-2xl font-bold text-foreground">{project.name_ar}</h1>
             {project.name_en && <p className="mt-1 text-sm text-muted-foreground" dir="ltr">{project.name_en}</p>}
           </div>
-          <Badge variant={project.status === 'active' ? 'success' : 'default'}>
+          <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>
             {project.status}
           </Badge>
         </div>

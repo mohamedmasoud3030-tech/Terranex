@@ -82,7 +82,7 @@ export function AgriculturePage() {
                 <Card key={project.id}><CardContent className="p-5">
                   <div className="mb-3 flex items-start justify-between">
                     <p className="font-semibold">{project.name_ar}</p>
-                    <Badge variant={project.status === 'active' ? 'success' : 'default'}>{project.status}</Badge>
+                    <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
                   </div>
                   <div className="mb-2 space-y-1 text-xs text-muted-foreground">
                     <div className="flex justify-between"><span>إيرادات</span><span className="text-success font-medium">{formatEgp(prof.total_income_egp, true)} EGP</span></div>

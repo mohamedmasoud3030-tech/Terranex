@@ -103,7 +103,7 @@ export function LivestockPage() {
                 <Card key={project.id}><CardContent className="p-5">
                   <div className="mb-3 flex items-start justify-between">
                     <p className="font-semibold">{project.name_ar}</p>
-                    <Badge variant={project.status === 'active' ? 'success' : 'default'}>{project.status}</Badge>
+                    <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
                   </div>
                   <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
                     <div className="rounded-lg border border-border p-2">

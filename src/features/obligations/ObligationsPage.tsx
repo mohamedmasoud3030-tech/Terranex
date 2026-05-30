@@ -12,12 +12,12 @@ import { formatEgp } from '../../core/lib/profitability';
 import type { ObligationInput } from './storage';
 import type { Obligation } from '../../core/types/domain';
 
-const STATUS_META: Record<Obligation['status'], { ar: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info'; Icon: typeof Clock }> = {
-  open:        { ar: 'مفتوح',           variant: 'warning', Icon: Clock },
-  partial:     { ar: 'جزئي',            variant: 'info',    Icon: Clock },
-  settled:     { ar: 'مسدد',            variant: 'success', Icon: CheckCircle2 },
-  disputed:    { ar: 'متنازع',          variant: 'danger',  Icon: AlertCircle },
-  written_off: { ar: 'مشطوب',           variant: 'default', Icon: AlertCircle },
+const STATUS_META: Record<Obligation['status'], { ar: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info'; Icon: typeof Clock }> = {
+  open:        { ar: 'مفتوح',           tone: 'warning' as const, Icon: Clock },
+  partial:     { ar: 'جزئي',            tone: 'info' as const,    Icon: Clock },
+  settled:     { ar: 'مسدد',            tone: 'positive' as const, Icon: CheckCircle2 },
+  disputed:    { ar: 'متنازع',          tone: 'negative' as const,  Icon: AlertCircle },
+  written_off: { ar: 'مشطوب',           tone: 'neutral' as const, Icon: AlertCircle },
 };
 
 function ObligationForm({
@@ -121,7 +121,7 @@ function ObligationForm({
       </div>
 
       <div className="flex gap-3 justify-end">
-        <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
+        <Button type="button" tone="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ الالتزام</Button>
       </div>
     </form>
@@ -232,11 +232,11 @@ export function ObligationsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">{getPartnerName(obl.partner_id)}</span>
-                              <Badge variant={obl.direction === 'receivable' ? 'success' : 'danger'}>
+                              <Badge tone={obl.direction === 'receivable' ? 'positive' : 'negative'}>
                                 {obl.direction === 'receivable' ? 'مدين' : 'دائن'}
                               </Badge>
-                              <Badge variant={meta.variant}>{meta.ar}</Badge>
-                              {isOverdue && <Badge variant="danger">متأخر</Badge>}
+                              <Badge tone={meta.tone}>{meta.ar}</Badge>
+                              {isOverdue && <Badge tone="negative">متأخر</Badge>}
                             </div>
                             {getProjectName(obl.project_id) && (
                               <p className="mt-0.5 text-xs text-muted-foreground">{getProjectName(obl.project_id)}</p>
@@ -270,8 +270,8 @@ export function ObligationsPage() {
                               value={settleAmt}
                               onChange={(e) => setSettleAmt(e.target.value)}
                             />
-                            <Button size="sm" variant="success" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
-                            <Button size="sm" variant="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); }}>إلغاء</Button>
+                            <Button size="sm" tone="positive" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
+                            <Button size="sm" tone="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); }}>إلغاء</Button>
                           </div>
                         ) : (
                           <button
@@ -299,7 +299,7 @@ export function ObligationsPage() {
                       <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                       <span className="flex-1 text-sm truncate">{getPartnerName(obl.partner_id)}</span>
                       <span className="text-sm font-medium">{formatEgp(obl.amount_egp)} EGP</span>
-                      <Badge variant="success">مسدد</Badge>
+                      <Badge tone="positive">مسدد</Badge>
                     </div>
                   ))}
                 </div>

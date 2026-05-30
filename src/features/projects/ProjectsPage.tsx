@@ -20,12 +20,12 @@ const SECTOR_META: Record<SectorId, { icon: typeof Building2; color: string; bg:
   livestock:     { icon: PawPrint,  color: 'text-blue-700',  bg: 'bg-blue-50 border-blue-200',   label: 'حيواني' },
 };
 
-const STATUS_LABELS: Record<Project['status'], { ar: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  planning:  { ar: 'تخطيط',          variant: 'info' },
-  active:    { ar: 'نشط',             variant: 'success' },
-  on_hold:   { ar: 'متوقف مؤقتاً',   variant: 'warning' },
-  completed: { ar: 'مكتمل',           variant: 'default' },
-  cancelled: { ar: 'ملغى',            variant: 'danger' },
+const STATUS_LABELS: Record<Project['status'], { ar: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info' }> = {
+  planning:  { ar: 'تخطيط',          tone: 'info' as const },
+  active:    { ar: 'نشط',             tone: 'positive' as const },
+  on_hold:   { ar: 'متوقف مؤقتاً',   tone: 'warning' as const },
+  completed: { ar: 'مكتمل',           tone: 'neutral' as const },
+  cancelled: { ar: 'ملغى',            tone: 'negative' as const },
 };
 
 export function ProjectsPage() {
@@ -105,7 +105,7 @@ export function ProjectsPage() {
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${meta.bg}`}>
                     <SectorIcon className={`h-5 w-5 ${meta.color}`} />
                   </div>
-                  <Badge variant={statusInfo.variant}>{statusInfo.ar}</Badge>
+                  <Badge tone={statusInfo.tone}>{statusInfo.ar}</Badge>
                 </div>
 
                 {/* Name */}

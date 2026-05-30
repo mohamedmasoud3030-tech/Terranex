@@ -96,7 +96,7 @@ export function RealEstatePage() {
                       <p className="font-semibold">{project.name_ar}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{project.start_date}</p>
                     </div>
-                    <Badge variant={project.status === 'active' ? 'success' : 'default'}>{project.status}</Badge>
+                    <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
                   </div>
                   <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${positive ? 'bg-success/10' : 'bg-danger/10'}`}>
                     <TrendingUp className={`h-4 w-4 ${positive ? 'text-success' : 'text-danger'}`} />
