@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Plus, TrendingUp, TrendingDown, Building2, Wheat, PawPrint, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../../components/layout/PageHeader';
@@ -31,6 +30,8 @@ export function DashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
   const overdue = openObls.filter((o) => o.due_date && o.due_date < today);
   const dueSoon = openObls.filter((o) => o.due_date && o.due_date >= today && o.due_date <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
+  const priorityIds = new Set([...overdue, ...dueSoon].map((obligation) => obligation.id));
+  const prioritizedOpenObls = [...overdue, ...dueSoon, ...openObls.filter((obligation) => !priorityIds.has(obligation.id))];
 
   return (
     <div className="space-y-6">
@@ -165,7 +166,7 @@ export function DashboardPage() {
               <p className="px-4 py-8 text-center text-sm text-muted-foreground">لا توجد التزامات مفتوحة</p>
             ) : (
               <div className="divide-y divide-border">
-                {[...overdue, ...dueSoon].slice(0, 5).map((o) => {
+                {prioritizedOpenObls.slice(0, 5).map((o) => {
                   const partnerName = partners.find(p => p.id === o.partner_id)?.name_ar ?? o.partner_id;
                   const isLate = o.due_date && o.due_date < today;
                   const remaining = o.amount_egp - o.amount_settled_egp;
@@ -190,7 +191,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 min-[420px]:grid-cols-3">
         {[
           { label: 'المشاريع', value: projects.length, sub: `${projects.filter(p => p.status === 'active').length} نشط` },
           { label: 'المعاملات', value: transactions.length, sub: `${transactions.filter(t => t.direction === 'income').length} إيراد / ${transactions.filter(t => t.direction === 'expense').length} مصروف` },

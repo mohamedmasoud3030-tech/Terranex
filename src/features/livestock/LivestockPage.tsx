@@ -41,7 +41,7 @@ export function LivestockPage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'إجمالي الرؤوس', value: totalHeads, isCount: true, color: 'text-blue-700' },
           { label: 'إيرادات البيع', value: summary.total_income_egp, color: 'text-success' },

@@ -12,6 +12,17 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const LOCALE_STORAGE_KEY = 'terranex.locale.v1';
+
+function readStoredLocale(fallback: Locale): Locale {
+  try {
+    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    return stored === 'ar' || stored === 'en' ? stored : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const translations: Record<Locale, Record<TranslationKey, string>> = { ar, en };
 
 interface I18nProviderProps {
@@ -20,7 +31,7 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children, defaultLocale = 'ar' }: I18nProviderProps) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
+  const [locale, setLocaleState] = useState<Locale>(() => readStoredLocale(defaultLocale));
 
   const direction: Direction = locale === 'ar' ? 'rtl' : 'ltr';
 
@@ -32,6 +43,11 @@ export function I18nProvider({ children, defaultLocale = 'ar' }: I18nProviderPro
 
   function setLocale(next: Locale) {
     setLocaleState(next);
+    try {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
+    } catch {
+      // Language switching must remain usable when storage is unavailable.
+    }
   }
 
   function t(key: TranslationKey): string {
