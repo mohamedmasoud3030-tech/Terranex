@@ -1,0 +1,396 @@
+# Instincts generated from https://github.com/mohamedmasoud3030-tech/Terranex
+# Generated: 2026-05-31T14:28:06.651Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: Terranex-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Commit Length
+
+## Action
+
+Keep commit messages concise (~19 characters)
+
+## Evidence
+
+- Average commit message length: 19 chars
+- Based on 1 commits
+
+---
+id: Terranex-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: Terranex-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: Terranex-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: Terranex-arch-feature-based
+trigger: "when adding a new feature"
+confidence: 0.85
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Arch Feature Based
+
+## Action
+
+Create a new folder in src/features/ with all related code colocated
+
+## Evidence
+
+- Feature-based module organization detected
+- Structure: src/features/[feature-name]/
+
+---
+id: Terranex-test-colocate
+trigger: "when writing tests"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Test Colocate
+
+## Action
+
+Place test file next to the source file (e.g., Button.test.tsx next to Button.tsx)
+
+## Evidence
+
+- Colocated test pattern detected
+- Tests live alongside source files
+
+---
+id: Terranex-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Test Framework
+
+## Action
+
+Use vitest as the test framework
+
+## Evidence
+
+- Test framework detected: vitest
+- File pattern: *.test.ts
+
+---
+id: Terranex-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: terranex-instinct-file-naming-camelCase
+trigger: "When creating a new file in the codebase"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct File Naming CamelCase
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: terranex-instinct-function-naming-camelCase
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Function Naming CamelCase
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: terranex-instinct-class-naming-pascalCase
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Class Naming PascalCase
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: terranex-instinct-constant-naming-screamingSnakeCase
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Constant Naming ScreamingSnakeCase
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: terranex-instinct-import-style-relative
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Import Style Relative
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: terranex-instinct-export-style-default
+trigger: "When exporting modules or components"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Export Style Default
+
+## Action
+
+Use default exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: terranex-instinct-test-file-pattern
+trigger: "When creating a test file"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Test File Pattern
+
+## Action
+
+Name the file with a .test.ts suffix
+
+## Evidence
+
+- Pattern in testing.filePattern
+
+---
+id: terranex-instinct-test-framework-vitest
+trigger: "When writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Test Framework Vitest
+
+## Action
+
+Use the Vitest framework
+
+## Evidence
+
+- Pattern in testing.framework
+
+---
+id: terranex-instinct-test-type-unit
+trigger: "When writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Test Type Unit
+
+## Action
+
+Write unit tests
+
+## Evidence
+
+- Pattern in testing.testTypes
+
+---
+id: terranex-instinct-test-colocation
+trigger: "When adding tests for a module"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Test Colocation
+
+## Action
+
+Colocate test files with the implementation files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: terranex-instinct-commit-format-freeform
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Commit Format Freeform
+
+## Action
+
+Use a short, freeform message without a strict prefix
+
+## Evidence
+
+- Pattern in commits.type
+- Seen in commit 'Add CI quality gate'
+
+---
+id: terranex-instinct-ci-quality-gate
+trigger: "When configuring CI workflows"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Ci Quality Gate
+
+## Action
+
+Include a quality gate step in the CI pipeline
+
+## Evidence
+
+- Pattern in .github/workflows/quality-gate.yml
+- Seen in commit 'Add CI quality gate'
+
