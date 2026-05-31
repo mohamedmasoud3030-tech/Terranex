@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "tests/.compiled",
+    "rootDir": "src",
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "src/core/types/domain.ts",
+    "src/core/lib/profitability.ts",
+    "src/core/lib/validation.ts",
+    "src/core/lib/deletionGuards.ts",
+    "src/core/storage/localStorageStore.ts",
+    "src/core/storage/migrations.ts",
+    "src/features/obligations/storage.ts"
+  ]
+}

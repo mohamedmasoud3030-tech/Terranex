@@ -51,6 +51,7 @@ lerna-debug.log*
 
 # Testing
 coverage/
+tests/.compiled/
 
 # Misc
 .cache/
