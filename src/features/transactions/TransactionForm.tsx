@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import type { TransactionInput } from './storage';
 import type { Transaction, Currency, TransactionDirection, TransactionCategory } from '../../core/types/domain';
+import { useDocuments } from '../documents/hooks';
+import { usePartners } from '../partners/hooks';
 
 const CATEGORIES: { id: TransactionCategory; ar: string; group: string }[] = [
   { id: 'acquisition', ar: 'اقتناء أصل', group: 'عام' },
@@ -40,11 +42,15 @@ interface Props {
 }
 
 export function TransactionForm({ projectId, initial, onSubmit, onCancel, loading }: Props) {
+  const { partners } = usePartners();
+  const { documents } = useDocuments(projectId);
   const [direction, setDirection] = useState<TransactionDirection>(initial?.direction ?? 'expense');
   const [category, setCategory] = useState<TransactionCategory>(initial?.category ?? 'other');
   const [amount, setAmount] = useState(String(initial?.amount ?? ''));
   const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'EGP');
   const [fx_rate, setFxRate] = useState(String(initial?.fx_rate ?? 1));
+  const [partner_id, setPartnerId] = useState(initial?.partner_id ?? '');
+  const [document_id, setDocumentId] = useState(initial?.document_id ?? '');
   const [transaction_date, setDate] = useState(initial?.transaction_date ?? new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState(initial?.description ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
@@ -54,9 +60,12 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   const fxNum = Number(fx_rate);
   const effectiveFxRate = currency === 'EGP' ? 1 : fxNum;
   const amountEgp = amountNum * effectiveFxRate;
+  const availableDocuments = documents.filter((document) => !document.transaction_id || document.transaction_id === initial?.id);
 
   function validate(): boolean {
     const e: Record<string, string> = {};
+    if (!partner_id) e.partner = 'اختر الطرف أو الشريك المرتبط بالمعاملة';
+    if (!document_id) e.document = 'اختر الوثيقة الداعمة للمعاملة';
     if (!Number.isFinite(amountNum) || amountNum <= 0) e.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
     if (currency !== 'EGP' && (!Number.isFinite(fxNum) || fxNum <= 0)) e.fx = 'أدخل سعر صرف صحيحاً أكبر من صفر';
     if (!transaction_date) e.date = 'التاريخ مطلوب';
@@ -64,11 +73,13 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
     onSubmit({
       project_id: projectId,
+      partner_id,
+      document_id,
       direction,
       category,
       amount: amountNum,
@@ -87,7 +98,6 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {/* Direction toggle */}
       <div>
         <label className={labelClass}>الاتجاه</label>
         <div className="flex gap-2">
@@ -113,15 +123,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>المبلغ *</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            className={inputClass}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-          />
+          <input type="number" min="0" step="0.01" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           {errors.amount && <p className={errorClass}>{errors.amount}</p>}
         </div>
         <div>
@@ -140,6 +142,26 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
           <p className="mt-1 text-xs text-muted-foreground">المكافئ بالجنيه: {amountEgp.toLocaleString('ar-EG')} EGP</p>
         </div>
       )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={labelClass}>الطرف أو الشريك *</label>
+          <select className={inputClass} value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
+            <option value="">اختر الطرف…</option>
+            {partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name_ar}</option>)}
+          </select>
+          {errors.partner && <p className={errorClass}>{errors.partner}</p>}
+        </div>
+        <div>
+          <label className={labelClass}>الوثيقة الداعمة *</label>
+          <select className={inputClass} value={document_id} onChange={(e) => setDocumentId(e.target.value)}>
+            <option value="">اختر الوثيقة…</option>
+            {availableDocuments.map((document) => <option key={document.id} value={document.id}>{document.title_ar}</option>)}
+          </select>
+          {errors.document && <p className={errorClass}>{errors.document}</p>}
+          {availableDocuments.length === 0 && <p className="mt-1 text-xs text-muted-foreground">أضف مستندًا مرتبطًا بالمشروع قبل تسجيل المعاملة.</p>}
+        </div>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -167,11 +189,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
       <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
-        <Button
-          type="submit"
-          disabled={loading}
-          className={direction === 'income' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'}
-        >
+        <Button type="submit" disabled={loading} className={direction === 'income' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'}>
           {loading ? 'جار الحفظ…' : direction === 'income' ? 'حفظ الإيراد' : 'حفظ المصروف'}
         </Button>
       </div>
