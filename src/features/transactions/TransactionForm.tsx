@@ -52,12 +52,13 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
   const amountNum = Number(amount);
   const fxNum = Number(fx_rate);
-  const amountEgp = amountNum * fxNum;
+  const effectiveFxRate = currency === 'EGP' ? 1 : fxNum;
+  const amountEgp = amountNum * effectiveFxRate;
 
   function validate(): boolean {
     const e: Record<string, string> = {};
     if (!Number.isFinite(amountNum) || amountNum <= 0) e.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
-    if (!Number.isFinite(fxNum) || fxNum <= 0) e.fx = 'أدخل سعر صرف صحيحاً أكبر من صفر';
+    if (currency !== 'EGP' && (!Number.isFinite(fxNum) || fxNum <= 0)) e.fx = 'أدخل سعر صرف صحيحاً أكبر من صفر';
     if (!transaction_date) e.date = 'التاريخ مطلوب';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -72,7 +73,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       category,
       amount: amountNum,
       currency,
-      fx_rate: fxNum,
+      fx_rate: effectiveFxRate,
       amount_egp: amountEgp,
       transaction_date,
       description: description || undefined,
