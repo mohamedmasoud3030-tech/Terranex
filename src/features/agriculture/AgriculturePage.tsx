@@ -40,7 +40,7 @@ export function AgriculturePage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-3 min-[420px]:grid-cols-3">
         {[
           { label: 'إجمالي المبيعات', value: summary.total_income_egp, color: 'text-success' },
           { label: 'تكاليف المواسم', value: summary.total_expense_egp, color: 'text-danger' },
