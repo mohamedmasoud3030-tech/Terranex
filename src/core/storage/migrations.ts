@@ -15,6 +15,8 @@ type LegacyFinancialRecord = {
   title: string;
   amount: number;
   currency: 'EGP';
+  sector?: string;
+  counterparty?: string;
   project_id?: string;
   partner_id?: string;
   notes?: string;
@@ -26,20 +28,74 @@ interface MigrationState {
   completed: string[];
 }
 
-function readJson<T>(key: string, fallback: T): T {
-  if (typeof localStorage === 'undefined') return fallback;
-  const raw = localStorage.getItem(key);
-  if (!raw) return fallback;
+interface JsonReadResult {
+  ok: boolean;
+  exists: boolean;
+  value?: unknown;
+}
+
+function readJson(key: string): JsonReadResult {
+  if (typeof localStorage === 'undefined') return { ok: false, exists: false };
   try {
-    return JSON.parse(raw) as T;
+    const raw = localStorage.getItem(key);
+    if (raw === null) return { ok: true, exists: false };
+    try {
+      return { ok: true, exists: true, value: JSON.parse(raw) as unknown };
+    } catch {
+      console.error(`تعذر تحليل البيانات المحلية للمفتاح ${key}. تم الإبقاء على البيانات دون تعديل.`);
+      return { ok: false, exists: true };
+    }
   } catch {
-    return fallback;
+    console.error(`تعذر قراءة البيانات المحلية للمفتاح ${key}. تم تجاوز الترحيل للحفاظ على تشغيل التطبيق.`);
+    return { ok: false, exists: false };
   }
 }
 
-function writeJson(key: string, value: unknown) {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(value));
+function writeJson(key: string, value: unknown): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    console.error(`تعذر حفظ البيانات المحلية للمفتاح ${key}. تم الإبقاء على البيانات الأصلية دون حذف.`);
+    return false;
+  }
+}
+
+function removeKey(key: string): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    console.error(`تعذر حذف المفتاح المحلي ${key}. سيتم الاحتفاظ بالنسخة الأصلية.`);
+    return false;
+  }
+}
+
+function readArray<T>(key: string): { ok: boolean; value: T[] } {
+  const result = readJson(key);
+  if (!result.ok) return { ok: false, value: [] };
+  if (!result.exists) return { ok: true, value: [] };
+  if (!Array.isArray(result.value)) {
+    console.error(`البيانات المحلية للمفتاح ${key} ليست قائمة صالحة. تم إيقاف الترحيل دون الكتابة فوقها.`);
+    return { ok: false, value: [] };
+  }
+  return { ok: true, value: result.value as T[] };
+}
+
+function readMigrationState(): { ok: boolean; value: MigrationState } {
+  const result = readJson(MIGRATION_KEY);
+  if (!result.ok) return { ok: false, value: { completed: [] } };
+  if (!result.exists) return { ok: true, value: { completed: [] } };
+  if (!isRecord(result.value) || !Array.isArray(result.value.completed)) {
+    console.error(`حالة الترحيلات المحلية غير صالحة. تم إيقاف الترحيل دون الكتابة فوقها.`);
+    return { ok: false, value: { completed: [] } };
+  }
+  return {
+    ok: true,
+    value: { completed: result.value.completed.filter((item): item is string => typeof item === 'string') },
+  };
 }
 
 function parseLegacyRecord(value: unknown): LegacyFinancialRecord | null {
@@ -58,6 +114,8 @@ function parseLegacyRecord(value: unknown): LegacyFinancialRecord | null {
     title: value.title,
     amount: value.amount,
     currency: 'EGP',
+    sector: typeof value.sector === 'string' ? value.sector : undefined,
+    counterparty: typeof value.counterparty === 'string' ? value.counterparty : undefined,
     project_id: typeof value.project_id === 'string' ? value.project_id : undefined,
     partner_id: typeof value.partner_id === 'string' ? value.partner_id : undefined,
     notes: typeof value.notes === 'string' ? value.notes : undefined,
@@ -66,23 +124,75 @@ function parseLegacyRecord(value: unknown): LegacyFinancialRecord | null {
   };
 }
 
+function makeAuditEntry(record: unknown, reason: string) {
+  return {
+    migration_id: MIGRATION_ID,
+    preserved_reason_ar: reason,
+    record,
+  };
+}
+
+function appendUniqueAudit(existing: unknown[], additions: unknown[]) {
+  const seen = new Set(existing.map((item) => JSON.stringify(item)));
+  const next = [...existing];
+  for (const item of additions) {
+    const serialized = JSON.stringify(item);
+    if (!seen.has(serialized)) {
+      seen.add(serialized);
+      next.push(item);
+    }
+  }
+  return next;
+}
+
+function markCompleted(state: MigrationState) {
+  return writeJson(MIGRATION_KEY, { completed: [...new Set([...state.completed, MIGRATION_ID])] });
+}
+
 function migrateLegacyFinancialRecords() {
   if (typeof localStorage === 'undefined') return;
 
-  const state = readJson<MigrationState>(MIGRATION_KEY, { completed: [] });
+  const stateResult = readMigrationState();
+  if (!stateResult.ok) return;
+  const state = stateResult.value;
   if (state.completed.includes(MIGRATION_ID)) return;
 
-  const rawLegacy = readJson<unknown>(LEGACY_FINANCIAL_RECORDS_KEY, []);
-  const legacyRecords = Array.isArray(rawLegacy) ? rawLegacy.map(parseLegacyRecord).filter((record): record is LegacyFinancialRecord => record !== null) : [];
-  const transactions = readJson<Transaction[]>(TRANSACTIONS_KEY, []);
-  const obligations = readJson<Obligation[]>(OBLIGATIONS_KEY, []);
-  const audit = readJson<unknown[]>(LEGACY_AUDIT_KEY, []);
+  const legacyResult = readJson(LEGACY_FINANCIAL_RECORDS_KEY);
+  if (!legacyResult.ok) return;
+  if (!legacyResult.exists) {
+    markCompleted(state);
+    return;
+  }
+
+  const transactionsResult = readArray<Transaction>(TRANSACTIONS_KEY);
+  const obligationsResult = readArray<Obligation>(OBLIGATIONS_KEY);
+  const auditResult = readArray<unknown>(LEGACY_AUDIT_KEY);
+  if (!transactionsResult.ok || !obligationsResult.ok || !auditResult.ok) return;
+
+  const sourceWasArray = Array.isArray(legacyResult.value);
+  const rawRecords = sourceWasArray ? legacyResult.value as unknown[] : [legacyResult.value];
+  const transactions = [...transactionsResult.value];
+  const obligations = [...obligationsResult.value];
   const existingTransactionIds = new Set(transactions.map((transaction) => transaction.id));
   const existingObligationIds = new Set(obligations.map((obligation) => obligation.id));
+  const auditAdditions: unknown[] = [];
   const now = new Date().toISOString();
-  const unmappable: unknown[] = [];
+  let transactionsChanged = false;
+  let obligationsChanged = false;
+  let hasUnmappableRecords = !sourceWasArray;
 
-  for (const legacy of legacyRecords) {
+  if (!sourceWasArray) {
+    auditAdditions.push(makeAuditEntry(legacyResult.value, 'صيغة مخزن السجلات المالية القديمة غير متوقعة. تم الاحتفاظ بالقيمة الأصلية دون تعديل.'));
+  }
+
+  for (const rawRecord of rawRecords) {
+    const legacy = parseLegacyRecord(rawRecord);
+    if (!legacy) {
+      hasUnmappableRecords = true;
+      auditAdditions.push(makeAuditEntry(rawRecord, 'السجل المالي القديم غير صالح للترحيل الآمن. تم الاحتفاظ به للمراجعة دون اختلاق بيانات.'));
+      continue;
+    }
+
     if ((legacy.type === 'income' || legacy.type === 'expense') && legacy.project_id) {
       const id = `migrated-${legacy.id}`;
       if (!existingTransactionIds.has(id)) {
@@ -102,6 +212,8 @@ function migrateLegacyFinancialRecords() {
           created_at: legacy.createdAt ?? now,
           updated_at: legacy.updatedAt ?? now,
         });
+        existingTransactionIds.add(id);
+        transactionsChanged = true;
       }
       continue;
     }
@@ -119,26 +231,32 @@ function migrateLegacyFinancialRecords() {
           amount_egp: legacy.amount,
           status: 'open',
           amount_settled_egp: 0,
-          notes: [legacy.title, legacy.notes].filter(Boolean).join(' — ') || undefined,
+          notes: [legacy.title, legacy.counterparty, legacy.notes].filter(Boolean).join(' — ') || undefined,
           created_at: legacy.createdAt ?? now,
           updated_at: legacy.updatedAt ?? now,
         });
+        existingObligationIds.add(id);
+        obligationsChanged = true;
       }
       continue;
     }
 
-    unmappable.push({ ...legacy, preserved_reason_ar: 'تعذر ربط السجل بمشروع أو شريك صالح دون اختلاق بيانات.' });
+    hasUnmappableRecords = true;
+    auditAdditions.push(makeAuditEntry(rawRecord, 'تعذر ربط السجل بمشروع أو شريك صالح دون اختلاق بيانات. تم الاحتفاظ بالسجل القديم للمراجعة.'));
   }
 
-  if (legacyRecords.length > 0) {
-    writeJson(TRANSACTIONS_KEY, transactions.sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)));
-    writeJson(OBLIGATIONS_KEY, obligations.sort((a, b) => b.created_at.localeCompare(a.created_at)));
-  }
-  if (unmappable.length > 0) writeJson(LEGACY_AUDIT_KEY, [...audit, ...unmappable]);
-  localStorage.removeItem(LEGACY_FINANCIAL_RECORDS_KEY);
-  writeJson(MIGRATION_KEY, { completed: [...new Set([...state.completed, MIGRATION_ID])] });
+  if (transactionsChanged && !writeJson(TRANSACTIONS_KEY, transactions.sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)))) return;
+  if (obligationsChanged && !writeJson(OBLIGATIONS_KEY, obligations.sort((a, b) => b.created_at.localeCompare(a.created_at)))) return;
+  if (auditAdditions.length > 0 && !writeJson(LEGACY_AUDIT_KEY, appendUniqueAudit(auditResult.value, auditAdditions))) return;
+  if (!markCompleted(state)) return;
+
+  if (!hasUnmappableRecords) removeKey(LEGACY_FINANCIAL_RECORDS_KEY);
 }
 
 export function runAppStorageMigrations() {
-  migrateLegacyFinancialRecords();
+  try {
+    migrateLegacyFinancialRecords();
+  } catch {
+    console.error('تعذر إتمام ترحيل البيانات المحلية. تم تجاوز الترحيل للحفاظ على تشغيل التطبيق والبيانات الأصلية.');
+  }
 }
