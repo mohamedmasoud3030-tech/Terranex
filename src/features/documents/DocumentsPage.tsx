@@ -27,12 +27,12 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
   const [expiry_date, setExpiryDate] = useState('');
   const [notes, setNotes] = useState('');
 
-  const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  const ic = 'block w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
   const lc = 'block text-sm font-medium text-foreground mb-1';
 
   return (
     <form onSubmit={e => { e.preventDefault(); if (title_ar.trim()) { onSubmit({ title_ar, type, issue_date: issue_date || undefined, expiry_date: expiry_date || undefined, notes: notes || undefined }); }}} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>عنوان المستند *</label>
           <input className={ic} value={title_ar} onChange={e => setTitle(e.target.value)} placeholder="عقد شراء أرض المرسى" />
@@ -44,7 +44,7 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
           </select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>تاريخ الإصدار</label>
           <input type="date" className={ic} value={issue_date} onChange={e => setIssueDate(e.target.value)} />
@@ -58,7 +58,7 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
         <label className={lc}>ملاحظات</label>
         <textarea className={ic} rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ المستند</Button>
       </div>

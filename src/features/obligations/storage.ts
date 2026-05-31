@@ -21,6 +21,22 @@ const store = createLocalStorageStore<Obligation[]>(KEY, [], parse);
 
 export type ObligationInput = Omit<Obligation, 'id' | 'created_at' | 'updated_at' | 'amount_settled_egp'>;
 
+export function getRemainingBalance(obligation: Obligation) {
+  return Math.max(0, obligation.amount_egp - obligation.amount_settled_egp);
+}
+
+export function validateSettlement(obligation: Obligation | undefined, amountEgp: number): string | null {
+  if (!obligation) return 'الالتزام غير موجود';
+  if (!Number.isFinite(amountEgp)) return 'مبلغ التسوية يجب أن يكون رقماً صالحاً';
+  if (amountEgp <= 0) return 'مبلغ التسوية يجب أن يكون أكبر من صفر';
+  if (obligation.status === 'settled') return 'لا يمكن تسوية التزام مسدد بالفعل';
+  if (obligation.status === 'written_off') return 'لا يمكن تسوية التزام مشطوب';
+  const remaining = getRemainingBalance(obligation);
+  if (remaining <= 0) return 'لا يوجد رصيد متبقٍ للتسوية';
+  if (amountEgp > remaining) return 'مبلغ التسوية أكبر من الرصيد المتبقي';
+  return null;
+}
+
 export const obligationsStore = {
   getAll: () => store.get(),
   getOpen: () => store.get().filter((o) => o.status !== 'settled' && o.status !== 'written_off'),
@@ -36,6 +52,8 @@ export const obligationsStore = {
     store.update((all) =>
       all.map((o) => {
         if (o.id !== id) return o;
+        const validationError = validateSettlement(o, amountEgp);
+        if (validationError) throw new Error(validationError);
         const newSettled = o.amount_settled_egp + amountEgp;
         const status: Obligation['status'] = newSettled >= o.amount_egp ? 'settled' : 'partial';
         return { ...o, amount_settled_egp: newSettled, status, updated_at: new Date().toISOString() };

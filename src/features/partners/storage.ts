@@ -1,4 +1,8 @@
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { guardPartnerDeletion } from '../../core/domain/deletionGuards';
+import { documentsStore } from '../documents/storage';
+import { obligationsStore } from '../obligations/storage';
+import { transactionsStore } from '../transactions/storage';
 import type { Partner, ProjectPartner } from '../../core/types/domain';
 
 const PARTNERS_KEY = 'terranex.partners.v1';
@@ -46,6 +50,16 @@ export const partnersStore = {
     pStore.update((all) => all.map((p) => p.id === id ? { ...p, ...input } : p));
   },
   remove: (id: string): void => {
+    const guard = guardPartnerDeletion(id, {
+      transactions: transactionsStore.getAll(),
+      assets: [],
+      obligations: obligationsStore.getAll(),
+      documents: documentsStore.getAll(),
+      projectPartners: ppStore.get(),
+      operationalEvents: [],
+      stockAdjustments: [],
+    });
+    if (!guard.allowed) throw new Error(guard.message);
     pStore.update((all) => all.filter((p) => p.id !== id));
   },
   subscribe: pStore.subscribe,

@@ -1,4 +1,11 @@
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { guardProjectDeletion } from '../../core/domain/deletionGuards';
+import { assetsStore } from '../assets/storage';
+import { documentsStore } from '../documents/storage';
+import { operationalEventsStore, stockAdjustmentsStore } from '../events/storage';
+import { obligationsStore } from '../obligations/storage';
+import { projectPartnersStore } from '../partners/storage';
+import { transactionsStore } from '../transactions/storage';
 import type { Project } from '../../core/types/domain';
 
 const KEY = 'terranex.projects.v1';
@@ -36,6 +43,16 @@ export const projectsStore = {
     );
   },
   remove: (id: string): void => {
+    const guard = guardProjectDeletion(id, {
+      transactions: transactionsStore.getAll(),
+      assets: assetsStore.getAll(),
+      obligations: obligationsStore.getAll(),
+      documents: documentsStore.getAll(),
+      projectPartners: projectPartnersStore.getAll(),
+      operationalEvents: operationalEventsStore.getAll(),
+      stockAdjustments: stockAdjustmentsStore.getAll(),
+    });
+    if (!guard.allowed) throw new Error(guard.message);
     store.update((all) => all.filter((p) => p.id !== id));
   },
   subscribe: store.subscribe,

@@ -53,7 +53,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'إجمالي الإيرادات', value: global.total_income_egp, color: 'text-success', Icon: TrendingUp },
           { label: 'إجمالي المصروفات', value: global.total_expense_egp, color: 'text-danger', Icon: TrendingDown },
@@ -61,12 +61,12 @@ export function DashboardPage() {
           { label: 'ذمم مدينة مفتوحة', value: global.open_receivables_egp, color: 'text-warning', Icon: AlertCircle },
         ].map((kpi) => (
           <Card key={kpi.label}>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-muted-foreground">{kpi.label}</span>
                 <kpi.Icon className={`h-4 w-4 ${kpi.color}`} />
               </div>
-              <p className={`text-xl font-bold ${kpi.color}`}>{formatEgp(kpi.value, true)}</p>
+              <p className={`text-lg font-bold sm:text-xl ${kpi.color}`}>{formatEgp(kpi.value, true)}</p>
               <p className="text-xs text-muted-foreground">EGP</p>
             </CardContent>
           </Card>
@@ -75,7 +75,7 @@ export function DashboardPage() {
 
       <div>
         <h3 className="mb-3 font-semibold">الأداء بالقطاع</h3>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           {(Object.keys(SECTOR_META) as SectorId[]).map((sId) => {
             const meta = SECTOR_META[sId];
             const s = global.by_sector[sId];

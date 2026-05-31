@@ -41,7 +41,7 @@ export function LivestockPage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'إجمالي الرؤوس', value: totalHeads, isCount: true, color: 'text-blue-700' },
           { label: 'إيرادات البيع', value: summary.total_income_egp, color: 'text-success' },
@@ -51,7 +51,7 @@ export function LivestockPage() {
           <Card key={k.label}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
-              <p className={`text-xl font-bold ${k.color}`}>
+              <p className={`text-lg font-bold sm:text-xl ${k.color}`}>
                 {(k as any).isCount ? k.value : `${formatEgp(k.value, true)} EGP`}
               </p>
             </CardContent>

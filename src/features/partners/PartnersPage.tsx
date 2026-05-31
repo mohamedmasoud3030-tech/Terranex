@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from '@tanstack/react-router';
 import { Plus, User, Building } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -24,7 +25,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
 
-  const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  const ic = 'block w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
   const lc = 'block text-sm font-medium text-foreground mb-1';
 
   function handleSubmit(e: React.FormEvent) {
@@ -35,7 +36,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>الاسم *</label>
           <input className={ic} value={name_ar} onChange={e => setNameAr(e.target.value)} placeholder="شركة الأمل للمقاولات" />
@@ -64,7 +65,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
         <label className={lc}>ملاحظات</label>
         <textarea className={ic} rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ الشريك</Button>
       </div>
@@ -73,6 +74,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
 }
 
 export function PartnersPage() {
+  const router = useRouter();
   const { partners, createPartner } = usePartners();
   const { obligations } = useObligations();
   const [showForm, setShowForm] = useState(false);
@@ -112,7 +114,12 @@ export function PartnersPage() {
             const bal = getBalance(partner.id);
             const Icon = partner.category === 'equity_partner' ? Building : User;
             return (
-              <Card key={partner.id}>
+              <button
+                key={partner.id}
+                onClick={() => router.navigate({ to: '/partners/$id', params: { id: partner.id } } as any)}
+                className="rounded-2xl text-start transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <Card>
                 <CardContent className="p-5">
                   <div className="mb-3 flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
@@ -142,7 +149,8 @@ export function PartnersPage() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
+                </Card>
+              </button>
             );
           })}
         </div>

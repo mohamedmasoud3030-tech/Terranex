@@ -1,7 +1,4 @@
-/**
- * Generic localStorage store factory.
- * Provides a typed get/set/subscribe interface over localStorage.
- */
+import { LocalStorageError } from './storageErrors';
 
 export type Listener<T> = (value: T) => void;
 
@@ -13,6 +10,39 @@ export interface LocalStorageStore<T> {
   reset(): void;
 }
 
+function canUseLocalStorage() {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+export function readJsonValue(key: string): unknown {
+  if (!canUseLocalStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw === null) return null;
+    return JSON.parse(raw);
+  } catch (error) {
+    throw new LocalStorageError('read', key, error);
+  }
+}
+
+export function writeJsonValue(key: string, value: unknown) {
+  if (!canUseLocalStorage()) return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    throw new LocalStorageError('write', key, error);
+  }
+}
+
+export function removeJsonValue(key: string) {
+  if (!canUseLocalStorage()) return;
+  try {
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    throw new LocalStorageError('remove', key, error);
+  }
+}
+
 export function createLocalStorageStore<T>(
   key: string,
   defaultValue: T,
@@ -20,23 +50,26 @@ export function createLocalStorageStore<T>(
 ): LocalStorageStore<T> {
   const listeners = new Set<Listener<T>>();
 
+  function notify(value: T) {
+    listeners.forEach((listener) => listener(value));
+  }
+
   function read(): T {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw === null) return defaultValue;
-      return parse(JSON.parse(raw));
-    } catch {
-      return defaultValue;
-    }
+    const raw = readJsonValue(key);
+    if (raw === null) return defaultValue;
+    return parse(raw);
   }
 
   function write(value: T) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // storage quota exceeded — silent fail
-    }
-    listeners.forEach((l) => l(value));
+    writeJsonValue(key, value);
+    notify(value);
+  }
+
+  if (canUseLocalStorage()) {
+    window.addEventListener('storage', (event) => {
+      if (event.key !== key) return;
+      notify(read());
+    });
   }
 
   return {
@@ -47,11 +80,12 @@ export function createLocalStorageStore<T>(
     },
     subscribe(listener) {
       listeners.add(listener);
+      listener(read());
       return () => listeners.delete(listener);
     },
     reset() {
-      localStorage.removeItem(key);
-      listeners.forEach((l) => l(defaultValue));
+      removeJsonValue(key);
+      notify(defaultValue);
     },
   };
 }

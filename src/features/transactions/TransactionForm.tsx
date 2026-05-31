@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import type { TransactionInput } from './storage';
 import type { Transaction, Currency, TransactionDirection, TransactionCategory } from '../../core/types/domain';
@@ -79,7 +79,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
     });
   }
 
-  const inputClass = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  const inputClass = 'block w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
   const labelClass = 'block text-sm font-medium text-foreground mb-1';
   const errorClass = 'mt-1 text-xs text-danger';
 
@@ -108,7 +108,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>المبلغ *</label>
           <input
@@ -138,7 +138,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>التاريخ *</label>
           <input type="date" className={inputClass} value={transaction_date} onChange={(e) => setDate(e.target.value)} />
@@ -162,7 +162,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         <textarea className={inputClass} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
 
-      <div className="flex gap-3 justify-end pt-2">
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button
           type="submit"

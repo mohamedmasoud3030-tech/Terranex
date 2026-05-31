@@ -40,7 +40,7 @@ export function RealEstatePage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         {[
           { label: 'إجمالي الإيرادات', value: summary.total_income_egp, color: 'text-success' },
           { label: 'إجمالي المصروفات', value: summary.total_expense_egp, color: 'text-danger' },
@@ -49,7 +49,7 @@ export function RealEstatePage() {
           <Card key={k.label}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
-              <p className={`text-xl font-bold ${k.color}`}>{formatEgp(k.value, true)} EGP</p>
+              <p className={`text-lg font-bold sm:text-xl ${k.color}`}>{formatEgp(k.value, true)} EGP</p>
             </CardContent>
           </Card>
         ))}

@@ -1,4 +1,8 @@
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { guardDocumentDeletion } from '../../core/domain/deletionGuards';
+import { operationalEventsStore } from '../events/storage';
+import { obligationsStore } from '../obligations/storage';
+import { transactionsStore } from '../transactions/storage';
 import type { Document } from '../../core/types/domain';
 
 const KEY = 'terranex.documents.v1';
@@ -34,6 +38,16 @@ export const documentsStore = {
     store.update((all) => all.map((d) => d.id === id ? { ...d, ...input } : d));
   },
   remove: (id: string): void => {
+    const guard = guardDocumentDeletion(id, {
+      transactions: transactionsStore.getAll(),
+      assets: [],
+      obligations: obligationsStore.getAll(),
+      documents: store.get(),
+      projectPartners: [],
+      operationalEvents: operationalEventsStore.getAll(),
+      stockAdjustments: [],
+    });
+    if (!guard.allowed) throw new Error(guard.message);
     store.update((all) => all.filter((d) => d.id !== id));
   },
   subscribe: store.subscribe,

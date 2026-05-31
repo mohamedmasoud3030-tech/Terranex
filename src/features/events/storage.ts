@@ -52,10 +52,14 @@ export const operationalEventsStore = {
 export const stockAdjustmentsStore = {
   getAll: () => adjStore.get(),
   getByAsset: (assetId: string) => adjStore.get().filter((a) => a.asset_id === assetId),
+  getByProject: (projectId: string) => adjStore.get().filter((a) => a.project_id === projectId),
   create: (input: StockAdjustmentInput): StockAdjustment => {
     const adj: StockAdjustment = { ...input, id: makeId('adj'), created_at: new Date().toISOString() };
     adjStore.update((all) => [adj, ...all]);
     return adj;
+  },
+  remove: (id: string): void => {
+    adjStore.update((all) => all.filter((a) => a.id !== id));
   },
   subscribe: adjStore.subscribe,
 };

@@ -9,7 +9,7 @@ import { useObligations } from './hooks';
 import { usePartners } from '../partners/hooks';
 import { useProjects } from '../projects/hooks';
 import { formatEgp } from '../../core/lib/profitability';
-import type { ObligationInput } from './storage';
+import { getRemainingBalance, validateSettlement, type ObligationInput } from './storage';
 import type { Obligation } from '../../core/types/domain';
 
 const STATUS_META: Record<Obligation['status'], { ar: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info'; Icon: typeof Clock }> = {
@@ -39,14 +39,14 @@ function ObligationForm({
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  const ic = 'block w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
   const lc = 'block text-sm font-medium text-foreground mb-1';
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!partner_id) errs.partner = 'اختر الطرف';
-    if (!amount || parseFloat(amount) <= 0) errs.amount = 'أدخل مبلغاً صحيحاً';
+    if (!amount || !Number.isFinite(parseFloat(amount)) || parseFloat(amount) <= 0) errs.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     const amountNum = parseFloat(amount);
@@ -84,7 +84,7 @@ function ObligationForm({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>الطرف *</label>
           <select className={ic} value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
@@ -102,7 +102,7 @@ function ObligationForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>المبلغ (EGP) *</label>
           <input type="number" min="0" step="0.01" className={ic} value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -135,6 +135,7 @@ export function ObligationsPage() {
   const [filterDir, setFilterDir] = useState<'all' | 'receivable' | 'payable'>('all');
   const [settleId, setSettleId] = useState<string | null>(null);
   const [settleAmt, setSettleAmt] = useState('');
+  const [settleError, setSettleError] = useState('');
 
   const filtered = filterDir === 'all' ? obligations : obligations.filter((o) => o.direction === filterDir);
   const open = filtered.filter((o) => o.status !== 'settled' && o.status !== 'written_off');
@@ -151,14 +152,23 @@ export function ObligationsPage() {
 
   function handleSettle(id: string) {
     const amt = parseFloat(settleAmt);
-    if (amt > 0) {
+    const obligation = obligations.find((item) => item.id === id);
+    const validationError = validateSettlement(obligation, amt);
+    if (validationError) {
+      setSettleError(validationError);
+      return;
+    }
+    try {
       settleObligation(id, amt);
       setSettleId(null);
       setSettleAmt('');
+      setSettleError('');
+    } catch (error) {
+      setSettleError(error instanceof Error ? error.message : 'تعذر تسجيل التسوية');
     }
   }
 
-  const ic = 'rounded-xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  const ic = 'min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
 
   return (
     <div className="space-y-6">
@@ -171,7 +181,7 @@ export function ObligationsPage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         {[
           { label: 'ذمم مدينة (لنا)', value: totalReceivableEgp, color: 'text-success', border: 'border-success/30 bg-success/5' },
           { label: 'ذمم دائنة (علينا)', value: totalPayableEgp, color: 'text-danger', border: 'border-danger/30 bg-danger/5' },
@@ -200,7 +210,7 @@ export function ObligationsPage() {
         </Card>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {(['all', 'receivable', 'payable'] as const).map((f) => (
           <button
             key={f}
@@ -224,12 +234,12 @@ export function ObligationsPage() {
                   {open.map((obl) => {
                     const meta = STATUS_META[obl.status];
                     const StatusIcon = meta.Icon;
-                    const remaining = obl.amount_egp - obl.amount_settled_egp;
+                    const remaining = getRemainingBalance(obl);
                     const isOverdue = obl.due_date && new Date(obl.due_date) < new Date();
 
                     return (
                       <div key={obl.id} className="px-4 py-4">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">{getPartnerName(obl.partner_id)}</span>
@@ -248,7 +258,7 @@ export function ObligationsPage() {
                               </p>
                             )}
                           </div>
-                          <div className="text-end flex-shrink-0">
+                          <div className="text-start sm:text-end sm:flex-shrink-0">
                             <p className={`font-bold ${obl.direction === 'receivable' ? 'text-success' : 'text-danger'}`}>
                               {formatEgp(remaining)} EGP
                             </p>
@@ -259,7 +269,7 @@ export function ObligationsPage() {
                         </div>
 
                         {settleId === obl.id ? (
-                          <div className="mt-3 flex items-center gap-2">
+                          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input
                               type="number"
                               min="0"
@@ -270,8 +280,11 @@ export function ObligationsPage() {
                               value={settleAmt}
                               onChange={(e) => setSettleAmt(e.target.value)}
                             />
-                            <Button size="sm" variant="success" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
-                            <Button size="sm" variant="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); }}>إلغاء</Button>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="success" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
+                              <Button size="sm" variant="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); setSettleError(''); }}>إلغاء</Button>
+                            </div>
+                            {settleError && <p className="text-xs text-danger sm:basis-full">{settleError}</p>}
                           </div>
                         ) : (
                           <button
@@ -295,7 +308,7 @@ export function ObligationsPage() {
               <Card>
                 <div className="divide-y divide-border">
                   {closed.map((obl) => (
-                    <div key={obl.id} className="flex items-center gap-4 px-4 py-3 opacity-60">
+                    <div key={obl.id} className="flex flex-wrap items-center gap-3 px-4 py-3 opacity-60">
                       <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                       <span className="flex-1 text-sm truncate">{getPartnerName(obl.partner_id)}</span>
                       <span className="text-sm font-medium">{formatEgp(obl.amount_egp)} EGP</span>
