@@ -17,6 +17,7 @@
     "src/core/storage/localStorageStore.ts",
     "src/core/storage/migrations.ts",
     "src/core/storage/backup.ts",
-    "src/features/obligations/storage.ts"
+    "src/features/obligations/storage.ts",
+    "src/features/transactions/storage.ts"
   ]
 }
