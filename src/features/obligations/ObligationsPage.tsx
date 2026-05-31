@@ -205,7 +205,7 @@ export function ObligationsPage() {
         </Card>
       )}
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {(['all', 'receivable', 'payable'] as const).map((f) => (
           <button
             key={f}
@@ -300,14 +300,18 @@ export function ObligationsPage() {
               <h3 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">مغلقة ({closed.length})</h3>
               <Card>
                 <div className="divide-y divide-border">
-                  {closed.map((obl) => (
-                    <div key={obl.id} className="flex items-center gap-4 px-4 py-3 opacity-60">
-                      <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                      <span className="flex-1 text-sm truncate">{getPartnerName(obl.partner_id)}</span>
-                      <span className="text-sm font-medium">{formatEgp(obl.amount_egp)} EGP</span>
-                      <Badge tone="positive">مسدد</Badge>
-                    </div>
-                  ))}
+                  {closed.map((obl) => {
+                    const meta = STATUS_META[obl.status];
+                    const StatusIcon = meta.Icon;
+                    return (
+                      <div key={obl.id} className="flex items-center gap-4 px-4 py-3 opacity-60">
+                        <StatusIcon className={`h-4 w-4 flex-shrink-0 ${obl.status === 'settled' ? 'text-success' : 'text-muted-foreground'}`} />
+                        <span className="flex-1 text-sm truncate">{getPartnerName(obl.partner_id)}</span>
+                        <span className="text-sm font-medium">{formatEgp(obl.amount_egp)} EGP</span>
+                        <Badge tone={meta.tone}>{meta.ar}</Badge>
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
             </div>
