@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from '@tanstack/react-router';
 import { Plus, User, Building } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -73,6 +74,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
 }
 
 export function PartnersPage() {
+  const router = useRouter();
   const { partners, createPartner } = usePartners();
   const { obligations } = useObligations();
   const [showForm, setShowForm] = useState(false);
@@ -112,7 +114,12 @@ export function PartnersPage() {
             const bal = getBalance(partner.id);
             const Icon = partner.category === 'equity_partner' ? Building : User;
             return (
-              <Card key={partner.id}>
+              <button
+                key={partner.id}
+                onClick={() => router.navigate({ to: '/partners/$id', params: { id: partner.id } } as any)}
+                className="rounded-2xl text-start transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <Card>
                 <CardContent className="p-5">
                   <div className="mb-3 flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
@@ -142,7 +149,8 @@ export function PartnersPage() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
+                </Card>
+              </button>
             );
           })}
         </div>
