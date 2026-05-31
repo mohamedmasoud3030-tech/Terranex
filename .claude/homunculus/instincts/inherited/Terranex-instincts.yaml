@@ -1,0 +1,454 @@
+# Instincts generated from https://github.com/mohamedmasoud3030-tech/Terranex
+# Generated: 2026-05-31T13:43:14.954Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: Terranex-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix, style
+
+## Evidence
+
+- 12 commits analyzed
+- Detected conventional commit pattern
+- Examples: fix: add SPA rewrite for Vercel deep links, style: format dashboard after product readiness fixes
+
+---
+id: Terranex-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Commit Length
+
+## Action
+
+Keep commit messages concise (~46 characters)
+
+## Evidence
+
+- Average commit message length: 46 chars
+- Based on 12 commits
+
+---
+id: Terranex-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Naming Files
+
+## Action
+
+Use PascalCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: PascalCase
+
+---
+id: Terranex-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: Terranex-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: Terranex-arch-feature-based
+trigger: "when adding a new feature"
+confidence: 0.85
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Arch Feature Based
+
+## Action
+
+Create a new folder in src/features/ with all related code colocated
+
+## Evidence
+
+- Feature-based module organization detected
+- Structure: src/features/[feature-name]/
+
+---
+id: Terranex-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: Terranex-workflow-responsive-kpi-card-stacking
+trigger: "when doing responsive kpi card stacking"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Workflow Responsive Kpi Card Stacking
+
+## Action
+
+Follow the responsive-kpi-card-stacking workflow:
+1. Identify the feature page with KPI cards (e.g., real-estate, agriculture, livestock).
+2. Update the corresponding Page.tsx file to adjust layout logic or CSS for stacking on narrow screens.
+3. Test on various screen sizes to ensure correct stacking behavior.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: src/features/real-estate/RealEstatePage.tsx, src/features/agriculture/AgriculturePage.tsx, src/features/livestock/LivestockPage.tsx
+
+---
+id: Terranex-workflow-feature-page-mobile-ux-fix
+trigger: "when doing feature page mobile ux fix"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Workflow Feature Page Mobile Ux Fix
+
+## Action
+
+Follow the feature-page-mobile-ux-fix workflow:
+1. Identify a mobile usability issue on a feature page.
+2. Modify the relevant Page.tsx file to address the issue (e.g., enable scrolling, adjust filters).
+3. Verify the fix on mobile devices.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/features/projects/ProjectsPage.tsx, src/features/documents/DocumentsPage.tsx
+
+---
+id: Terranex-workflow-dashboard-page-adjustment
+trigger: "when doing dashboard page adjustment"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Workflow Dashboard Page Adjustment
+
+## Action
+
+Follow the dashboard-page-adjustment workflow:
+1. Identify the required dashboard adjustment (e.g., prioritization, formatting).
+2. Update src/features/dashboard/DashboardPage.tsx accordingly.
+3. Test dashboard for expected changes.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/features/dashboard/DashboardPage.tsx
+
+---
+id: terranex-instinct-file-naming
+trigger: "When creating a new file in the codebase"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct File Naming
+
+## Action
+
+Name the file using PascalCase (e.g., RealEstatePage.tsx)
+
+## Evidence
+
+- Pattern in src/features/real-estate/RealEstatePage.tsx
+- Pattern in src/features/agriculture/AgriculturePage.tsx
+
+---
+id: terranex-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Function Naming
+
+## Action
+
+Use camelCase for function names
+
+## Evidence
+
+- Pattern in TypeScript codebase
+- Naming convention in codeStyle section
+
+---
+id: terranex-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names
+
+## Evidence
+
+- Naming convention in codeStyle section
+
+---
+id: terranex-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names
+
+## Evidence
+
+- Naming convention in codeStyle section
+
+---
+id: terranex-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- importStyle: relative in codeStyle section
+
+---
+id: terranex-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- exportStyle: named in codeStyle section
+
+---
+id: terranex-instinct-test-location
+trigger: "When adding or updating tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Test Location
+
+## Action
+
+Place test files in a separate test directory, not alongside source files
+
+## Evidence
+
+- testLocation: separate in architecture section
+
+---
+id: terranex-instinct-commit-format
+trigger: "When making a git commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Commit Format
+
+## Action
+
+Use conventional commit prefixes such as 'fix:' or 'style:' followed by a concise description
+
+## Evidence
+
+- fix: add SPA rewrite for Vercel deep links
+- style: format dashboard after product readiness fixes
+
+---
+id: terranex-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 46 characters on average
+
+## Evidence
+
+- averageLength: 46 in commits pattern
+- Examples of commit messages
+
+---
+id: terranex-instinct-responsive-kpi-card-stacking
+trigger: "When someone wants to improve mobile layout for KPI cards in a feature section"
+confidence: 0.92
+domain: workflow
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Responsive Kpi Card Stacking
+
+## Action
+
+Update the relevant Page.tsx file in src/features/[feature]/ to stack KPI cards vertically on narrow screens and test on various screen sizes
+
+## Evidence
+
+- Workflow: responsive-kpi-card-stacking
+- Commits: fix: stack real-estate KPI cards on narrow screens
+
+---
+id: terranex-instinct-feature-page-mobile-ux-fix
+trigger: "When someone wants to fix mobile usability issues on a specific feature page"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Feature Page Mobile Ux Fix
+
+## Action
+
+Modify the relevant Page.tsx file to address the issue (e.g., enable scrolling, adjust filters) and verify the fix on mobile devices
+
+## Evidence
+
+- Workflow: feature-page-mobile-ux-fix
+- Commits: fix: allow project filters to scroll on narrow screens
+
+---
+id: terranex-instinct-dashboard-page-adjustment
+trigger: "When someone wants to update dashboard prioritization, formatting, or display logic"
+confidence: 0.88
+domain: workflow
+source: repo-analysis
+source_repo: mohamedmasoud3030-tech/Terranex
+---
+
+# Terranex Instinct Dashboard Page Adjustment
+
+## Action
+
+Update src/features/dashboard/DashboardPage.tsx accordingly and test for expected changes
+
+## Evidence
+
+- Workflow: dashboard-page-adjustment
+- Commits: style: format dashboard after product readiness fixes
+
