@@ -5,8 +5,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from './core/i18n';
 import { queryClient } from './core/query';
 import { createAppRouter } from './router';
+import { runAppStorageMigrations } from './core/storage/migrations';
 import './styles.css';
-import './core/lib/seedData'; // exposes window.seedTerranexDemo for dev
+
+runAppStorageMigrations();
 
 const router = createAppRouter(queryClient);
 

@@ -321,6 +321,9 @@ export interface ProjectProfitability {
   total_expense_egp: number;
   gross_profit_egp: number;
   open_obligations_egp: number;
+  open_receivables_egp: number;
+  open_payables_egp: number;
+  cash_exposure_egp: number;
   net_profit_egp: number; // gross_profit - open provisions
   partner_splits: PartnerProfitSplit[];
   period: DateRange;

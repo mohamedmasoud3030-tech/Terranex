@@ -1,4 +1,5 @@
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { guardDocumentDeletion } from '../../core/lib/deletionGuards';
 import type { Document } from '../../core/types/domain';
 
 const KEY = 'terranex.documents.v1';
@@ -34,6 +35,8 @@ export const documentsStore = {
     store.update((all) => all.map((d) => d.id === id ? { ...d, ...input } : d));
   },
   remove: (id: string): void => {
+    const guard = guardDocumentDeletion(id);
+    if (!guard.canDelete) throw new Error(guard.message_ar);
     store.update((all) => all.filter((d) => d.id !== id));
   },
   subscribe: store.subscribe,

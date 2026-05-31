@@ -36,7 +36,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>الاسم *</label>
           <input className={ic} value={name_ar} onChange={e => setNameAr(e.target.value)} placeholder="شركة الأمل للمقاولات" />
@@ -65,7 +65,7 @@ function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => vo
         <label className={lc}>ملاحظات</label>
         <textarea className={ic} rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col gap-3 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ الشريك</Button>
       </div>

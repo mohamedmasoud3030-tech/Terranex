@@ -46,10 +46,11 @@ function ObligationForm({
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!partner_id) errs.partner = 'اختر الطرف';
-    if (!amount || parseFloat(amount) <= 0) errs.amount = 'أدخل مبلغاً صحيحاً';
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) errs.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    const amountNum = parseFloat(amount);
+    const amountNum = parsedAmount;
     onSubmit({
       direction,
       partner_id,
@@ -84,7 +85,7 @@ function ObligationForm({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>الطرف *</label>
           <select className={ic} value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
@@ -102,7 +103,7 @@ function ObligationForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>المبلغ (EGP) *</label>
           <input type="number" min="0" step="0.01" className={ic} value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -119,7 +120,7 @@ function ObligationForm({
         <textarea className={ic} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
 
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col gap-3 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ الالتزام</Button>
       </div>
@@ -135,6 +136,7 @@ export function ObligationsPage() {
   const [filterDir, setFilterDir] = useState<'all' | 'receivable' | 'payable'>('all');
   const [settleId, setSettleId] = useState<string | null>(null);
   const [settleAmt, setSettleAmt] = useState('');
+  const [settleError, setSettleError] = useState<string | null>(null);
 
   const filtered = filterDir === 'all' ? obligations : obligations.filter((o) => o.direction === filterDir);
   const open = filtered.filter((o) => o.status !== 'settled' && o.status !== 'written_off');
@@ -150,11 +152,14 @@ export function ObligationsPage() {
   }
 
   function handleSettle(id: string) {
-    const amt = parseFloat(settleAmt);
-    if (amt > 0) {
+    const amt = Number(settleAmt);
+    try {
       settleObligation(id, amt);
       setSettleId(null);
       setSettleAmt('');
+      setSettleError(null);
+    } catch (error) {
+      setSettleError(error instanceof Error ? error.message : 'تعذر تسجيل الدفعة.');
     }
   }
 
@@ -171,7 +176,7 @@ export function ObligationsPage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         {[
           { label: 'ذمم مدينة (لنا)', value: totalReceivableEgp, color: 'text-success', border: 'border-success/30 bg-success/5' },
           { label: 'ذمم دائنة (علينا)', value: totalPayableEgp, color: 'text-danger', border: 'border-danger/30 bg-danger/5' },
@@ -200,7 +205,7 @@ export function ObligationsPage() {
         </Card>
       )}
 
-      <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1">
         {(['all', 'receivable', 'payable'] as const).map((f) => (
           <button
             key={f}
@@ -259,7 +264,7 @@ export function ObligationsPage() {
                         </div>
 
                         {settleId === obl.id ? (
-                          <div className="mt-3 flex items-center gap-2">
+                          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input
                               type="number"
                               min="0"
@@ -271,7 +276,8 @@ export function ObligationsPage() {
                               onChange={(e) => setSettleAmt(e.target.value)}
                             />
                             <Button size="sm" variant="success" onClick={() => handleSettle(obl.id)}>تأكيد</Button>
-                            <Button size="sm" variant="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); }}>إلغاء</Button>
+                            <Button size="sm" variant="secondary" onClick={() => { setSettleId(null); setSettleAmt(''); setSettleError(null); }}>إلغاء</Button>
+                            {settleError && <p className="text-xs text-danger sm:basis-full">{settleError}</p>}
                           </div>
                         ) : (
                           <button

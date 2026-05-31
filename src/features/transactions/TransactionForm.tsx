@@ -50,13 +50,14 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const amountNum = parseFloat(amount) || 0;
-  const fxNum = parseFloat(fx_rate) || 1;
+  const amountNum = Number(amount);
+  const fxNum = Number(fx_rate);
   const amountEgp = amountNum * fxNum;
 
   function validate(): boolean {
     const e: Record<string, string> = {};
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) e.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
+    if (!Number.isFinite(amountNum) || amountNum <= 0) e.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
+    if (!Number.isFinite(fxNum) || fxNum <= 0) e.fx = 'أدخل سعر صرف صحيحاً أكبر من صفر';
     if (!transaction_date) e.date = 'التاريخ مطلوب';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -108,7 +109,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>المبلغ *</label>
           <input
@@ -134,11 +135,12 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         <div>
           <label className={labelClass}>سعر الصرف (1 {currency} = ? EGP)</label>
           <input type="number" min="0" step="0.001" className={inputClass} value={fx_rate} onChange={(e) => setFxRate(e.target.value)} />
+          {errors.fx && <p className={errorClass}>{errors.fx}</p>}
           <p className="mt-1 text-xs text-muted-foreground">المكافئ بالجنيه: {amountEgp.toLocaleString('ar-EG')} EGP</p>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>التاريخ *</label>
           <input type="date" className={inputClass} value={transaction_date} onChange={(e) => setDate(e.target.value)} />
@@ -162,7 +164,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         <textarea className={inputClass} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
 
-      <div className="flex gap-3 justify-end pt-2">
+      <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button
           type="submit"

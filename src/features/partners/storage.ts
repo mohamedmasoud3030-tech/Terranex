@@ -1,4 +1,5 @@
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { guardPartnerDeletion } from '../../core/lib/deletionGuards';
 import type { Partner, ProjectPartner } from '../../core/types/domain';
 
 const PARTNERS_KEY = 'terranex.partners.v1';
@@ -46,6 +47,8 @@ export const partnersStore = {
     pStore.update((all) => all.map((p) => p.id === id ? { ...p, ...input } : p));
   },
   remove: (id: string): void => {
+    const guard = guardPartnerDeletion(id);
+    if (!guard.canDelete) throw new Error(guard.message_ar);
     pStore.update((all) => all.filter((p) => p.id !== id));
   },
   subscribe: pStore.subscribe,

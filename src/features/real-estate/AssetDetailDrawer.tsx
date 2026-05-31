@@ -7,7 +7,17 @@ import { formatDate } from '../../core/lib/date';
 import { cn } from '../../core/lib/cn';
 import { formatMoney } from '../../core/lib/format';
 import { useI18n } from '../../core/i18n';
-import type { RealEstateAssetDetail } from './fixtures';
+import type { AssetRowVM, ObligationRowVM, TransactionRowVM } from '../../core/types/ui';
+
+interface RealEstateAssetDetail extends AssetRowVM {
+  acquisition_date: string;
+  valuation_date: string;
+  notes: string;
+  partners: { id: string; name_ar: string; equity_pct: number }[];
+  transactions: TransactionRowVM[];
+  obligations: ObligationRowVM[];
+  documents: { id: string; title_ar: string; type_ar: string; date?: string }[];
+}
 
 interface AssetDetailDrawerProps {
   asset: RealEstateAssetDetail | null;
