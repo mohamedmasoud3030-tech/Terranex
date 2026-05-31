@@ -11,6 +11,7 @@ export default {
         card: 'rgb(var(--color-card) / <alpha-value>)',
         border: 'rgb(var(--color-border) / <alpha-value>)',
         primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        'primary-foreground': 'rgb(var(--color-primary-foreground) / <alpha-value>)',
         muted: 'rgb(var(--color-muted) / <alpha-value>)',
         'muted-foreground': 'rgb(var(--color-muted-foreground) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
