@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, FileText, FileCheck, FileSignature, FileBadge, Gavel } from 'lucide-react';
+import { Plus, FileText, FileCheck, FileSignature, FileBadge, Gavel, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/States';
+import { confirmSafeDeletion, guardDocumentDeletion } from '../../core/lib/deletionGuards';
 import { useDocuments } from './hooks';
 import type { DocumentInput } from './storage';
 import type { Document } from '../../core/types/domain';
@@ -32,7 +33,7 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
 
   return (
     <form onSubmit={e => { e.preventDefault(); if (title_ar.trim()) { onSubmit({ title_ar, type, issue_date: issue_date || undefined, expiry_date: expiry_date || undefined, notes: notes || undefined }); }}} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>عنوان المستند *</label>
           <input className={ic} value={title_ar} onChange={e => setTitle(e.target.value)} placeholder="عقد شراء أرض المرسى" />
@@ -44,7 +45,7 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
           </select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>تاريخ الإصدار</label>
           <input type="date" className={ic} value={issue_date} onChange={e => setIssueDate(e.target.value)} />
@@ -58,7 +59,7 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
         <label className={lc}>ملاحظات</label>
         <textarea className={ic} rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col gap-3 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ المستند</Button>
       </div>
@@ -67,11 +68,21 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
 }
 
 export function DocumentsPage() {
-  const { documents, createDocument } = useDocuments();
+  const { documents, createDocument, deleteDocument } = useDocuments();
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState<Document['type'] | 'all'>('all');
 
   const filtered = filterType === 'all' ? documents : documents.filter(d => d.type === filterType);
+
+  function handleDeleteDocument(documentId: string) {
+    const guard = guardDocumentDeletion(documentId);
+    if (!guard.canDelete) {
+      window.alert(guard.message_ar);
+      return;
+    }
+    if (!confirmSafeDeletion(guard.message_ar)) return;
+    deleteDocument(documentId);
+  }
 
   return (
     <div className="space-y-6">
@@ -109,7 +120,7 @@ export function DocumentsPage() {
               const meta = TYPE_META[doc.type];
               const Icon = meta.icon;
               return (
-                <div key={doc.id} className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition">
+                <div key={doc.id} className="flex flex-col gap-3 px-4 py-3 transition hover:bg-muted/50 min-[360px]:flex-row min-[360px]:items-center">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted">
                     <Icon className={`h-5 w-5 ${meta.color}`} />
                   </div>
@@ -120,6 +131,9 @@ export function DocumentsPage() {
                   {doc.expiry_date && (
                     <span className="text-xs text-muted-foreground">ينتهي {doc.expiry_date}</span>
                   )}
+                  <Button variant="danger" size="sm" onClick={() => handleDeleteDocument(doc.id)}>
+                    <Trash2 className="h-4 w-4" /> حذف
+                  </Button>
                 </div>
               );
             })}

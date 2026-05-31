@@ -1,9 +1,10 @@
 import { useRouter } from '@tanstack/react-router';
-import { ArrowRight, Building, User } from 'lucide-react';
+import { ArrowRight, Building, Trash2, User } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/States';
+import { confirmSafeDeletion, guardPartnerDeletion } from '../../core/lib/deletionGuards';
 import { useProjects } from '../projects/hooks';
 import { useTransactions } from '../transactions/hooks';
 import { useObligations } from '../obligations/hooks';
@@ -22,7 +23,7 @@ const ROLE_LABELS: Record<PartnerCounterpartyRole, string> = {
 
 export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
   const router = useRouter();
-  const { partners } = usePartners();
+  const { partners, deletePartner } = usePartners();
   const { projects } = useProjects();
   const { transactions } = useTransactions();
   const { obligations } = useObligations();
@@ -41,6 +42,7 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
 
   const partnerTransactions = transactions.filter((transaction) => transaction.partner_id === partner.id);
   const partnerObligations = obligations.filter((obligation) => obligation.partner_id === partner.id);
+  const currentPartnerId = partner.id;
   const receivable = partnerObligations
     .filter((obligation) => obligation.direction === 'receivable' && obligation.status !== 'settled' && obligation.status !== 'written_off')
     .reduce((sum, obligation) => sum + obligation.amount_egp - obligation.amount_settled_egp, 0);
@@ -49,6 +51,17 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
     .reduce((sum, obligation) => sum + obligation.amount_egp - obligation.amount_settled_egp, 0);
   const projectNames = new Map(projects.map((project) => [project.id, project.name_ar]));
   const Icon = partner.category === 'equity_partner' ? Building : User;
+
+  function handleDeletePartner() {
+    const guard = guardPartnerDeletion(currentPartnerId);
+    if (!guard.canDelete) {
+      window.alert(guard.message_ar);
+      return;
+    }
+    if (!confirmSafeDeletion(guard.message_ar)) return;
+    deletePartner(currentPartnerId);
+    router.navigate({ to: '/partners' } as any);
+  }
 
   return (
     <div className="space-y-6">
@@ -81,6 +94,9 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
                 {partner.phone && <p><span className="text-muted-foreground">الهاتف: </span><span dir="ltr">{partner.phone}</span></p>}
                 {partner.email && <p><span className="text-muted-foreground">البريد: </span><span dir="ltr">{partner.email}</span></p>}
                 {partner.address && <p><span className="text-muted-foreground">العنوان: </span>{partner.address}</p>}
+                <Button variant="danger" size="sm" onClick={handleDeletePartner} className="mt-2 w-full md:w-auto">
+                  <Trash2 className="h-4 w-4" /> حذف الشريك
+                </Button>
               </div>
             </div>
           </CardContent>

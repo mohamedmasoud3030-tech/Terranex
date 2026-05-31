@@ -21,6 +21,7 @@ export interface SectorSummary {
   gross_profit_egp: number;
   open_receivables_egp: number;
   open_payables_egp: number;
+  cash_exposure_egp: number;
   net_profit_egp: number;
   project_count: number;
   margin_pct: number;
@@ -32,6 +33,7 @@ export interface GlobalSummary {
   gross_profit_egp: number;
   open_receivables_egp: number;
   open_payables_egp: number;
+  cash_exposure_egp: number;
   net_egp: number;
   margin_pct: number;
   by_sector: Record<SectorId, SectorSummary>;
@@ -55,11 +57,13 @@ export function computeProjectProfitability(
   const total_expense_egp = txs.filter((t) => t.direction === 'expense').reduce((s, t) => s + t.amount_egp, 0);
   const gross_profit_egp = total_income_egp - total_expense_egp;
 
-  const open_obligations_egp = obls
-    .filter((o) => o.direction === 'receivable' && o.status !== 'settled' && o.status !== 'written_off')
-    .reduce((s, o) => s + openBalance(o), 0);
+  const openObls = obls.filter((o) => o.status !== 'settled' && o.status !== 'written_off');
+  const open_receivables_egp = openObls.filter((o) => o.direction === 'receivable').reduce((s, o) => s + openBalance(o), 0);
+  const open_payables_egp = openObls.filter((o) => o.direction === 'payable').reduce((s, o) => s + openBalance(o), 0);
+  const cash_exposure_egp = open_receivables_egp - open_payables_egp;
+  const open_obligations_egp = open_receivables_egp + open_payables_egp;
 
-  const net_profit_egp = gross_profit_egp - open_obligations_egp;
+  const net_profit_egp = gross_profit_egp;
 
   const pps = projectPartners.filter((pp) => pp.project_id === project.id);
   const partner_splits = pps.map((pp) => {
@@ -68,7 +72,7 @@ export function computeProjectProfitability(
       partner_id: pp.partner_id,
       partner_name_ar: partner?.name_ar ?? 'غير معروف',
       equity_pct: pp.equity_pct,
-      share_egp: (net_profit_egp * pp.equity_pct) / 100,
+      share_egp: (gross_profit_egp * pp.equity_pct) / 100,
     };
   });
 
@@ -81,6 +85,9 @@ export function computeProjectProfitability(
     total_expense_egp,
     gross_profit_egp,
     open_obligations_egp,
+    open_receivables_egp,
+    open_payables_egp,
+    cash_exposure_egp,
     net_profit_egp,
     partner_splits,
     period: { from: project.start_date, to: project.end_date ?? new Date().toISOString().slice(0, 10) },
@@ -106,6 +113,7 @@ export function computeSectorSummary(
   const openObls = obls.filter((o) => o.status !== 'settled' && o.status !== 'written_off');
   const open_receivables_egp = openObls.filter((o) => o.direction === 'receivable').reduce((s, o) => s + openBalance(o), 0);
   const open_payables_egp = openObls.filter((o) => o.direction === 'payable').reduce((s, o) => s + openBalance(o), 0);
+  const cash_exposure_egp = open_receivables_egp - open_payables_egp;
 
   const net_profit_egp = gross_profit_egp;
   const margin_pct = total_income_egp > 0 ? (gross_profit_egp / total_income_egp) * 100 : 0;
@@ -117,6 +125,7 @@ export function computeSectorSummary(
     gross_profit_egp,
     open_receivables_egp,
     open_payables_egp,
+    cash_exposure_egp,
     net_profit_egp,
     project_count: sectorProjects.length,
     margin_pct,
@@ -140,6 +149,7 @@ export function computeGlobalSummary(
   const openObls = obligations.filter((o) => o.status !== 'settled' && o.status !== 'written_off');
   const open_receivables_egp = openObls.filter((o) => o.direction === 'receivable').reduce((s, o) => s + openBalance(o), 0);
   const open_payables_egp = openObls.filter((o) => o.direction === 'payable').reduce((s, o) => s + openBalance(o), 0);
+  const cash_exposure_egp = open_receivables_egp - open_payables_egp;
 
   const net_egp = gross_profit_egp;
   const margin_pct = total_income_egp > 0 ? (gross_profit_egp / total_income_egp) * 100 : 0;
@@ -150,6 +160,7 @@ export function computeGlobalSummary(
     gross_profit_egp,
     open_receivables_egp,
     open_payables_egp,
+    cash_exposure_egp,
     net_egp,
     margin_pct,
     by_sector: bySector,

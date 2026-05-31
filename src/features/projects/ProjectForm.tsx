@@ -59,7 +59,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>اسم المشروع (عربي) *</label>
           <input className={inputClass} value={name_ar} onChange={(e) => setNameAr(e.target.value)} placeholder="مشروع أرض المرسى" dir="rtl" />
@@ -71,7 +71,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label className={labelClass}>القطاع</label>
           <select className={inputClass} value={sector_id} onChange={(e) => setSectorId(e.target.value as SectorId)}>
@@ -94,7 +94,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>تاريخ البدء *</label>
           <input type="date" className={inputClass} value={start_date} onChange={(e) => setStartDate(e.target.value)} />
@@ -111,7 +111,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading }: Props) {
         <textarea className={inputClass} rows={3} value={description_ar} onChange={(e) => setDescAr(e.target.value)} placeholder="وصف موجز للمشروع وأهدافه…" />
       </div>
 
-      <div className="flex gap-3 justify-end pt-2">
+      <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit" disabled={loading}>{loading ? 'جار الحفظ…' : 'حفظ المشروع'}</Button>
       </div>

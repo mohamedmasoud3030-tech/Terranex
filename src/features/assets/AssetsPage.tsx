@@ -1,8 +1,10 @@
-import { PackageOpen } from 'lucide-react';
+import { PackageOpen, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/States';
+import { Button } from '../../components/ui/Button';
+import { confirmSafeDeletion, guardAssetDeletion } from '../../core/lib/deletionGuards';
 import { useProjects } from '../projects/hooks';
 import { useAssets } from './hooks';
 import { formatEgp } from '../../core/lib/profitability';
@@ -27,11 +29,21 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
 };
 
 export function AssetsPage() {
-  const { assets } = useAssets();
+  const { assets, deleteAsset } = useAssets();
   const { projects } = useProjects();
   const projectNames = new Map(projects.map((project) => [project.id, project.name_ar]));
   const totalAcquisition = assets.reduce((sum, asset) => sum + asset.acquisition_cost_egp, 0);
   const totalCurrentValue = assets.reduce((sum, asset) => sum + (asset.current_value_egp ?? asset.acquisition_cost_egp), 0);
+
+  function handleDeleteAsset(assetId: string) {
+    const guard = guardAssetDeletion(assetId);
+    if (!guard.canDelete) {
+      window.alert(guard.message_ar);
+      return;
+    }
+    if (!confirmSafeDeletion(guard.message_ar)) return;
+    deleteAsset(assetId);
+  }
 
   return (
     <div className="space-y-6">
@@ -96,6 +108,9 @@ export function AssetsPage() {
                     <span className="font-bold text-primary">{formatEgp(asset.current_value_egp ?? asset.acquisition_cost_egp, true)} EGP</span>
                   </div>
                 </div>
+                <Button variant="danger" size="sm" className="mt-4 w-full" onClick={() => handleDeleteAsset(asset.id)}>
+                  <Trash2 className="h-4 w-4" /> حذف الأصل
+                </Button>
               </CardContent>
             </Card>
           ))}

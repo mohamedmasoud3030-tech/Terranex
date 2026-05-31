@@ -1,4 +1,5 @@
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { clampRemainingBalance, isFiniteNumber } from '../../core/lib/validation';
 import type { Obligation } from '../../core/types/domain';
 
 const KEY = 'terranex.obligations.v1';
@@ -33,12 +34,20 @@ export const obligationsStore = {
     return obl;
   },
   settle: (id: string, amountEgp: number): void => {
+    if (!isFiniteNumber(amountEgp) || amountEgp <= 0) {
+      throw new Error('قيمة التسوية يجب أن تكون رقماً صالحاً أكبر من صفر.');
+    }
     store.update((all) =>
       all.map((o) => {
         if (o.id !== id) return o;
+        if (o.status === 'settled') throw new Error('لا يمكن تسوية التزام مسدد بالفعل.');
+        if (o.status === 'written_off') throw new Error('لا يمكن تسوية التزام مشطوب.');
+        const remaining = clampRemainingBalance(o.amount_egp, o.amount_settled_egp);
+        if (amountEgp > remaining) throw new Error('قيمة التسوية أكبر من الرصيد المتبقي.');
         const newSettled = o.amount_settled_egp + amountEgp;
-        const status: Obligation['status'] = newSettled >= o.amount_egp ? 'settled' : 'partial';
-        return { ...o, amount_settled_egp: newSettled, status, updated_at: new Date().toISOString() };
+        const safeSettled = Math.min(o.amount_egp, newSettled);
+        const status: Obligation['status'] = safeSettled >= o.amount_egp ? 'settled' : 'partial';
+        return { ...o, amount_settled_egp: safeSettled, status, updated_at: new Date().toISOString() };
       }),
     );
   },
