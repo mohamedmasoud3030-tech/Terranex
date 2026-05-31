@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useLocation, useRouter } from '@tanstack/react-router';
-import { Menu, X } from 'lucide-react';
+import { Menu, Moon, Sun, X } from 'lucide-react';
 
 import { useI18n } from '../../core/i18n';
+import { useTheme } from '../../core/theme';
 import { cn } from '../../core/lib/cn';
 import { getNavItemLabel, isNavItemActive, NAV_ITEMS } from './navigation';
 
 export function TopBar() {
   const { t, locale, setLocale } = useI18n();
+  const { resolvedTheme, setMode } = useTheme();
   const router = useRouter();
   const { pathname } = useLocation();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -18,19 +20,27 @@ export function TopBar() {
     setIsMobileNavOpen(false);
   }
 
+  function toggleTheme() {
+    setMode(resolvedTheme === 'dark' ? 'light' : 'dark');
+  }
+
+  const themeLabel = resolvedTheme === 'dark'
+    ? (locale === 'ar' ? 'تفعيل الوضع النهاري' : 'Switch to light mode')
+    : (locale === 'ar' ? 'تفعيل الوضع الليلي' : 'Switch to dark mode');
+
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-card/95 px-4 py-3 backdrop-blur lg:px-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <header className="surface-glass sticky top-0 z-30 border-b px-4 py-3 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">{t('env_badge')}</p>
-          <p className="text-sm font-semibold">{t('app_name')} — {t('app_tagline')}</p>
+          <p className="text-xs font-medium text-muted-foreground">{t('env_badge')}</p>
+          <p className="mt-1 text-sm font-bold text-foreground">{t('app_name')} — {t('app_tagline')}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Dialog.Root open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
             <Dialog.Trigger asChild>
               <button
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-primary px-3 text-sm font-semibold text-white transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
                 aria-label={locale === 'ar' ? 'فتح التنقل الرئيسي' : 'Open main navigation'}
               >
                 <Menu className="h-5 w-5" aria-hidden="true" />
@@ -38,9 +48,9 @@ export function TopBar() {
               </button>
             </Dialog.Trigger>
             <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm lg:hidden" />
-              <Dialog.Content className="fixed inset-y-0 end-0 z-50 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-y-auto border-s border-border bg-card p-4 shadow-2xl focus-visible:outline-none lg:hidden">
-                <div className="mb-5 flex items-start justify-between gap-3 rounded-2xl border border-border p-4">
+              <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/55 backdrop-blur-sm lg:hidden" />
+              <Dialog.Content className="surface-glass fixed inset-y-0 end-0 z-50 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-y-auto border-s p-4 focus-visible:outline-none lg:hidden">
+                <div className="mb-5 flex items-start justify-between gap-3 rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
                   <div>
                     <Dialog.Title className="text-base font-bold text-foreground">
                       {locale === 'ar' ? 'تنقل Terranex' : 'Terranex navigation'}
@@ -53,7 +63,7 @@ export function TopBar() {
                   </div>
                   <Dialog.Close asChild>
                     <button
-                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card/80 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                       aria-label={t('action_close')}
                     >
                       <X className="h-5 w-5" aria-hidden="true" />
@@ -74,8 +84,8 @@ export function TopBar() {
                             className={cn(
                               'flex min-h-12 w-full items-center gap-3 rounded-2xl px-4 py-3 text-start text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary',
                               isActive
-                                ? 'bg-primary text-white shadow-sm'
-                                : 'border border-border text-foreground hover:bg-muted',
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'border border-border bg-card/70 text-foreground hover:bg-muted',
                             )}
                             aria-current={isActive ? 'page' : undefined}
                           >
@@ -92,8 +102,19 @@ export function TopBar() {
           </Dialog.Root>
 
           <button
+            onClick={toggleTheme}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-card/80 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label={themeLabel}
+            title={themeLabel}
+          >
+            {resolvedTheme === 'dark'
+              ? <Sun className="h-5 w-5" aria-hidden="true" />
+              : <Moon className="h-5 w-5" aria-hidden="true" />}
+          </button>
+
+          <button
             onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
-            className="h-11 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="h-11 rounded-xl border border-border bg-card/80 px-3 text-sm font-semibold text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             aria-label="Toggle language"
           >
             {locale === 'ar' ? 'EN' : 'عر'}
