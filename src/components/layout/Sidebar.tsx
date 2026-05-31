@@ -9,14 +9,12 @@ export function Sidebar() {
   const { pathname } = useLocation();
 
   return (
-    <aside className="hidden w-72 shrink-0 border-s border-border bg-card px-4 py-5 lg:block">
-      {/* Brand */}
-      <div className="mb-8 rounded-2xl border border-border p-4">
-        <p className="text-xs text-muted-foreground">{t('env_badge')}</p>
-        <h1 className="mt-1 text-xl font-bold">{t('app_tagline')}</h1>
+    <aside className="surface-glass hidden w-72 shrink-0 border-s px-4 py-5 lg:block">
+      <div className="mb-8 rounded-2xl border border-border bg-card/60 p-4 shadow-sm">
+        <p className="text-xs font-medium text-muted-foreground">{t('env_badge')}</p>
+        <h1 className="mt-2 text-xl font-extrabold tracking-tight text-foreground">{t('app_tagline')}</h1>
       </div>
 
-      {/* Nav */}
       <nav aria-label={locale === 'ar' ? 'التنقل الرئيسي' : 'Main navigation'}>
         <ul className="space-y-1" role="list">
           {NAV_ITEMS.map((item) => {
@@ -27,9 +25,9 @@ export function Sidebar() {
                 <button
                   onClick={() => router.navigate({ to: item.to })}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                    'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-3 text-start text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
                     isActive
-                      ? 'bg-primary/10 text-primary'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                   aria-current={isActive ? 'page' : undefined}
