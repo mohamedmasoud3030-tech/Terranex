@@ -88,16 +88,20 @@ export function PartnersPage() {
     <div className="space-y-6">
       <PageHeader
         title="الشركاء والأطراف"
-        description="كل مشروع هو حاوية الأصول والمعاملات والمستندات والشركاء."
-        children={<Button onClick={() => setShowForm(true)}
-      /> شريك جديد</Button>}
-      />
+        description="إدارة جميع الشركاء والأطراف والعلاقات المالية معهم."
+      >
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4" /> شريك جديد
+        </Button>
+      </PageHeader>
 
       {showForm && (
-        <Card><CardContent>
-          <h3 className="mb-4 text-base font-semibold">شريك / طرف جديد</h3>
-          <PartnerForm onSubmit={p => { createPartner(p); setShowForm(false); }} onCancel={() => setShowForm(false)} />
-        </CardContent></Card>
+        <Card>
+          <CardContent>
+            <h3 className="mb-4 text-base font-semibold">شريك / طرف جديد</h3>
+            <PartnerForm onSubmit={p => { createPartner(p); setShowForm(false); }} onCancel={() => setShowForm(false)} />
+          </CardContent>
+        </Card>
       )}
 
       {partners.length === 0 ? (

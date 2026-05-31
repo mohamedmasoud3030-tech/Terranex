@@ -34,53 +34,58 @@ export function RealEstatePage() {
       <PageHeader
         title="الاستثمار العقاري"
         description="أراضي، أصول، شراء، تطوير، بيع، مستندات ملكية وربحية."
-        children={<Button onClick={() => setShowForm(true)}
-      /> مشروع عقاري جديد</Button>}
-      />
+      >
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4" /> مشروع عقاري جديد
+        </Button>
+      </PageHeader>
 
-      {/* Sector KPIs */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'إجمالي الإيرادات', value: summary.total_income_egp, color: 'text-success' },
           { label: 'إجمالي المصروفات', value: summary.total_expense_egp, color: 'text-danger' },
           { label: 'إجمالي الربح', value: summary.gross_profit_egp, color: summary.gross_profit_egp >= 0 ? 'text-success' : 'text-danger' },
         ].map((k) => (
-          <Card key={k.label}><CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
-            <p className={`text-xl font-bold ${k.color}`}>{formatEgp(k.value, true)} EGP</p>
-          </CardContent></Card>
+          <Card key={k.label}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
+              <p className={`text-xl font-bold ${k.color}`}>{formatEgp(k.value, true)} EGP</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {showForm && (
-        <Card><CardContent>
-          <h3 className="mb-4 font-semibold">مشروع عقاري جديد</h3>
-          <ProjectForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
-        </CardContent></Card>
+        <Card>
+          <CardContent>
+            <h3 className="mb-4 font-semibold">مشروع عقاري جديد</h3>
+            <ProjectForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
+          </CardContent>
+        </Card>
       )}
 
-      {/* Assets strip */}
       {reAssets.length > 0 && (
         <div>
           <h3 className="mb-3 font-semibold">الأصول العقارية ({reAssets.length})</h3>
           <div className="grid gap-3 sm:grid-cols-3">
             {reAssets.map((asset) => (
-              <Card key={asset.id}><CardContent className="p-4">
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">{asset.name_ar}</p>
-                    <p className="text-xs text-muted-foreground">{asset.type}</p>
-                    <p className="text-sm font-bold text-amber-700 mt-1">{formatEgp(asset.acquisition_cost_egp, true)} EGP</p>
+              <Card key={asset.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{asset.name_ar}</p>
+                      <p className="text-xs text-muted-foreground">{asset.type}</p>
+                      <p className="text-sm font-bold text-amber-700 mt-1">{formatEgp(asset.acquisition_cost_egp, true)} EGP</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent></Card>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       )}
 
-      {/* Projects */}
       <div>
         <h3 className="mb-3 font-semibold">مشاريع القطاع ({reProjects.length})</h3>
         {reProjects.length === 0 ? (
@@ -91,21 +96,23 @@ export function RealEstatePage() {
               const prof = computeProjectProfitability(project, transactions, obligations, [], []);
               const positive = prof.gross_profit_egp >= 0;
               return (
-                <Card key={project.id}><CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-semibold">{project.name_ar}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{project.start_date}</p>
+                <Card key={project.id}>
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <p className="font-semibold">{project.name_ar}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{project.start_date}</p>
+                      </div>
+                      <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
                     </div>
-                    <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
-                  </div>
-                  <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${positive ? 'bg-success/10' : 'bg-danger/10'}`}>
-                    <TrendingUp className={`h-4 w-4 ${positive ? 'text-success' : 'text-danger'}`} />
-                    <span className={`text-sm font-bold ${positive ? 'text-success' : 'text-danger'}`}>
-                      {formatEgp(prof.gross_profit_egp, true)} EGP
-                    </span>
-                  </div>
-                </CardContent></Card>
+                    <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${positive ? 'bg-success/10' : 'bg-danger/10'}`}>
+                      <TrendingUp className={`h-4 w-4 ${positive ? 'text-success' : 'text-danger'}`} />
+                      <span className={`text-sm font-bold ${positive ? 'text-success' : 'text-danger'}`}>
+                        {formatEgp(prof.gross_profit_egp, true)} EGP
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>

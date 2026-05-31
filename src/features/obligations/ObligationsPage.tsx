@@ -13,11 +13,11 @@ import type { ObligationInput } from './storage';
 import type { Obligation } from '../../core/types/domain';
 
 const STATUS_META: Record<Obligation['status'], { ar: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info'; Icon: typeof Clock }> = {
-  open:        { ar: 'مفتوح',           tone: 'warning' as const, Icon: Clock },
-  partial:     { ar: 'جزئي',            tone: 'info' as const,    Icon: Clock },
-  settled:     { ar: 'مسدد',            tone: 'positive' as const, Icon: CheckCircle2 },
-  disputed:    { ar: 'متنازع',          tone: 'negative' as const,  Icon: AlertCircle },
-  written_off: { ar: 'مشطوب',           tone: 'neutral' as const, Icon: AlertCircle },
+  open:        { ar: 'مفتوح',           tone: 'warning', Icon: Clock },
+  partial:     { ar: 'جزئي',            tone: 'info',    Icon: Clock },
+  settled:     { ar: 'مسدد',            tone: 'positive', Icon: CheckCircle2 },
+  disputed:    { ar: 'متنازع',          tone: 'negative',  Icon: AlertCircle },
+  written_off: { ar: 'مشطوب',           tone: 'neutral', Icon: AlertCircle },
 };
 
 function ObligationForm({
@@ -65,7 +65,6 @@ function ObligationForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Direction */}
       <div className="flex gap-2">
         {(['receivable', 'payable'] as const).map((d) => (
           <button
@@ -121,7 +120,7 @@ function ObligationForm({
       </div>
 
       <div className="flex gap-3 justify-end">
-        <Button type="button" tone="secondary" onClick={onCancel}>إلغاء</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit">حفظ الالتزام</Button>
       </div>
     </form>
@@ -166,11 +165,12 @@ export function ObligationsPage() {
       <PageHeader
         title="الذمم والالتزامات"
         description="يربط كل سجل بالمال والقطاع والطرف والمستند."
-        children={<Button onClick={() => setShowForm(true)}
-      /> التزام جديد</Button>}
-      />
+      >
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4" /> التزام جديد
+        </Button>
+      </PageHeader>
 
-      {/* Summary strip */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'ذمم مدينة (لنا)', value: totalReceivableEgp, color: 'text-success', border: 'border-success/30 bg-success/5' },
@@ -187,18 +187,19 @@ export function ObligationsPage() {
       </div>
 
       {showForm && (
-        <Card><CardContent>
-          <h3 className="mb-4 text-base font-semibold">التزام جديد</h3>
-          <ObligationForm
-            partners={partners}
-            projects={projects}
-            onSubmit={(i) => { createObligation(i); setShowForm(false); }}
-            onCancel={() => setShowForm(false)}
-          />
-        </CardContent></Card>
+        <Card>
+          <CardContent>
+            <h3 className="mb-4 text-base font-semibold">التزام جديد</h3>
+            <ObligationForm
+              partners={partners}
+              projects={projects}
+              onSubmit={(i) => { createObligation(i); setShowForm(false); }}
+              onCancel={() => setShowForm(false)}
+            />
+          </CardContent>
+        </Card>
       )}
 
-      {/* Filter */}
       <div className="flex gap-2">
         {(['all', 'receivable', 'payable'] as const).map((f) => (
           <button
@@ -211,7 +212,6 @@ export function ObligationsPage() {
         ))}
       </div>
 
-      {/* Open obligations */}
       {open.length === 0 && closed.length === 0 ? (
         <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
       ) : (
@@ -237,7 +237,7 @@ export function ObligationsPage() {
                                 {obl.direction === 'receivable' ? 'مدين' : 'دائن'}
                               </Badge>
                               <Badge tone={meta.tone}>{meta.ar}</Badge>
-                              {isOverdue && <Badge variant="danger">متأخر</Badge>}
+                              {isOverdue && <Badge tone="negative">متأخر</Badge>}
                             </div>
                             {getProjectName(obl.project_id) && (
                               <p className="mt-0.5 text-xs text-muted-foreground">{getProjectName(obl.project_id)}</p>
@@ -258,7 +258,6 @@ export function ObligationsPage() {
                           </div>
                         </div>
 
-                        {/* Settle inline */}
                         {settleId === obl.id ? (
                           <div className="mt-3 flex items-center gap-2">
                             <input
@@ -300,7 +299,7 @@ export function ObligationsPage() {
                       <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                       <span className="flex-1 text-sm truncate">{getPartnerName(obl.partner_id)}</span>
                       <span className="text-sm font-medium">{formatEgp(obl.amount_egp)} EGP</span>
-                      <Badge variant="success">مسدد</Badge>
+                      <Badge tone="positive">مسدد</Badge>
                     </div>
                   ))}
                 </div>

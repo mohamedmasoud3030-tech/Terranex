@@ -77,19 +77,22 @@ export function DocumentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="إدارة المستندات"
-        description="كل مشروع هو حاوية الأصول والمعاملات والمستندات والشركاء."
-        children={<Button onClick={() => setShowForm(true)}
-      /> مستند جديد</Button>}
-      />
+        description="جميع العقود والفواتير والمستندات الثبوتية مرتبطة بالمشاريع والمعاملات."
+      >
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4" /> مستند جديد
+        </Button>
+      </PageHeader>
 
       {showForm && (
-        <Card><CardContent>
-          <h3 className="mb-4 text-base font-semibold">مستند جديد</h3>
-          <DocForm onSubmit={d => { createDocument(d); setShowForm(false); }} onCancel={() => setShowForm(false)} />
-        </CardContent></Card>
+        <Card>
+          <CardContent>
+            <h3 className="mb-4 text-base font-semibold">مستند جديد</h3>
+            <DocForm onSubmit={d => { createDocument(d); setShowForm(false); }} onCancel={() => setShowForm(false)} />
+          </CardContent>
+        </Card>
       )}
 
-      {/* Type filter */}
       <div className="flex flex-wrap gap-2">
         <button onClick={() => setFilterType('all')} className={`rounded-full border px-3 py-1 text-xs font-medium transition ${filterType === 'all' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}>الكل</button>
         {Object.entries(TYPE_META).map(([id, m]) => (

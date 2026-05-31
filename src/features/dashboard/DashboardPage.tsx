@@ -28,7 +28,6 @@ export function DashboardPage() {
   const global = computeGlobalSummary(projects, transactions, obligations);
   const isProfit = global.gross_profit_egp >= 0;
 
-  // Overdue obligations
   const today = new Date().toISOString().slice(0, 10);
   const overdue = openObls.filter((o) => o.due_date && o.due_date < today);
   const dueSoon = openObls.filter((o) => o.due_date && o.due_date >= today && o.due_date <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
@@ -36,35 +35,24 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titleKey="dashboard_title"
-        descriptionKey="dashboard_description"
-        actions={
-          <Button onClick={() => router.navigate({ to: '/projects' } as any)}>
-            <Plus className="h-4 w-4" /> مشروع جديد
-          </Button>
-        }
-      />
+        title="أين تقف الشركة ماليًا وتشغيليًا الآن؟"
+        description="مؤشرات موحدة بالجنيه المصري تغطي القطاعات والمشاريع والالتزامات والأصول."
+      >
+        <Button onClick={() => router.navigate({ to: '/projects' } as any)}>
+          <Plus className="h-4 w-4" /> مشروع جديد
+        </Button>
+      </PageHeader>
 
-      {/* Overdue alert */}
       {overdue.length > 0 && (
         <div className="flex items-start gap-3 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3">
           <AlertCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-danger">{overdue.length} التزام متأخر عن الاستحقاق</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              تأكد من مراجعة صفحة الذمم والالتزامات
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">تأكد من مراجعة صفحة الذمم والالتزامات</p>
           </div>
-          <button
-            onClick={() => router.navigate({ to: '/finance/obligations' } as any)}
-            className="ms-auto text-xs text-danger hover:underline flex-shrink-0"
-          >
-            عرض التفاصيل
-          </button>
         </div>
       )}
 
-      {/* Global KPIs */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           { label: 'إجمالي الإيرادات', value: global.total_income_egp, color: 'text-success', Icon: TrendingUp },
@@ -85,7 +73,6 @@ export function DashboardPage() {
         ))}
       </div>
 
-      {/* Sector breakdown */}
       <div>
         <h3 className="mb-3 font-semibold">الأداء بالقطاع</h3>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -131,10 +118,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent projects & obligations side by side */}
       <div className="grid gap-4 lg:grid-cols-2">
-
-        {/* Recent Projects */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -169,7 +153,6 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Open Obligations */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -207,18 +190,19 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'المشاريع', value: projects.length, sub: `${projects.filter(p => p.status === 'active').length} نشط` },
           { label: 'المعاملات', value: transactions.length, sub: `${transactions.filter(t => t.direction === 'income').length} إيراد / ${transactions.filter(t => t.direction === 'expense').length} مصروف` },
           { label: 'الشركاء', value: partners.length, sub: `${openObls.length} التزام مفتوح` },
         ].map((stat) => (
-          <Card key={stat.label}><CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold">{stat.value}</p>
-            <p className="text-sm font-medium mt-1">{stat.label}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{stat.sub}</p>
-          </CardContent></Card>
+          <Card key={stat.label}>
+            <CardContent className="p-4 text-center">
+              <p className="text-3xl font-bold">{stat.value}</p>
+              <p className="text-sm font-medium mt-1">{stat.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.sub}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
