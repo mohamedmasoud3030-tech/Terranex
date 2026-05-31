@@ -40,7 +40,7 @@ export function RealEstatePage() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-3 min-[420px]:grid-cols-3">
         {[
           { label: 'إجمالي الإيرادات', value: summary.total_income_egp, color: 'text-success' },
           { label: 'إجمالي المصروفات', value: summary.total_expense_egp, color: 'text-danger' },
