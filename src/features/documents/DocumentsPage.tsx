@@ -7,6 +7,7 @@ import { EmptyState } from '../../components/ui/States';
 import { confirmSafeDeletion, guardDocumentDeletion } from '../../core/lib/deletionGuards';
 import { useDocuments } from './hooks';
 import type { DocumentInput } from './storage';
+import { useProjects } from '../projects/hooks';
 import type { Document } from '../../core/types/domain';
 
 const TYPE_META: Record<Document['type'], { icon: typeof FileText; color: string; ar: string }> = {
@@ -21,8 +22,13 @@ const TYPE_META: Record<Document['type'], { icon: typeof FileText; color: string
   other:             { icon: FileText,      color: 'text-gray-500',   ar: 'أخرى' },
 };
 
-function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void; onCancel: () => void }) {
+function DocForm({ projects, onSubmit, onCancel }: {
+  projects: ReturnType<typeof useProjects>['projects'];
+  onSubmit: (i: DocumentInput) => void;
+  onCancel: () => void;
+}) {
   const [title_ar, setTitle] = useState('');
+  const [project_id, setProjectId] = useState('');
   const [type, setType] = useState<Document['type']>('contract');
   const [issue_date, setIssueDate] = useState('');
   const [expiry_date, setExpiryDate] = useState('');
@@ -32,7 +38,7 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
   const lc = 'block text-sm font-medium text-foreground mb-1';
 
   return (
-    <form onSubmit={e => { e.preventDefault(); if (title_ar.trim()) { onSubmit({ title_ar, type, issue_date: issue_date || undefined, expiry_date: expiry_date || undefined, notes: notes || undefined }); }}} className="space-y-4">
+    <form onSubmit={e => { e.preventDefault(); if (title_ar.trim()) { onSubmit({ title_ar, project_id: project_id || undefined, type, issue_date: issue_date || undefined, expiry_date: expiry_date || undefined, notes: notes || undefined }); }}} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={lc}>عنوان المستند *</label>
@@ -44,6 +50,13 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
             {Object.entries(TYPE_META).map(([id, m]) => <option key={id} value={id}>{m.ar}</option>)}
           </select>
         </div>
+      </div>
+      <div>
+        <label className={lc}>المشروع المرتبط (اختياري)</label>
+        <select className={ic} value={project_id} onChange={e => setProjectId(e.target.value)}>
+          <option value="">بدون مشروع</option>
+          {projects.map(project => <option key={project.id} value={project.id}>{project.name_ar}</option>)}
+        </select>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -69,8 +82,10 @@ function DocForm({ onSubmit, onCancel }: { onSubmit: (i: DocumentInput) => void;
 
 export function DocumentsPage() {
   const { documents, createDocument, deleteDocument } = useDocuments();
+  const { projects } = useProjects();
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState<Document['type'] | 'all'>('all');
+  const projectNames = new Map(projects.map(project => [project.id, project.name_ar]));
 
   const filtered = filterType === 'all' ? documents : documents.filter(d => d.type === filterType);
 
@@ -99,7 +114,7 @@ export function DocumentsPage() {
         <Card>
           <CardContent>
             <h3 className="mb-4 text-base font-semibold">مستند جديد</h3>
-            <DocForm onSubmit={d => { createDocument(d); setShowForm(false); }} onCancel={() => setShowForm(false)} />
+            <DocForm projects={projects} onSubmit={d => { createDocument(d); setShowForm(false); }} onCancel={() => setShowForm(false)} />
           </CardContent>
         </Card>
       )}
@@ -126,7 +141,7 @@ export function DocumentsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{doc.title_ar}</p>
-                    <p className="text-xs text-muted-foreground">{meta.ar} {doc.issue_date ? `• ${doc.issue_date}` : ''}</p>
+                    <p className="text-xs text-muted-foreground">{meta.ar} {doc.issue_date ? `• ${doc.issue_date}` : ''}{doc.project_id ? ` • ${projectNames.get(doc.project_id) ?? 'مشروع غير معروف'}` : ''}</p>
                   </div>
                   {doc.expiry_date && (
                     <span className="text-xs text-muted-foreground">ينتهي {doc.expiry_date}</span>
