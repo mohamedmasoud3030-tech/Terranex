@@ -55,7 +55,7 @@ export function ProjectsPage() {
         </Card>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {(['all', 'real-estate', 'agriculture', 'livestock'] as const).map((s) => (
           <button
             key={s}
