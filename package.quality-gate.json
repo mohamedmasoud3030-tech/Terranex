@@ -1,7 +1,0 @@
-{
-  "scripts": {
-    "lint": "node scripts/source-check.mjs",
-    "test": "tsc -p tsconfig.test.json && node --test tests/*.test.cjs"
-  },
-  "note": "temporary"
-}
