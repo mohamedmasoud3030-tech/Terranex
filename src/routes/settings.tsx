@@ -5,6 +5,7 @@ import { useI18n } from '../core/i18n';
 import { useTheme, type ThemeMode } from '../core/theme';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Card, CardContent } from '../components/ui/Card';
+import { BackupRestoreSection } from '../features/settings/BackupRestoreSection';
 import type { Locale } from '../core/types';
 
 export const settingsRoute = createRoute({
@@ -130,6 +131,8 @@ function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <BackupRestoreSection locale={locale} />
       </div>
     </>
   );
