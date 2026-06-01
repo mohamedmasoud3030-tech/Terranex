@@ -63,12 +63,12 @@ export const transactionsStore = {
     const normalized = normalizeInput(input);
     const now = new Date().toISOString();
     const tx: Transaction = { ...normalized, id: makeId(), created_at: now, updated_at: now };
-    bindSupportingDocument(tx.document_id!, tx.id);
+    const documentBound = bindSupportingDocument(tx.document_id!, tx.id);
     try {
       store.update((all) => [tx, ...all]);
       return tx;
     } catch (error) {
-      releaseSupportingDocument(tx.document_id!, tx.id);
+      if (documentBound) releaseSupportingDocument(tx.document_id!, tx.id);
       throw error;
     }
   },
@@ -78,13 +78,15 @@ export const transactionsStore = {
     const previousDocumentId = existing.document_id!;
     const nextDocumentId = normalized.document_id!;
     const documentChanged = previousDocumentId !== nextDocumentId;
+    let nextDocumentBound = false;
+    let previousDocumentReleased = false;
 
     if (documentChanged) {
-      bindSupportingDocument(nextDocumentId, id);
+      nextDocumentBound = bindSupportingDocument(nextDocumentId, id);
       try {
-        releaseSupportingDocument(previousDocumentId, id);
+        previousDocumentReleased = releaseSupportingDocument(previousDocumentId, id);
       } catch (error) {
-        releaseSupportingDocument(nextDocumentId, id);
+        if (nextDocumentBound) releaseSupportingDocument(nextDocumentId, id);
         throw error;
       }
     }
@@ -95,8 +97,8 @@ export const transactionsStore = {
         : transaction));
     } catch (error) {
       if (documentChanged) {
-        bindSupportingDocument(previousDocumentId, id);
-        releaseSupportingDocument(nextDocumentId, id);
+        if (previousDocumentReleased) bindSupportingDocument(previousDocumentId, id);
+        if (nextDocumentBound) releaseSupportingDocument(nextDocumentId, id);
       }
       throw error;
     }
@@ -106,11 +108,11 @@ export const transactionsStore = {
     const guard = guardTransactionDeletion(id);
     if (!guard.canDelete) throw new Error(guard.message_ar);
 
-    releaseSupportingDocument(existing.document_id!, id);
+    const documentReleased = releaseSupportingDocument(existing.document_id!, id);
     try {
       store.update((all) => all.filter((transaction) => transaction.id !== id));
     } catch (error) {
-      bindSupportingDocument(existing.document_id!, id);
+      if (documentReleased) bindSupportingDocument(existing.document_id!, id);
       throw error;
     }
   },
