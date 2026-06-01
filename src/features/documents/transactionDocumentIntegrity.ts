@@ -15,7 +15,7 @@ export function bindSupportingDocument(documentId: string, transactionId: string
 }
 
 export function releaseSupportingDocument(documentId: string, transactionId: string) {
-  const document = requireDocument(documentId);
-  if (document.transaction_id !== transactionId) return;
+  const document = documentsStore.getAll().find((item) => item.id === documentId);
+  if (!document || document.transaction_id !== transactionId) return;
   documentsStore.update(documentId, { transaction_id: undefined });
 }
