@@ -75,6 +75,18 @@ async function computeSha256(blob: Blob): Promise<string | undefined> {
   }
 }
 
+async function putDocumentFile(record: StoredDocumentFile): Promise<void> {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(DOCUMENT_FILES_STORE, 'readwrite');
+    const completed = waitForTransaction(transaction);
+    transaction.objectStore(DOCUMENT_FILES_STORE).put(record);
+    await completed;
+  } finally {
+    database.close();
+  }
+}
+
 export function makeLocalDocumentFileUrl(documentId: string) {
   return `${LOCAL_FILE_URL_PREFIX}${encodeURIComponent(documentId)}`;
 }
@@ -112,16 +124,12 @@ export async function saveDocumentFile(documentId: string, file: File): Promise<
     blob: file,
   };
 
-  const database = await openDatabase();
-  try {
-    const transaction = database.transaction(DOCUMENT_FILES_STORE, 'readwrite');
-    const completed = waitForTransaction(transaction);
-    transaction.objectStore(DOCUMENT_FILES_STORE).put(record);
-    await completed;
-    return record;
-  } finally {
-    database.close();
-  }
+  await putDocumentFile(record);
+  return record;
+}
+
+export async function restoreDocumentFile(record: StoredDocumentFile): Promise<void> {
+  await putDocumentFile(record);
 }
 
 export async function getDocumentFile(fileUrl: string): Promise<StoredDocumentFile | undefined> {
