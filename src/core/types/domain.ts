@@ -241,6 +241,9 @@ export interface Document {
   title_en?: string;
   file_url?: string;
   file_name?: string;
+  file_mime_type?: string;
+  file_size_bytes?: number;
+  file_sha256?: string;
   issue_date?: string;
   expiry_date?: string;
   notes?: string;
