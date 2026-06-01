@@ -3,6 +3,7 @@ import type { Document, Partner, Project, Transaction } from '../types/domain';
 const PROJECTS_KEY = 'terranex.projects.v1';
 const PARTNERS_KEY = 'terranex.partners.v1';
 const DOCUMENTS_KEY = 'terranex.documents.v1';
+const TRANSACTIONS_KEY = 'terranex.transactions.v2';
 
 function readArray<T>(key: string, label: string): T[] {
   if (typeof localStorage === 'undefined') {
@@ -54,6 +55,12 @@ export function validateTransactionReferences(
   }
   if (document.transaction_id && document.transaction_id !== transactionId) {
     throw new Error('الوثيقة الداعمة مرتبطة بمعاملة أخرى بالفعل.');
+  }
+
+  const conflictingTransaction = readArray<Transaction>(TRANSACTIONS_KEY, 'المعاملات')
+    .find((transaction) => transaction.document_id === documentId && transaction.id !== transactionId);
+  if (conflictingTransaction) {
+    throw new Error('الوثيقة الداعمة مستخدمة في معاملة أخرى بالفعل.');
   }
 
   return { project, partner, document };
