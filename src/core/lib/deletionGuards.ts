@@ -110,6 +110,15 @@ export function guardDocumentDeletion(documentId: string): DeletionGuardResult {
   ], 'المستند', [transactions, obligations, events]);
 }
 
+export function guardTransactionDeletion(transactionId: string): DeletionGuardResult {
+  const obligations = readArray<Obligation>(OBLIGATIONS_KEY);
+  const events = readArray<OperationalEvent>(OPERATIONAL_EVENTS_KEY);
+  return result([
+    blockIf(obligations.value.filter((item) => item.source_transaction_id === transactionId).length, 'التزامات'),
+    blockIf(events.value.filter((item) => item.linked_transaction_id === transactionId).length, 'أحداث تشغيلية'),
+  ], 'المعاملة', [obligations, events]);
+}
+
 export function confirmSafeDeletion(message: string) {
   if (typeof window === 'undefined') return false;
   return window.confirm(`${message}\n\nهل تريد المتابعة؟`);

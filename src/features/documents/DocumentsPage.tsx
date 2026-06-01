@@ -9,6 +9,7 @@ import { validateDocumentUpload } from '../../core/lib/documentFileValidation';
 import { deleteDocumentFile, getDocumentFile, makeLocalDocumentFileUrl, saveDocumentFile } from '../../core/storage/indexedDbFileStore';
 import { usePartners } from '../partners/hooks';
 import { useProjects } from '../projects/hooks';
+import { deleteLocalDocumentSafely } from './localDocumentDeletion';
 import { useDocuments } from './hooks';
 import type { DocumentInput } from './storage';
 import type { Document } from '../../core/types/domain';
@@ -227,16 +228,9 @@ export function DocumentsPage() {
     }
     if (!confirmSafeDeletion(guard.message_ar)) return;
     try {
-      deleteDocument(document.id);
+      await deleteLocalDocumentSafely(document);
     } catch (error) {
       window.alert(messageFrom(error));
-      return;
-    }
-    if (!document.file_url) return;
-    try {
-      await deleteDocumentFile(document.file_url);
-    } catch {
-      window.alert('تم حذف سجل المستند، لكن تعذر حذف نسخة الملف المحلية من هذا الجهاز.');
     }
   }
 

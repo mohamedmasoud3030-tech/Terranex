@@ -1,6 +1,9 @@
+import { guardTransactionDeletion } from '../../core/lib/deletionGuards';
+import { validateTransactionReferences } from '../../core/lib/referenceValidation';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
 import type { Transaction } from '../../core/types/domain';
+import { bindSupportingDocument, releaseSupportingDocument } from '../documents/transactionDocumentIntegrity';
 
 const KEY = 'terranex.transactions.v2';
 
@@ -23,10 +26,8 @@ const store = createLocalStorageStore<Transaction[]>(KEY, [], parse);
 
 export type TransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
 
-function normalizeInput(input: TransactionInput): TransactionInput {
-  if (!input.project_id.trim()) throw new Error('يجب اختيار مشروع صالح للمعاملة.');
-  if (!input.partner_id?.trim()) throw new Error('يجب ربط المعاملة بطرف أو شريك.');
-  if (!input.document_id?.trim()) throw new Error('يجب ربط المعاملة بوثيقة داعمة.');
+function normalizeInput(input: TransactionInput, transactionId?: string): TransactionInput {
+  validateTransactionReferences(input, transactionId);
   if (!isFiniteNumber(input.amount) || input.amount <= 0) {
     throw new Error('قيمة المعاملة يجب أن تكون رقماً صالحاً أكبر من صفر.');
   }
@@ -39,9 +40,18 @@ function normalizeInput(input: TransactionInput): TransactionInput {
 
   return {
     ...input,
+    project_id: input.project_id.trim(),
+    partner_id: input.partner_id?.trim(),
+    document_id: input.document_id?.trim(),
     fx_rate: fxRate,
     amount_egp: input.amount * fxRate,
   };
+}
+
+function requireTransaction(id: string) {
+  const transaction = store.get().find((item) => item.id === id);
+  if (!transaction) throw new Error('المعاملة المطلوبة غير موجودة.');
+  return transaction;
 }
 
 export const transactionsStore = {
@@ -50,21 +60,61 @@ export const transactionsStore = {
   getByAsset: (assetId: string) => store.get().filter((t) => t.asset_id === assetId),
   getByPartner: (partnerId: string) => store.get().filter((t) => t.partner_id === partnerId),
   create: (input: TransactionInput): Transaction => {
+    const normalized = normalizeInput(input);
     const now = new Date().toISOString();
-    const tx: Transaction = { ...normalizeInput(input), id: makeId(), created_at: now, updated_at: now };
-    store.update((all) => [tx, ...all]);
-    return tx;
+    const tx: Transaction = { ...normalized, id: makeId(), created_at: now, updated_at: now };
+    const documentBound = bindSupportingDocument(tx.document_id!, tx.id);
+    try {
+      store.update((all) => [tx, ...all]);
+      return tx;
+    } catch (error) {
+      if (documentBound) releaseSupportingDocument(tx.document_id!, tx.id);
+      throw error;
+    }
   },
   update: (id: string, input: Partial<TransactionInput>): void => {
-    store.update((all) =>
-      all.map((t) => {
-        if (t.id !== id) return t;
-        return { ...t, ...normalizeInput({ ...t, ...input }), updated_at: new Date().toISOString() };
-      }),
-    );
+    const existing = requireTransaction(id);
+    const normalized = normalizeInput({ ...existing, ...input }, id);
+    const previousDocumentId = existing.document_id!;
+    const nextDocumentId = normalized.document_id!;
+    const documentChanged = previousDocumentId !== nextDocumentId;
+    let nextDocumentBound = false;
+    let previousDocumentReleased = false;
+
+    if (documentChanged) {
+      nextDocumentBound = bindSupportingDocument(nextDocumentId, id);
+      try {
+        previousDocumentReleased = releaseSupportingDocument(previousDocumentId, id);
+      } catch (error) {
+        if (nextDocumentBound) releaseSupportingDocument(nextDocumentId, id);
+        throw error;
+      }
+    }
+
+    try {
+      store.update((all) => all.map((transaction) => transaction.id === id
+        ? { ...transaction, ...normalized, updated_at: new Date().toISOString() }
+        : transaction));
+    } catch (error) {
+      if (documentChanged) {
+        if (previousDocumentReleased) bindSupportingDocument(previousDocumentId, id);
+        if (nextDocumentBound) releaseSupportingDocument(nextDocumentId, id);
+      }
+      throw error;
+    }
   },
   remove: (id: string): void => {
-    store.update((all) => all.filter((t) => t.id !== id));
+    const existing = requireTransaction(id);
+    const guard = guardTransactionDeletion(id);
+    if (!guard.canDelete) throw new Error(guard.message_ar);
+
+    const documentReleased = releaseSupportingDocument(existing.document_id!, id);
+    try {
+      store.update((all) => all.filter((transaction) => transaction.id !== id));
+    } catch (error) {
+      if (documentReleased) bindSupportingDocument(existing.document_id!, id);
+      throw error;
+    }
   },
   subscribe: store.subscribe,
   reset: store.reset,
