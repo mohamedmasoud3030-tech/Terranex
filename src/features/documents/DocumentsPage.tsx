@@ -5,10 +5,10 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/States';
 import { confirmSafeDeletion, guardDocumentDeletion } from '../../core/lib/deletionGuards';
+import { validateDocumentUpload } from '../../core/lib/documentFileValidation';
 import { deleteDocumentFile, getDocumentFile, makeLocalDocumentFileUrl, saveDocumentFile } from '../../core/storage/indexedDbFileStore';
 import { usePartners } from '../partners/hooks';
 import { useProjects } from '../projects/hooks';
-import { validateDocumentUpload } from './documentFileValidation';
 import { useDocuments } from './hooks';
 import type { DocumentInput } from './storage';
 import type { Document } from '../../core/types/domain';
@@ -164,6 +164,19 @@ export function DocumentsPage() {
 
   const filtered = filterType === 'all' ? documents : documents.filter(document => document.type === filterType);
 
+  async function rollbackCreatedDocument(document: Document) {
+    try {
+      await deleteDocumentFile(makeLocalDocumentFileUrl(document.id));
+    } catch {
+      // Keep the original upload failure visible to the user.
+    }
+    try {
+      deleteDocument(document.id);
+    } catch {
+      // Keep the original upload failure visible to the user.
+    }
+  }
+
   async function handleCreateDocument({ input, file }: DocumentDraft) {
     const document = createDocument(input);
     try {
@@ -177,7 +190,7 @@ export function DocumentsPage() {
       });
       setShowForm(false);
     } catch (error) {
-      deleteDocument(document.id);
+      await rollbackCreatedDocument(document);
       throw error;
     }
   }
@@ -214,10 +227,16 @@ export function DocumentsPage() {
     }
     if (!confirmSafeDeletion(guard.message_ar)) return;
     try {
-      if (document.file_url) await deleteDocumentFile(document.file_url);
       deleteDocument(document.id);
     } catch (error) {
       window.alert(messageFrom(error));
+      return;
+    }
+    if (!document.file_url) return;
+    try {
+      await deleteDocumentFile(document.file_url);
+    } catch {
+      window.alert('تم حذف سجل المستند، لكن تعذر حذف نسخة الملف المحلية من هذا الجهاز.');
     }
   }
 
