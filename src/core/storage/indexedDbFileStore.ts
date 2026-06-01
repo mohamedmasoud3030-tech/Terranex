@@ -5,12 +5,17 @@ const LOCAL_FILE_URL_PREFIX = 'indexeddb://document-files/';
 
 export interface StoredDocumentFile {
   id: string;
+  document_id: string;
   file_name: string;
   original_file_name: string;
   mime_type: string;
   size_bytes: number;
-  uploaded_at: string;
+  created_at: string;
+  updated_at: string;
   sha256?: string;
+  storage_mode: 'indexeddb';
+  version: number;
+  archived: boolean;
   blob: Blob;
 }
 
@@ -87,14 +92,20 @@ export async function saveDocumentFile(documentId: string, file: File): Promise<
   const id = documentId.trim();
   if (!id) throw new Error('معرّف المستند مطلوب لحفظ الملف.');
 
+  const now = new Date().toISOString();
   const record: StoredDocumentFile = {
     id,
+    document_id: id,
     file_name: `${id}${getExtension(file.name)}`,
     original_file_name: file.name,
     mime_type: file.type,
     size_bytes: file.size,
-    uploaded_at: new Date().toISOString(),
+    created_at: now,
+    updated_at: now,
     sha256: await computeSha256(file),
+    storage_mode: 'indexeddb',
+    version: 1,
+    archived: false,
     blob: file,
   };
 
