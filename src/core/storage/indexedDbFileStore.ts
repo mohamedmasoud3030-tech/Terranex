@@ -1,3 +1,5 @@
+import { validateDocumentUpload } from '../lib/documentFileValidation';
+
 const DATABASE_NAME = 'terranex.local-files';
 const DATABASE_VERSION = 1;
 const DOCUMENT_FILES_STORE = 'document-files';
@@ -91,6 +93,7 @@ export function readLocalDocumentFileId(fileUrl?: string) {
 export async function saveDocumentFile(documentId: string, file: File): Promise<StoredDocumentFile> {
   const id = documentId.trim();
   if (!id) throw new Error('معرّف المستند مطلوب لحفظ الملف.');
+  validateDocumentUpload(file);
 
   const now = new Date().toISOString();
   const record: StoredDocumentFile = {
