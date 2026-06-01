@@ -15,11 +15,13 @@
     "src/core/lib/validation.ts",
     "src/core/lib/deletionGuards.ts",
     "src/core/lib/documentFileValidation.ts",
+    "src/core/lib/referenceValidation.ts",
     "src/core/storage/localStorageStore.ts",
     "src/core/storage/migrations.ts",
     "src/core/storage/backup.ts",
     "src/core/storage/indexedDbFileStore.ts",
     "src/features/documents/storage.ts",
+    "src/features/documents/transactionDocumentIntegrity.ts",
     "src/features/obligations/storage.ts",
     "src/features/transactions/storage.ts"
   ]
