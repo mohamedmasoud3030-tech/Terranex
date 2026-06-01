@@ -1,3 +1,4 @@
+import { guardTransactionDeletion } from '../../core/lib/deletionGuards';
 import { validateTransactionReferences } from '../../core/lib/referenceValidation';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
@@ -78,19 +79,33 @@ export const transactionsStore = {
     const nextDocumentId = normalized.document_id!;
     const documentChanged = previousDocumentId !== nextDocumentId;
 
-    if (documentChanged) bindSupportingDocument(nextDocumentId, id);
+    if (documentChanged) {
+      bindSupportingDocument(nextDocumentId, id);
+      try {
+        releaseSupportingDocument(previousDocumentId, id);
+      } catch (error) {
+        releaseSupportingDocument(nextDocumentId, id);
+        throw error;
+      }
+    }
+
     try {
       store.update((all) => all.map((transaction) => transaction.id === id
         ? { ...transaction, ...normalized, updated_at: new Date().toISOString() }
         : transaction));
     } catch (error) {
-      if (documentChanged) releaseSupportingDocument(nextDocumentId, id);
+      if (documentChanged) {
+        bindSupportingDocument(previousDocumentId, id);
+        releaseSupportingDocument(nextDocumentId, id);
+      }
       throw error;
     }
-    if (documentChanged) releaseSupportingDocument(previousDocumentId, id);
   },
   remove: (id: string): void => {
     const existing = requireTransaction(id);
+    const guard = guardTransactionDeletion(id);
+    if (!guard.canDelete) throw new Error(guard.message_ar);
+
     releaseSupportingDocument(existing.document_id!, id);
     try {
       store.update((all) => all.filter((transaction) => transaction.id !== id));
