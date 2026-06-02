@@ -1,15 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-class MemoryStorage {
-  constructor() { this.values = new Map(); }
-  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
-  setItem(key, value) { this.values.set(key, String(value)); }
-  removeItem(key) { this.values.delete(key); }
-  clear() { this.values.clear(); }
+function createMemoryStorage() {
+  const values = new Map();
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+    clear: () => values.clear(),
+  };
 }
 
-global.localStorage = new MemoryStorage();
+global.localStorage = createMemoryStorage();
 const { obligationsStore } = require('./.compiled/features/obligations/storage.js');
 const { transactionsStore } = require('./.compiled/features/transactions/storage.js');
 const {
@@ -23,7 +25,17 @@ const DOCUMENTS_KEY = 'terranex.documents.v1';
 const OBLIGATIONS_KEY = 'terranex.obligations.v1';
 const EVENTS_KEY = 'terranex.operationalEvents.v1';
 
-function read(key) { return JSON.parse(global.localStorage.getItem(key) || '[]'); }
+const EMPTY_LIST = '[]';
+const WORKSPACE_SEED = {
+  [PROJECTS_KEY]: [{ id: 'project-1', name_ar: 'مشروع أول' }],
+  [PARTNERS_KEY]: [{ id: 'partner-1', name_ar: 'طرف أول' }],
+  [DOCUMENTS_KEY]: [
+    { id: 'document-1', project_id: 'project-1', type: 'invoice', title_ar: 'فاتورة أولى', created_at: '2026-01-01T00:00:00.000Z' },
+    { id: 'document-2', project_id: 'project-1', type: 'invoice', title_ar: 'فاتورة معدلة', created_at: '2026-01-02T00:00:00.000Z' },
+  ],
+};
+
+function read(key) { return JSON.parse(global.localStorage.getItem(key) || EMPTY_LIST); }
 function documentById(id) { return read(DOCUMENTS_KEY).find((document) => document.id === id); }
 function obligationByTransactionId(id) { return read(OBLIGATIONS_KEY).find((obligation) => obligation.source_transaction_id === id); }
 function input(overrides = {}) {
@@ -35,14 +47,11 @@ function input(overrides = {}) {
 }
 function resetWorkspace() {
   global.localStorage.clear();
-  global.localStorage.setItem(PROJECTS_KEY, JSON.stringify([{ id: 'project-1', name_ar: 'مشروع أول' }]));
-  global.localStorage.setItem(PARTNERS_KEY, JSON.stringify([{ id: 'partner-1', name_ar: 'طرف أول' }]));
-  global.localStorage.setItem(DOCUMENTS_KEY, JSON.stringify([
-    { id: 'document-1', project_id: 'project-1', type: 'invoice', title_ar: 'فاتورة أولى', created_at: '2026-01-01T00:00:00.000Z' },
-    { id: 'document-2', project_id: 'project-1', type: 'invoice', title_ar: 'فاتورة معدلة', created_at: '2026-01-02T00:00:00.000Z' },
-  ]));
-  global.localStorage.setItem(OBLIGATIONS_KEY, '[]');
-  global.localStorage.setItem(EVENTS_KEY, '[]');
+  for (const [key, value] of Object.entries(WORKSPACE_SEED)) {
+    global.localStorage.setItem(key, JSON.stringify(value));
+  }
+  global.localStorage.setItem(OBLIGATIONS_KEY, EMPTY_LIST);
+  global.localStorage.setItem(EVENTS_KEY, EMPTY_LIST);
   transactionsStore.reset();
   obligationsStore.reset();
 }
