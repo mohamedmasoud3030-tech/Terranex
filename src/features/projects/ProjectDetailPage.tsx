@@ -12,10 +12,9 @@ import { useDocuments } from '../documents/hooks';
 import { useObligations } from '../obligations/hooks';
 import { usePartners } from '../partners/hooks';
 import { projectPartnersStore } from '../partners/storage';
+import type { DeferredExpenseTransactionInput } from '../transactions/deferredExpenseWorkflow';
 import { useTransactions } from '../transactions/hooks';
 import { TransactionForm } from '../transactions/TransactionForm';
-import type { TransactionInput } from '../transactions/storage';
-import { transactionsStore } from '../transactions/storage';
 import { useProject, useProjects } from './hooks';
 import { ProjectForm } from './ProjectForm';
 import type { ProjectInput } from './storage';
@@ -31,7 +30,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const router = useRouter();
   const project = useProject(projectId);
   const { updateProject, deleteProject } = useProjects();
-  const { transactions } = useTransactions(projectId);
+  const { transactions, createTransaction } = useTransactions(projectId);
   const { obligations } = useObligations(projectId);
   const { assets } = useAssets(projectId);
   const { documents } = useDocuments(projectId);
@@ -63,8 +62,8 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const isProfit = profitability.gross_profit_egp >= 0;
   const partnerName = new Map(partners.map((partner) => [partner.id, partner.name_ar]));
 
-  function handleAddTransaction(input: TransactionInput) {
-    transactionsStore.create(input);
+  function handleAddTransaction(input: DeferredExpenseTransactionInput) {
+    createTransaction(input);
     setShowTxForm(false);
   }
 
@@ -215,7 +214,7 @@ function FormulaRow({ label, value, tone, negative, strong }: { label: string; v
   return <div className={`flex flex-col gap-1 rounded-xl border border-border px-3 py-2.5 min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between ${strong ? 'bg-muted/40' : ''}`}><span className="text-sm text-muted-foreground">{label}</span><span className={`text-sm font-bold ${tone}`}>{negative ? '− ' : ''}{formatEgp(Math.abs(value))} EGP</span></div>;
 }
 
-function TransactionsTab({ projectId, transactions, showTxForm, setShowTxForm, onAdd }: { projectId: string; transactions: ReturnType<typeof useTransactions>['transactions']; showTxForm: boolean; setShowTxForm: (show: boolean) => void; onAdd: (input: TransactionInput) => void }) {
+function TransactionsTab({ projectId, transactions, showTxForm, setShowTxForm, onAdd }: { projectId: string; transactions: ReturnType<typeof useTransactions>['transactions']; showTxForm: boolean; setShowTxForm: (show: boolean) => void; onAdd: (input: DeferredExpenseTransactionInput) => void }) {
   return <div className="space-y-4"><div className="flex flex-col gap-2 min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between"><h3 className="font-semibold">سجل المعاملات</h3><Button size="sm" onClick={() => setShowTxForm(true)}><Plus className="h-4 w-4" /> معاملة جديدة</Button></div>{showTxForm && <Card><CardContent><TransactionForm projectId={projectId} onSubmit={onAdd} onCancel={() => setShowTxForm(false)} /></CardContent></Card>}{transactions.length === 0 ? <EmptyState title="لا توجد معاملات بعد" description="كل مؤشرات الربحية ستظل صفراً حتى تُسجل معاملات فعلية." /> : <Card><div className="divide-y divide-border">{transactions.map((tx) => <div key={tx.id} className="flex flex-col gap-2 px-4 py-3 min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between"><div className="min-w-0"><p className="truncate text-sm font-medium">{tx.description || CATEGORY_LABELS[tx.category] || tx.category}</p><p className="text-xs text-muted-foreground">{tx.transaction_date}</p></div><p className={`text-sm font-bold ${tx.direction === 'income' ? 'text-success' : 'text-danger'}`}>{tx.direction === 'income' ? '+' : '−'}{formatEgp(tx.amount_egp)} EGP</p></div>)}</div></Card>}</div>;
 }
 
