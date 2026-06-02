@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createTransactionWithOptionalPayable, updateTransactionWithLinkedPayable, type DeferredExpenseTransactionInput } from './deferredExpenseWorkflow';
 import { transactionsStore, type TransactionInput } from './storage';
 import type { Transaction } from '../../core/types/domain';
 
@@ -13,8 +14,8 @@ export function useTransactions(projectId?: string) {
     ), [projectId],
   );
 
-  const createTransaction = useCallback((input: TransactionInput) => transactionsStore.create(input), []);
-  const updateTransaction = useCallback((id: string, input: Partial<TransactionInput>) => transactionsStore.update(id, input), []);
+  const createTransaction = useCallback((input: DeferredExpenseTransactionInput) => createTransactionWithOptionalPayable(input), []);
+  const updateTransaction = useCallback((id: string, input: Partial<TransactionInput>) => updateTransactionWithLinkedPayable(id, input), []);
   const deleteTransaction = useCallback((id: string) => transactionsStore.remove(id), []);
 
   const totalIncomeEgp = transactions.filter((t) => t.direction === 'income').reduce((s, t) => s + t.amount_egp, 0);
