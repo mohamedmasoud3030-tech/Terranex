@@ -26,7 +26,7 @@ const store = createLocalStorageStore<Transaction[]>(KEY, [], parse);
 
 export type TransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
 
-function toInput(transaction: Transaction): TransactionInput {
+export function toTransactionInput(transaction: Transaction): TransactionInput {
   const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...input } = transaction;
   return input;
 }
@@ -61,7 +61,7 @@ function requireTransaction(id: string) {
 
 function buildUpdatedTransaction(id: string, input: Partial<TransactionInput>): Transaction {
   const existing = requireTransaction(id);
-  const normalized = normalizeInput({ ...toInput(existing), ...input }, id);
+  const normalized = normalizeInput({ ...toTransactionInput(existing), ...input }, id);
   return { ...existing, ...normalized, updated_at: new Date().toISOString() };
 }
 
