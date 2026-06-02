@@ -4,7 +4,6 @@ import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
 import type { Transaction } from '../../core/types/domain';
 import { bindSupportingDocument, releaseSupportingDocument } from '../documents/transactionDocumentIntegrity';
-import { obligationsStore } from '../obligations/storage';
 
 const KEY = 'terranex.transactions.v2';
 
@@ -55,76 +54,26 @@ function normalizeInput(input: TransactionInput, transactionId?: string): Persis
   };
 }
 
-function validatePayableExpenseRequest(input: TransactionInput, normalized: PersistedTransactionInput) {
-  if (!input.create_payable_obligation) return;
-  if (normalized.direction !== 'expense') {
-    throw new Error('لا يمكن إنشاء ذمة دائنة تلقائياً إلا من معاملة مصروف.');
-  }
-  if (!input.payable_due_date?.trim()) {
-    throw new Error('تاريخ استحقاق الذمة الدائنة مطلوب للمصروف الآجل.');
-  }
-}
-
-function rollbackPayableExpense(transaction: Transaction, documentBound: boolean) {
-  const rollbackErrors: unknown[] = [];
-
-  for (const obligation of obligationsStore.getAll().filter((item) => item.source_transaction_id === transaction.id)) {
-    try {
-      obligationsStore.remove(obligation.id);
-    } catch (error) {
-      rollbackErrors.push(error);
-    }
-  }
-
-  try {
-    store.update((all) => all.filter((item) => item.id !== transaction.id));
-  } catch (error) {
-    rollbackErrors.push(error);
-  }
-
-  if (documentBound) {
-    try {
-      releaseSupportingDocument(transaction.document_id!, transaction.id);
-    } catch (error) {
-      rollbackErrors.push(error);
-    }
-  }
-
-  if (rollbackErrors.length > 0) {
-    throw new Error('تعذر إنشاء الذمة الدائنة وتعذر التراجع الكامل عن قيد المصروف. راجع البيانات المحلية فوراً.');
-  }
-}
-
-function createPayableObligation(transaction: Transaction, dueDate: string) {
-  return obligationsStore.create({
-    project_id: transaction.project_id,
-    partner_id: transaction.partner_id!,
-    direction: 'payable',
-    amount: transaction.amount,
-    currency: transaction.currency,
-    amount_egp: transaction.amount_egp,
-    due_date: dueDate,
-    status: 'open',
-    source_transaction_id: transaction.id,
-    document_id: transaction.document_id,
-    notes: transaction.notes,
-  });
-}
-
 function requireTransaction(id: string) {
   const transaction = store.get().find((item) => item.id === id);
   if (!transaction) throw new Error('المعاملة المطلوبة غير موجودة.');
   return transaction;
 }
 
+function buildUpdatedTransaction(id: string, input: Partial<TransactionInput>): Transaction {
+  const existing = requireTransaction(id);
+  const normalized = normalizeInput({ ...existing, ...input }, id);
+  return { ...existing, ...normalized, updated_at: new Date().toISOString() };
+}
+
 export const transactionsStore = {
   getAll: () => store.get(),
+  getById: (id: string) => store.get().find((item) => item.id === id),
   getByProject: (projectId: string) => store.get().filter((t) => t.project_id === projectId),
   getByAsset: (assetId: string) => store.get().filter((t) => t.asset_id === assetId),
   getByPartner: (partnerId: string) => store.get().filter((t) => t.partner_id === partnerId),
   create: (input: TransactionInput): Transaction => {
     const normalized = normalizeInput(input);
-    validatePayableExpenseRequest(input, normalized);
     const now = new Date().toISOString();
     const tx: Transaction = { ...normalized, id: makeId(), created_at: now, updated_at: now };
     const documentBound = bindSupportingDocument(tx.document_id!, tx.id);
@@ -134,22 +83,14 @@ export const transactionsStore = {
       if (documentBound) releaseSupportingDocument(tx.document_id!, tx.id);
       throw error;
     }
-
-    if (!input.create_payable_obligation) return tx;
-
-    try {
-      createPayableObligation(tx, input.payable_due_date!.trim());
-      return tx;
-    } catch (error) {
-      rollbackPayableExpense(tx, documentBound);
-      throw error;
-    }
+    return tx;
   },
-  update: (id: string, input: Partial<TransactionInput>): void => {
+  previewUpdate: (id: string, input: Partial<TransactionInput>): Transaction => buildUpdatedTransaction(id, input),
+  update: (id: string, input: Partial<TransactionInput>): Transaction => {
     const existing = requireTransaction(id);
-    const normalized = normalizeInput({ ...existing, ...input }, id);
+    const nextTransaction = buildUpdatedTransaction(id, input);
     const previousDocumentId = existing.document_id!;
-    const nextDocumentId = normalized.document_id!;
+    const nextDocumentId = nextTransaction.document_id!;
     const documentChanged = previousDocumentId !== nextDocumentId;
     let nextDocumentBound = false;
     let previousDocumentReleased = false;
@@ -165,9 +106,8 @@ export const transactionsStore = {
     }
 
     try {
-      store.update((all) => all.map((transaction) => transaction.id === id
-        ? { ...transaction, ...normalized, updated_at: new Date().toISOString() }
-        : transaction));
+      store.update((all) => all.map((transaction) => transaction.id === id ? nextTransaction : transaction));
+      return nextTransaction;
     } catch (error) {
       if (documentChanged) {
         if (previousDocumentReleased) bindSupportingDocument(previousDocumentId, id);
