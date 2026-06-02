@@ -27,12 +27,24 @@ function getLinkedPayable(transactionId: string): Obligation | undefined {
   return linkedPayables[0];
 }
 
+function buildPayableFields(transaction: Transaction) {
+  if (!transaction.partner_id) {
+    throw new Error('يجب أن تظل معاملة المصروف الآجل مرتبطة بطرف أو شريك.');
+  }
+  return {
+    project_id: transaction.project_id,
+    partner_id: transaction.partner_id,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    amount_egp: transaction.amount_egp,
+    document_id: transaction.document_id,
+    notes: transaction.notes,
+  };
+}
+
 function buildPayableUpdate(transaction: Transaction, payable: Obligation) {
   if (transaction.direction !== 'expense') {
     throw new Error('لا يمكن تحويل معاملة مرتبطة بذمة دائنة إلى إيراد.');
-  }
-  if (!transaction.partner_id) {
-    throw new Error('يجب أن تظل معاملة المصروف الآجل مرتبطة بطرف أو شريك.');
   }
   if (payable.amount_settled_egp > transaction.amount_egp) {
     throw new Error('لا يمكن تخفيض قيمة المصروف الآجل عن المبلغ المسدد بالفعل.');
@@ -47,16 +59,7 @@ function buildPayableUpdate(transaction: Transaction, payable: Obligation) {
       ? 'settled'
       : 'partial';
 
-  return {
-    project_id: transaction.project_id,
-    partner_id: transaction.partner_id,
-    amount: transaction.amount,
-    currency: transaction.currency,
-    amount_egp: transaction.amount_egp,
-    document_id: transaction.document_id,
-    notes: transaction.notes,
-    status,
-  };
+  return { ...buildPayableFields(transaction), status };
 }
 
 function rollbackTransaction(transaction: Transaction) {
@@ -76,17 +79,11 @@ export function createTransactionWithOptionalPayable(input: DeferredExpenseTrans
 
   try {
     obligationsStore.create({
-      project_id: transaction.project_id,
-      partner_id: transaction.partner_id!,
+      ...buildPayableFields(transaction),
       direction: 'payable',
-      amount: transaction.amount,
-      currency: transaction.currency,
-      amount_egp: transaction.amount_egp,
       due_date: payable_due_date!.trim(),
       status: 'open',
       source_transaction_id: transaction.id,
-      document_id: transaction.document_id,
-      notes: transaction.notes,
     });
     return transaction;
   } catch (error) {
