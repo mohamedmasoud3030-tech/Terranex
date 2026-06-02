@@ -24,33 +24,32 @@ function makeId() {
 
 const store = createLocalStorageStore<Transaction[]>(KEY, [], parse);
 
-type PersistedTransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
+export type TransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
 
-export type TransactionInput = PersistedTransactionInput & {
-  create_payable_obligation?: boolean;
-  payable_due_date?: string;
-};
+function toInput(transaction: Transaction): TransactionInput {
+  const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...input } = transaction;
+  return input;
+}
 
-function normalizeInput(input: TransactionInput, transactionId?: string): PersistedTransactionInput {
-  const { create_payable_obligation: _createPayable, payable_due_date: _payableDueDate, ...transactionInput } = input;
-  validateTransactionReferences(transactionInput, transactionId);
-  if (!isFiniteNumber(transactionInput.amount) || transactionInput.amount <= 0) {
+function normalizeInput(input: TransactionInput, transactionId?: string): TransactionInput {
+  validateTransactionReferences(input, transactionId);
+  if (!isFiniteNumber(input.amount) || input.amount <= 0) {
     throw new Error('قيمة المعاملة يجب أن تكون رقماً صالحاً أكبر من صفر.');
   }
-  if (!transactionInput.transaction_date) throw new Error('تاريخ المعاملة مطلوب.');
+  if (!input.transaction_date) throw new Error('تاريخ المعاملة مطلوب.');
 
-  const fxRate = transactionInput.currency === 'EGP' ? 1 : transactionInput.fx_rate;
+  const fxRate = input.currency === 'EGP' ? 1 : input.fx_rate;
   if (!isFiniteNumber(fxRate) || fxRate <= 0) {
     throw new Error('سعر الصرف يجب أن يكون رقماً صالحاً أكبر من صفر.');
   }
 
   return {
-    ...transactionInput,
-    project_id: transactionInput.project_id.trim(),
-    partner_id: transactionInput.partner_id?.trim(),
-    document_id: transactionInput.document_id?.trim(),
+    ...input,
+    project_id: input.project_id.trim(),
+    partner_id: input.partner_id?.trim(),
+    document_id: input.document_id?.trim(),
     fx_rate: fxRate,
-    amount_egp: transactionInput.amount * fxRate,
+    amount_egp: input.amount * fxRate,
   };
 }
 
@@ -62,7 +61,7 @@ function requireTransaction(id: string) {
 
 function buildUpdatedTransaction(id: string, input: Partial<TransactionInput>): Transaction {
   const existing = requireTransaction(id);
-  const normalized = normalizeInput({ ...existing, ...input }, id);
+  const normalized = normalizeInput({ ...toInput(existing), ...input }, id);
   return { ...existing, ...normalized, updated_at: new Date().toISOString() };
 }
 
