@@ -1,6 +1,6 @@
 import type { Obligation, Transaction } from '../../core/types/domain';
 import { obligationsStore } from '../obligations/storage';
-import { transactionsStore, type TransactionInput } from './storage';
+import { transactionsStore, toTransactionInput, type TransactionInput } from './storage';
 
 export interface DeferredExpenseTransactionInput extends TransactionInput {
   create_payable_obligation?: boolean;
@@ -15,11 +15,6 @@ function requireDeferredExpense(input: DeferredExpenseTransactionInput) {
   if (!input.payable_due_date?.trim()) {
     throw new Error('تاريخ استحقاق الذمة الدائنة مطلوب للمصروف الآجل.');
   }
-}
-
-function toTransactionInput(transaction: Transaction): TransactionInput {
-  const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...input } = transaction;
-  return input;
 }
 
 function getLinkedPayable(transactionId: string): Obligation | undefined {
