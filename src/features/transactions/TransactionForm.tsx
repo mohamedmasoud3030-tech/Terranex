@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import type { TransactionInput } from './storage';
 import type { Transaction, Currency, TransactionDirection, TransactionCategory } from '../../core/types/domain';
 import { useDocuments } from '../documents/hooks';
 import { usePartners } from '../partners/hooks';
+import type { DeferredExpenseTransactionInput } from './deferredExpenseWorkflow';
 
 const CATEGORIES: { id: TransactionCategory; ar: string; group: string }[] = [
   { id: 'acquisition', ar: 'اقتناء أصل', group: 'عام' },
@@ -36,7 +36,7 @@ const CURRENCIES: Currency[] = ['EGP', 'USD', 'SAR', 'AED', 'EUR', 'GBP'];
 interface Props {
   projectId: string;
   initial?: Partial<Transaction>;
-  onSubmit: (input: TransactionInput) => void;
+  onSubmit: (input: DeferredExpenseTransactionInput) => void;
   onCancel: () => void;
   loading?: boolean;
 }
