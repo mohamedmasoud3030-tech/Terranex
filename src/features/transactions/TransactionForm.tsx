@@ -54,6 +54,8 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   const [transaction_date, setDate] = useState(initial?.transaction_date ?? new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState(initial?.description ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [createPayableObligation, setCreatePayableObligation] = useState(false);
+  const [payableDueDate, setPayableDueDate] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const amountNum = Number(amount);
@@ -61,6 +63,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   const effectiveFxRate = currency === 'EGP' ? 1 : fxNum;
   const amountEgp = amountNum * effectiveFxRate;
   const availableDocuments = documents.filter((document) => !document.transaction_id || document.transaction_id === initial?.id);
+  const isDeferredExpense = direction === 'expense' && createPayableObligation;
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -69,6 +72,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
     if (!Number.isFinite(amountNum) || amountNum <= 0) e.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
     if (currency !== 'EGP' && (!Number.isFinite(fxNum) || fxNum <= 0)) e.fx = 'أدخل سعر صرف صحيحاً أكبر من صفر';
     if (!transaction_date) e.date = 'التاريخ مطلوب';
+    if (isDeferredExpense && !payableDueDate) e.payableDueDate = 'أدخل تاريخ استحقاق الذمة الدائنة';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -89,6 +93,8 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       transaction_date,
       description: description || undefined,
       notes: notes || undefined,
+      create_payable_obligation: isDeferredExpense || undefined,
+      payable_due_date: isDeferredExpense ? payableDueDate : undefined,
     });
   }
 
@@ -177,6 +183,30 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         </div>
       </div>
 
+      {direction === 'expense' && (
+        <div className="rounded-xl border border-border bg-muted/30 p-3">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={createPayableObligation}
+              onChange={(e) => setCreatePayableObligation(e.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-foreground">هذا مصروف آجل لم يتم سداده بعد</span>
+              <span className="mt-1 block text-xs leading-5 text-muted-foreground">سيُحفظ المصروف وتُنشأ ذمة دائنة مرتبطة تلقائيًا بنفس المشروع والطرف والوثيقة.</span>
+            </span>
+          </label>
+          {createPayableObligation && (
+            <div className="mt-3">
+              <label className={labelClass}>تاريخ استحقاق الذمة الدائنة *</label>
+              <input type="date" className={inputClass} value={payableDueDate} onChange={(e) => setPayableDueDate(e.target.value)} />
+              {errors.payableDueDate && <p className={errorClass}>{errors.payableDueDate}</p>}
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <label className={labelClass}>الوصف</label>
         <input className={inputClass} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف موجز للمعاملة…" />
@@ -190,7 +220,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit" disabled={loading} className={direction === 'income' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'}>
-          {loading ? 'جار الحفظ…' : direction === 'income' ? 'حفظ الإيراد' : 'حفظ المصروف'}
+          {loading ? 'جار الحفظ…' : isDeferredExpense ? 'حفظ المصروف وإنشاء الذمة' : direction === 'income' ? 'حفظ الإيراد' : 'حفظ المصروف'}
         </Button>
       </div>
     </form>
