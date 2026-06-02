@@ -140,7 +140,7 @@ export interface ExchangeRate {
   created_at: string;
 }
 
-// ─── Transaction ──────────────────────────────────────────────────────────────
+// ─── Transaction ─────────────────────────────────────────────────────────────
 
 export type TransactionDirection = 'income' | 'expense';
 
@@ -209,10 +209,33 @@ export interface Obligation {
   amount_egp: number;
   due_date?: string;
   status: ObligationStatus;
-  amount_settled_egp: number; // running total of settlements
+  amount_settled_egp: number; // running total of active settlements
   source_transaction_id?: string; // originating transaction
   document_id?: string;
   notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Obligation Settlement ───────────────────────────────────────────────────
+
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'card' | 'other';
+
+export type ObligationSettlementStatus = 'active' | 'reversed';
+
+export interface ObligationSettlement {
+  id: string;
+  obligation_id: string;
+  project_id?: string;
+  partner_id: string;
+  receipt_document_id: string;
+  amount_egp: number;
+  settlement_date: string;
+  payment_method: PaymentMethod;
+  status: ObligationSettlementStatus;
+  notes?: string;
+  reversal_reason?: string;
+  reversed_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -236,6 +259,7 @@ export interface Document {
   asset_id?: string;
   partner_id?: string;
   transaction_id?: string;
+  settlement_id?: string;
   type: DocumentType;
   title_ar: string;
   title_en?: string;
