@@ -60,6 +60,19 @@ function readRequest<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore, transaction: IDBTransaction) => Promise<T> | T) {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(DOCUMENT_FILES_STORE, mode);
+    const completed = waitForTransaction(transaction);
+    const result = await run(transaction.objectStore(DOCUMENT_FILES_STORE), transaction);
+    await completed;
+    return result;
+  } finally {
+    database.close();
+  }
+}
+
 function getExtension(fileName: string) {
   const dotIndex = fileName.lastIndexOf('.');
   return dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
@@ -75,16 +88,24 @@ async function computeSha256(blob: Blob): Promise<string | undefined> {
   }
 }
 
-async function putDocumentFile(record: StoredDocumentFile): Promise<void> {
-  const database = await openDatabase();
-  try {
-    const transaction = database.transaction(DOCUMENT_FILES_STORE, 'readwrite');
-    const completed = waitForTransaction(transaction);
-    transaction.objectStore(DOCUMENT_FILES_STORE).put(record);
-    await completed;
-  } finally {
-    database.close();
+function validateStoredDocumentFile(record: StoredDocumentFile) {
+  if (!record.id.trim() || record.document_id !== record.id) throw new Error('معرّف ملف المستند المحلي غير صالح.');
+  if (!record.file_name.trim() || !record.original_file_name.trim() || !record.mime_type.trim()) {
+    throw new Error('بيانات ملف المستند المحلي ناقصة.');
   }
+  if (!Number.isFinite(record.size_bytes) || record.size_bytes <= 0 || record.blob.size !== record.size_bytes) {
+    throw new Error('حجم ملف المستند المحلي غير صالح.');
+  }
+  if (record.storage_mode !== 'indexeddb' || !Number.isInteger(record.version) || record.version < 1) {
+    throw new Error('إصدار تخزين ملف المستند المحلي غير صالح.');
+  }
+}
+
+async function putDocumentFile(record: StoredDocumentFile): Promise<void> {
+  validateStoredDocumentFile(record);
+  await withStore('readwrite', (store) => {
+    store.put(record);
+  });
 }
 
 export function makeLocalDocumentFileUrl(documentId: string) {
@@ -135,30 +156,37 @@ export async function restoreDocumentFile(record: StoredDocumentFile): Promise<v
 export async function getDocumentFile(fileUrl: string): Promise<StoredDocumentFile | undefined> {
   const id = readLocalDocumentFileId(fileUrl);
   if (!id) return undefined;
+  return withStore('readonly', (store) => readRequest(store.get(id) as IDBRequest<StoredDocumentFile | undefined>));
+}
 
-  const database = await openDatabase();
-  try {
-    const transaction = database.transaction(DOCUMENT_FILES_STORE, 'readonly');
-    const completed = waitForTransaction(transaction);
-    const record = await readRequest(transaction.objectStore(DOCUMENT_FILES_STORE).get(id) as IDBRequest<StoredDocumentFile | undefined>);
-    await completed;
-    return record;
-  } finally {
-    database.close();
+export async function listDocumentFiles(): Promise<StoredDocumentFile[]> {
+  return withStore('readonly', (store) => readRequest(store.getAll() as IDBRequest<StoredDocumentFile[]>));
+}
+
+export async function replaceDocumentFiles(records: StoredDocumentFile[]): Promise<void> {
+  const seen = new Set<string>();
+  for (const record of records) {
+    validateStoredDocumentFile(record);
+    if (seen.has(record.id)) throw new Error('توجد ملفات مستندات محلية مكررة.');
+    seen.add(record.id);
   }
+
+  await withStore('readwrite', (store) => {
+    store.clear();
+    for (const record of records) store.put(record);
+  });
+}
+
+export async function clearDocumentFiles(): Promise<void> {
+  await withStore('readwrite', (store) => {
+    store.clear();
+  });
 }
 
 export async function deleteDocumentFile(fileUrl: string): Promise<void> {
   const id = readLocalDocumentFileId(fileUrl);
   if (!id) return;
-
-  const database = await openDatabase();
-  try {
-    const transaction = database.transaction(DOCUMENT_FILES_STORE, 'readwrite');
-    const completed = waitForTransaction(transaction);
-    transaction.objectStore(DOCUMENT_FILES_STORE).delete(id);
-    await completed;
-  } finally {
-    database.close();
-  }
+  await withStore('readwrite', (store) => {
+    store.delete(id);
+  });
 }
