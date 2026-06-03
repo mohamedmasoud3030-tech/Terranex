@@ -9,10 +9,11 @@ import {
   restoreTerranexArchive,
   type ParsedTerranexArchive,
 } from '../../core/storage/archiveBackup';
+import { copyBytesToArrayBuffer } from '../../core/storage/blobBytes';
 import type { Locale } from '../../core/types';
 
 function downloadArchive(bytes: Uint8Array, exportedAt: string, prefix = 'terranex-backup') {
-  const blob = new Blob([bytes], { type: 'application/zip' });
+  const blob = new Blob([copyBytesToArrayBuffer(bytes)], { type: 'application/zip' });
   const href = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = href;
@@ -51,7 +52,6 @@ export function BackupRestoreSection({ locale }: { locale: Locale }) {
       setMessage(ar ? 'تم إنشاء ملف ZIP يشمل السجلات والملفات المحلية.' : 'ZIP backup created with records and local files.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'تعذر إنشاء ملف النسخة الاحتياطية.');
-      throw cause;
     } finally {
       setBusy(false);
     }
