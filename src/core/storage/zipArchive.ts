@@ -6,11 +6,36 @@ const STORED_METHOD = 0;
 const FIXED_DOS_DATE = 0x0021; // 1980-01-01 for deterministic archives.
 const MAX_UINT16 = 0xffff;
 const MAX_UINT32 = 0xffffffff;
+const LOCAL_HEADER_SIZE = 30;
+const CENTRAL_HEADER_SIZE = 46;
 const MIN_END_RECORD_SIZE = 22;
 
 export interface ZipArchiveEntry {
   path: string;
   bytes: Uint8Array;
+}
+
+interface EncodedEntry extends ZipArchiveEntry {
+  nameBytes: Uint8Array;
+  checksum: number;
+}
+
+interface CentralEntry {
+  path: string;
+  nameBytes: Uint8Array;
+  checksum: number;
+  compressedSize: number;
+  uncompressedSize: number;
+  flags: number;
+  method: number;
+  localOffset: number;
+  nextCursor: number;
+}
+
+interface CentralDirectoryInfo {
+  entryCount: number;
+  centralOffset: number;
+  centralSize: number;
 }
 
 function makeArchiveError(message: string) {
@@ -88,16 +113,12 @@ export function computeCrc32(bytes: Uint8Array) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-export function createZipArchive(entries: ZipArchiveEntry[]) {
+function encodeEntries(entries: ZipArchiveEntry[]) {
   if (entries.length > MAX_UINT16) throw makeArchiveError('عدد الملفات يتجاوز الحد المدعوم.');
 
   const encoder = new TextEncoder();
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
   const paths = new Set<string>();
-  let localOffset = 0;
-
-  for (const entry of entries) {
+  return entries.map((entry): EncodedEntry => {
     validatePath(entry.path);
     if (paths.has(entry.path)) throw makeArchiveError('يحتوي الأرشيف على مسارات ملفات مكررة.');
     paths.add(entry.path);
@@ -105,59 +126,77 @@ export function createZipArchive(entries: ZipArchiveEntry[]) {
     const nameBytes = encoder.encode(entry.path);
     if (nameBytes.length > MAX_UINT16) throw makeArchiveError('اسم ملف داخل الأرشيف أطول من الحد المدعوم.');
     if (entry.bytes.length > MAX_UINT32) throw makeArchiveError('حجم ملف داخل الأرشيف يتجاوز الحد المدعوم.');
+    return { ...entry, nameBytes, checksum: computeCrc32(entry.bytes) };
+  });
+}
 
-    const checksum = computeCrc32(entry.bytes);
-    const localHeader = new Uint8Array(30 + nameBytes.length);
-    writeUint32(localHeader, 0, LOCAL_FILE_HEADER_SIGNATURE);
-    writeUint16(localHeader, 4, 20);
-    writeUint16(localHeader, 6, UTF8_FLAG);
-    writeUint16(localHeader, 8, STORED_METHOD);
-    writeUint16(localHeader, 10, 0);
-    writeUint16(localHeader, 12, FIXED_DOS_DATE);
-    writeUint32(localHeader, 14, checksum);
-    writeUint32(localHeader, 18, entry.bytes.length);
-    writeUint32(localHeader, 22, entry.bytes.length);
-    writeUint16(localHeader, 26, nameBytes.length);
-    writeUint16(localHeader, 28, 0);
-    localHeader.set(nameBytes, 30);
+function createLocalHeader(entry: EncodedEntry) {
+  const header = new Uint8Array(LOCAL_HEADER_SIZE + entry.nameBytes.length);
+  writeUint32(header, 0, LOCAL_FILE_HEADER_SIGNATURE);
+  writeUint16(header, 4, 20);
+  writeUint16(header, 6, UTF8_FLAG);
+  writeUint16(header, 8, STORED_METHOD);
+  writeUint16(header, 10, 0);
+  writeUint16(header, 12, FIXED_DOS_DATE);
+  writeUint32(header, 14, entry.checksum);
+  writeUint32(header, 18, entry.bytes.length);
+  writeUint32(header, 22, entry.bytes.length);
+  writeUint16(header, 26, entry.nameBytes.length);
+  writeUint16(header, 28, 0);
+  header.set(entry.nameBytes, LOCAL_HEADER_SIZE);
+  return header;
+}
 
-    const centralHeader = new Uint8Array(46 + nameBytes.length);
-    writeUint32(centralHeader, 0, CENTRAL_DIRECTORY_SIGNATURE);
-    writeUint16(centralHeader, 4, 20);
-    writeUint16(centralHeader, 6, 20);
-    writeUint16(centralHeader, 8, UTF8_FLAG);
-    writeUint16(centralHeader, 10, STORED_METHOD);
-    writeUint16(centralHeader, 12, 0);
-    writeUint16(centralHeader, 14, FIXED_DOS_DATE);
-    writeUint32(centralHeader, 16, checksum);
-    writeUint32(centralHeader, 20, entry.bytes.length);
-    writeUint32(centralHeader, 24, entry.bytes.length);
-    writeUint16(centralHeader, 28, nameBytes.length);
-    writeUint16(centralHeader, 30, 0);
-    writeUint16(centralHeader, 32, 0);
-    writeUint16(centralHeader, 34, 0);
-    writeUint16(centralHeader, 36, 0);
-    writeUint32(centralHeader, 38, 0);
-    writeUint32(centralHeader, 42, localOffset);
-    centralHeader.set(nameBytes, 46);
+function createCentralHeader(entry: EncodedEntry, localOffset: number) {
+  const header = new Uint8Array(CENTRAL_HEADER_SIZE + entry.nameBytes.length);
+  writeUint32(header, 0, CENTRAL_DIRECTORY_SIGNATURE);
+  writeUint16(header, 4, 20);
+  writeUint16(header, 6, 20);
+  writeUint16(header, 8, UTF8_FLAG);
+  writeUint16(header, 10, STORED_METHOD);
+  writeUint16(header, 12, 0);
+  writeUint16(header, 14, FIXED_DOS_DATE);
+  writeUint32(header, 16, entry.checksum);
+  writeUint32(header, 20, entry.bytes.length);
+  writeUint32(header, 24, entry.bytes.length);
+  writeUint16(header, 28, entry.nameBytes.length);
+  writeUint16(header, 30, 0);
+  writeUint16(header, 32, 0);
+  writeUint16(header, 34, 0);
+  writeUint16(header, 36, 0);
+  writeUint32(header, 38, 0);
+  writeUint32(header, 42, localOffset);
+  header.set(entry.nameBytes, CENTRAL_HEADER_SIZE);
+  return header;
+}
 
+function createEndRecord(entryCount: number, centralSize: number, centralOffset: number) {
+  const record = new Uint8Array(MIN_END_RECORD_SIZE);
+  writeUint32(record, 0, END_OF_CENTRAL_DIRECTORY_SIGNATURE);
+  writeUint16(record, 4, 0);
+  writeUint16(record, 6, 0);
+  writeUint16(record, 8, entryCount);
+  writeUint16(record, 10, entryCount);
+  writeUint32(record, 12, centralSize);
+  writeUint32(record, 16, centralOffset);
+  writeUint16(record, 20, 0);
+  return record;
+}
+
+export function createZipArchive(entries: ZipArchiveEntry[]) {
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let localOffset = 0;
+
+  for (const entry of encodeEntries(entries)) {
+    const localHeader = createLocalHeader(entry);
     localParts.push(localHeader, entry.bytes);
-    centralParts.push(centralHeader);
+    centralParts.push(createCentralHeader(entry, localOffset));
     localOffset += localHeader.length + entry.bytes.length;
   }
 
   const centralDirectory = concatenate(centralParts);
-  const endRecord = new Uint8Array(MIN_END_RECORD_SIZE);
-  writeUint32(endRecord, 0, END_OF_CENTRAL_DIRECTORY_SIGNATURE);
-  writeUint16(endRecord, 4, 0);
-  writeUint16(endRecord, 6, 0);
-  writeUint16(endRecord, 8, entries.length);
-  writeUint16(endRecord, 10, entries.length);
-  writeUint32(endRecord, 12, centralDirectory.length);
-  writeUint32(endRecord, 16, localOffset);
-  writeUint16(endRecord, 20, 0);
-
-  return concatenate([...localParts, centralDirectory, endRecord]);
+  return concatenate([...localParts, centralDirectory, createEndRecord(entries.length, centralDirectory.length, localOffset)]);
 }
 
 function findEndRecord(source: Uint8Array) {
@@ -170,7 +209,7 @@ function findEndRecord(source: Uint8Array) {
   throw makeArchiveError('تعذر العثور على نهاية الأرشيف.');
 }
 
-export function readZipArchive(source: Uint8Array) {
+function readCentralDirectoryInfo(source: Uint8Array): CentralDirectoryInfo {
   if (source.length < MIN_END_RECORD_SIZE) throw makeArchiveError('الملف أقصر من الحد الأدنى لأرشيف ZIP.');
 
   const endOffset = findEndRecord(source);
@@ -186,68 +225,94 @@ export function readZipArchive(source: Uint8Array) {
   }
   requireRange(source, centralOffset, centralSize);
   if (centralOffset + centralSize > endOffset) throw makeArchiveError('فهرس الملفات يتجاوز حدود الأرشيف.');
+  return { entryCount, centralOffset, centralSize };
+}
 
-  const decoder = new TextDecoder('utf-8', { fatal: true });
-  const files = new Map<string, Uint8Array>();
-  let centralCursor = centralOffset;
+function decodePath(decoder: TextDecoder, nameBytes: Uint8Array) {
+  try {
+    return decoder.decode(nameBytes);
+  } catch {
+    throw makeArchiveError('اسم ملف داخل الأرشيف ليس UTF-8 صالحًا.');
+  }
+}
 
-  for (let index = 0; index < entryCount; index += 1) {
-    requireRange(source, centralCursor, 46);
-    if (readUint32(source, centralCursor) !== CENTRAL_DIRECTORY_SIGNATURE) {
-      throw makeArchiveError('فهرس الملفات يحتوي على توقيع غير صالح.');
-    }
-
-    const flags = readUint16(source, centralCursor + 8);
-    const method = readUint16(source, centralCursor + 10);
-    const checksum = readUint32(source, centralCursor + 16);
-    const compressedSize = readUint32(source, centralCursor + 20);
-    const uncompressedSize = readUint32(source, centralCursor + 24);
-    const nameLength = readUint16(source, centralCursor + 28);
-    const extraLength = readUint16(source, centralCursor + 30);
-    const commentLength = readUint16(source, centralCursor + 32);
-    const diskStart = readUint16(source, centralCursor + 34);
-    const localOffset = readUint32(source, centralCursor + 42);
-
-    if ((flags & UTF8_FLAG) === 0 || (flags & 0x0009) !== 0) throw makeArchiveError('خصائص ملف داخل الأرشيف غير مدعومة.');
-    if (method !== STORED_METHOD || compressedSize !== uncompressedSize) throw makeArchiveError('ضغط ملفات ZIP غير مدعوم في هذا الإصدار.');
-    if (diskStart !== 0) throw makeArchiveError('الأرشيف متعدد الأجزاء غير مدعوم.');
-
-    requireRange(source, centralCursor + 46, nameLength + extraLength + commentLength);
-    const centralNameBytes = source.slice(centralCursor + 46, centralCursor + 46 + nameLength);
-    let path: string;
-    try {
-      path = decoder.decode(centralNameBytes);
-    } catch {
-      throw makeArchiveError('اسم ملف داخل الأرشيف ليس UTF-8 صالحًا.');
-    }
-    validatePath(path);
-    if (files.has(path)) throw makeArchiveError('يحتوي الأرشيف على مسارات ملفات مكررة.');
-
-    requireRange(source, localOffset, 30);
-    if (readUint32(source, localOffset) !== LOCAL_FILE_HEADER_SIGNATURE) throw makeArchiveError('ترويسة ملف داخل الأرشيف غير صالحة.');
-    if (readUint16(source, localOffset + 6) !== flags || readUint16(source, localOffset + 8) !== method) {
-      throw makeArchiveError('ترويسة الملف لا تطابق فهرس الأرشيف.');
-    }
-    if (readUint32(source, localOffset + 14) !== checksum
-      || readUint32(source, localOffset + 18) !== compressedSize
-      || readUint32(source, localOffset + 22) !== uncompressedSize) {
-      throw makeArchiveError('بيانات حجم الملف أو بصمته لا تطابق فهرس الأرشيف.');
-    }
-
-    const localNameLength = readUint16(source, localOffset + 26);
-    const localExtraLength = readUint16(source, localOffset + 28);
-    requireRange(source, localOffset + 30, localNameLength + localExtraLength + compressedSize);
-    const localNameBytes = source.slice(localOffset + 30, localOffset + 30 + localNameLength);
-    if (!equalBytes(localNameBytes, centralNameBytes)) throw makeArchiveError('اسم الملف لا يطابق فهرس الأرشيف.');
-
-    const payloadOffset = localOffset + 30 + localNameLength + localExtraLength;
-    const payload = source.slice(payloadOffset, payloadOffset + compressedSize);
-    if (computeCrc32(payload) !== checksum) throw makeArchiveError('فشل التحقق من سلامة ملف داخل الأرشيف.');
-    files.set(path, payload);
-
-    centralCursor += 46 + nameLength + extraLength + commentLength;
+function readCentralEntry(source: Uint8Array, cursor: number, decoder: TextDecoder): CentralEntry {
+  requireRange(source, cursor, CENTRAL_HEADER_SIZE);
+  if (readUint32(source, cursor) !== CENTRAL_DIRECTORY_SIGNATURE) {
+    throw makeArchiveError('فهرس الملفات يحتوي على توقيع غير صالح.');
   }
 
-  if (centralCursor !== centralOffset + centralSize) throw makeArchiveError('حجم فهرس الملفات غير متطابق.');
+  const flags = readUint16(source, cursor + 8);
+  const method = readUint16(source, cursor + 10);
+  const checksum = readUint32(source, cursor + 16);
+  const compressedSize = readUint32(source, cursor + 20);
+  const uncompressedSize = readUint32(source, cursor + 24);
+  const nameLength = readUint16(source, cursor + 28);
+  const extraLength = readUint16(source, cursor + 30);
+  const commentLength = readUint16(source, cursor + 32);
+  const diskStart = readUint16(source, cursor + 34);
+  const localOffset = readUint32(source, cursor + 42);
+
+  if ((flags & UTF8_FLAG) === 0 || (flags & 0x0009) !== 0) throw makeArchiveError('خصائص ملف داخل الأرشيف غير مدعومة.');
+  if (method !== STORED_METHOD || compressedSize !== uncompressedSize) throw makeArchiveError('ضغط ملفات ZIP غير مدعوم في هذا الإصدار.');
+  if (diskStart !== 0) throw makeArchiveError('الأرشيف متعدد الأجزاء غير مدعوم.');
+
+  requireRange(source, cursor + CENTRAL_HEADER_SIZE, nameLength + extraLength + commentLength);
+  const nameBytes = source.slice(cursor + CENTRAL_HEADER_SIZE, cursor + CENTRAL_HEADER_SIZE + nameLength);
+  const path = decodePath(decoder, nameBytes);
+  validatePath(path);
+  return {
+    path,
+    nameBytes,
+    checksum,
+    compressedSize,
+    uncompressedSize,
+    flags,
+    method,
+    localOffset,
+    nextCursor: cursor + CENTRAL_HEADER_SIZE + nameLength + extraLength + commentLength,
+  };
+}
+
+function readStoredPayload(source: Uint8Array, entry: CentralEntry) {
+  requireRange(source, entry.localOffset, LOCAL_HEADER_SIZE);
+  if (readUint32(source, entry.localOffset) !== LOCAL_FILE_HEADER_SIGNATURE) {
+    throw makeArchiveError('ترويسة ملف داخل الأرشيف غير صالحة.');
+  }
+  if (readUint16(source, entry.localOffset + 6) !== entry.flags || readUint16(source, entry.localOffset + 8) !== entry.method) {
+    throw makeArchiveError('ترويسة الملف لا تطابق فهرس الأرشيف.');
+  }
+  if (readUint32(source, entry.localOffset + 14) !== entry.checksum
+    || readUint32(source, entry.localOffset + 18) !== entry.compressedSize
+    || readUint32(source, entry.localOffset + 22) !== entry.uncompressedSize) {
+    throw makeArchiveError('بيانات حجم الملف أو بصمته لا تطابق فهرس الأرشيف.');
+  }
+
+  const localNameLength = readUint16(source, entry.localOffset + 26);
+  const localExtraLength = readUint16(source, entry.localOffset + 28);
+  requireRange(source, entry.localOffset + LOCAL_HEADER_SIZE, localNameLength + localExtraLength + entry.compressedSize);
+  const localNameBytes = source.slice(entry.localOffset + LOCAL_HEADER_SIZE, entry.localOffset + LOCAL_HEADER_SIZE + localNameLength);
+  if (!equalBytes(localNameBytes, entry.nameBytes)) throw makeArchiveError('اسم الملف لا يطابق فهرس الأرشيف.');
+
+  const payloadOffset = entry.localOffset + LOCAL_HEADER_SIZE + localNameLength + localExtraLength;
+  const payload = source.slice(payloadOffset, payloadOffset + entry.compressedSize);
+  if (computeCrc32(payload) !== entry.checksum) throw makeArchiveError('فشل التحقق من سلامة ملف داخل الأرشيف.');
+  return payload;
+}
+
+export function readZipArchive(source: Uint8Array) {
+  const { entryCount, centralOffset, centralSize } = readCentralDirectoryInfo(source);
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const files = new Map<string, Uint8Array>();
+  let cursor = centralOffset;
+
+  for (let index = 0; index < entryCount; index += 1) {
+    const entry = readCentralEntry(source, cursor, decoder);
+    if (files.has(entry.path)) throw makeArchiveError('يحتوي الأرشيف على مسارات ملفات مكررة.');
+    files.set(entry.path, readStoredPayload(source, entry));
+    cursor = entry.nextCursor;
+  }
+
+  if (cursor !== centralOffset + centralSize) throw makeArchiveError('حجم فهرس الملفات غير متطابق.');
   return files;
 }
