@@ -1,4 +1,5 @@
 import type { Asset, Document, Obligation, OperationalEvent, ProjectPartner, StockAdjustment, Transaction } from '../types/domain';
+import type { Settlement } from '../../features/settlements/types';
 
 export interface DeletionGuardResult {
   canDelete: boolean;
@@ -7,6 +8,7 @@ export interface DeletionGuardResult {
 
 const TRANSACTIONS_KEY = 'terranex.transactions.v2';
 const OBLIGATIONS_KEY = 'terranex.obligations.v1';
+const SETTLEMENTS_KEY = 'terranex.settlements.v1';
 const ASSETS_KEY = 'terranex.assets.v1';
 const DOCUMENTS_KEY = 'terranex.documents.v1';
 const PROJECT_PARTNERS_KEY = 'terranex.projectPartners.v1';
@@ -102,12 +104,14 @@ export function guardAssetDeletion(assetId: string): DeletionGuardResult {
 export function guardDocumentDeletion(documentId: string): DeletionGuardResult {
   const transactions = readArray<Transaction>(TRANSACTIONS_KEY);
   const obligations = readArray<Obligation>(OBLIGATIONS_KEY);
+  const settlements = readArray<Settlement>(SETTLEMENTS_KEY);
   const events = readArray<OperationalEvent>(OPERATIONAL_EVENTS_KEY);
   return result([
     blockIf(transactions.value.filter((item) => item.document_id === documentId).length, 'معاملات'),
     blockIf(obligations.value.filter((item) => item.document_id === documentId).length, 'التزامات'),
+    blockIf(settlements.value.filter((item) => item.receipt_document_id === documentId).length, 'تسويات'),
     blockIf(events.value.filter((item) => item.document_id === documentId).length, 'أحداث تشغيلية'),
-  ], 'المستند', [transactions, obligations, events]);
+  ], 'المستند', [transactions, obligations, settlements, events]);
 }
 
 export function guardTransactionDeletion(transactionId: string): DeletionGuardResult {
