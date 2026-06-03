@@ -7,9 +7,11 @@ import { ThemeProvider } from './core/theme';
 import { queryClient } from './core/query';
 import { createAppRouter } from './router';
 import { runAppStorageMigrations } from './core/storage/migrations';
+import { registerServiceWorker } from './registerServiceWorker';
 import './styles.css';
 
 runAppStorageMigrations();
+registerServiceWorker();
 
 const router = createAppRouter(queryClient);
 
