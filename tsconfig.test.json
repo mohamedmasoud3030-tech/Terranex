@@ -20,6 +20,7 @@
     "src/core/storage/migrations.ts",
     "src/core/storage/backup.ts",
     "src/core/storage/indexedDbFileStore.ts",
+    "src/core/storage/zipArchive.ts",
     "src/features/documents/storage.ts",
     "src/features/documents/transactionDocumentIntegrity.ts",
     "src/features/obligations/storage.ts",
