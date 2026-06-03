@@ -7,6 +7,7 @@ import {
   type BackupSummary,
   type TerranexBackup,
 } from './backup';
+import { copyBytesToArrayBuffer } from './blobBytes';
 import {
   clearDocumentFiles,
   listDocumentFiles,
@@ -135,7 +136,7 @@ function parseManifestFile(value: unknown): ArchiveDocumentFile {
     archive_path: requireString(value, 'archive_path'),
   };
 
-  if (file.id !== file.document_id) throw archiveError('معركف ملف المستند لا يطابق المستند المرتبط.');
+  if (file.id !== file.document_id) throw archiveError('معرّف ملف المستند لا يطابق المستند المرتبط.');
   if (file.archive_path !== makeArchivePath(file)) throw archiveError('مسار ملف داخل الأرشيف لا يطابق بياناته.');
   return file;
 }
@@ -240,7 +241,7 @@ export function parseTerranexArchive(bytes: Uint8Array): ParsedTerranexArchive {
     const payload = requireArchiveFile(entries, file.archive_path);
     if (payload.length !== file.size_bytes) throw archiveError('حجم ملف داخل الأرشيف لا يطابق manifest.json.');
     const { archive_path: _archivePath, ...metadata } = file;
-    return { ...metadata, blob: new Blob([payload], { type: file.mime_type }) };
+    return { ...metadata, blob: new Blob([copyBytesToArrayBuffer(payload)], { type: file.mime_type }) };
   });
   return { manifest, backup, files, summary: summarizeArchive(backup, manifest.files) };
 }
