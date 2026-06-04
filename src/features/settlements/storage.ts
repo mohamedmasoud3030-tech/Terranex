@@ -3,6 +3,8 @@ import { createLocalStorageStore } from '../../core/storage/localStorageStore';
 import { migrateLegacySettlementBalances, resetLegacySettlementMigration, SETTLEMENTS_KEY } from './migration';
 import type { Settlement, SettlementPaymentMethod } from './types';
 
+export type { RecordSettlementInput } from './workflow';
+
 function sortSettlements(items: Settlement[]) {
   return items.sort((a, b) => b.settlement_date.localeCompare(a.settlement_date) || b.created_at.localeCompare(a.created_at));
 }
