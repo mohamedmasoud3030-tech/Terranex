@@ -22,7 +22,7 @@ function parse(raw: unknown): Settlement[] {
 }
 
 function makeId() {
-  return `set-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return `set-${crypto.randomUUID()}`;
 }
 
 const store = createLocalStorageStore<Settlement[]>(SETTLEMENTS_KEY, [], parse);
