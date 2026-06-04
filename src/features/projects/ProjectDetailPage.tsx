@@ -24,7 +24,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const SECTOR_LABELS = { 'real-estate': 'العقاري', agriculture: 'الزراعي', livestock: 'الحيواني' } as const;
-type Tab = 'overview' | 'transactions' | 'obligations' | 'partners' | 'assets' | 'documents' | 'activity';
+type Tab = 'overview' | 'transactions' | 'obligations' | 'partners' | 'assets' | 'documents';
 
 export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -97,15 +97,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     { id: 'partners', label: 'الشركاء', count: projectPartners.length },
     { id: 'assets', label: 'الأصول', count: assets.length },
     { id: 'documents', label: 'المستندات', count: documents.length },
-    { id: 'activity', label: 'النشاط' },
   ];
-
-  const activity = [
-    ...transactions.map((item) => ({ id: item.id, date: item.transaction_date, label: item.description || CATEGORY_LABELS[item.category] || item.category, meta: item.direction === 'income' ? 'إيراد' : 'مصروف' })),
-    ...obligations.map((item) => ({ id: item.id, date: item.due_date ?? item.created_at.slice(0, 10), label: partnerName.get(item.partner_id) ?? 'طرف غير معروف', meta: item.direction === 'receivable' ? 'ذمة مدينة' : 'ذمة دائنة' })),
-    ...documents.map((item) => ({ id: item.id, date: item.issue_date ?? item.created_at.slice(0, 10), label: item.title_ar, meta: 'مستند' })),
-    ...assets.map((item) => ({ id: item.id, date: item.acquisition_date, label: item.name_ar, meta: 'أصل' })),
-  ].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="space-y-6 overflow-hidden">
@@ -205,7 +197,6 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
       {tab === 'partners' && <PartnersTab projectPartners={projectPartners} partnerName={partnerName} profitability={profitability.gross_profit_egp} />}
       {tab === 'assets' && <AssetsTab assets={assets} />}
       {tab === 'documents' && <DocumentsTab documents={documents} />}
-      {tab === 'activity' && <ActivityTab activity={activity} />}
     </div>
   );
 }
@@ -236,9 +227,4 @@ function AssetsTab({ assets }: { assets: ReturnType<typeof useAssets>['assets'] 
 function DocumentsTab({ documents }: { documents: ReturnType<typeof useDocuments>['documents'] }) {
   if (documents.length === 0) return <EmptyState title="لا توجد مستندات" description="لا توجد مستندات مرتبطة بهذا المشروع." icon={FileText} />;
   return <Card><div className="divide-y divide-border">{documents.map((doc) => <div key={doc.id} className="flex items-center gap-3 px-4 py-3"><FileText className="h-5 w-5 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="truncate text-sm font-medium">{doc.title_ar}</p><p className="text-xs text-muted-foreground">{doc.type} · {doc.issue_date ?? 'بدون تاريخ'}</p></div></div>)}</div></Card>;
-}
-
-function ActivityTab({ activity }: { activity: { id: string; date: string; label: string; meta: string }[] }) {
-  if (activity.length === 0) return <EmptyState title="لا يوجد نشاط" description="سيظهر هنا تسلسل زمني من المعاملات والالتزامات والأصول والمستندات." />;
-  return <Card><div className="divide-y divide-border">{activity.map((item) => <div key={`${item.meta}-${item.id}`} className="flex items-start gap-3 px-4 py-3"><div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" /><div className="min-w-0"><p className="truncate text-sm font-medium">{item.label}</p><p className="text-xs text-muted-foreground">{item.date} · {item.meta}</p></div></div>)}</div></Card>;
 }
