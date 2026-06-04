@@ -13,6 +13,8 @@ class MemoryStorage {
 
 global.localStorage = new MemoryStorage();
 const { obligationsStore } = require('./.compiled/features/obligations/storage.js');
+const { settlementsStore } = require('./.compiled/features/settlements/storage.js');
+const { recordSettlement } = require('./.compiled/features/settlements/workflow.js');
 
 const project = {
   id: 'project-1', sector_id: 'real-estate', name_ar: 'مشروع أول', name_en: 'First project',
@@ -63,21 +65,24 @@ test('global summary aggregates projects and excludes closed obligations from ex
 
 test('obligation settlement validates boundaries and supports partial then final settlement', () => {
   obligationsStore.reset();
+  settlementsStore.reset();
   const created = obligationsStore.create({ partner_id: 'partner-1', direction: 'payable', amount: 100, currency: 'EGP', amount_egp: 100, status: 'open' });
-  assert.throws(() => obligationsStore.settle(created.id, 0));
-  assert.throws(() => obligationsStore.settle(created.id, -1));
-  assert.throws(() => obligationsStore.settle(created.id, Infinity));
-  assert.throws(() => obligationsStore.settle(created.id, 101));
-  obligationsStore.settle(created.id, 40);
+  const input = { currency: 'EGP', fx_rate: 1, settlement_date: '2026-06-01', payment_method: 'cash' };
+  assert.throws(() => recordSettlement(created.id, { ...input, amount: 0 }));
+  assert.throws(() => recordSettlement(created.id, { ...input, amount: -1 }));
+  assert.throws(() => recordSettlement(created.id, { ...input, amount: Infinity }));
+  assert.throws(() => recordSettlement(created.id, { ...input, amount: 101 }));
+  recordSettlement(created.id, { ...input, amount: 40 });
   assert.equal(obligationsStore.getAll()[0].status, 'partial');
   assert.equal(obligationsStore.getAll()[0].amount_settled_egp, 40);
-  obligationsStore.settle(created.id, 60);
+  recordSettlement(created.id, { ...input, amount: 60 });
   assert.equal(obligationsStore.getAll()[0].status, 'settled');
-  assert.throws(() => obligationsStore.settle(created.id, 1));
+  assert.throws(() => recordSettlement(created.id, { ...input, amount: 1 }));
 });
 
 test('written-off obligations cannot be settled', () => {
   obligationsStore.reset();
+  settlementsStore.reset();
   const created = obligationsStore.create({ partner_id: 'partner-1', direction: 'payable', amount: 50, currency: 'EGP', amount_egp: 50, status: 'written_off' });
-  assert.throws(() => obligationsStore.settle(created.id, 10));
+  assert.throws(() => recordSettlement(created.id, { amount: 10, currency: 'EGP', fx_rate: 1, settlement_date: '2026-06-01', payment_method: 'cash' }));
 });
