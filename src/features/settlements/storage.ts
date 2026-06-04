@@ -40,7 +40,7 @@ export interface SettlementInput {
   origin?: Settlement['origin'];
 }
 
-function normalizeInput(input: SettlementInput) {
+export function validateSettlementInput(input: SettlementInput) {
   const obligationId = input.obligation_id.trim();
   const date = input.settlement_date.trim();
   if (!obligationId) throw new Error('يجب ربط التسوية بالتزام.');
@@ -49,6 +49,8 @@ function normalizeInput(input: SettlementInput) {
   if (!date) throw new Error('تاريخ التسوية مطلوب.');
   if (!input.payment_method) throw new Error('طريقة الدفع مطلوبة.');
   if ((input.origin ?? 'user') === 'user' && input.payment_method === 'unknown') throw new Error('اختر طريقة دفع صالحة.');
+  const amountEgp = input.amount * input.fx_rate;
+  if (!isFiniteNumber(amountEgp) || amountEgp <= 0) throw new Error('القيمة المحولة للتسوية غير صالحة.');
   return {
     ...input,
     obligation_id: obligationId,
@@ -56,7 +58,7 @@ function normalizeInput(input: SettlementInput) {
     reference_number: input.reference_number?.trim() || undefined,
     receipt_document_id: input.receipt_document_id?.trim() || undefined,
     notes: input.notes?.trim() || undefined,
-    amount_egp: input.amount * input.fx_rate,
+    amount_egp: amountEgp,
     origin: input.origin ?? 'user',
   };
 }
@@ -77,9 +79,21 @@ export const settlementsStore = {
   create: (input: SettlementInput): Settlement => {
     migrateLegacySettlementBalances();
     const now = new Date().toISOString();
-    const settlement: Settlement = { ...normalizeInput(input), id: makeId(), status: 'active', created_at: now, updated_at: now };
+    const settlement: Settlement = { ...validateSettlementInput(input), id: makeId(), status: 'active', created_at: now, updated_at: now };
     store.update((all) => sortSettlements([settlement, ...all]));
     return settlement;
+  },
+  removeForRollback: (id: string): void => {
+    store.update((all) => all.filter((item) => item.id !== id));
+  },
+  restoreForRollback: (settlement: Settlement): void => {
+    let restored = false;
+    store.update((all) => all.map((item) => {
+      if (item.id !== settlement.id) return item;
+      restored = true;
+      return settlement;
+    }));
+    if (!restored) throw new Error('تعذر العثور على سجل التسوية المطلوب استعادته.');
   },
   reverse: (id: string, reason: string): Settlement => {
     migrateLegacySettlementBalances();
