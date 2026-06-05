@@ -53,6 +53,9 @@ lerna-debug.log*
 coverage/
 tests/.compiled/
 
+# Local reference caches
+.reference-cache/
+
 # Misc
 .cache/
 .parcel-cache/
