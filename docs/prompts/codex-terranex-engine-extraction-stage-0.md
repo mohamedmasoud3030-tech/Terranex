@@ -11,19 +11,24 @@ ERPNext is a behavioral reference only. Terranex must remain an independent loca
 1. Inspect the latest `main` branch from repository root.
 2. Read `AGENTS.md`.
 3. Read `IMPLEMENTATION_GUIDE.md`.
-4. Read `docs/reference/Terranex-Architecture-English.md`.
-5. Read `docs/reference/Terranex-Product-Growth-Roadmap-Zoom-In.md`.
-6. Read `reference/erpnext/README.md`.
-7. Read `reference/erpnext/selected-paths.txt`.
-8. Read `reference/erpnext/expected-sha256.txt` only as the integrity contract for the original uploaded source-reading set.
-9. Inspect the current source tree with `rg --files` and use `rg` for code search.
-10. Inspect open pull requests before proposing landing points.
+4. Read `docs/reference/Terranex-Product-Growth-Roadmap.md`.
+5. Read `docs/reference/Terranex-Architecture-English.md`.
+6. Read `docs/reference/Terranex-Product-Growth-Roadmap-Zoom-In.md`.
+7. Read `docs/reference/Terranex-ERPNext-Engine-Inventory-Summary.md`.
+8. Read `reference/erpnext/README.md`.
+9. Read `reference/erpnext/selected-paths.txt`.
+10. Read `reference/erpnext/expected-sha256.txt` as the integrity contract for the uploaded source-reading set.
+11. Run `node tools/fetch-erpnext-reference.mjs` to create a verified ignored cache under `.reference-cache/erpnext/`.
+12. Inspect the current source tree with `rg --files` and use `rg` for code search.
+13. Inspect open pull requests before proposing landing points.
+14. Read cached ERPNext files only when they are relevant to a proposed Terranex stage.
 
 ## Hard boundaries
 
 - Do not write runtime code.
 - Do not copy ERPNext Python files into `src/`.
 - Do not add Frappe or ERPNext dependencies.
+- Do not commit `.reference-cache/`.
 - Do not add Supabase.
 - Do not change storage schemas.
 - Do not refactor unrelated files.
@@ -36,7 +41,7 @@ ERPNext is a behavioral reference only. Terranex must remain an independent loca
 2. Which gaps remain for each engine portfolio item in the zoom-in roadmap?
 3. Which existing stores, domain types, migrations, routes, and tests are the correct landing points?
 4. Which ERPNext reference files should be read first for each proposed engine stage?
-5. Which rules should be implemented natively rather than copied?
+5. Which business rules should be reimplemented natively rather than copied?
 6. Which assumptions require explicit product decisions before coding?
 7. What is the smallest safe first implementation increment after Stage 0?
 
@@ -68,6 +73,7 @@ Because this task changes documentation only:
 1. Review the final diff carefully.
 2. Confirm no runtime files changed.
 3. Confirm no generated bundles or copied ERPNext source files were added.
-4. Return the planning document path, changed files, commit SHA, and recommended next branch.
+4. Confirm `.reference-cache/` remains ignored and uncommitted.
+5. Return the planning document path, changed files, commit SHA, and recommended next branch.
 
 Stop after creating the planning document. Do not begin Stage 1 implementation.
