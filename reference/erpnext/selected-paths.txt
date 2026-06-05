@@ -69,4 +69,3 @@ erpnext/stock/doctype/stock_reconciliation/stock_reconciliation.py
 erpnext/stock/stock_ledger.py
 erpnext/stock/valuation.py
 license.txt
-transaction-deletion-import-logic-summary.md
