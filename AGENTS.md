@@ -2,6 +2,17 @@
 
 Terranex is a standalone investment operating system repository.
 
+## Read before editing
+
+1. `IMPLEMENTATION_GUIDE.md`
+2. `docs/ai/README.md`
+3. `docs/ai/data-safety.md`
+4. `docs/ai/release-policy.md`
+5. `docs/decisions/README.md`
+6. `.ai/workflows/README.md`
+
+When a task touches roadmap or ERPNext-reference work, read the relevant files under `docs/reference/` and `docs/plans/` before editing.
+
 ## Project boundary
 
 This repository is independent from Rentrix and any other application. Product scope, domain model, documents, and automation assets in this repository belong to Terranex only.
@@ -20,6 +31,7 @@ The product should help the company answer four core questions:
 - `docs/` contains product, domain, roadmap, and decision documents.
 - `.ai/agents/` contains role descriptions for AI-assisted project work.
 - `.ai/skills/` contains reusable task skills.
+- `.ai/workflows/` contains repeatable execution playbooks.
 - `.ai/pipelines/` contains batch-processing and analysis scripts.
 - `tools/` may contain developer utilities when an executable does not belong under `.ai/`.
 
@@ -30,3 +42,5 @@ The product should help the company answer four core questions:
 - Prefer deterministic parsing and explicit schema contracts.
 - Prefer `rg` and `rg --files` for repository search when available.
 - Keep generated outputs out of source control unless they are examples or fixtures.
+- Preserve dirty worktrees and avoid destructive Git operations.
+- Keep each PR bounded to one approved stage.
