@@ -8,7 +8,7 @@ The pinned upstream source is recorded in `reference/agent-skills/source-lock.js
 
 ```text
 Repository: https://github.com/addyosmani/agent-skills
-Commit:     2e0dfbfb436ef3307bbe8ba172f14996de980784
+Commit:     5b4c6dade5e6b5a48067d08861a11732d8e3a2bf
 Cache:      .reference-cache/agent-skills
 ```
 
@@ -21,14 +21,14 @@ Run from the repository root:
 ```bash
 mkdir -p .reference-cache
 git clone https://github.com/addyosmani/agent-skills.git .reference-cache/agent-skills
-git -C .reference-cache/agent-skills checkout --detach 2e0dfbfb436ef3307bbe8ba172f14996de980784
+git -C .reference-cache/agent-skills checkout --detach 5b4c6dade5e6b5a48067d08861a11732d8e3a2bf
 ```
 
 For an existing cache:
 
 ```bash
-git -C .reference-cache/agent-skills fetch origin 2e0dfbfb436ef3307bbe8ba172f14996de980784
-git -C .reference-cache/agent-skills checkout --detach 2e0dfbfb436ef3307bbe8ba172f14996de980784
+git -C .reference-cache/agent-skills fetch origin 5b4c6dade5e6b5a48067d08861a11732d8e3a2bf
+git -C .reference-cache/agent-skills checkout --detach 5b4c6dade5e6b5a48067d08861a11732d8e3a2bf
 ```
 
 ## Loading rule
