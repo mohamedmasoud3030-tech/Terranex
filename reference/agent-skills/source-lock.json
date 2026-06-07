@@ -1,7 +1,7 @@
 {
   "name": "addy-agent-skills",
   "repository": "addyosmani/agent-skills",
-  "commit": "2e0dfbfb436ef3307bbe8ba172f14996de980784",
+  "commit": "5b4c6dade5e6b5a48067d08861a11732d8e3a2bf",
   "cache_directory": ".reference-cache/agent-skills",
   "policy": "Read upstream skills selectively. Do not edit cached upstream files or import them into production code. Terranex policy wins on conflicts."
 }
