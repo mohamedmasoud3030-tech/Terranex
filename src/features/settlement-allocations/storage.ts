@@ -1,5 +1,6 @@
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { migrateLegacySettlementBalances } from '../settlements/migration';
 import type { Settlement } from '../settlements/types';
 import {
   migrateLegacySettlementAllocations,
@@ -46,6 +47,7 @@ function normalizeInput(input: SettlementAllocationInput): SettlementAllocationI
 }
 
 function readAll() {
+  migrateLegacySettlementBalances();
   migrateLegacySettlementAllocations();
   return store.get();
 }
