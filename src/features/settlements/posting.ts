@@ -1,5 +1,6 @@
 import { documentsStore } from '../documents/storage';
 import { obligationsStore } from '../obligations/storage';
+import { recordSettlementAllocation } from '../settlement-allocations/posting';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore, validateSettlementInput, type SettlementInput } from './storage';
 import type { Document, Obligation } from '../../core/types/domain';
@@ -50,7 +51,11 @@ export function recordSettlement(obligationId: string, input: RecordSettlementIn
   const settlement = settlementsStore.create(normalized);
   let allocationId: string | undefined;
   try {
-    allocationId = settlementAllocationsStore.create({ settlement_id: settlement.id, obligation_id: obligationId, allocated_amount_egp: settlement.amount_egp }).id;
+    allocationId = recordSettlementAllocation(
+      { settlement_id: settlement.id, obligation_id: obligationId, allocated_amount_egp: settlement.amount_egp },
+      settlementsStore.getAll(),
+      obligationsStore.getAll(),
+    ).id;
     synchronize(obligationId);
   } catch (error) {
     if (allocationId) settlementAllocationsStore.removeForRollback(allocationId);
