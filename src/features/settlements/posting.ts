@@ -1,5 +1,6 @@
 import { documentsStore } from '../documents/storage';
 import { obligationsStore } from '../obligations/storage';
+import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore, validateSettlementInput, type SettlementInput } from './storage';
 import type { Document, Obligation } from '../../core/types/domain';
 import type { Settlement } from './types';
@@ -26,8 +27,12 @@ function requireSettleable(obligation: Obligation) {
   if (obligation.status === 'disputed') throw new Error('لا يمكن تسوية التزام متنازع عليه قبل حل النزاع.');
 }
 
+function getActiveTotal(obligationId: string) {
+  return settlementAllocationsStore.getActiveTotalByObligation(obligationId, settlementsStore.getAll());
+}
+
 function synchronize(obligationId: string) {
-  const activeTotal = settlementsStore.getActiveTotalByObligation(obligationId);
+  const activeTotal = getActiveTotal(obligationId);
   obligationsStore.syncSettlementTotal(obligationId, activeTotal);
   return activeTotal;
 }
@@ -37,13 +42,18 @@ export function recordSettlement(obligationId: string, input: RecordSettlementIn
   requireSettleable(obligation);
   validateReceipt(obligation, input.receipt_document_id);
   const normalized = validateSettlementInput({ ...input, obligation_id: obligationId });
-  const activeTotal = settlementsStore.getActiveTotalByObligation(obligationId);
+  settlementsStore.getAll();
+  settlementAllocationsStore.getAll();
+  const activeTotal = getActiveTotal(obligationId);
   const remaining = Math.max(0, obligation.amount_egp - activeTotal);
   if (normalized.amount_egp > remaining) throw new Error('قيمة التسوية أكبر من الرصيد المتبقي.');
   const settlement = settlementsStore.create(normalized);
+  let allocationId: string | undefined;
   try {
-    obligationsStore.syncSettlementTotal(obligationId, activeTotal + settlement.amount_egp);
+    allocationId = settlementAllocationsStore.create({ settlement_id: settlement.id, obligation_id: obligationId, allocated_amount_egp: settlement.amount_egp }).id;
+    synchronize(obligationId);
   } catch (error) {
+    if (allocationId) settlementAllocationsStore.removeForRollback(allocationId);
     settlementsStore.removeForRollback(settlement.id);
     throw error;
   }
