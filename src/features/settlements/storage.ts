@@ -1,5 +1,6 @@
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { migrateLegacySettlementBalances, resetLegacySettlementMigration, SETTLEMENTS_KEY } from './migration';
 import type { Settlement, SettlementPaymentMethod } from './types';
 
@@ -73,9 +74,7 @@ export const settlementsStore = {
   getById: (id: string) => readAll().find((item) => item.id === id),
   getByObligation: (obligationId: string) => readAll().filter((item) => item.obligation_id === obligationId),
   getByReceiptDocument: (documentId: string) => readAll().filter((item) => item.receipt_document_id === documentId),
-  getActiveTotalByObligation: (obligationId: string) => readAll()
-    .filter((item) => item.obligation_id === obligationId && item.status === 'active')
-    .reduce((sum, item) => sum + item.amount_egp, 0),
+  getActiveTotalByObligation: (obligationId: string) => settlementAllocationsStore.getActiveTotalByObligation(obligationId, readAll()),
   create: (input: SettlementInput): Settlement => {
     migrateLegacySettlementBalances();
     const now = new Date().toISOString();
@@ -84,6 +83,9 @@ export const settlementsStore = {
     return settlement;
   },
   removeForRollback: (id: string): void => {
+    for (const allocation of settlementAllocationsStore.getBySettlement(id)) {
+      settlementAllocationsStore.removeForRollback(allocation.id);
+    }
     store.update((all) => all.filter((item) => item.id !== id));
   },
   restoreForRollback: (settlement: Settlement): void => {
@@ -116,6 +118,7 @@ export const settlementsStore = {
   },
   reset: () => {
     store.reset();
+    settlementAllocationsStore.reset();
     resetLegacySettlementMigration();
   },
 };
