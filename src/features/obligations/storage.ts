@@ -1,5 +1,6 @@
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore } from '../settlements/storage';
 import type { Obligation } from '../../core/types/domain';
 
@@ -37,17 +38,31 @@ function syncSettlementTotal(id: string, amountSettledEgp: number) {
   }));
 }
 
+function getActiveSettlementTotal(id: string) {
+  return settlementAllocationsStore.getActiveTotalByObligation(id, settlementsStore.getAll());
+}
+
 function settle(id: string, amountEgp: number) {
   if (!isFiniteNumber(amountEgp) || amountEgp <= 0) throw new Error('قيمة التسوية يجب أن تكون رقماً صالحاً أكبر من صفر.');
   const obligation = store.get().find((item) => item.id === id);
   if (!obligation) throw new Error('تعذر العثور على الالتزام المرتبط بالتسوية.');
   if (obligation.status === 'written_off') throw new Error('لا يمكن تسوية التزام مشطوب.');
   if (obligation.status === 'disputed') throw new Error('لا يمكن تسوية التزام متنازع عليه قبل حل النزاع.');
-  const activeTotal = settlementsStore.getActiveTotalByObligation(id);
+  settlementsStore.getAll();
+  settlementAllocationsStore.getAll();
+  const activeTotal = getActiveSettlementTotal(id);
   const remaining = Math.max(0, obligation.amount_egp - activeTotal);
   if (amountEgp > remaining) throw new Error('قيمة التسوية أكبر من الرصيد المتبقي.');
   const settlement = settlementsStore.create({ obligation_id: id, amount: amountEgp, currency: 'EGP', fx_rate: 1, settlement_date: new Date().toISOString().slice(0, 10), payment_method: 'other', notes: 'دفعة مسجلة من نموذج الإدخال المختصر.' });
-  syncSettlementTotal(id, activeTotal + settlement.amount_egp);
+  let allocationId: string | undefined;
+  try {
+    allocationId = settlementAllocationsStore.create({ settlement_id: settlement.id, obligation_id: id, allocated_amount_egp: settlement.amount_egp }).id;
+    syncSettlementTotal(id, getActiveSettlementTotal(id));
+  } catch (error) {
+    if (allocationId) settlementAllocationsStore.removeForRollback(allocationId);
+    settlementsStore.removeForRollback(settlement.id);
+    throw error;
+  }
 }
 
 export type ObligationInput = Omit<Obligation, 'id' | 'created_at' | 'updated_at' | 'amount_settled_egp'>;
@@ -70,7 +85,7 @@ export const obligationsStore = {
     store.update((all) => all.map((obligation) => {
       if (obligation.id !== id) return obligation;
       const next = { ...obligation, ...input };
-      const activeSettlementTotal = settlementsStore.getActiveTotalByObligation(id);
+      const activeSettlementTotal = getActiveSettlementTotal(id);
       if (next.amount_egp < activeSettlementTotal) throw new Error('لا يمكن خفض قيمة الالتزام عن إجمالي التسويات النشطة.');
       return { ...next, amount_settled_egp: activeSettlementTotal, status: deriveStatus(next, activeSettlementTotal), updated_at: new Date().toISOString() };
     }));
