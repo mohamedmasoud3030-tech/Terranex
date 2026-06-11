@@ -1,5 +1,6 @@
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { recordSettlementAllocation } from '../settlement-allocations/posting';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore } from '../settlements/storage';
 import type { Obligation } from '../../core/types/domain';
@@ -56,7 +57,11 @@ function settle(id: string, amountEgp: number) {
   const settlement = settlementsStore.create({ obligation_id: id, amount: amountEgp, currency: 'EGP', fx_rate: 1, settlement_date: new Date().toISOString().slice(0, 10), payment_method: 'other', notes: 'دفعة مسجلة من نموذج الإدخال المختصر.' });
   let allocationId: string | undefined;
   try {
-    allocationId = settlementAllocationsStore.create({ settlement_id: settlement.id, obligation_id: id, allocated_amount_egp: settlement.amount_egp }).id;
+    allocationId = recordSettlementAllocation(
+      { settlement_id: settlement.id, obligation_id: id, allocated_amount_egp: settlement.amount_egp },
+      settlementsStore.getAll(),
+      store.get(),
+    ).id;
     syncSettlementTotal(id, getActiveSettlementTotal(id));
   } catch (error) {
     if (allocationId) settlementAllocationsStore.removeForRollback(allocationId);
