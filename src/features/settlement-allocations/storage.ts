@@ -59,23 +59,39 @@ function getActiveTotalByObligation(obligationId: string, settlements: Settlemen
     .reduce((sum, item) => sum + item.allocated_amount_egp, 0);
 }
 
+function createMany(inputs: SettlementAllocationInput[]): SettlementAllocation[] {
+  const normalized = inputs.map(normalizeInput);
+  if (normalized.length === 0) return [];
+
+  const current = readAll();
+  const pairs = new Set(current.map((item) => `${item.settlement_id}:${item.obligation_id}`));
+  for (const input of normalized) {
+    const pair = `${input.settlement_id}:${input.obligation_id}`;
+    if (pairs.has(pair)) throw new Error('يوجد توزيع مسجل بالفعل لنفس التسوية والالتزام.');
+    pairs.add(pair);
+  }
+
+  const createdAt = new Date().toISOString();
+  const allocations = normalized.map((input) => ({ ...input, id: makeId(), created_at: createdAt }));
+  store.update((all) => [...allocations, ...all]);
+  return allocations;
+}
+
+function removeManyForRollback(ids: string[]): void {
+  if (ids.length === 0) return;
+  const idSet = new Set(ids);
+  store.update((all) => all.filter((item) => !idSet.has(item.id)));
+}
+
 export const settlementAllocationsStore = {
   getAll: readAll,
   getBySettlement: (settlementId: string) => readAll().filter((item) => item.settlement_id === settlementId),
   getByObligation: (obligationId: string) => readAll().filter((item) => item.obligation_id === obligationId),
   getActiveTotalByObligation,
-  create: (input: SettlementAllocationInput): SettlementAllocation => {
-    const normalized = normalizeInput(input);
-    if (readAll().some((item) => item.settlement_id === normalized.settlement_id && item.obligation_id === normalized.obligation_id)) {
-      throw new Error('يوجد توزيع مسجل بالفعل لنفس التسوية والالتزام.');
-    }
-    const allocation: SettlementAllocation = { ...normalized, id: makeId(), created_at: new Date().toISOString() };
-    store.update((all) => [allocation, ...all]);
-    return allocation;
-  },
-  removeForRollback: (id: string): void => {
-    store.update((all) => all.filter((item) => item.id !== id));
-  },
+  create: (input: SettlementAllocationInput): SettlementAllocation => createMany([input])[0],
+  createMany,
+  removeForRollback: (id: string): void => removeManyForRollback([id]),
+  removeManyForRollback,
   reset: () => {
     store.reset();
     resetLegacySettlementAllocationMigration();
