@@ -9,6 +9,7 @@ export const SETTLEMENT_ALLOCATIONS_AUDIT_KEY = 'terranex.settlementAllocations.
 const SETTLEMENTS_KEY = 'terranex.settlements.v1';
 const OBLIGATIONS_KEY = 'terranex.obligations.v1';
 const MIGRATION_KEY = 'terranex.settlementAllocations.legacy-settlement-migration.v1';
+const FALLBACK_CREATED_AT = '1970-01-01T00:00:00.000Z';
 
 function readArray(key: string) {
   const value = safeJsonParse(localStorage.getItem(key), key);
@@ -43,6 +44,10 @@ function isBackfillableSettlement(value: unknown): value is Settlement {
     (value as Settlement).amount_egp > 0;
 }
 
+function allocationCreatedAt(settlement: Settlement) {
+  return typeof settlement.created_at === 'string' ? settlement.created_at : FALLBACK_CREATED_AT;
+}
+
 export function migrateLegacySettlementAllocations() {
   if (typeof localStorage === 'undefined' || localStorage.getItem(MIGRATION_KEY)) return;
   try {
@@ -72,7 +77,7 @@ export function migrateLegacySettlementAllocations() {
         settlement_id: rawSettlement.id,
         obligation_id: rawSettlement.obligation_id,
         allocated_amount_egp: rawSettlement.amount_egp,
-        created_at: rawSettlement.created_at || new Date().toISOString(),
+        created_at: allocationCreatedAt(rawSettlement),
       });
     }
 
