@@ -70,6 +70,16 @@ function settle(id: string, amountEgp: number) {
   }
 }
 
+function restoreForRollback(obligation: Obligation): void {
+  let restored = false;
+  store.update((all) => all.map((item) => {
+    if (item.id !== obligation.id) return item;
+    restored = true;
+    return obligation;
+  }));
+  if (!restored) throw new Error('تعذر العثور على الالتزام المطلوب استعادته.');
+}
+
 export type ObligationInput = Omit<Obligation, 'id' | 'created_at' | 'updated_at' | 'amount_settled_egp'>;
 
 export const obligationsStore = {
@@ -86,6 +96,7 @@ export const obligationsStore = {
   },
   settle,
   syncSettlementTotal,
+  restoreForRollback,
   update: (id: string, input: Partial<ObligationInput>): void => {
     store.update((all) => all.map((obligation) => {
       if (obligation.id !== id) return obligation;
