@@ -116,13 +116,13 @@ test('allocation cannot exceed the remaining balance of a target obligation', ()
   const second = obligation({ amount: 50, amount_egp: 50 });
 
   assert.throws(() => recordSettlementWithAllocations({
-    amount: 130,
+    amount: 160,
     currency: 'EGP',
     fx_rate: 1,
     settlement_date: '2026-06-01',
     payment_method: 'cash',
     allocations: [
-      { obligation_id: first.id, allocated_amount_egp: 80 },
+      { obligation_id: first.id, allocated_amount_egp: 110 },
       { obligation_id: second.id, allocated_amount_egp: 50 },
     ],
   }));
