@@ -1,4 +1,4 @@
-import { Plus, TrendingUp, TrendingDown, Building2, Wheat, PawPrint, AlertCircle, ArrowLeft, Globe } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Building2, Wheat, PawPrint, AlertCircle, ArrowLeft, Globe, BarChart2 } from 'lucide-react';
 import { useRouter } from '@tanstack/react-router';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -11,6 +11,11 @@ import { usePartners } from '../partners/hooks';
 import { computeGlobalSummary, formatEgp } from '../../core/lib/profitability';
 import type { SectorId } from '../../core/types/domain';
 import { useI18n } from '../../core/i18n/context';
+import { Suspense, lazy } from 'react';
+
+// Lazy load charts to enable code-splitting
+const RevenueChartLazy = lazy(() => import('../../components/charts/RevenueChart').then(m => ({ default: m.RevenueChart })));
+const SectorBarChartLazy = lazy(() => import('../../components/charts/SectorBarChart').then(m => ({ default: m.SectorBarChart })));
 
 const SECTOR_META: Record<SectorId, { icon: typeof Building2; i18nKey: 'sector_real_estate_name' | 'sector_agriculture_name' | 'sector_livestock_name'; color: string; bg: string; route: string }> = {
   'real-estate': { icon: Building2, i18nKey: 'sector_real_estate_name',  color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', route: '/real-estate' },
@@ -92,6 +97,39 @@ export function DashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Charts — Recharts MVP — ADR-007 */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <BarChart2 className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold">{locale==='ar' ? 'الإيرادات مقابل المصروفات — 12 شهر' : 'Revenue vs Expense — 12m'}</h3>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">{t('state_loading')}</div>}>
+              <RevenueChartLazy transactions={transactions} />
+            </Suspense>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <h3 className="font-semibold text-sm">{t('profitability_by_sector')}</h3>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">{t('state_loading')}</div>}>
+              <SectorBarChartLazy data={(Object.keys(SECTOR_META) as SectorId[]).map(sId => ({
+                sector_id: sId,
+                label_ar: t(SECTOR_META[sId].i18nKey),
+                profit_egp: global.by_sector[sId].gross_profit_egp,
+                income_egp: global.by_sector[sId].total_income_egp,
+                expense_egp: global.by_sector[sId].total_expense_egp,
+              }))} />
+            </Suspense>
+          </CardContent>
+        </Card>
       </div>
 
       <div>

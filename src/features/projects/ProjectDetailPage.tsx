@@ -202,7 +202,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
 
       {tab === 'transactions' && <TransactionsTab projectId={projectId} transactions={transactions} showTxForm={showTxForm} setShowTxForm={setShowTxForm} onAdd={handleAddTransaction} />}
       {tab === 'obligations' && <ObligationsTab obligations={obligations} partnerName={partnerName} />}
-      {tab === 'partners' && <PartnersTab projectPartners={projectPartners} partnerName={partnerName} profitability={profitability.gross_profit_egp} />}
+      {tab === 'partners' && <PartnersTab projectId={projectId} projectPartners={projectPartners} partnerName={partnerName} profitability={profitability.gross_profit_egp} allPartners={partners} />}
       {tab === 'assets' && <AssetsTab assets={assets} />}
       {tab === 'documents' && <DocumentsTab documents={documents} />}
       {tab === 'activity' && <ActivityTab activity={activity} />}
@@ -223,9 +223,202 @@ function ObligationsTab({ obligations, partnerName }: { obligations: ReturnType<
   return <Card><div className="divide-y divide-border">{obligations.map((obligation) => { const remaining = Math.max(0, obligation.amount_egp - obligation.amount_settled_egp); return <div key={obligation.id} className="flex flex-col gap-2 px-4 py-3 min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between"><div><p className="text-sm font-medium">{partnerName.get(obligation.partner_id) ?? 'طرف غير معروف'}</p><p className="text-xs text-muted-foreground">{obligation.due_date ?? 'بدون تاريخ استحقاق'} · {obligation.status}</p></div><div className="text-start min-[360px]:text-end"><Badge tone={obligation.direction === 'receivable' ? 'positive' : 'negative'}>{obligation.direction === 'receivable' ? 'مدينة لنا' : 'دائنة علينا'}</Badge><p className="mt-1 text-sm font-bold">{formatEgp(remaining)} EGP</p></div></div>; })}</div></Card>;
 }
 
-function PartnersTab({ projectPartners, partnerName, profitability }: { projectPartners: ReturnType<typeof projectPartnersStore.getByProject>; partnerName: Map<string, string>; profitability: number }) {
-  if (projectPartners.length === 0) return <EmptyState title="لا يوجد شركاء" description="لم يتم ربط شركاء ملكية بهذا المشروع بعد." icon={Users} />;
-  return <div className="grid gap-3 sm:grid-cols-2">{projectPartners.map((pp) => <Card key={pp.id}><CardContent><p className="font-semibold">{partnerName.get(pp.partner_id) ?? 'شريك غير معروف'}</p><p className="mt-1 text-sm text-muted-foreground">نسبة الملكية: {pp.equity_pct}%</p><p className="mt-3 text-sm font-bold text-primary">حصة الربح: {formatEgp((profitability * pp.equity_pct) / 100)} EGP</p></CardContent></Card>)}</div>;
+function PartnersTab({ projectId, projectPartners, partnerName, profitability, allPartners }: { 
+  projectId: string;
+  projectPartners: ReturnType<typeof projectPartnersStore.getByProject>; 
+  partnerName: Map<string, string>; 
+  profitability: number;
+  allPartners?: Array<{id:string; name_ar:string; category:string}>;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [form, setForm] = useState({ partner_id: '', equity_pct: '', effective_from: new Date().toISOString().slice(0,10), notes: '' });
+
+  const totalEquity = projectPartners.reduce((s, pp) => s + pp.equity_pct, 0);
+  const remainingEquity = Math.max(0, 100 - totalEquity);
+  const isOverAllocated = totalEquity > 100;
+  const equityPartners = (allPartners ?? []).filter(p => p.category === 'equity_partner');
+  const availablePartners = equityPartners.filter(p => !projectPartners.some(pp => pp.partner_id === p.id));
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    const pct = Number(form.equity_pct);
+    if (!form.partner_id) { setFormError('اختر الشريك'); return; }
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) { setFormError('النسبة يجب أن تكون بين 0.01 و 100'); return; }
+    if (totalEquity + pct > 100.0001) { 
+      setFormError(`مجموع النسب سيتجاوز 100% — المتاح حالياً ${remainingEquity.toFixed(2)}%`); 
+      return; 
+    }
+    try {
+      projectPartnersStore.create({
+        project_id: projectId,
+        partner_id: form.partner_id,
+        equity_pct: pct,
+        effective_from: form.effective_from,
+        notes: form.notes || undefined,
+      });
+      setForm({ partner_id: '', equity_pct: '', effective_from: new Date().toISOString().slice(0,10), notes: '' });
+      setShowForm(false);
+    } catch (err:any) {
+      setFormError(err.message ?? 'فشل الحفظ');
+    }
+  }
+
+  function handleRemove(ppId: string, partnerLabel: string) {
+    if (!confirm(`حذف الشريك ${partnerLabel} من المشروع؟`)) return;
+    projectPartnersStore.remove(ppId);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">شركاء الملكية</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            إجمالي موزع: <span className={isOverAllocated ? 'text-danger font-bold' : totalEquity === 100 ? 'text-success font-bold' : ''}>{totalEquity.toFixed(2)}%</span>
+            {' · '}متبقي: {remainingEquity.toFixed(2)}%
+            {isOverAllocated && <span className="text-danger mr-2">⚠️ تجاوز 100%</span>}
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setShowForm(!showForm)} disabled={remainingEquity <= 0 && !showForm}>
+          <Plus className="h-4 w-4" /> {showForm ? 'إغلاق' : 'إضافة شريك'}
+        </Button>
+      </div>
+
+      {/* Equity bar */}
+      <div className="h-3 w-full overflow-hidden rounded-full bg-muted border border-border">
+        <div 
+          className={`h-full transition-all ${isOverAllocated ? 'bg-danger' : totalEquity === 100 ? 'bg-success' : 'bg-primary'}`}
+          style={{ width: `${Math.min(100, totalEquity)}%` }}
+        />
+      </div>
+
+      {showForm && (
+        <Card>
+          <CardContent>
+            <form onSubmit={handleAdd} className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm space-y-1 sm:col-span-2">
+                <span>الشريك *</span>
+                <select
+                  required
+                  value={form.partner_id}
+                  onChange={e => setForm(f => ({ ...f, partner_id: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2"
+                >
+                  <option value="">— اختر شريك ملكية —</option>
+                  {availablePartners.map(p => (
+                    <option key={p.id} value={p.id}>{p.name_ar}</option>
+                  ))}
+                </select>
+                {availablePartners.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground">لا يوجد شركاء ملكية متاحين — أضف شريك من صفحة الشركاء أولاً (category = equity_partner)</p>
+                )}
+              </label>
+
+              <label className="text-sm space-y-1">
+                <span>نسبة الملكية % *</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={remainingEquity}
+                  required
+                  value={form.equity_pct}
+                  onChange={e => setForm(f => ({ ...f, equity_pct: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 ltr"
+                  dir="ltr"
+                  placeholder={remainingEquity.toFixed(2)}
+                />
+                <span className="text-[11px] text-muted-foreground">المتاح: {remainingEquity.toFixed(2)}%</span>
+              </label>
+
+              <label className="text-sm space-y-1">
+                <span>سريان من</span>
+                <input
+                  type="date"
+                  value={form.effective_from}
+                  onChange={e => setForm(f => ({ ...f, effective_from: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2"
+                />
+              </label>
+
+              <label className="text-sm space-y-1 sm:col-span-2">
+                <span>ملاحظات</span>
+                <input
+                  type="text"
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2"
+                  placeholder="اختياري"
+                />
+              </label>
+
+              {formError && (
+                <div className="sm:col-span-2 rounded-xl border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+                  {formError}
+                </div>
+              )}
+
+              <div className="sm:col-span-2 flex gap-2">
+                <Button type="submit" size="sm" disabled={remainingEquity <= 0}>حفظ الشريك</Button>
+                <button type="button" onClick={() => { setShowForm(false); setFormError(null); }} className="text-sm px-3 py-2 rounded-xl border border-border hover:bg-muted">إلغاء</button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {projectPartners.length === 0 ? (
+        <EmptyState title="لا يوجد شركاء" description="لم يتم ربط شركاء ملكية بهذا المشروع بعد — اضغط 'إضافة شريك'." icon={Users} />
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {projectPartners.map((pp) => {
+            const share = (profitability * pp.equity_pct) / 100;
+            return (
+              <Card key={pp.id}>
+                <CardContent>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold">{partnerName.get(pp.partner_id) ?? 'شريك غير معروف'}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">نسبة الملكية: <span className="font-bold text-foreground">{pp.equity_pct}%</span></p>
+                      <p className="text-[11px] text-muted-foreground">سريان من {pp.effective_from}</p>
+                      {pp.notes && <p className="text-[11px] text-muted-foreground mt-1">{pp.notes}</p>}
+                    </div>
+                    <button
+                      onClick={() => handleRemove(pp.id, partnerName.get(pp.partner_id) ?? pp.partner_id)}
+                      className="text-muted-foreground hover:text-danger p-1"
+                      title="حذف"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-3 rounded-xl bg-muted/40 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">حصة الربح</p>
+                    <p className={`text-sm font-bold ${share >= 0 ? 'text-success' : 'text-danger'}`}>
+                      {formatEgp(share)} EGP
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{pp.equity_pct}% من {formatEgp(profitability)} EGP</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* residual / undistributed */}
+      {totalEquity > 0 && totalEquity < 100 && (
+        <Card>
+          <CardContent className="p-3 text-sm">
+            <span className="text-muted-foreground">نسبة غير موزعة: </span>
+            <span className="font-bold text-warning">{(100 - totalEquity).toFixed(2)}%</span>
+            <span className="text-muted-foreground mr-2">→ ربح غير موزع: {formatEgp(profitability * (100 - totalEquity) / 100)} EGP</span>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
 }
 
 function AssetsTab({ assets }: { assets: ReturnType<typeof useAssets>['assets'] }) {
