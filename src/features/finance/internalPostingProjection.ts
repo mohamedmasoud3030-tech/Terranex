@@ -132,8 +132,7 @@ function settlementAllocationAccounts(direction: ObligationDirection): [Internal
     : ['trade_payables', 'settlement_clearing'];
 }
 
-function makeObligationPosting(obligation: Obligation): InternalPosting | undefined {
-  if (obligation.status === 'written_off') return undefined;
+function makeObligationPosting(obligation: Obligation): InternalPosting {
   const amount = ensureAmount(obligation.amount_egp, 'قيمة الالتزام');
   const [debitAccount, creditAccount] = obligationOpeningAccounts(obligation.direction);
   const posting: InternalPosting = {
@@ -237,23 +236,33 @@ export function projectInternalPostings(
   const settlementsById = new Map(settlements.map((settlement) => [settlement.id, settlement]));
 
   for (const obligation of obligations) {
-    const posting = makeObligationPosting(obligation);
-    if (posting) postings.push(posting);
+    if (obligation.status !== 'written_off') postings.push(makeObligationPosting(obligation));
   }
 
   for (const allocation of allocations) {
     const obligation = obligationsById.get(allocation.obligation_id);
-    const settlement = settlementsById.get(allocation.settlement_id);
-    if (!obligation || !settlement || obligation.status === 'written_off') {
+    if (!obligation) {
       skippedAllocationIds.push(allocation.id);
       continue;
     }
 
-    if (settlement.status === 'reversed' && !options.include_reversed) continue;
+    const settlement = settlementsById.get(allocation.settlement_id);
+    if (!settlement) {
+      skippedAllocationIds.push(allocation.id);
+      continue;
+    }
+
+    if (obligation.status === 'written_off') {
+      skippedAllocationIds.push(allocation.id);
+      continue;
+    }
+
+    const isReversedSettlement = settlement.status === 'reversed';
+    if (isReversedSettlement && !options.include_reversed) continue;
 
     const original = makeSettlementAllocationPosting(allocation, settlement, obligation);
     postings.push(original);
-    if (settlement.status === 'reversed') postings.push(makeSettlementReversalPosting(original, settlement));
+    if (isReversedSettlement) postings.push(makeSettlementReversalPosting(original, settlement));
   }
 
   postings.sort(comparePostings);
