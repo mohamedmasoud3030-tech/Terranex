@@ -1,9 +1,9 @@
+import { requireDateOnly, toDateOnly } from '../../core/lib/dateOnly';
 import type { Obligation, ObligationDirection } from '../../core/types/domain';
 import type { Settlement } from '../settlements/types';
 import type { SettlementAllocation } from '../settlement-allocations/types';
 
 const MONEY_EPSILON = 0.000001;
-const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 export const AGING_BUCKETS = [
   'not_due',
@@ -98,30 +98,6 @@ export interface PartnerStatementResult {
   credit_total_egp: number;
   closing_balance_egp: number;
   closing_direction: 'receivable' | 'payable' | 'balanced';
-}
-
-function toDateOnly(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const date = value.slice(0, 10);
-  if (!DATE_ONLY.test(date)) return undefined;
-
-  const [year, month, day] = date.split('-').map(Number);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  if (
-    parsed.getUTCFullYear() !== year ||
-    parsed.getUTCMonth() !== month - 1 ||
-    parsed.getUTCDate() !== day
-  ) {
-    return undefined;
-  }
-
-  return date;
-}
-
-function requireDateOnly(value: string, label: string): string {
-  const date = toDateOnly(value);
-  if (!date) throw new Error(`${label} يجب أن يكون تاريخاً صالحاً بصيغة YYYY-MM-DD.`);
-  return date;
 }
 
 function daysBetween(laterDate: string, earlierDate: string): number {
