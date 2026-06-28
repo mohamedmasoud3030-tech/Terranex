@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react';
-import { useI18n } from '../../core/i18n';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useI18n } from '../../core/i18n/context';
 import { Button } from '../../components/ui/Button';
-import { FormError, FormField, FormLabel, SelectInput, TextArea, TextInput } from '../../components/ui/FormControls';
+import { FormError, FormField, FormLabel } from '../../components/ui/FormControls';
 import type { ProjectInput } from './storage';
 import type { Project, SectorId, Currency } from '../../core/types/domain';
+import { projectSchema, type ProjectFormValues } from '../../core/lib/validation';
 
 const SECTORS: { id: SectorId; ar: string; en: string }[] = [
   { id: 'real-estate', ar: 'العقاري', en: 'Real Estate' },
@@ -11,14 +13,14 @@ const SECTORS: { id: SectorId; ar: string; en: string }[] = [
   { id: 'livestock', ar: 'الحيواني', en: 'Livestock' },
 ];
 
-const CURRENCIES: Currency[] = ['EGP', 'USD', 'SAR', 'AED', 'EUR', 'GBP'];
+const CURRENCIES: Currency[] = ['EGP', 'USD', 'OMR', 'SAR', 'AED', 'EUR', 'GBP'];
 
-const STATUSES: { id: Project['status']; ar: string }[] = [
-  { id: 'planning', ar: 'تخطيط' },
-  { id: 'active', ar: 'نشط' },
-  { id: 'on_hold', ar: 'متوقف مؤقتاً' },
-  { id: 'completed', ar: 'مكتمل' },
-  { id: 'cancelled', ar: 'ملغى' },
+const STATUSES: { id: Project['status']; ar: string; en: string }[] = [
+  { id: 'planning', ar: 'تخطيط', en: 'Planning' },
+  { id: 'active', ar: 'نشط', en: 'Active' },
+  { id: 'on_hold', ar: 'متوقف مؤقتاً', en: 'On Hold' },
+  { id: 'completed', ar: 'مكتمل', en: 'Completed' },
+  { id: 'cancelled', ar: 'ملغى', en: 'Cancelled' },
 ];
 
 interface Props {
@@ -26,92 +28,148 @@ interface Props {
   onSubmit: (input: ProjectInput) => void;
   onCancel: () => void;
   loading?: boolean;
+  // allow forcing sector (used in sector pages)
+  sectorLock?: SectorId;
 }
 
-export function ProjectForm({ initial, onSubmit, onCancel, loading }: Props) {
-  const { locale } = useI18n();
-  const [name_ar, setNameAr] = useState(initial?.name_ar ?? '');
-  const [name_en, setNameEn] = useState(initial?.name_en ?? '');
-  const [sector_id, setSectorId] = useState<SectorId>(initial?.sector_id ?? 'real-estate');
-  const [status, setStatus] = useState<Project['status']>(initial?.status ?? 'planning');
-  const [start_date, setStartDate] = useState(initial?.start_date ?? new Date().toISOString().slice(0, 10));
-  const [end_date, setEndDate] = useState(initial?.end_date ?? '');
-  const [base_currency, setBaseCurrency] = useState<Currency>(initial?.base_currency ?? 'EGP');
-  const [description_ar, setDescAr] = useState(initial?.description_ar ?? '');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+export function ProjectForm({ initial, onSubmit, onCancel, loading, sectorLock }: Props) {
+  const { t, locale } = useI18n();
 
-  function validate(): boolean {
-    const e: Record<string, string> = {};
-    if (!name_ar.trim()) e.name_ar = 'اسم المشروع بالعربي مطلوب';
-    if (!start_date) e.start_date = 'تاريخ البدء مطلوب';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectSchema) as any,
+    defaultValues: {
+      sector_id: (initial?.sector_id ?? sectorLock ?? 'real-estate') as SectorId,
+      name_ar: initial?.name_ar ?? '',
+      name_en: initial?.name_en ?? '',
+      description_ar: initial?.description_ar ?? '',
+      description_en: initial?.description_en ?? '',
+      status: initial?.status ?? 'active',
+      start_date: initial?.start_date ?? new Date().toISOString().slice(0, 10),
+      end_date: initial?.end_date ?? '',
+      base_currency: initial?.base_currency ?? 'EGP',
+    },
+    mode: 'onBlur',
+  });
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
-    onSubmit({ name_ar, name_en, sector_id, status, start_date, end_date: end_date || undefined, base_currency, description_ar, description_en: undefined });
-  }
+  const submit = (values: ProjectFormValues) => {
+    onSubmit({
+      name_ar: values.name_ar,
+      name_en: values.name_en || '',
+      sector_id: values.sector_id,
+      status: values.status,
+      start_date: values.start_date,
+      end_date: values.end_date || undefined,
+      base_currency: values.base_currency,
+      description_ar: values.description_ar || undefined,
+      description_en: values.description_en || undefined,
+    });
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormLabel htmlFor="project-name-ar">اسم المشروع (عربي) *</FormLabel>
-          <TextInput id="project-name-ar" value={name_ar} onChange={(e) => setNameAr(e.target.value)} placeholder="مشروع أرض المرسى" dir="rtl" />
-          {errors.name_ar && <FormError>{errors.name_ar}</FormError>}
+          <FormLabel htmlFor="project-name-ar">{t('project_name_ar')} *</FormLabel>
+          <input
+            id="project-name-ar"
+            {...register('name_ar')}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5"
+            placeholder={locale==='ar' ? 'مشروع أرض المرسى' : 'Project name'}
+            dir="rtl"
+          />
+          {errors.name_ar && <FormError>{errors.name_ar.message}</FormError>}
         </FormField>
         <FormField>
-          <FormLabel htmlFor="project-name-en">اسم المشروع (إنجليزي)</FormLabel>
-          <TextInput id="project-name-en" value={name_en} onChange={(e) => setNameEn(e.target.value)} placeholder="Al-Marsa Land Project" dir="ltr" />
+          <FormLabel htmlFor="project-name-en">{t('project_name_en')}</FormLabel>
+          <input
+            id="project-name-en"
+            {...register('name_en')}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5"
+            placeholder="Al-Marsa Land Project"
+            dir="ltr"
+          />
+          {errors.name_en && <FormError>{errors.name_en.message}</FormError>}
         </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <FormField>
-          <FormLabel htmlFor="project-sector">القطاع</FormLabel>
-          <SelectInput id="project-sector" value={sector_id} onChange={(e) => setSectorId(e.target.value as SectorId)}>
-            {SECTORS.map((s) => (
-              <option key={s.id} value={s.id}>{locale === 'ar' ? s.ar : s.en}</option>
+          <FormLabel>{t('project_sector')}</FormLabel>
+          <select
+            {...register('sector_id')}
+            disabled={!!sectorLock}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 disabled:opacity-60"
+          >
+            {SECTORS.map(s => (
+              <option key={s.id} value={s.id}>{locale==='ar' ? s.ar : s.en}</option>
             ))}
-          </SelectInput>
+          </select>
+          {errors.sector_id && <FormError>{errors.sector_id.message}</FormError>}
         </FormField>
+
         <FormField>
-          <FormLabel htmlFor="project-status">الحالة</FormLabel>
-          <SelectInput id="project-status" value={status} onChange={(e) => setStatus(e.target.value as Project['status'])}>
-            {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.ar}</option>)}
-          </SelectInput>
+          <FormLabel>{t('project_status')}</FormLabel>
+          <select {...register('status')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            {STATUSES.map(s => <option key={s.id} value={s.id}>{locale==='ar' ? s.ar : s.en}</option>)}
+          </select>
+          {errors.status && <FormError>{errors.status.message}</FormError>}
         </FormField>
+
         <FormField>
-          <FormLabel htmlFor="project-currency">العملة الأساسية</FormLabel>
-          <SelectInput id="project-currency" value={base_currency} onChange={(e) => setBaseCurrency(e.target.value as Currency)}>
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </SelectInput>
+          <FormLabel>{t('project_currency')}</FormLabel>
+          <select {...register('base_currency')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            {CURRENCIES.map(c => <option key={c} value={c}>{c} — {t(`currency_${c}` as any)}</option>)}
+          </select>
+          {errors.base_currency && <FormError>{errors.base_currency.message}</FormError>}
         </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormLabel htmlFor="project-start-date">تاريخ البدء *</FormLabel>
-          <TextInput id="project-start-date" type="date" value={start_date} onChange={(e) => setStartDate(e.target.value)} />
-          {errors.start_date && <FormError>{errors.start_date}</FormError>}
+          <FormLabel>{t('project_start_date')} *</FormLabel>
+          <input type="date" {...register('start_date')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5" />
+          {errors.start_date && <FormError>{errors.start_date.message}</FormError>}
         </FormField>
         <FormField>
-          <FormLabel htmlFor="project-end-date">تاريخ الانتهاء (اختياري)</FormLabel>
-          <TextInput id="project-end-date" type="date" value={end_date} onChange={(e) => setEndDate(e.target.value)} />
+          <FormLabel>{t('project_end_date')}</FormLabel>
+          <input type="date" {...register('end_date')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5" />
+          {errors.end_date && <FormError>{errors.end_date.message}</FormError>}
         </FormField>
       </div>
 
       <FormField>
-        <FormLabel htmlFor="project-description">وصف المشروع</FormLabel>
-        <TextArea id="project-description" rows={3} value={description_ar} onChange={(e) => setDescAr(e.target.value)} placeholder="وصف موجز للمشروع وأهدافه…" />
+        <FormLabel>{t('project_description_ar')}</FormLabel>
+        <textarea
+          {...register('description_ar')}
+          rows={3}
+          className="w-full rounded-xl border border-border bg-background px-3 py-2.5"
+          placeholder={locale==='ar' ? 'وصف موجز للمشروع وأهدافه…' : 'Project description…'}
+        />
+        {errors.description_ar && <FormError>{errors.description_ar.message}</FormError>}
       </FormField>
 
       <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
-        <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
-        <Button type="submit" disabled={loading}>{loading ? 'جار الحفظ…' : 'حفظ المشروع'}</Button>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || isSubmitting}>
+          {t('action_cancel')}
+        </Button>
+        <Button type="submit" disabled={loading || isSubmitting}>
+          {loading || isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
+        </Button>
       </div>
+
+      {/* Zod error summary — helps debugging */}
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-xl bg-warning/5 border border-warning/20 p-3 text-xs text-warning" dir="rtl">
+          {Object.entries(errors).map(([k, e]: any) => (
+            <div key={k}>• {k}: {e?.message}</div>
+          ))}
+        </div>
+      )}
     </form>
   );
 }
