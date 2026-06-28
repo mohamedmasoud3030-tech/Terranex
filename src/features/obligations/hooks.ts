@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { recordSettlement } from '../settlements/workflow';
+import { recordSettlement, recordSettlementWithAllocations, type RecordSettlementWithAllocationsInput } from '../settlements/workflow';
 import { obligationsStore, type ObligationInput } from './storage';
 import type { Obligation } from '../../core/types/domain';
 
@@ -21,6 +21,7 @@ export function useObligations(projectId?: string) {
     payment_method: 'other',
     notes: 'دفعة مسجلة من نموذج الإدخال المختصر.',
   }), []);
+  const settleObligations = useCallback((input: RecordSettlementWithAllocationsInput) => recordSettlementWithAllocations(input), []);
   const updateObligation = useCallback((id: string, input: Partial<ObligationInput>) => obligationsStore.update(id, input), []);
   const deleteObligation = useCallback((id: string) => obligationsStore.remove(id), []);
 
@@ -28,5 +29,5 @@ export function useObligations(projectId?: string) {
   const totalReceivableEgp = open.filter((item) => item.direction === 'receivable').reduce((sum, item) => sum + item.amount_egp - item.amount_settled_egp, 0);
   const totalPayableEgp = open.filter((item) => item.direction === 'payable').reduce((sum, item) => sum + item.amount_egp - item.amount_settled_egp, 0);
 
-  return { obligations, open, totalReceivableEgp, totalPayableEgp, createObligation, settleObligation, updateObligation, deleteObligation };
+  return { obligations, open, totalReceivableEgp, totalPayableEgp, createObligation, settleObligation, settleObligations, updateObligation, deleteObligation };
 }
