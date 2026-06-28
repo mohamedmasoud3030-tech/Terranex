@@ -1,38 +1,42 @@
-import { useState, type FormEvent } from 'react';
+import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/Button';
-import { FormError, FormField, FormHint, FormLabel, SelectInput, TextArea, TextInput } from '../../components/ui/FormControls';
+import { FormError, FormField, FormHint, FormLabel } from '../../components/ui/FormControls';
 import type { Transaction, Currency, TransactionDirection, TransactionCategory } from '../../core/types/domain';
 import { useDocuments } from '../documents/hooks';
 import { usePartners } from '../partners/hooks';
 import type { DeferredExpenseTransactionInput } from './deferredExpenseWorkflow';
+import { transactionSchema, type TransactionFormValues } from '../../core/lib/validation';
+import { useI18n } from '../../core/i18n/context';
 
-const CATEGORIES: { id: TransactionCategory; ar: string; group: string }[] = [
-  { id: 'acquisition', ar: 'اقتناء أصل', group: 'عام' },
-  { id: 'sale', ar: 'بيع', group: 'عام' },
-  { id: 'development_cost', ar: 'تكلفة تطوير', group: 'عقاري' },
-  { id: 'maintenance', ar: 'صيانة', group: 'عام' },
-  { id: 'salary', ar: 'رواتب', group: 'عام' },
-  { id: 'tax', ar: 'ضرائب ورسوم', group: 'عام' },
-  { id: 'legal_fee', ar: 'رسوم قانونية', group: 'عام' },
-  { id: 'transport', ar: 'مواصلات ونقل', group: 'عام' },
-  { id: 'utility', ar: 'مرافق', group: 'عام' },
-  { id: 'seed_input', ar: 'مدخلات بذور', group: 'زراعي' },
-  { id: 'fertilizer', ar: 'أسمدة', group: 'زراعي' },
-  { id: 'harvest_revenue', ar: 'إيرادات الحصاد', group: 'زراعي' },
-  { id: 'irrigation', ar: 'ري', group: 'زراعي' },
-  { id: 'feed', ar: 'أعلاف', group: 'حيواني' },
-  { id: 'veterinary', ar: 'رعاية بيطرية', group: 'حيواني' },
-  { id: 'vaccination', ar: 'تحصينات', group: 'حيواني' },
-  { id: 'livestock_purchase', ar: 'شراء مواشٍ', group: 'حيواني' },
-  { id: 'livestock_sale', ar: 'بيع مواشٍ', group: 'حيواني' },
-  { id: 'loan_disbursement', ar: 'صرف قرض', group: 'تمويل' },
-  { id: 'loan_repayment', ar: 'سداد قرض', group: 'تمويل' },
-  { id: 'interest', ar: 'فوائد', group: 'تمويل' },
-  { id: 'dividend', ar: 'أرباح موزعة', group: 'تمويل' },
-  { id: 'other', ar: 'أخرى', group: 'عام' },
+const CATEGORIES: { id: TransactionCategory; ar: string; en: string; group: string }[] = [
+  { id: 'acquisition', ar: 'اقتناء أصل', en: 'Acquisition', group: 'عام' },
+  { id: 'sale', ar: 'بيع', en: 'Sale', group: 'عام' },
+  { id: 'development_cost', ar: 'تكلفة تطوير', en: 'Development', group: 'عقاري' },
+  { id: 'maintenance', ar: 'صيانة', en: 'Maintenance', group: 'عام' },
+  { id: 'salary', ar: 'رواتب', en: 'Salary', group: 'عام' },
+  { id: 'tax', ar: 'ضرائب ورسوم', en: 'Tax', group: 'عام' },
+  { id: 'legal_fee', ar: 'رسوم قانونية', en: 'Legal', group: 'عام' },
+  { id: 'transport', ar: 'مواصلات ونقل', en: 'Transport', group: 'عام' },
+  { id: 'utility', ar: 'مرافق', en: 'Utility', group: 'عام' },
+  { id: 'seed_input', ar: 'مدخلات بذور', en: 'Seeds', group: 'زراعي' },
+  { id: 'fertilizer', ar: 'أسمدة', en: 'Fertilizer', group: 'زراعي' },
+  { id: 'harvest_revenue', ar: 'إيرادات الحصاد', en: 'Harvest', group: 'زراعي' },
+  { id: 'irrigation', ar: 'ري', en: 'Irrigation', group: 'زراعي' },
+  { id: 'feed', ar: 'أعلاف', en: 'Feed', group: 'حيواني' },
+  { id: 'veterinary', ar: 'رعاية بيطرية', en: 'Vet', group: 'حيواني' },
+  { id: 'vaccination', ar: 'تحصينات', en: 'Vaccination', group: 'حيواني' },
+  { id: 'livestock_purchase', ar: 'شراء مواشٍ', en: 'Livestock Buy', group: 'حيواني' },
+  { id: 'livestock_sale', ar: 'بيع مواشٍ', en: 'Livestock Sale', group: 'حيواني' },
+  { id: 'loan_disbursement', ar: 'صرف قرض', en: 'Loan', group: 'تمويل' },
+  { id: 'loan_repayment', ar: 'سداد قرض', en: 'Repayment', group: 'تمويل' },
+  { id: 'interest', ar: 'فوائد', en: 'Interest', group: 'تمويل' },
+  { id: 'dividend', ar: 'أرباح موزعة', en: 'Dividend', group: 'تمويل' },
+  { id: 'other', ar: 'أخرى', en: 'Other', group: 'عام' },
 ];
 
-const CURRENCIES: Currency[] = ['EGP', 'USD', 'SAR', 'AED', 'EUR', 'GBP'];
+const CURRENCIES: Currency[] = ['EGP', 'USD', 'OMR', 'SAR', 'AED', 'EUR', 'GBP'];
 
 interface Props {
   projectId: string;
@@ -43,183 +47,237 @@ interface Props {
 }
 
 export function TransactionForm({ projectId, initial, onSubmit, onCancel, loading }: Props) {
+  const { t, locale } = useI18n();
   const { partners } = usePartners();
   const { documents } = useDocuments(projectId);
-  const [direction, setDirection] = useState<TransactionDirection>(initial?.direction ?? 'expense');
-  const [category, setCategory] = useState<TransactionCategory>(initial?.category ?? 'other');
-  const [amount, setAmount] = useState(String(initial?.amount ?? ''));
-  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'EGP');
-  const [fx_rate, setFxRate] = useState(String(initial?.fx_rate ?? 1));
-  const [partner_id, setPartnerId] = useState(initial?.partner_id ?? '');
-  const [document_id, setDocumentId] = useState(initial?.document_id ?? '');
-  const [transaction_date, setDate] = useState(initial?.transaction_date ?? new Date().toISOString().slice(0, 10));
-  const [description, setDescription] = useState(initial?.description ?? '');
-  const [notes, setNotes] = useState(initial?.notes ?? '');
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    control,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<TransactionFormValues>({
+    resolver: zodResolver(transactionSchema) as any,
+    defaultValues: {
+      project_id: projectId,
+      direction: initial?.direction ?? 'expense',
+      category: initial?.category ?? 'other',
+      amount: initial?.amount ?? undefined,
+      currency: initial?.currency ?? 'EGP',
+      fx_rate: initial?.fx_rate ?? 1,
+      transaction_date: initial?.transaction_date ?? new Date().toISOString().slice(0, 10),
+      partner_id: initial?.partner_id ?? '',
+      document_id: initial?.document_id ?? '',
+      description: initial?.description ?? '',
+      notes: initial?.notes ?? '',
+    },
+    mode: 'onBlur',
+  });
+
+  const direction = watch('direction');
+  const currency = watch('currency');
+  const amount = watch('amount') || 0;
+  const fx_rate = watch('fx_rate') || 1;
+  const effectiveFx = currency === 'EGP' ? 1 : fx_rate;
+  const amountEgp = Number(amount) * effectiveFx;
+
   const [createPayableObligation, setCreatePayableObligation] = useState(false);
   const [payableDueDate, setPayableDueDate] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const amountNum = Number(amount);
-  const fxNum = Number(fx_rate);
-  const effectiveFxRate = currency === 'EGP' ? 1 : fxNum;
-  const amountEgp = amountNum * effectiveFxRate;
-  const availableDocuments = documents.filter((document) => !document.transaction_id || document.transaction_id === initial?.id);
-  const isDeferredExpense = direction === 'expense' && createPayableObligation;
+  const availableDocuments = documents.filter((d) => !d.transaction_id || d.transaction_id === initial?.id);
 
-  function validate(): boolean {
-    const e: Record<string, string> = {};
-    if (!partner_id) e.partner = 'اختر الطرف أو الشريك المرتبط بالمعاملة';
-    if (!document_id) e.document = 'اختر الوثيقة الداعمة للمعاملة';
-    if (!Number.isFinite(amountNum) || amountNum <= 0) e.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
-    if (currency !== 'EGP' && (!Number.isFinite(fxNum) || fxNum <= 0)) e.fx = 'أدخل سعر صرف صحيحاً أكبر من صفر';
-    if (!transaction_date) e.date = 'التاريخ مطلوب';
-    if (isDeferredExpense && !payableDueDate) e.payableDueDate = 'أدخل تاريخ استحقاق الذمة الدائنة';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
+  // auto force fx_rate = 1 when EGP
+  React.useEffect(() => {
+    if (currency === 'EGP') {
+      setValue('fx_rate', 1, { shouldValidate: true });
+    }
+  }, [currency, setValue]);
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
+  const submit = (values: TransactionFormValues) => {
+    if (direction === 'expense' && createPayableObligation && !payableDueDate) {
+      alert(locale === 'ar' ? 'أدخل تاريخ استحقاق الذمة الدائنة' : 'Enter payable due date');
+      return;
+    }
     onSubmit({
-      project_id: projectId,
-      partner_id,
-      document_id,
-      direction,
-      category,
-      amount: amountNum,
-      currency,
-      fx_rate: effectiveFxRate,
-      amount_egp: amountEgp,
-      transaction_date,
-      description: description || undefined,
-      notes: notes || undefined,
-      create_payable_obligation: isDeferredExpense || undefined,
-      payable_due_date: isDeferredExpense ? payableDueDate : undefined,
+      project_id: values.project_id,
+      partner_id: values.partner_id || undefined,
+      document_id: values.document_id || undefined,
+      direction: values.direction,
+      category: values.category as TransactionCategory,
+      amount: Number(values.amount),
+      currency: values.currency as Currency,
+      fx_rate: values.currency === 'EGP' ? 1 : Number(values.fx_rate),
+      amount_egp: Number(values.amount) * (values.currency === 'EGP' ? 1 : Number(values.fx_rate)),
+      transaction_date: values.transaction_date,
+      description: values.description || undefined,
+      notes: values.notes || undefined,
+      create_payable_obligation: createPayableObligation || undefined,
+      payable_due_date: createPayableObligation ? payableDueDate : undefined,
     });
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+      {/* Direction */}
       <FormField>
-        <FormLabel>الاتجاه</FormLabel>
-        <div className="flex gap-2">
-          {(['income', 'expense'] as const).map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDirection(d)}
-              className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
-                direction === d
-                  ? d === 'income'
-                    ? 'border-success bg-success/10 text-success'
-                    : 'border-danger bg-danger/10 text-danger'
-                  : 'border-border text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              {d === 'income' ? '↑ إيراد' : '↓ مصروف'}
-            </button>
-          ))}
-        </div>
+        <FormLabel>{t('transaction_direction')}</FormLabel>
+        <Controller
+          name="direction"
+          control={control}
+          render={({ field }) => (
+            <div className="flex gap-2">
+              {( ['income','expense'] as const).map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => field.onChange(d)}
+                  className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
+                    field.value === d
+                      ? d === 'income'
+                        ? 'border-success bg-success/10 text-success'
+                        : 'border-danger bg-danger/10 text-danger'
+                      : 'border-border text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {d === 'income' ? `↑ ${t('transaction_direction_income')}` : `↓ ${t('transaction_direction_expense')}`}
+                </button>
+              ))}
+            </div>
+          )}
+        />
+        {errors.direction && <FormError>{errors.direction.message}</FormError>}
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormLabel htmlFor="transaction-amount">المبلغ *</FormLabel>
-          <TextInput id="transaction-amount" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
-          {errors.amount && <FormError>{errors.amount}</FormError>}
+          <FormLabel htmlFor="tx-amount">{t('transaction_amount')} *</FormLabel>
+          <input
+            id="tx-amount"
+            type="number"
+            step="0.01"
+            min="0"
+            {...register('amount', { valueAsNumber: true })}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 ltr"
+            dir="ltr"
+            placeholder="0.00"
+          />
+          {errors.amount && <FormError>{errors.amount.message}</FormError>}
         </FormField>
+
         <FormField>
-          <FormLabel htmlFor="transaction-currency">العملة</FormLabel>
-          <SelectInput id="transaction-currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </SelectInput>
+          <FormLabel>{t('transaction_currency')}</FormLabel>
+          <select {...register('currency')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            {CURRENCIES.map(c => <option key={c} value={c}>{c} — {t(`currency_${c}` as any)}</option>)}
+          </select>
+          {errors.currency && <FormError>{errors.currency.message}</FormError>}
         </FormField>
       </div>
 
       {currency !== 'EGP' && (
         <FormField>
-          <FormLabel htmlFor="transaction-fx-rate">سعر الصرف (1 {currency} = ? EGP)</FormLabel>
-          <TextInput id="transaction-fx-rate" type="number" min="0" step="0.001" value={fx_rate} onChange={(e) => setFxRate(e.target.value)} />
-          {errors.fx && <FormError>{errors.fx}</FormError>}
-          <FormHint>المكافئ بالجنيه: {amountEgp.toLocaleString('ar-EG')} EGP</FormHint>
+          <FormLabel>{t('transaction_fx_rate')}</FormLabel>
+          <input
+            type="number"
+            step="0.0001"
+            min="0"
+            {...register('fx_rate', { valueAsNumber: true })}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 ltr"
+            dir="ltr"
+          />
+          {errors.fx_rate && <FormError>{errors.fx_rate.message}</FormError>}
+          <FormHint>المكافئ: {amountEgp.toLocaleString('ar-EG')} EGP</FormHint>
         </FormField>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormLabel htmlFor="transaction-partner">الطرف أو الشريك *</FormLabel>
-          <SelectInput id="transaction-partner" value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
-            <option value="">اختر الطرف…</option>
-            {partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name_ar}</option>)}
-          </SelectInput>
-          {errors.partner && <FormError>{errors.partner}</FormError>}
+          <FormLabel>{t('transaction_counterparty')} *</FormLabel>
+          <select {...register('partner_id')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            <option value="">{locale==='ar' ? 'اختر الطرف…' : 'Choose…'}</option>
+            {partners.map(p => <option key={p.id} value={p.id}>{locale==='ar' ? p.name_ar : (p.name_en || p.name_ar)}</option>)}
+          </select>
+          {errors.partner_id && <FormError>{errors.partner_id.message}</FormError>}
         </FormField>
+
         <FormField>
-          <FormLabel htmlFor="transaction-document">الوثيقة الداعمة *</FormLabel>
-          <SelectInput id="transaction-document" value={document_id} onChange={(e) => setDocumentId(e.target.value)}>
-            <option value="">اختر الوثيقة…</option>
-            {availableDocuments.map((document) => <option key={document.id} value={document.id}>{document.title_ar}</option>)}
-          </SelectInput>
-          {errors.document && <FormError>{errors.document}</FormError>}
-          {availableDocuments.length === 0 && <FormHint>أضف مستندًا مرتبطًا بالمشروع قبل تسجيل المعاملة.</FormHint>}
+          <FormLabel>{t('transaction_document')} *</FormLabel>
+          <select {...register('document_id')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            <option value="">{locale==='ar' ? 'اختر الوثيقة…' : 'Choose…'}</option>
+            {availableDocuments.map(d => <option key={d.id} value={d.id}>{d.title_ar}</option>)}
+          </select>
+          {errors.document_id && <FormError>{errors.document_id.message}</FormError>}
         </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormLabel htmlFor="transaction-date">التاريخ *</FormLabel>
-          <TextInput id="transaction-date" type="date" value={transaction_date} onChange={(e) => setDate(e.target.value)} />
-          {errors.date && <FormError>{errors.date}</FormError>}
+          <FormLabel>{t('transaction_date')} *</FormLabel>
+          <input type="date" {...register('transaction_date')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5" />
+          {errors.transaction_date && <FormError>{errors.transaction_date.message}</FormError>}
         </FormField>
+
         <FormField>
-          <FormLabel htmlFor="transaction-category">التصنيف</FormLabel>
-          <SelectInput id="transaction-category" value={category} onChange={(e) => setCategory(e.target.value as TransactionCategory)}>
-            {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.group} — {c.ar}</option>)}
-          </SelectInput>
+          <FormLabel>{t('transaction_category')}</FormLabel>
+          <select {...register('category')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            {CATEGORIES.map(c => (
+              <option key={c.id} value={c.id}>{c.group} — {locale==='ar'?c.ar:c.en}</option>
+            ))}
+          </select>
+          {errors.category && <FormError>{errors.category.message}</FormError>}
         </FormField>
       </div>
 
       {direction === 'expense' && (
         <div className="rounded-xl border border-border bg-muted/30 p-3">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={createPayableObligation}
-              onChange={(e) => setCreatePayableObligation(e.target.checked)}
-              className="mt-1 h-4 w-4"
-            />
-            <span>
-              <span className="block text-sm font-semibold text-foreground">هذا مصروف آجل لم يتم سداده بعد</span>
-              <span className="mt-1 block text-xs leading-5 text-muted-foreground">سيُحفظ المصروف وتُنشأ ذمة دائنة مرتبطة تلقائيًا بنفس المشروع والطرف والوثيقة.</span>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={createPayableObligation} onChange={e => setCreatePayableObligation(e.target.checked)} className="mt-1" />
+            <span className="text-sm">
+              <b>{locale==='ar' ? 'مصروف آجل لم يُسدد بعد' : 'Deferred expense'}</b>
+              <br />
+              <span className="text-xs text-muted-foreground">
+                {locale==='ar' ? 'سيُنشئ ذمة دائنة تلقائياً' : 'Will auto-create a payable obligation'}
+              </span>
             </span>
           </label>
           {createPayableObligation && (
-            <FormField className="mt-3">
-              <FormLabel htmlFor="payable-due-date">تاريخ استحقاق الذمة الدائنة *</FormLabel>
-              <TextInput id="payable-due-date" type="date" value={payableDueDate} onChange={(e) => setPayableDueDate(e.target.value)} />
-              {errors.payableDueDate && <FormError>{errors.payableDueDate}</FormError>}
-            </FormField>
+            <div className="mt-3">
+              <FormLabel>تاريخ استحقاق الذمة *</FormLabel>
+              <input
+                type="date"
+                value={payableDueDate}
+                onChange={e => setPayableDueDate(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 mt-1"
+                required={createPayableObligation}
+              />
+            </div>
           )}
         </div>
       )}
 
       <FormField>
-        <FormLabel htmlFor="transaction-description">الوصف</FormLabel>
-        <TextInput id="transaction-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف موجز للمعاملة…" />
+        <FormLabel>{t('transaction_notes')}</FormLabel>
+        <textarea {...register('description')} rows={2} className="w-full rounded-xl border border-border bg-background px-3 py-2.5" placeholder={locale==='ar' ? 'وصف اختياري…' : 'Optional…'} />
       </FormField>
 
-      <FormField>
-        <FormLabel htmlFor="transaction-notes">ملاحظات</FormLabel>
-        <TextArea id="transaction-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </FormField>
+      <input type="hidden" {...register('project_id')} />
 
-      <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
-        <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
-        <Button type="submit" disabled={loading} className={direction === 'income' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'}>
-          {loading ? 'جار الحفظ…' : isDeferredExpense ? 'حفظ المصروف وإنشاء الذمة' : direction === 'income' ? 'حفظ الإيراد' : 'حفظ المصروف'}
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="secondary" onClick={onCancel}>{t('action_cancel')}</Button>
+        <Button type="submit" disabled={loading || isSubmitting} className={direction === 'income' ? 'bg-success hover:bg-success/90' : ''}>
+          {loading || isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
         </Button>
       </div>
+
+            {/* RHF debug — error summary */}
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-xl bg-danger/5 border border-danger/20 p-3 text-xs text-danger" dir="rtl">
+          {Object.entries(errors).map(([k, err]: any) => (
+            <div key={k}>• {k}: {err?.message}</div>
+          ))}
+        </div>
+      )}
     </form>
   );
 }
