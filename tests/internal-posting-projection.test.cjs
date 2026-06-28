@@ -57,6 +57,18 @@ function balancesByAccount(postings) {
   return new Map(computeInternalAccountBalances(postings).map((item) => [item.account, item]));
 }
 
+function requireBalance(balances, account) {
+  const balance = balances.get(account);
+  if (!balance) throw new Error(`Missing balance for ${account}.`);
+  return balance;
+}
+
+function requirePosting(postings, sourceType) {
+  const posting = postings.find((item) => item.source_type === sourceType);
+  if (!posting) throw new Error(`Missing ${sourceType} posting.`);
+  return posting;
+}
+
 test('projection produces balanced postings for receivable, payable, and active allocations', () => {
   const receivable = obligation({ id: 'receivable', amount: 100, amount_egp: 100, amount_settled_egp: 30 });
   const payable = obligation({
@@ -86,10 +98,10 @@ test('projection produces balanced postings for receivable, payable, and active 
   for (const posting of projection.postings) validateInternalPosting(posting);
 
   const balances = new Map(projection.account_balances.map((item) => [item.account, item]));
-  assert.equal(balances.get('trade_receivables').balance_egp, 70);
-  assert.equal(balances.get('trade_payables').balance_egp, -60);
-  assert.equal(balances.get('settlement_clearing').balance_egp, 20);
-  assert.equal(balances.get('obligation_offset').balance_egp, -30);
+  assert.equal(requireBalance(balances, 'trade_receivables').balance_egp, 70);
+  assert.equal(requireBalance(balances, 'trade_payables').balance_egp, -60);
+  assert.equal(requireBalance(balances, 'settlement_clearing').balance_egp, 20);
+  assert.equal(requireBalance(balances, 'obligation_offset').balance_egp, -30);
   assert.equal([...balances.values()].reduce((sum, item) => sum + item.balance_egp, 0), 0);
 });
 
@@ -113,7 +125,7 @@ test('reversed settlements are absent by default and audit-visible as balanced r
 
   const current = projectInternalPostings([receivable], [reversedSettlement], [reversedAllocation]);
   assert.equal(current.postings.length, 1);
-  assert.equal(balancesByAccount(current.postings).get('trade_receivables').balance_egp, 100);
+  assert.equal(requireBalance(balancesByAccount(current.postings), 'trade_receivables').balance_egp, 100);
 
   const audit = projectInternalPostings(
     [receivable],
@@ -122,16 +134,17 @@ test('reversed settlements are absent by default and audit-visible as balanced r
     { include_reversed: true },
   );
   assert.equal(audit.postings.length, 3);
-  const original = audit.postings.find((item) => item.source_type === 'settlement_allocation');
-  const reversal = audit.postings.find((item) => item.source_type === 'settlement_reversal');
+  const original = requirePosting(audit.postings, 'settlement_allocation');
+  const reversal = requirePosting(audit.postings, 'settlement_reversal');
   assert.equal(reversal.reversal_of_posting_id, original.id);
   assert.deepEqual(reversal.lines, original.lines.map((line) => ({
     account: line.account,
     debit_egp: line.credit_egp,
     credit_egp: line.debit_egp,
   })));
-  assert.equal(balancesByAccount(audit.postings).get('trade_receivables').balance_egp, 100);
-  assert.equal(balancesByAccount(audit.postings).get('settlement_clearing').balance_egp, 0);
+  const auditBalances = balancesByAccount(audit.postings);
+  assert.equal(requireBalance(auditBalances, 'trade_receivables').balance_egp, 100);
+  assert.equal(requireBalance(auditBalances, 'settlement_clearing').balance_egp, 0);
 });
 
 test('projection reports invalid allocation references without inventing links and rejects unbalanced postings', () => {
