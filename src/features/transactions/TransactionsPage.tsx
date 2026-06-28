@@ -8,6 +8,7 @@ import { useProjects } from '../projects/hooks';
 import { usePartners } from '../partners/hooks';
 import { useTransactions } from './hooks';
 import { formatEgp } from '../../core/lib/profitability';
+import { ExportExcelButton } from '../reports/ExportExcelButton';
 
 const CATEGORY_LABELS: Record<string, string> = {
   acquisition: 'اقتناء',
@@ -50,7 +51,9 @@ export function TransactionsPage() {
       <PageHeader
         title="المعاملات"
         description="سجل موحد لكل الإيرادات والمصروفات المرتبطة بالمشاريع والأصول والأطراف والمستندات الداعمة."
-      />
+      >
+        <ExportExcelButton />
+      </PageHeader>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>

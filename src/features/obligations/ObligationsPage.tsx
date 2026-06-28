@@ -12,6 +12,7 @@ import { formatEgp } from '../../core/lib/profitability';
 import type { Obligation } from '../../core/types/domain';
 import { ObligationForm } from './ObligationForm';
 import { useI18n } from '../../core/i18n/context';
+import { ExportExcelButton } from '../reports/ExportExcelButton';
 
 const STATUS_META: Record<Obligation['status'], { ar: string; en: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info'; Icon: typeof Clock }> = {
   open:        { ar: 'مفتوح',    en: 'Open',       tone: 'warning', Icon: Clock },
@@ -64,6 +65,7 @@ export function ObligationsPage() {
         title="الذمم والالتزامات"
         description="يربط كل سجل بالمال والقطاع والطرف والمستند."
       >
+        <ExportExcelButton />
         <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4" /> التزام جديد
         </Button>
