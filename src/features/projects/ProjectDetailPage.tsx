@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowRight, BarChart3, CalendarDays, Edit3, FileText, Layers, Plus, ShieldAlert, Trash2, TrendingDown, TrendingUp, Users } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, Edit3, FileText, Layers, Plus, ShieldAlert, Trash2, TrendingDown, TrendingUp, Users, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -18,6 +18,7 @@ import { TransactionForm } from '../transactions/TransactionForm';
 import { useProject, useProjects } from './hooks';
 import { ProjectForm } from './ProjectForm';
 import type { ProjectInput } from './storage';
+import { ExportProjectPdfButton } from '../reports/ExportPdfButton';
 
 const CATEGORY_LABELS: Record<string, string> = {
   acquisition: 'اقتناء', sale: 'بيع', development_cost: 'تطوير', maintenance: 'صيانة', salary: 'رواتب', tax: 'ضرائب', legal_fee: 'رسوم قانونية', transport: 'نقل', utility: 'مرافق', seed_input: 'بذور', fertilizer: 'أسمدة', harvest_revenue: 'حصاد', irrigation: 'ري', feed: 'أعلاف', veterinary: 'بيطرة', vaccination: 'تحصينات', livestock_purchase: 'شراء مواشٍ', livestock_sale: 'بيع مواشٍ', loan_disbursement: 'قرض', loan_repayment: 'سداد قرض', interest: 'فوائد', dividend: 'أرباح موزعة', other: 'أخرى',
@@ -131,6 +132,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
+                <ExportProjectPdfButton projectId={projectId} />
                 <Button variant="secondary" size="sm" onClick={() => setEditing(true)}><Edit3 className="h-4 w-4" /> تعديل</Button>
                 <Button variant="danger" size="sm" onClick={handleDeleteProject}><Trash2 className="h-4 w-4" /> حذف</Button>
               </div>
