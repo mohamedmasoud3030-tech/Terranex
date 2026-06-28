@@ -24,7 +24,7 @@ function parse(raw: unknown): SettlementAllocation[] {
 }
 
 function makeId() {
-  return `alloc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return `alloc-${globalThis.crypto.randomUUID()}`;
 }
 
 const store = createLocalStorageStore<SettlementAllocation[]>(SETTLEMENT_ALLOCATIONS_KEY, [], parse);
