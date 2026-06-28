@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { CheckCircle2, Split } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { FormError, FormField, FormLabel, SelectInput, TextInput } from '../../components/ui/FormControls';
 import { EmptyState } from '../../components/ui/States';
 import { formatEgp } from '../../core/lib/profitability';
 import { useObligations } from '../obligations/hooks';
@@ -41,9 +42,6 @@ export function SettlementAllocationPage() {
   }), [amounts, candidates]);
   const total = getSettlementAllocationPlanTotal(previewPlans);
 
-  const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
-  const lc = 'mb-1 block text-sm font-medium text-foreground';
-
   function partnerName(partnerId: string) {
     return partners.find((item) => item.id === partnerId)?.name_ar ?? partnerId;
   }
@@ -60,7 +58,7 @@ export function SettlementAllocationPage() {
     setSuccess(null);
   }
 
-  function submit(e: React.FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
     try {
       const plans = buildSettlementAllocationFormPlans(candidates, amounts);
@@ -99,17 +97,17 @@ export function SettlementAllocationPage() {
         <Card>
           <CardContent>
             <form onSubmit={submit} className="space-y-5">
-              <div>
-                <label className={lc}>التزام مرجعي</label>
-                <select className={ic} value={anchorId} onChange={(e) => selectAnchor(e.target.value)}>
+              <FormField>
+                <FormLabel htmlFor="allocation-anchor">التزام مرجعي</FormLabel>
+                <SelectInput id="allocation-anchor" value={anchorId} onChange={(e) => selectAnchor(e.target.value)}>
                   <option value="">اختر التزاماً لعرض التوزيعات المتوافقة…</option>
                   {settleable.map((obligation) => (
                     <option key={obligation.id} value={obligation.id}>
                       {partnerName(obligation.partner_id)} — {obligation.direction === 'receivable' ? 'مدين' : 'دائن'} — {projectName(obligation.project_id)} — {formatEgp(getObligationRemainingEgp(obligation))} EGP
                     </option>
                   ))}
-                </select>
-              </div>
+                </SelectInput>
+              </FormField>
 
               {anchor && (
                 <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm">
@@ -123,7 +121,7 @@ export function SettlementAllocationPage() {
               {candidates.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <label className={lc}>التوزيعات</label>
+                    <FormLabel>التوزيعات</FormLabel>
                     <span className="text-sm font-semibold text-primary">إجمالي السند: {formatEgp(total)} EGP</span>
                   </div>
                   <div className="divide-y divide-border rounded-xl border border-border">
@@ -137,13 +135,12 @@ export function SettlementAllocationPage() {
                               {obligation.due_date ? `الاستحقاق: ${obligation.due_date} — ` : ''}المتبقي: {formatEgp(remaining)} EGP
                             </p>
                           </div>
-                          <input
+                          <TextInput
                             type="number"
                             min="0"
                             max={remaining}
                             step="0.01"
                             inputMode="decimal"
-                            className={ic}
                             value={amounts[obligation.id] ?? ''}
                             placeholder={`حتى ${formatEgp(remaining)}`}
                             onChange={(e) => setAmounts((current) => ({ ...current, [obligation.id]: e.target.value }))}
@@ -157,34 +154,34 @@ export function SettlementAllocationPage() {
               )}
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className={lc}>تاريخ التسوية</label>
-                  <input type="date" className={ic} value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} required />
-                </div>
-                <div>
-                  <label className={lc}>طريقة الدفع</label>
-                  <select className={ic} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as SettlementPaymentMethod)}>
+                <FormField>
+                  <FormLabel htmlFor="allocation-date">تاريخ التسوية</FormLabel>
+                  <TextInput id="allocation-date" type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} required />
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="allocation-method">طريقة الدفع</FormLabel>
+                  <SelectInput id="allocation-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as SettlementPaymentMethod)}>
                     <option value="cash">نقدي</option>
                     <option value="bank_transfer">تحويل بنكي</option>
                     <option value="cheque">شيك</option>
                     <option value="card">بطاقة</option>
                     <option value="other">أخرى</option>
-                  </select>
-                </div>
+                  </SelectInput>
+                </FormField>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className={lc}>رقم المرجع</label>
-                  <input className={ic} value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} />
-                </div>
-                <div>
-                  <label className={lc}>ملاحظات</label>
-                  <input className={ic} value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </div>
+                <FormField>
+                  <FormLabel htmlFor="allocation-reference">رقم المرجع</FormLabel>
+                  <TextInput id="allocation-reference" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} />
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="allocation-notes">ملاحظات</FormLabel>
+                  <TextInput id="allocation-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </FormField>
               </div>
 
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {error && <FormError>{error}</FormError>}
               {success && <p className="flex items-center gap-2 text-sm text-success"><CheckCircle2 className="h-4 w-4" />{success}</p>}
 
               <div className="flex justify-end">
