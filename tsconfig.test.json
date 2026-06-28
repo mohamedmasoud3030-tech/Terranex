@@ -25,6 +25,7 @@
     "src/features/documents/storage.ts",
     "src/features/documents/transactionDocumentIntegrity.ts",
     "src/features/obligations/storage.ts",
+    "src/features/settlements/allocationForm.ts",
     "src/features/transactions/storage.ts",
     "src/features/transactions/deferredExpenseWorkflow.ts"
   ]
