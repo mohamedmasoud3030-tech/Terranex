@@ -11,6 +11,7 @@
  *     financeRoute        /finance
  *       financeIndexRoute       /          → redirect /finance/obligations
  *       financeObligationsRoute /obligations
+ *       financeAllocationsRoute /allocations
  *       financeProfitabilityRoute /profitability
  *     documentsRoute      /documents
  *     partnersRoute       /partners
@@ -33,6 +34,7 @@ import { livestockRoute } from './routes/livestock';
 import { financeRoute } from './routes/finance';
 import { financeIndexRoute } from './routes/finance.index';
 import { financeObligationsRoute } from './routes/finance.obligations';
+import { financeAllocationsRoute } from './routes/finance.allocations';
 import { financeProfitabilityRoute } from './routes/finance.profitability';
 import { documentsRoute } from './routes/documents';
 import { partnersRoute } from './routes/partners';
@@ -48,6 +50,7 @@ import { NotFoundPage } from './routes/404';
 const financeTree = financeRoute.addChildren([
   financeIndexRoute,
   financeObligationsRoute,
+  financeAllocationsRoute,
   financeProfitabilityRoute,
 ]);
 
