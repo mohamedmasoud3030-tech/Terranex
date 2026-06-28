@@ -9,8 +9,8 @@ import { EmptyState } from '../../components/ui/States';
 import { usePartners } from './hooks';
 import { useObligations } from '../obligations/hooks';
 import { formatEgp } from '../../core/lib/profitability';
-import type { PartnerInput } from './storage';
-import type { Partner } from '../../core/types/domain';
+import { PartnerForm } from './PartnerForm';
+import { useI18n } from '../../core/i18n/context';
 
 const ROLES = [
   { id: 'supplier', ar: 'مورد' }, { id: 'client', ar: 'عميل' },
@@ -18,63 +18,9 @@ const ROLES = [
   { id: 'government', ar: 'جهة حكومية' }, { id: 'other', ar: 'أخرى' },
 ];
 
-function PartnerForm({ onSubmit, onCancel }: { onSubmit: (i: PartnerInput) => void; onCancel: () => void }) {
-  const [name_ar, setNameAr] = useState('');
-  const [category, setCategory] = useState<Partner['category']>('counterparty');
-  const [counterparty_role, setRole] = useState<Partner['counterparty_role']>('supplier');
-  const [phone, setPhone] = useState('');
-  const [notes, setNotes] = useState('');
-
-  const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
-  const lc = 'block text-sm font-medium text-foreground mb-1';
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name_ar.trim()) return;
-    onSubmit({ name_ar, category, counterparty_role: category === 'counterparty' ? counterparty_role : undefined, phone: phone || undefined, notes: notes || undefined });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={lc}>الاسم *</label>
-          <input className={ic} value={name_ar} onChange={e => setNameAr(e.target.value)} placeholder="شركة الأمل للمقاولات" />
-        </div>
-        <div>
-          <label className={lc}>التصنيف</label>
-          <select className={ic} value={category} onChange={e => setCategory(e.target.value as Partner['category'])}>
-            <option value="counterparty">طرف تعامل</option>
-            <option value="equity_partner">شريك ملكية</option>
-          </select>
-        </div>
-      </div>
-      {category === 'counterparty' && (
-        <div>
-          <label className={lc}>الدور</label>
-          <select className={ic} value={counterparty_role} onChange={e => setRole(e.target.value as Partner['counterparty_role'])}>
-            {ROLES.map(r => <option key={r.id} value={r.id}>{r.ar}</option>)}
-          </select>
-        </div>
-      )}
-      <div>
-        <label className={lc}>رقم الهاتف</label>
-        <input className={ic} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+20..." dir="ltr" />
-      </div>
-      <div>
-        <label className={lc}>ملاحظات</label>
-        <textarea className={ic} rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
-      </div>
-      <div className="flex flex-col gap-3 min-[360px]:flex-row min-[360px]:justify-end">
-        <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
-        <Button type="submit">حفظ الشريك</Button>
-      </div>
-    </form>
-  );
-}
-
 export function PartnersPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { partners, createPartner } = usePartners();
   const { obligations } = useObligations();
   const [showForm, setShowForm] = useState(false);
