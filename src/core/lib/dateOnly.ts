@@ -1,8 +1,14 @@
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
-const DAYS_PER_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
 
 function isLeapYear(year: number): boolean {
   return year % 400 === 0 || (year % 4 === 0 && year % 100 !== 0);
+}
+
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) return isLeapYear(year) ? 29 : 28;
+  if (month === 4 || month === 6 || month === 9 || month === 11) return 30;
+  if (month === 1 || month === 3 || month === 5 || month === 7 || month === 8 || month === 10 || month === 12) return 31;
+  return 0;
 }
 
 /** Returns a validated calendar date without time-zone conversion. */
@@ -11,14 +17,10 @@ export function toDateOnly(value: string | undefined): string | undefined {
   const date = value.slice(0, 10);
   if (!DATE_ONLY.test(date)) return undefined;
 
-  const [yearText, monthText, dayText] = date.split('-');
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-  if (month < 1 || month > 12 || day < 1) return undefined;
-
-  const maximumDay = month === 2 && isLeapYear(year) ? 29 : DAYS_PER_MONTH[month - 1];
-  if (day > maximumDay) return undefined;
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(5, 7));
+  const day = Number(date.slice(8, 10));
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return undefined;
   return date;
 }
 
