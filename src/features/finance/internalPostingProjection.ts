@@ -1,9 +1,9 @@
+import { requireDateOnly } from '../../core/lib/dateOnly';
 import type { Obligation, ObligationDirection } from '../../core/types/domain';
 import type { Settlement } from '../settlements/types';
 import type { SettlementAllocation } from '../settlement-allocations/types';
 
 const MONEY_EPSILON = 0.000001;
-const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Minimal semantic accounts for Terranex's internal posting contract.
@@ -58,30 +58,6 @@ export interface InternalPostingProjection {
   account_balances: InternalAccountBalance[];
 }
 
-function toDateOnly(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  const date = value.slice(0, 10);
-  if (!DATE_ONLY.test(date)) return undefined;
-
-  const [year, month, day] = date.split('-').map(Number);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  if (
-    parsed.getUTCFullYear() !== year ||
-    parsed.getUTCMonth() !== month - 1 ||
-    parsed.getUTCDate() !== day
-  ) {
-    return undefined;
-  }
-
-  return date;
-}
-
-function requiredDate(value: string | undefined, label: string): string {
-  const date = toDateOnly(value);
-  if (!date) throw new Error(`${label} يجب أن يكون تاريخاً صالحاً بصيغة YYYY-MM-DD.`);
-  return date;
-}
-
 function ensureAmount(value: number, label: string): number {
   if (!Number.isFinite(value) || value <= MONEY_EPSILON) {
     throw new Error(`${label} يجب أن يكون رقماً صالحاً أكبر من صفر.`);
@@ -121,7 +97,7 @@ function balanceOfLines(lines: InternalPostingLine[]) {
 export function validateInternalPosting(posting: InternalPosting): void {
   if (!posting.id.trim()) throw new Error('معرّف القيد الداخلي مطلوب.');
   if (!posting.source_id.trim()) throw new Error('مرجع مصدر القيد الداخلي مطلوب.');
-  requiredDate(posting.posting_date, 'تاريخ القيد الداخلي');
+  requireDateOnly(posting.posting_date, 'تاريخ القيد الداخلي');
   if (!posting.partner_id.trim()) throw new Error('طرف القيد الداخلي مطلوب.');
   if (!posting.obligation_id.trim()) throw new Error('التزام القيد الداخلي مطلوب.');
   if (posting.lines.length < 2) throw new Error('القيد الداخلي يجب أن يحتوي على طرفين على الأقل.');
@@ -164,7 +140,7 @@ function makeObligationPosting(obligation: Obligation): InternalPosting | undefi
     id: `posting:obligation:${obligation.id}`,
     source_type: 'obligation',
     source_id: obligation.id,
-    posting_date: requiredDate(obligation.created_at, 'تاريخ إنشاء الالتزام'),
+    posting_date: requireDateOnly(obligation.created_at, 'تاريخ إنشاء الالتزام'),
     partner_id: obligation.partner_id,
     project_id: obligation.project_id,
     obligation_id: obligation.id,
@@ -186,7 +162,7 @@ function makeSettlementAllocationPosting(
     id: `posting:settlement-allocation:${allocation.id}`,
     source_type: 'settlement_allocation',
     source_id: allocation.id,
-    posting_date: requiredDate(settlement.settlement_date, 'تاريخ التسوية'),
+    posting_date: requireDateOnly(settlement.settlement_date, 'تاريخ التسوية'),
     partner_id: obligation.partner_id,
     project_id: obligation.project_id,
     obligation_id: obligation.id,
@@ -206,7 +182,7 @@ function makeSettlementReversalPosting(
     ...original,
     id: `posting:settlement-reversal:${original.source_id}`,
     source_type: 'settlement_reversal',
-    posting_date: requiredDate(settlement.reversed_at ?? settlement.updated_at, 'تاريخ عكس التسوية'),
+    posting_date: requireDateOnly(settlement.reversed_at ?? settlement.updated_at, 'تاريخ عكس التسوية'),
     reversal_of_posting_id: original.id,
     lines: reverseLines(original.lines),
   };
