@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
+import { FormError, FormField, FormHint, FormLabel, SelectInput, TextArea, TextInput } from '../../components/ui/FormControls';
 import type { Transaction, Currency, TransactionDirection, TransactionCategory } from '../../core/types/domain';
 import { useDocuments } from '../documents/hooks';
 import { usePartners } from '../partners/hooks';
@@ -98,14 +99,10 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
     });
   }
 
-  const inputClass = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
-  const labelClass = 'block text-sm font-medium text-foreground mb-1';
-  const errorClass = 'mt-1 text-xs text-danger';
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div>
-        <label className={labelClass}>الاتجاه</label>
+      <FormField>
+        <FormLabel>الاتجاه</FormLabel>
         <div className="flex gap-2">
           {(['income', 'expense'] as const).map((d) => (
             <button
@@ -124,63 +121,63 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
             </button>
           ))}
         </div>
-      </div>
+      </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass}>المبلغ *</label>
-          <input type="number" min="0" step="0.01" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
-          {errors.amount && <p className={errorClass}>{errors.amount}</p>}
-        </div>
-        <div>
-          <label className={labelClass}>العملة</label>
-          <select className={inputClass} value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
+        <FormField>
+          <FormLabel htmlFor="transaction-amount">المبلغ *</FormLabel>
+          <TextInput id="transaction-amount" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+          {errors.amount && <FormError>{errors.amount}</FormError>}
+        </FormField>
+        <FormField>
+          <FormLabel htmlFor="transaction-currency">العملة</FormLabel>
+          <SelectInput id="transaction-currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
             {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
+          </SelectInput>
+        </FormField>
       </div>
 
       {currency !== 'EGP' && (
-        <div>
-          <label className={labelClass}>سعر الصرف (1 {currency} = ? EGP)</label>
-          <input type="number" min="0" step="0.001" className={inputClass} value={fx_rate} onChange={(e) => setFxRate(e.target.value)} />
-          {errors.fx && <p className={errorClass}>{errors.fx}</p>}
-          <p className="mt-1 text-xs text-muted-foreground">المكافئ بالجنيه: {amountEgp.toLocaleString('ar-EG')} EGP</p>
-        </div>
+        <FormField>
+          <FormLabel htmlFor="transaction-fx-rate">سعر الصرف (1 {currency} = ? EGP)</FormLabel>
+          <TextInput id="transaction-fx-rate" type="number" min="0" step="0.001" value={fx_rate} onChange={(e) => setFxRate(e.target.value)} />
+          {errors.fx && <FormError>{errors.fx}</FormError>}
+          <FormHint>المكافئ بالجنيه: {amountEgp.toLocaleString('ar-EG')} EGP</FormHint>
+        </FormField>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass}>الطرف أو الشريك *</label>
-          <select className={inputClass} value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
+        <FormField>
+          <FormLabel htmlFor="transaction-partner">الطرف أو الشريك *</FormLabel>
+          <SelectInput id="transaction-partner" value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
             <option value="">اختر الطرف…</option>
             {partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name_ar}</option>)}
-          </select>
-          {errors.partner && <p className={errorClass}>{errors.partner}</p>}
-        </div>
-        <div>
-          <label className={labelClass}>الوثيقة الداعمة *</label>
-          <select className={inputClass} value={document_id} onChange={(e) => setDocumentId(e.target.value)}>
+          </SelectInput>
+          {errors.partner && <FormError>{errors.partner}</FormError>}
+        </FormField>
+        <FormField>
+          <FormLabel htmlFor="transaction-document">الوثيقة الداعمة *</FormLabel>
+          <SelectInput id="transaction-document" value={document_id} onChange={(e) => setDocumentId(e.target.value)}>
             <option value="">اختر الوثيقة…</option>
             {availableDocuments.map((document) => <option key={document.id} value={document.id}>{document.title_ar}</option>)}
-          </select>
-          {errors.document && <p className={errorClass}>{errors.document}</p>}
-          {availableDocuments.length === 0 && <p className="mt-1 text-xs text-muted-foreground">أضف مستندًا مرتبطًا بالمشروع قبل تسجيل المعاملة.</p>}
-        </div>
+          </SelectInput>
+          {errors.document && <FormError>{errors.document}</FormError>}
+          {availableDocuments.length === 0 && <FormHint>أضف مستندًا مرتبطًا بالمشروع قبل تسجيل المعاملة.</FormHint>}
+        </FormField>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelClass}>التاريخ *</label>
-          <input type="date" className={inputClass} value={transaction_date} onChange={(e) => setDate(e.target.value)} />
-          {errors.date && <p className={errorClass}>{errors.date}</p>}
-        </div>
-        <div>
-          <label className={labelClass}>التصنيف</label>
-          <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value as TransactionCategory)}>
+        <FormField>
+          <FormLabel htmlFor="transaction-date">التاريخ *</FormLabel>
+          <TextInput id="transaction-date" type="date" value={transaction_date} onChange={(e) => setDate(e.target.value)} />
+          {errors.date && <FormError>{errors.date}</FormError>}
+        </FormField>
+        <FormField>
+          <FormLabel htmlFor="transaction-category">التصنيف</FormLabel>
+          <SelectInput id="transaction-category" value={category} onChange={(e) => setCategory(e.target.value as TransactionCategory)}>
             {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.group} — {c.ar}</option>)}
-          </select>
-        </div>
+          </SelectInput>
+        </FormField>
       </div>
 
       {direction === 'expense' && (
@@ -198,24 +195,24 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
             </span>
           </label>
           {createPayableObligation && (
-            <div className="mt-3">
-              <label className={labelClass}>تاريخ استحقاق الذمة الدائنة *</label>
-              <input type="date" className={inputClass} value={payableDueDate} onChange={(e) => setPayableDueDate(e.target.value)} />
-              {errors.payableDueDate && <p className={errorClass}>{errors.payableDueDate}</p>}
-            </div>
+            <FormField className="mt-3">
+              <FormLabel htmlFor="payable-due-date">تاريخ استحقاق الذمة الدائنة *</FormLabel>
+              <TextInput id="payable-due-date" type="date" value={payableDueDate} onChange={(e) => setPayableDueDate(e.target.value)} />
+              {errors.payableDueDate && <FormError>{errors.payableDueDate}</FormError>}
+            </FormField>
           )}
         </div>
       )}
 
-      <div>
-        <label className={labelClass}>الوصف</label>
-        <input className={inputClass} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف موجز للمعاملة…" />
-      </div>
+      <FormField>
+        <FormLabel htmlFor="transaction-description">الوصف</FormLabel>
+        <TextInput id="transaction-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف موجز للمعاملة…" />
+      </FormField>
 
-      <div>
-        <label className={labelClass}>ملاحظات</label>
-        <textarea className={inputClass} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
+      <FormField>
+        <FormLabel htmlFor="transaction-notes">ملاحظات</FormLabel>
+        <TextArea id="transaction-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+      </FormField>
 
       <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
