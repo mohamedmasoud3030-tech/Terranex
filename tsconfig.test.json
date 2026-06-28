@@ -24,6 +24,7 @@
     "src/core/storage/archiveBackup.ts",
     "src/features/documents/storage.ts",
     "src/features/documents/transactionDocumentIntegrity.ts",
+    "src/features/finance/internalPostingProjection.ts",
     "src/features/finance/obligationQueries.ts",
     "src/features/obligations/storage.ts",
     "src/features/settlements/allocationForm.ts",
