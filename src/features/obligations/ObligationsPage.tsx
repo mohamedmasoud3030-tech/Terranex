@@ -9,124 +9,17 @@ import { useObligations } from './hooks';
 import { usePartners } from '../partners/hooks';
 import { useProjects } from '../projects/hooks';
 import { formatEgp } from '../../core/lib/profitability';
-import type { ObligationInput } from './storage';
 import type { Obligation } from '../../core/types/domain';
+import { ObligationForm } from './ObligationForm';
+import { useI18n } from '../../core/i18n/context';
 
-const STATUS_META: Record<Obligation['status'], { ar: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info'; Icon: typeof Clock }> = {
-  open:        { ar: 'مفتوح',           tone: 'warning', Icon: Clock },
-  partial:     { ar: 'جزئي',            tone: 'info',    Icon: Clock },
-  settled:     { ar: 'مسدد',            tone: 'positive', Icon: CheckCircle2 },
-  disputed:    { ar: 'متنازع',          tone: 'negative',  Icon: AlertCircle },
-  written_off: { ar: 'مشطوب',           tone: 'neutral', Icon: AlertCircle },
+const STATUS_META: Record<Obligation['status'], { ar: string; en: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' | 'info'; Icon: typeof Clock }> = {
+  open:        { ar: 'مفتوح',    en: 'Open',       tone: 'warning', Icon: Clock },
+  partial:     { ar: 'جزئي',     en: 'Partial',    tone: 'info',    Icon: Clock },
+  settled:     { ar: 'مسدد',     en: 'Settled',    tone: 'positive', Icon: CheckCircle2 },
+  disputed:    { ar: 'متنازع',   en: 'Disputed',   tone: 'negative', Icon: AlertCircle },
+  written_off: { ar: 'مشطوب',    en: 'Written off',tone: 'neutral', Icon: AlertCircle },
 };
-
-function ObligationForm({
-  partners,
-  projects,
-  onSubmit,
-  onCancel,
-}: {
-  partners: ReturnType<typeof usePartners>['partners'];
-  projects: ReturnType<typeof useProjects>['projects'];
-  onSubmit: (i: ObligationInput) => void;
-  onCancel: () => void;
-}) {
-  const [direction, setDirection] = useState<Obligation['direction']>('receivable');
-  const [partner_id, setPartnerId] = useState('');
-  const [project_id, setProjectId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [due_date, setDueDate] = useState('');
-  const [notes, setNotes] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
-  const lc = 'block text-sm font-medium text-foreground mb-1';
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const errs: Record<string, string> = {};
-    if (!partner_id) errs.partner = 'اختر الطرف';
-    const parsedAmount = Number(amount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) errs.amount = 'أدخل مبلغاً صحيحاً أكبر من صفر';
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    const amountNum = parsedAmount;
-    onSubmit({
-      direction,
-      partner_id,
-      project_id: project_id || undefined,
-      amount: amountNum,
-      currency: 'EGP',
-      amount_egp: amountNum,
-      due_date: due_date || undefined,
-      status: 'open',
-      notes: notes || undefined,
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-2">
-        {(['receivable', 'payable'] as const).map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => setDirection(d)}
-            className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${
-              direction === d
-                ? d === 'receivable'
-                  ? 'border-success bg-success/10 text-success'
-                  : 'border-danger bg-danger/10 text-danger'
-                : 'border-border text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {d === 'receivable' ? '← ذمة مدينة (لنا)' : 'ذمة دائنة (علينا) →'}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={lc}>الطرف *</label>
-          <select className={ic} value={partner_id} onChange={(e) => setPartnerId(e.target.value)}>
-            <option value="">اختر الطرف…</option>
-            {partners.map((p) => <option key={p.id} value={p.id}>{p.name_ar}</option>)}
-          </select>
-          {errors.partner && <p className="mt-1 text-xs text-danger">{errors.partner}</p>}
-        </div>
-        <div>
-          <label className={lc}>المشروع (اختياري)</label>
-          <select className={ic} value={project_id} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">بدون مشروع</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name_ar}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={lc}>المبلغ (EGP) *</label>
-          <input type="number" min="0" step="0.01" className={ic} value={amount} onChange={(e) => setAmount(e.target.value)} />
-          {errors.amount && <p className="mt-1 text-xs text-danger">{errors.amount}</p>}
-        </div>
-        <div>
-          <label className={lc}>تاريخ الاستحقاق</label>
-          <input type="date" className={ic} value={due_date} onChange={(e) => setDueDate(e.target.value)} />
-        </div>
-      </div>
-
-      <div>
-        <label className={lc}>ملاحظات</label>
-        <textarea className={ic} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
-
-      <div className="flex flex-col gap-3 min-[360px]:flex-row min-[360px]:justify-end">
-        <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
-        <Button type="submit">حفظ الالتزام</Button>
-      </div>
-    </form>
-  );
-}
 
 export function ObligationsPage() {
   const { obligations, totalReceivableEgp, totalPayableEgp, createObligation, settleObligation } = useObligations();
