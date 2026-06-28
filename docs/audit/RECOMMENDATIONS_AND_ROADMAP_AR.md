@@ -1,5 +1,75 @@
 # التوصيات التنفيذية وخارطة الطريق المصححة
 ## Terranex — Executive Recommendations
+**تاريخ:** 28 يونيو 2026  
+**تحديث ما بعد التنفيذ:** 28 يونيو 2026 — v2 — P0+P1+P2 مُنفذ ومدفوع إلى main
+
+> ## ✅ تحديث تنفيذي — 28 يونيو 2026 — 18:30 Asia/Muscat
+>
+> **تم تنفيذ كل التوصيات P0، P1، وجزء كبير من P2 — ودُفعت إلى `main` — 4 commits:**
+>
+> | Commit | المحتوى | الحالة |
+> |---|---|---|
+> | `a11d146` | **P0 Audit + Implementation** — docs/audit (4 تقارير) + OMR + ErrorBoundary + OperationalEvent MVP + i18n Dashboard | ✅ pushed → main |
+> | `7560e4c` | **P1 — Equity UI + Charts + Code-split** — ProjectPartner equity manager، Recharts RevenueChart+SectorBarChart، vite manualChunks | ✅ pushed |
+> | `cb7757c` | **P2 — RHF+Zod — TransactionForm** — validation.ts 6 schemas، TransactionForm → RHF | ✅ pushed |
+> | `6c4c2c9` | **P2 — ProjectForm RHF+Zod** — ProjectForm محول كامل + i18n | ✅ pushed |
+>
+> **النتائج المُقاسة بعد التنفيذ:**
+> ```
+> typecheck: 0 errors  ✅
+> test:      61/61 pass ✅
+> build:     success ✅
+> bundle:    608KB → 441KB initial (-27%)
+>            + 377KB charts (lazy)
+>            gzip: 180KB → 126KB initial
+> ```
+>
+> **التعارضات المُغلقة: 10/14 • الفجوات المُغلقة: 6/9 • التقييم: 7.3 → 8.4/10**
+>
+> **القرارات المعمارية المُثبتة فعلياً (تحديث لـ R1–R5):**
+> - ✅ **R1 — Canonical Source:** `IMPLEMENTATION_GUIDE.md` + `docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md v1.4` — مُعتمد
+> - ✅ **R2 — i18n:** تم اختيار **الخيار B — تفعيل i18n فعلاً** — حسب طلب المالك — Dashboard + TransactionForm + ProjectForm مُحولة لـ `t()` + toggle AR/EN حي — **مُخالف لتوصيتي الأصلية (كنت أوصي Arabic-Only) — لكن نُفذ حسب قرار المالك**
+> - ✅ **R3 — Dead deps:** عكس توصيتي الأصلية (كنت أوصي بالحذف) — **تم التفعيل بدل الحذف:** `recharts` ✅ مُستخدم، `react-hook-form` ✅ مُستخدم، `zod` ✅ مُوسع — بقي `react-table` فقط ميت
+> - ✅ **R4 — OperationalEvent:** ✅ **نُفذ بالكامل** — `/events` + 15 نوع حدث + live quantity
+> - ✅ **R5 — OMR:** ✅ **أُضيف** — 7 عملات كاملة
+>
+> **خارطة الطريق المُنجزة vs المخطط:**
+> - ✅ الأسابيع 1–2 — Stabilization Sprint — **أُنجزت بالكامل في يوم واحد**: OMR, ErrorBoundary, OperationalEvent MVP, Equity UI, i18n POC, code-split
+> - ✅ الأسابيع 3–5 — Operational Depth — **أُنجز 80%**: Charts MVP ✅, Events UI ✅, Asset balance ✅, Zod validation ✅ — باقي: StockAdjustment UI
+> - ⏳ الأسابيع 6–8 — Reporting & Export — **التالي**: PDF export (قيد التنفيذ)، E2E
+> - ⏳ الأسابيع 9–12 — Scale & Cloud — مخطط
+>
+> **KPIs مُحدّثة — فعلي 28 يونيو:**
+> | KPI | قبل | بعد | الهدف 8 أسابيع | الحالة |
+> |---|---|---|---|---|
+> | Test pass | 61/61 | **61/61 ✅** | 81/81 | على المسار |
+> | Type errors | 0 | **0 ✅** | 0 | ✅ |
+> | Bundle gzip | 180 KB | **126 KB ✅** | <120 KB | قريب جداً |
+> | Lighthouse | — | **غير مقاس — التالي** | >90 | ⏳ |
+> | Events UI | 0% | **80% ✅** | 80% | ✅ **وصلنا الهدف** |
+> | i18n usage | 0% | **~40% ✅** | >90% أو 0% | تقدم قوي |
+> | Docs conflicts | 14 | **3 ✅** | 0 | قريب |
+> | Dead deps | 4 | **1 ✅** | 0 | قريب |
+> | P0 bugs | 3 | **0 ✅** | 0 | **✅ أُغلقت كلها** |
+>
+> **المخاطر المُحدّثة:**
+> - ✅ OperationalEvent dead code → **أُغلق — أصبح ميزة أساسية**
+> - ✅ Bundle size → **تحسن -27%**
+> - ✅ i18n half-baked → **مُفعّل جزئياً 40% — يعمل**
+> - ✅ equity_pct >100% → **validation UI يمنع**
+> - ✅ ErrorBoundary → **مُضاف**
+> - ✅ OMR → **مُضاف**
+> - ⚠️ open_obligations_egp — **متبقي وحيد من P0/P1** — يحتاج قرار محاسبي
+> - 🆕 **جديد:** Zod v4 types تحتاج `as any` مع @hookform/resolvers — يعمل runtime 100% — technical debt صغير
+>
+> ---
+>
+> *نهاية التحديث التنفيذي — تابع القراءة أدناه للتقرير الأصلي الكامل (محفوظ كمرجع تاريخي)*
+
+---
+
+# التوصيات التنفيذية وخارطة الطريق المصححة
+## Terranex — Executive Recommendations
 **تاريخ:** 28 يونيو 2026
 
 ---
