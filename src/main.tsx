@@ -8,6 +8,7 @@ import { queryClient } from './core/query';
 import { createAppRouter } from './router';
 import { runAppStorageMigrations } from './core/storage/migrations';
 import { registerServiceWorker } from './registerServiceWorker';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import './styles.css';
 
 runAppStorageMigrations();
@@ -20,12 +21,16 @@ if (!rootElement) throw new Error('Root element #root not found.');
 
 createRoot(rootElement).render(
   <React.StrictMode>
-    <I18nProvider defaultLocale="ar">
-      <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </ThemeProvider>
-    </I18nProvider>
+    <ErrorBoundary scope="root">
+      <I18nProvider defaultLocale="ar">
+        <ThemeProvider>
+          <QueryClientProvider client={queryClient}>
+            <ErrorBoundary scope="router">
+              <RouterProvider router={router} />
+            </ErrorBoundary>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

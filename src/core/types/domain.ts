@@ -6,7 +6,7 @@
 
 // ─── Primitives ─────────────────────────────────────────────────────────────
 
-export type Currency = 'EGP' | 'USD' | 'SAR' | 'AED' | 'EUR' | 'GBP';
+export type Currency = 'EGP' | 'USD' | 'OMR' | 'SAR' | 'AED' | 'EUR' | 'GBP';
 
 export type Locale = 'ar' | 'en';
 
