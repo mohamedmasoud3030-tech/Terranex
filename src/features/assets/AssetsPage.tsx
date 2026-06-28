@@ -2,6 +2,8 @@ import { PackageOpen, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { DetailRows } from '../../components/ui/DetailRows';
+import { MetricCard } from '../../components/ui/MetricCard';
 import { EmptyState } from '../../components/ui/States';
 import { Button } from '../../components/ui/Button';
 import { confirmSafeDeletion, guardAssetDeletion } from '../../core/lib/deletionGuards';
@@ -53,24 +55,9 @@ export function AssetsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">عدد الأصول</p>
-            <p className="mt-2 text-2xl font-bold">{assets.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">تكلفة الاقتناء</p>
-            <p className="mt-2 text-2xl font-bold">{formatEgp(totalAcquisition, true)} EGP</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">القيمة الحالية</p>
-            <p className="mt-2 text-2xl font-bold text-primary">{formatEgp(totalCurrentValue, true)} EGP</p>
-          </CardContent>
-        </Card>
+        <MetricCard label="عدد الأصول" value={assets.length} />
+        <MetricCard label="تكلفة الاقتناء" value={formatEgp(totalAcquisition, true)} unit="EGP" />
+        <MetricCard label="القيمة الحالية" value={formatEgp(totalCurrentValue, true)} unit="EGP" tone="primary" />
       </div>
 
       {assets.length === 0 ? (
@@ -90,24 +77,14 @@ export function AssetsPage() {
                   </Badge>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">النوع</span>
-                    <span className="font-medium">{TYPE_LABELS[asset.type]}</span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">المشروع</span>
-                    <span className="font-medium">{projectNames.get(asset.project_id) ?? 'مشروع غير معروف'}</span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">تكلفة الاقتناء</span>
-                    <span className="font-bold">{formatEgp(asset.acquisition_cost_egp, true)} EGP</span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">القيمة الحالية</span>
-                    <span className="font-bold text-primary">{formatEgp(asset.current_value_egp ?? asset.acquisition_cost_egp, true)} EGP</span>
-                  </div>
-                </div>
+                <DetailRows
+                  items={[
+                    { id: 'type', label: 'النوع', value: TYPE_LABELS[asset.type] },
+                    { id: 'project', label: 'المشروع', value: projectNames.get(asset.project_id) ?? 'مشروع غير معروف' },
+                    { id: 'acquisition-cost', label: 'تكلفة الاقتناء', value: `${formatEgp(asset.acquisition_cost_egp, true)} EGP`, valueClassName: 'font-bold' },
+                    { id: 'current-value', label: 'القيمة الحالية', value: `${formatEgp(asset.current_value_egp ?? asset.acquisition_cost_egp, true)} EGP`, valueClassName: 'font-bold text-primary' },
+                  ]}
+                />
                 <Button variant="danger" size="sm" className="mt-4 w-full" onClick={() => handleDeleteAsset(asset.id)}>
                   <Trash2 className="h-4 w-4" /> حذف الأصل
                 </Button>
