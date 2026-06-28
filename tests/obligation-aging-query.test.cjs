@@ -63,7 +63,7 @@ test('aging query puts outstanding balances into deterministic due-date buckets'
     obligation({ id: 'ninety-one', amount: 15, amount_egp: 15, due_date: '2026-03-31' }),
     obligation({ id: 'undated', amount: 16, amount_egp: 16, due_date: undefined }),
     obligation({ id: 'partial-payable', direction: 'payable', amount: 100, amount_egp: 100, amount_settled_egp: 40, status: 'partial', due_date: '2026-06-29' }),
-    obligation({ id: 'disputed', amount: 50, amount_egp: 50, status: 'disputed', due_date: '2026-06-01' }),
+    obligation({ id: 'disputed', amount: 50, amount_egp: 50, status: 'disputed', due_date: '2026-03-31' }),
     obligation({ id: 'settled', amount: 20, amount_egp: 20, amount_settled_egp: 20, status: 'settled' }),
     obligation({ id: 'written-off', amount: 20, amount_egp: 20, status: 'written_off' }),
   ];
