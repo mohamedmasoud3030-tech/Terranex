@@ -1,9 +1,10 @@
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { migrateLegacySettlementBalances, resetLegacySettlementMigration, SETTLEMENTS_KEY } from './migration';
 import type { Settlement, SettlementPaymentMethod } from './types';
 
-export type { RecordSettlementInput } from './workflow';
+export type { RecordSettlementInput, RecordSettlementWithAllocationsInput, SettlementAllocationPlan } from './workflow';
 
 function sortSettlements(items: Settlement[]) {
   return items.sort((a, b) => b.settlement_date.localeCompare(a.settlement_date) || b.created_at.localeCompare(a.created_at));
@@ -71,11 +72,12 @@ function readAll() {
 export const settlementsStore = {
   getAll: readAll,
   getById: (id: string) => readAll().find((item) => item.id === id),
-  getByObligation: (obligationId: string) => readAll().filter((item) => item.obligation_id === obligationId),
+  getByObligation: (obligationId: string) => {
+    const settlementIds = new Set(settlementAllocationsStore.getByObligation(obligationId).map((item) => item.settlement_id));
+    return readAll().filter((item) => item.obligation_id === obligationId || settlementIds.has(item.id));
+  },
   getByReceiptDocument: (documentId: string) => readAll().filter((item) => item.receipt_document_id === documentId),
-  getActiveTotalByObligation: (obligationId: string) => readAll()
-    .filter((item) => item.obligation_id === obligationId && item.status === 'active')
-    .reduce((sum, item) => sum + item.amount_egp, 0),
+  getActiveTotalByObligation: (obligationId: string) => settlementAllocationsStore.getActiveTotalByObligation(obligationId, readAll()),
   create: (input: SettlementInput): Settlement => {
     migrateLegacySettlementBalances();
     const now = new Date().toISOString();
@@ -84,6 +86,8 @@ export const settlementsStore = {
     return settlement;
   },
   removeForRollback: (id: string): void => {
+    const allocationIds = settlementAllocationsStore.getBySettlement(id).map((item) => item.id);
+    settlementAllocationsStore.removeManyForRollback(allocationIds);
     store.update((all) => all.filter((item) => item.id !== id));
   },
   restoreForRollback: (settlement: Settlement): void => {
@@ -116,6 +120,7 @@ export const settlementsStore = {
   },
   reset: () => {
     store.reset();
+    settlementAllocationsStore.reset();
     resetLegacySettlementMigration();
   },
 };
