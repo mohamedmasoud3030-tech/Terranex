@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import {
+  Activity,
   Banknote,
   Building2,
   FolderKanban,
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'real-estate', label_ar: 'العقاري', label_en: 'Real Estate', icon: Building2, to: '/real-estate' },
   { id: 'agriculture', label_ar: 'الزراعي', label_en: 'Agriculture', icon: Wheat, to: '/agriculture' },
   { id: 'livestock', label_ar: 'الحيواني', label_en: 'Livestock', icon: PawPrint, to: '/livestock' },
+  { id: 'events', label_ar: 'الأحداث التشغيلية', label_en: 'Operational Events', icon: Activity, to: '/events' },
   { id: 'finance', label_ar: 'المالية', label_en: 'Finance', icon: Banknote, to: '/finance' },
   { id: 'transactions', label_ar: 'المعاملات', label_en: 'Transactions', icon: ReceiptText, to: '/transactions' },
   { id: 'assets', label_ar: 'الأصول', label_en: 'Assets', icon: PackageOpen, to: '/assets' },

@@ -45,6 +45,7 @@ import { settingsRoute } from './routes/settings';
 import { notFoundRoute } from './routes/404';
 import { projectsRoute } from './routes/projects';
 import { projectDetailRoute } from './routes/projects.$id';
+import { eventsRoute } from './routes/events';
 import { NotFoundPage } from './routes/404';
 
 const financeTree = financeRoute.addChildren([
@@ -62,6 +63,7 @@ const routeTree = rootRoute.addChildren([
   realEstateRoute,
   agricultureRoute,
   livestockRoute,
+  eventsRoute,
   financeTree,
   transactionsRoute,
   assetsRoute,

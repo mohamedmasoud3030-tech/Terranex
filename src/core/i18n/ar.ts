@@ -117,6 +117,7 @@ export const ar = {
   // Currencies
   currency_EGP: 'جنيه مصري',
   currency_USD: 'دولار أمريكي',
+  currency_OMR: 'ريال عُماني',
   currency_SAR: 'ريال سعودي',
   currency_AED: 'درهم إماراتي',
   currency_EUR: 'يورو',
@@ -244,6 +245,21 @@ export const ar = {
   profitability_by_sector: 'الربحية بالقطاع',
   profitability_by_project: 'الربحية بالمشروع',
   profitability_partner_splits: 'حصص الشركاء',
+
+  // Operational Events — ADR-003
+  nav_events: 'الأحداث التشغيلية',
+  events_title: 'الأحداث التشغيلية',
+  events_description: 'تتبع تشغيلي حي — ولادات، نفوق، تحصينات، حصاد — مربوط بالأصول والمشاريع.',
+  events_new: 'حدث جديد',
+  events_new_title: 'تسجيل حدث تشغيلي',
+  events_type: 'نوع الحدث',
+  events_weight_kg: 'الوزن (كجم)',
+  events_cost_egp: 'التكلفة (EGP)',
+  events_count: 'حدث',
+  events_live_balances: 'الأرصدة الحية',
+  events_from_events: 'من الأحداث',
+  events_choose_asset: 'اختر الأصل…',
+  events_choose_project: 'اختر المشروع…',
 } as const;
 
 export type TranslationKey = keyof typeof ar;

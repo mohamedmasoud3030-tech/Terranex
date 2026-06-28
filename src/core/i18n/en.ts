@@ -105,6 +105,7 @@ export const en: Record<TranslationKey, string> = {
 
   currency_EGP: 'Egyptian pound',
   currency_USD: 'US dollar',
+  currency_OMR: 'Omani rial',
   currency_SAR: 'Saudi riyal',
   currency_AED: 'UAE dirham',
   currency_EUR: 'Euro',
@@ -231,4 +232,19 @@ export const en: Record<TranslationKey, string> = {
   profitability_by_sector: 'Profitability by Sector',
   profitability_by_project: 'Profitability by Project',
   profitability_partner_splits: 'Partner Splits',
+
+  // Operational Events — ADR-003
+  nav_events: 'Operational Events',
+  events_title: 'Operational Events',
+  events_description: 'Live operational tracking — births, mortality, vaccination, harvest — linked to assets and projects.',
+  events_new: 'New Event',
+  events_new_title: 'Record Operational Event',
+  events_type: 'Event Type',
+  events_weight_kg: 'Weight (kg)',
+  events_cost_egp: 'Cost (EGP)',
+  events_count: 'events',
+  events_live_balances: 'Live Balances',
+  events_from_events: 'from events',
+  events_choose_asset: 'Choose asset…',
+  events_choose_project: 'Choose project…',
 };
