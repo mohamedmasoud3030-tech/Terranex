@@ -16,6 +16,8 @@
     "src/core/lib/deletionGuards.ts",
     "src/core/lib/documentFileValidation.ts",
     "src/core/lib/referenceValidation.ts",
+    "src/core/lib/xlsx.ts",
+    "src/features/reports/financeExport.ts",
     "src/core/storage/localStorageStore.ts",
     "src/core/storage/migrations.ts",
     "src/core/storage/backup.ts",
