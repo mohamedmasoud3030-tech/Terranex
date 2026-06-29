@@ -3,7 +3,9 @@ import { useTransactions } from '../transactions/hooks';
 import { useObligations } from '../obligations/hooks';
 import { computeGlobalSummary, computeProjectProfitability, formatEgp } from '../../core/lib/profitability';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { TrendingUp, TrendingDown, Minus, Building2, Wheat, PawPrint } from 'lucide-react';
+import { TrendingUp, TrendingDown, Building2, Wheat, PawPrint } from 'lucide-react';
+import { ExportGlobalPdfButton } from '../reports/ExportGlobalPdfButton';
+import { ExportExcelButton } from '../reports/ExportExcelButton';
 import type { SectorId } from '../../core/types/domain';
 
 const SECTOR_META: Record<SectorId, { icon: typeof Building2; color: string; bg: string; label: string }> = {
@@ -26,9 +28,18 @@ export function ProfitabilityPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">محرك الربحية</h1>
-        <p className="mt-1 text-sm text-muted-foreground">الربح = Σ الإيرادات − Σ المصروفات — قابل للتتبع حتى كل معاملة ومستند</p>
+      {/* Title + Export buttons */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">محرك الربحية</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            الربح = Σ الإيرادات − Σ المصروفات — قابل للتتبع حتى كل معاملة ومستند
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <ExportGlobalPdfButton />
+          <ExportExcelButton />
+        </div>
       </div>
 
       {/* Global formula card */}

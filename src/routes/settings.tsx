@@ -6,6 +6,7 @@ import { useTheme, type ThemeMode } from '../core/theme';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Card, CardContent } from '../components/ui/Card';
 import { BackupRestoreSection } from '../features/settings/BackupRestoreSection';
+import { ExchangeRateSection } from '../features/settings/ExchangeRateSection';
 import type { Locale } from '../core/types';
 
 export const settingsRoute = createRoute({
@@ -133,6 +134,7 @@ function SettingsPage() {
         </Card>
 
         <BackupRestoreSection locale={locale} />
+        <ExchangeRateSection locale={locale} />
       </div>
     </>
   );
