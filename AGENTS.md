@@ -1,59 +1,127 @@
-# Terranex Project Working Notes
+# Terranex — Agent Policy
+**آخر تحديث:** 2026-06-29  
+**الحالة:** كنسي — يسبق جميع الوثائق الأخرى
 
-Terranex is a standalone investment operating system repository.
+---
 
-## Read before editing
+## ⚠️ قراءة إلزامية قبل أي تعديل
 
-1. `IMPLEMENTATION_GUIDE.md`
-2. `docs/ai/README.md`
-3. `docs/ai/data-safety.md`
-4. `docs/ai/release-policy.md`
-5. `docs/ai/agent-skills.md`
-6. `docs/decisions/README.md`
-7. `.ai/workflows/README.md`
+اقرأ بالترتيب:
 
-When a task touches roadmap, ERPNext-reference work, or another external reading source, read the relevant files under `docs/reference/`, `docs/plans/`, and `reference/` before editing.
+1. **هذا الملف** — السياسة الكاملة
+2. [`IMPLEMENTATION_GUIDE.md`](IMPLEMENTATION_GUIDE.md) — خريطة الـ runtime الفعلية
+3. [`docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md`](docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md) — التعريف الموحد للمشروع (v1.4)
+4. [`docs/audit/CONFLICTS_ANALYSIS_AR.md`](docs/audit/CONFLICTS_ANALYSIS_AR.md) — تعارضات معروفة + حالتها
+5. [`docs/decisions/README.md`](docs/decisions/README.md) — قرارات معمارية نافذة
 
-## Project boundary
+---
 
-This repository is independent from Rentrix and any other application. Product scope, domain model, documents, and automation assets in this repository belong to Terranex only.
+## حدود المشروع
 
-## Product north star
+- Terranex مشروع **مستقل تماماً** عن Rentrix أو أي تطبيق آخر.
+- كل scope، domain model، وثائق، وأصول automation تخص Terranex فقط.
+- لا تستورد منطق أو كود من مشاريع خارجية.
 
-The product should help the company answer four core questions:
+---
 
-1. What assets and projects do we own or operate?
-2. What did each project cost and earn?
-3. Did each project, season, herd, or asset make profit or loss?
-4. Who owes money to the company, and who should the company pay?
+## المصادر الكنسية — الأولوية بالترتيب
 
-## Repository organization
+| الأولوية | المصدر | يغطي |
+|---|---|---|
+| **1** | `src/core/types/domain.ts` | نموذج البيانات الفعلي — source of truth مطلق |
+| **2** | `IMPLEMENTATION_GUIDE.md` | runtime، storage، features، profitability |
+| **3** | `docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md` | تعريف المشروع الموحد — v1.4 |
+| **4** | `docs/decisions/README.md` + `docs/architecture-decisions.md` | ADR‑001 → ADR‑010 |
+| **5** | `docs/audit/CONFLICTS_ANALYSIS_AR.md` | تعارضات معروفة + حالتها |
+| **6** | `docs/plans/terranex-native-engine-extraction-plan.md` | Settlement Engine — الخطة الفعلية |
 
-- `docs/` contains product, domain, roadmap, and decision documents.
-- `.ai/agents/` contains role descriptions for AI-assisted project work.
-- `.ai/skills/` contains Terranex-specific reusable task skills.
-- `.ai/workflows/` contains repeatable Terranex execution playbooks.
-- `.ai/pipelines/` contains batch-processing and analysis scripts.
-- `reference/` contains pinned external reading contracts.
-- `.reference-cache/` contains ignored local materialized references.
-- `tools/` may contain developer utilities when an executable does not belong under `.ai/`.
+---
 
-## Source-locked engineering skills
+## وثائق مؤرشفة — لا تستخدمها مرجعاً
 
-Agents may use the pinned Addy engineering workflow pack recorded in `reference/agent-skills/source-lock.json`.
+الملفات التالية نُقلت إلى `docs/_archive/` وتحتوي معلومات قديمة أو متضاربة:
 
-- Read `docs/ai/agent-skills.md` for local setup commands and the Terranex routing map.
-- Load only task-relevant upstream skills. Do not flood context with the entire pack.
-- Do not edit cached upstream files or import them into production code.
-- Keep Terranex-specific rules in this repository's docs, workflows, and approved planning files.
-- When generic upstream guidance conflicts with Terranex policy, Terranex policy wins.
+- `docs/_archive/domain-model.STALE.md` — نموذج قديم — استخدم `domain.ts`
+- `docs/_archive/Terranex-Architecture-English.STALE.md` — معمارية مايو 2026 قديمة
+- `docs/_archive/product-vision.STALE.md` — رؤية قديمة — استخدم UNIFIED_PROJECT_DEFINITION_AR.md
+- `docs/reference/Terranex-Architecture-English.md` — **غير موجود** (أُرشف)
 
-## Engineering preferences
+**إذا وجد تعارض بين وثيقة وبين `domain.ts` أو `IMPLEMENTATION_GUIDE.md`، فالكود يسبق الوثيقة.**
 
-- Prefer clear Markdown documentation before implementation.
-- Keep financial logic auditable and traceable.
-- Prefer deterministic parsing and explicit schema contracts.
-- Prefer `rg` and `rg --files` for repository search when available.
-- Keep generated outputs out of source control unless they are examples or fixtures.
-- Preserve dirty worktrees and avoid destructive Git operations.
-- Keep each PR bounded to one approved stage.
+---
+
+## North Star — الأسئلة الأربعة
+
+1. ماذا نملك / نشغل؟ ← Assets + Projects + Partners + Events
+2. كم كلّف كل مشروع؟ وكم كسب؟ ← Transactions
+3. هل ربح أم خسر؟ ← ProfitabilityEngine (`profitability.ts`)
+4. من له فلوس؟ ومن عليه فلوس؟ ← Obligations + Settlements
+
+---
+
+## حالة الكود — 29 يونيو 2026
+
+```
+typecheck : 0 errors ✅
+tests     : 61 / 61 pass ✅
+build     : success ✅
+bundle    : 441 KB initial / 126 KB gzip ✅
+```
+
+**التقييم الحالي: 8.4 / 10**
+
+---
+
+## ما يجوز تغييره بدون موافقة مسبقة
+
+- إصلاح bug موثق في `docs/audit/CONFLICTS_ANALYSIS_AR.md`
+- إضافة i18n key في `ar.ts` / `en.ts`
+- إضافة test في `tests/`
+- تحديث توثيق في `docs/`
+
+## ما يحتاج موافقة مسبقة (قرار مالك)
+
+- تغيير نموذج البيانات في `domain.ts`
+- إضافة dependency جديدة
+- تغيير routing scheme
+- حذف feature
+- تغيير منطق الربحية (`profitability.ts`)
+
+---
+
+## تفضيلات هندسية
+
+- وثّق قبل أن تنفذ.
+- المنطق المالي يجب أن يكون auditable وقابلاً للتتبع.
+- استخدم Zod schemas من `validation.ts` — لا تكتب validation يدوي جديد.
+- استخدم `rg` / `rg --files` للبحث في الريبو.
+- لا تُضف migrations مدمرة — صمّم migrations بحفظ السجلات القديمة.
+- كل PR محصور في مرحلة واحدة معتمدة.
+- لا تُفعّل demo data أو fixtures تلقائياً في production runtime.
+
+---
+
+## بنية المجلدات
+
+```
+src/
+  core/types/domain.ts     ← source of truth للـ types
+  core/lib/profitability.ts ← محرك الربحية
+  core/storage/migrations.ts← migrations آمنة
+  features/                 ← features مستقلة
+docs/
+  audit/                    ← تقارير التدقيق 28 يونيو 2026
+  decisions/                ← ADRs
+  plans/                    ← خطط التنفيذ
+  ai/                       ← توجيهات الوكلاء
+  _archive/                 ← وثائق مؤرشفة — لا تُعدّل
+tests/                      ← 16 ملف اختبار — 61 اختبار
+```
+
+---
+
+## في حالة تعارض الوثائق
+
+**الأولوية المطلقة:** `src/core/types/domain.ts` → `IMPLEMENTATION_GUIDE.md` → `UNIFIED_PROJECT_DEFINITION_AR.md` → باقي الوثائق
+
+إذا وجدت تعارضاً غير موثق في `CONFLICTS_ANALYSIS_AR.md`، أضفه فوراً هناك قبل أن تعالجه.

@@ -143,13 +143,14 @@
 | `recharts` | 0% استخدام ❌ | ✅ **مُستخدم — 2 charts live** | **أُحيي ✅** |
 | `react-hook-form` | 0% ❌ | ✅ **مُستخدم — 2 forms محولة** | **أُحيي ✅** |
 | `zod` | ~5% ⚠️ | ✅ **~70% — 6 schemas كاملة** | **أُحيي ✅** |
-| `@tanstack/react-table` | 0% ❌ | 0% ❌ | **ما زال ميت — يُحذف في P3 أو يُفعّل** |
+| `@tanstack/react-table` | 0% ❌ | ✅ مُستخدم | **مُستخدم فعلاً: `ObligationsTable.tsx` + `RealEstateTable.tsx` — ليس dead** |
 | `@hookform/resolvers` | غير مُثبت | ✅ **مُثبت ومُستخدم** | **جديد — إيجابي** |
 | `useI18n / t()` | 0% ❌ | **~35% ✅** | **أُحيي جزئياً** |
 | `OperationalEvent` | types فقط | ✅ **UI كامل** | **أُحيي ✅** |
 | `ExchangeRate` | 0% | 0% | **ما زال ميت — P2** |
 
-**الخلاصة:** من **5 dependencies ميتة → 1 متبقي (`react-table`)** — تحسن 80%
+**الخلاصة:** من **5 dependencies ميتة → 0 متبقي** — تحسن 100%  
+> تصحيح 29 يونيو: `@tanstack/react-table` مُستخدم فعلاً في `ObligationsTable.tsx` + `RealEstateTable.tsx` — لم يكن dead أصلاً.
 
 ---
 
@@ -243,7 +244,7 @@
 - [ ] **PDF export** — Profit & Loss statement — `@react-pdf/renderer` (1–2 يوم)
 - [ ] Excel export (1 يوم)
 - [ ] `open_obligations_egp` — احسم: احذف أم وثق (30 دقيقة)
-- [ ] أزل `@tanstack/react-table` إذا سيبقى غير مستخدم — أو فعّله في table كبيرة (1 ساعة)
+- ✅ `@tanstack/react-table` — مُستخدم فعلاً (تصحيح 29 يونيو)
 
 **P3 — أسبوعين:**
 - [ ] E2E Playwright — 5 happy paths

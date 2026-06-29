@@ -86,4 +86,13 @@ npm run dev
 
 ---
 
-*آخر تحديث: 2026-06-28 — 18:30 Asia/Muscat — Terranex v0.3.0-p2 — 8.4/10*
+---
+
+## تحديث 29 يونيو 2026
+
+- ✅ وثائق قديمة/متضاربة نُقلت إلى `docs/_archive/`
+- ✅ `AGENTS.md` محدث — يوجه الوكلاء للمصادر الصحيحة
+- ✅ `docs/MASTER.md` كُتبت — وثيقة موحدة جديدة
+- ⚠️ ملاحظة: `@tanstack/react-table` **ليس dead** — مُستخدم فعلاً في `ObligationsTable.tsx` + `RealEstateTable.tsx`
+
+*آخر تحديث: 2026-06-29 — Terranex v0.3.0-p2 — 8.4/10**
