@@ -10,6 +10,7 @@ import { confirmSafeDeletion, guardAssetDeletion } from '../../core/lib/deletion
 import { useProjects } from '../projects/hooks';
 import { useAssets } from './hooks';
 import { formatEgp } from '../../core/lib/profitability';
+import { StockAdjustmentPanel } from './StockAdjustmentPanel';
 import type { AssetStatus, AssetType } from '../../core/types/domain';
 
 const TYPE_LABELS: Record<AssetType, string> = {
@@ -29,6 +30,9 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
   sold: 'مباع',
   disposed: 'مستبعد',
 };
+
+// Assets that track live quantity via events + adjustments
+const QUANTITY_TYPES: AssetType[] = ['herd', 'animal_group', 'crop'];
 
 export function AssetsPage() {
   const { assets, deleteAsset } = useAssets();
@@ -83,8 +87,15 @@ export function AssetsPage() {
                     { id: 'project', label: 'المشروع', value: projectNames.get(asset.project_id) ?? 'مشروع غير معروف' },
                     { id: 'acquisition-cost', label: 'تكلفة الاقتناء', value: `${formatEgp(asset.acquisition_cost_egp, true)} EGP`, valueClassName: 'font-bold' },
                     { id: 'current-value', label: 'القيمة الحالية', value: `${formatEgp(asset.current_value_egp ?? asset.acquisition_cost_egp, true)} EGP`, valueClassName: 'font-bold text-primary' },
+                    ...(asset.quantity != null ? [{ id: 'qty', label: 'الكمية الأساسية', value: `${asset.quantity} ${asset.unit ?? ''}` }] : []),
                   ]}
                 />
+
+                {/* Stock adjustments panel — only for quantity-bearing assets */}
+                {QUANTITY_TYPES.includes(asset.type) && (
+                  <StockAdjustmentPanel asset={asset} />
+                )}
+
                 <Button variant="danger" size="sm" className="mt-4 w-full" onClick={() => handleDeleteAsset(asset.id)}>
                   <Trash2 className="h-4 w-4" /> حذف الأصل
                 </Button>
