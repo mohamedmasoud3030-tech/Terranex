@@ -11,6 +11,7 @@ import { useProjects } from '../projects/hooks';
 import { formatEgp } from '../../core/lib/profitability';
 import type { Obligation } from '../../core/types/domain';
 import { ObligationForm } from './ObligationForm';
+import { ObligationAgingWidget } from './ObligationAgingWidget';
 import { useI18n } from '../../core/i18n/context';
 import { ExportExcelButton } from '../reports/ExportExcelButton';
 
@@ -85,6 +86,9 @@ export function ObligationsPage() {
           </Card>
         ))}
       </div>
+
+      {/* Aging dashboard — shown when there are open obligations */}
+      <ObligationAgingWidget obligations={obligations} />
 
       {showForm && (
         <Card>
