@@ -11,9 +11,11 @@ import { useObligations } from '../obligations/hooks';
 import { useAssets } from '../assets/hooks';
 import { computeProjectProfitability, computeSectorSummary, formatEgp } from '../../core/lib/profitability';
 import { ProjectForm } from '../projects/ProjectForm';
+import { useI18n } from '../../core/i18n/context';
 import type { ProjectInput } from '../projects/storage';
 
 export function AgriculturePage() {
+  const { t } = useI18n();
   const { projects, createProject } = useProjects();
   const { transactions } = useTransactions();
   const { obligations } = useObligations();
@@ -29,23 +31,25 @@ export function AgriculturePage() {
     setShowForm(false);
   }
 
+  const metrics = [
+    { label: t('ag_metric_sales'),  value: summary.total_income_egp,  color: 'text-success' },
+    { label: t('ag_metric_costs'),  value: summary.total_expense_egp, color: 'text-danger' },
+    { label: t('ag_metric_profit'), value: summary.gross_profit_egp,  color: summary.gross_profit_egp >= 0 ? 'text-success' : 'text-danger' },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="الاستثمار الزراعي"
-        description="مزارع، محاصيل، مواسم، إنتاج، مصروفات ومبيعات."
+        title={t('sector_agriculture_name')}
+        description={t('sector_agriculture_desc')}
       >
         <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4" /> موسم جديد
+          <Plus className="h-4 w-4" /> {t('ag_new_season')}
         </Button>
       </PageHeader>
 
       <div className="grid gap-3 min-[420px]:grid-cols-3">
-        {[
-          { label: 'إجمالي المبيعات', value: summary.total_income_egp, color: 'text-success' },
-          { label: 'تكاليف المواسم', value: summary.total_expense_egp, color: 'text-danger' },
-          { label: 'ربحية الموسم', value: summary.gross_profit_egp, color: summary.gross_profit_egp >= 0 ? 'text-success' : 'text-danger' },
-        ].map((k) => (
+        {metrics.map((k) => (
           <Card key={k.label}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
@@ -58,7 +62,7 @@ export function AgriculturePage() {
       {showForm && (
         <Card>
           <CardContent>
-            <h3 className="mb-4 font-semibold">موسم / مشروع زراعي جديد</h3>
+            <h3 className="mb-4 font-semibold">{t('ag_new_project')}</h3>
             <ProjectForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
           </CardContent>
         </Card>
@@ -66,14 +70,16 @@ export function AgriculturePage() {
 
       {agAssets.length > 0 && (
         <div>
-          <h3 className="mb-3 font-semibold">المزارع والأراضي ({agAssets.length})</h3>
+          <h3 className="mb-3 font-semibold">{t('ag_farms_section')} ({agAssets.length})</h3>
           <div className="grid gap-3 sm:grid-cols-3">
             {agAssets.map((asset) => (
               <Card key={asset.id}>
                 <CardContent className="p-4">
                   <Sprout className="h-4 w-4 text-green-600 mb-2" />
                   <p className="text-sm font-medium">{asset.name_ar}</p>
-                  <p className="text-xs text-muted-foreground">{asset.type}{asset.quantity ? ` • ${asset.quantity} ${asset.unit ?? ''}` : ''}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {asset.type}{asset.quantity ? ` • ${asset.quantity} ${asset.unit ?? ''}` : ''}
+                  </p>
                   <p className="text-sm font-bold text-green-700 mt-1">{formatEgp(asset.acquisition_cost_egp, true)} EGP</p>
                 </CardContent>
               </Card>
@@ -83,9 +89,13 @@ export function AgriculturePage() {
       )}
 
       <div>
-        <h3 className="mb-3 font-semibold">المواسم ({agProjects.length})</h3>
+        <h3 className="mb-3 font-semibold">{t('ag_seasons_section')} ({agProjects.length})</h3>
         {agProjects.length === 0 ? (
-          <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
+          <EmptyState
+            title={t('ag_empty_title')}
+            description={t('ag_empty_desc')}
+            icon={Wheat}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {agProjects.map((project) => {
@@ -96,15 +106,25 @@ export function AgriculturePage() {
                   <CardContent className="p-5">
                     <div className="mb-3 flex items-start justify-between">
                       <p className="font-semibold">{project.name_ar}</p>
-                      <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
+                      <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>
+                        {t(`project_status_${project.status}` as any)}
+                      </Badge>
                     </div>
                     <div className="mb-2 space-y-1 text-xs text-muted-foreground">
-                      <div className="flex justify-between"><span>إيرادات</span><span className="text-success font-medium">{formatEgp(prof.total_income_egp, true)} EGP</span></div>
-                      <div className="flex justify-between"><span>تكاليف</span><span className="text-danger font-medium">{formatEgp(prof.total_expense_egp, true)} EGP</span></div>
+                      <div className="flex justify-between">
+                        <span>{t('ag_income_label')}</span>
+                        <span className="text-success font-medium">{formatEgp(prof.total_income_egp, true)} EGP</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{t('ag_costs_label')}</span>
+                        <span className="text-danger font-medium">{formatEgp(prof.total_expense_egp, true)} EGP</span>
+                      </div>
                     </div>
                     <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${positive ? 'bg-success/10' : 'bg-danger/10'}`}>
                       <TrendingUp className={`h-4 w-4 ${positive ? 'text-success' : 'text-danger'}`} />
-                      <span className={`text-sm font-bold ${positive ? 'text-success' : 'text-danger'}`}>{formatEgp(prof.gross_profit_egp, true)} EGP</span>
+                      <span className={`text-sm font-bold ${positive ? 'text-success' : 'text-danger'}`}>
+                        {formatEgp(prof.gross_profit_egp, true)} EGP
+                      </span>
                     </div>
                   </CardContent>
                 </Card>

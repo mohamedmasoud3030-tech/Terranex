@@ -11,9 +11,11 @@ import { useObligations } from '../obligations/hooks';
 import { useAssets } from '../assets/hooks';
 import { computeProjectProfitability, computeSectorSummary, formatEgp } from '../../core/lib/profitability';
 import { ProjectForm } from '../projects/ProjectForm';
+import { useI18n } from '../../core/i18n/context';
 import type { ProjectInput } from '../projects/storage';
 
 export function LivestockPage() {
+  const { t } = useI18n();
   const { projects, createProject } = useProjects();
   const { transactions } = useTransactions();
   const { obligations } = useObligations();
@@ -30,29 +32,31 @@ export function LivestockPage() {
     setShowForm(false);
   }
 
+  const metrics = [
+    { label: t('lv_metric_heads'),   value: totalHeads,                  isCount: true,  color: 'text-blue-700' },
+    { label: t('lv_metric_revenue'), value: summary.total_income_egp,    isCount: false, color: 'text-success' },
+    { label: t('lv_metric_care'),    value: summary.total_expense_egp,   isCount: false, color: 'text-danger' },
+    { label: t('lv_metric_profit'),  value: summary.gross_profit_egp,    isCount: false, color: summary.gross_profit_egp >= 0 ? 'text-success' : 'text-danger' },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="الاستثمار الحيواني"
-        description="قطعان، أعلاف، علاج، تحصينات، ولادات، نفوق ومبيعات."
+        title={t('sector_livestock_name')}
+        description={t('sector_livestock_desc')}
       >
         <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4" /> قطيع جديد
+          <Plus className="h-4 w-4" /> {t('lv_new_herd')}
         </Button>
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: 'إجمالي الرؤوس', value: totalHeads, isCount: true, color: 'text-blue-700' },
-          { label: 'إيرادات البيع', value: summary.total_income_egp, color: 'text-success' },
-          { label: 'تكاليف الرعاية', value: summary.total_expense_egp, color: 'text-danger' },
-          { label: 'صافي الربح', value: summary.gross_profit_egp, color: summary.gross_profit_egp >= 0 ? 'text-success' : 'text-danger' },
-        ].map((k) => (
+        {metrics.map((k) => (
           <Card key={k.label}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
               <p className={`text-xl font-bold ${k.color}`}>
-                {(k as any).isCount ? k.value : `${formatEgp(k.value, true)} EGP`}
+                {k.isCount ? k.value : `${formatEgp(k.value, true)} EGP`}
               </p>
             </CardContent>
           </Card>
@@ -62,7 +66,7 @@ export function LivestockPage() {
       {showForm && (
         <Card>
           <CardContent>
-            <h3 className="mb-4 font-semibold">قطيع / مشروع حيواني جديد</h3>
+            <h3 className="mb-4 font-semibold">{t('lv_new_project')}</h3>
             <ProjectForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
           </CardContent>
         </Card>
@@ -70,7 +74,7 @@ export function LivestockPage() {
 
       {lvAssets.length > 0 && (
         <div>
-          <h3 className="mb-3 font-semibold">القطعان والأصول ({lvAssets.length})</h3>
+          <h3 className="mb-3 font-semibold">{t('lv_herds_section')} ({lvAssets.length})</h3>
           <div className="grid gap-3 sm:grid-cols-3">
             {lvAssets.map((asset) => (
               <Card key={asset.id}>
@@ -78,10 +82,14 @@ export function LivestockPage() {
                   <Beef className="h-4 w-4 text-blue-600 mb-2" />
                   <p className="text-sm font-medium">{asset.name_ar}</p>
                   <p className="text-xs text-muted-foreground">{asset.type}</p>
-                  {asset.quantity && (
-                    <p className="text-sm font-bold text-blue-700 mt-1">{asset.quantity} {asset.unit ?? 'رأس'}</p>
+                  {asset.quantity != null && (
+                    <p className="text-sm font-bold text-blue-700 mt-1">
+                      {asset.quantity} {asset.unit ?? t('lv_heads_unit')}
+                    </p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-0.5">{formatEgp(asset.acquisition_cost_egp, true)} EGP تكلفة</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatEgp(asset.acquisition_cost_egp, true)} EGP {t('lv_cost_label')}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -90,9 +98,13 @@ export function LivestockPage() {
       )}
 
       <div>
-        <h3 className="mb-3 font-semibold">مشاريع القطعان ({lvProjects.length})</h3>
+        <h3 className="mb-3 font-semibold">{t('lv_projects_section')} ({lvProjects.length})</h3>
         {lvProjects.length === 0 ? (
-          <EmptyState title="لا توجد بيانات بعد" description="أضف أول سجل لهذا القسم لتبدأ." />
+          <EmptyState
+            title={t('lv_empty_title')}
+            description={t('lv_empty_desc')}
+            icon={PawPrint}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {lvProjects.map((project) => {
@@ -103,11 +115,15 @@ export function LivestockPage() {
                   <CardContent className="p-5">
                     <div className="mb-3 flex items-start justify-between">
                       <p className="font-semibold">{project.name_ar}</p>
-                      <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>{project.status}</Badge>
+                      <Badge tone={project.status === 'active' ? 'positive' : 'neutral'}>
+                        {t(`project_status_${project.status}` as any)}
+                      </Badge>
                     </div>
                     <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${positive ? 'bg-success/10' : 'bg-danger/10'}`}>
                       <TrendingUp className={`h-4 w-4 ${positive ? 'text-success' : 'text-danger'}`} />
-                      <span className={`text-sm font-bold ${positive ? 'text-success' : 'text-danger'}`}>{formatEgp(prof.gross_profit_egp, true)} EGP</span>
+                      <span className={`text-sm font-bold ${positive ? 'text-success' : 'text-danger'}`}>
+                        {formatEgp(prof.gross_profit_egp, true)} EGP
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
