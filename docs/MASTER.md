@@ -231,9 +231,9 @@ build     : success     ✅
 ## 9. خارطة الطريق — الأسابيع القادمة
 
 ### P2 — جارٍ التنفيذ
-- [ ] StockAdjustment UI (`/assets` → تبويب التسويات)
-- [ ] PartnerForm + ObligationForm → RHF+Zod
-- [ ] i18n: AgriculturePage + LivestockPage
+- [x] StockAdjustment UI (`/assets` → panel للأصول الحية) ✅
+- [x] PartnerForm + ObligationForm → RHF+Zod ✅ (كان مكتملاً)
+- [x] i18n: AgriculturePage + LivestockPage ✅
 
 ### P3 — مخطط
 - [ ] PDF Export (ProfitabilityPage) — `@react-pdf/renderer` مُثبت
