@@ -4,13 +4,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'tanstack': ['@tanstack/react-router', '@tanstack/react-query', '@tanstack/react-table'],
           'charts': ['recharts'],
+          'react-pdf': ['@react-pdf/renderer'],
           'forms': ['react-hook-form', 'zod'],
           'radix': [
             '@radix-ui/react-dialog',
