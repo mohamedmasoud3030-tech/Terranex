@@ -8,6 +8,7 @@ import { useDocuments } from '../documents/hooks';
 import { usePartners } from '../partners/hooks';
 import type { DeferredExpenseTransactionInput } from './deferredExpenseWorkflow';
 import { transactionSchema, type TransactionFormValues } from '../../core/lib/validation';
+import { getLatestFxRate } from '../settings/ExchangeRateSection';
 import { useI18n } from '../../core/i18n/context';
 
 const CATEGORIES: { id: TransactionCategory; ar: string; en: string; group: string }[] = [
@@ -88,10 +89,15 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
   const availableDocuments = documents.filter((d) => !d.transaction_id || d.transaction_id === initial?.id);
 
-  // auto force fx_rate = 1 when EGP
+  // auto-fill fx_rate: EGP → 1, foreign → latest stored rate from Settings master table
   React.useEffect(() => {
     if (currency === 'EGP') {
       setValue('fx_rate', 1, { shouldValidate: true });
+    } else {
+      const stored = getLatestFxRate(currency as Currency);
+      if (stored !== null) {
+        setValue('fx_rate', stored, { shouldValidate: true });
+      }
     }
   }, [currency, setValue]);
 
