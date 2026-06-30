@@ -89,11 +89,20 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
   const availableDocuments = documents.filter((d) => !d.transaction_id || d.transaction_id === initial?.id);
 
-  // auto-fill fx_rate: EGP → 1, foreign → latest stored rate from Settings master table
+  // auto-fill fx_rate when currency changes:
+  //   EGP           → force 1 (always)
+  //   foreign, new  → load latest stored rate (only if user hasn't manually edited it)
+  //   foreign, same → keep existing value to respect manual edits
+  const prevCurrencyRef = React.useRef(currency);
   React.useEffect(() => {
+    const prevCurrency = prevCurrencyRef.current;
+    prevCurrencyRef.current = currency;
     if (currency === 'EGP') {
       setValue('fx_rate', 1, { shouldValidate: true });
-    } else {
+      return;
+    }
+    // Only auto-fill if the currency actually changed (not on re-render)
+    if (currency !== prevCurrency) {
       const stored = getLatestFxRate(currency as Currency);
       if (stored !== null) {
         setValue('fx_rate', stored, { shouldValidate: true });

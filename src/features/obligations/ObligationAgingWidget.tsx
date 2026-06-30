@@ -3,6 +3,7 @@
  * Surfaces the aging buckets from obligationQueries.ts as a visual dashboard widget.
  * ADR-003: queryObligationAging already tested (obligation-aging-query.test.cjs).
  */
+import { todayIso } from '../../core/lib/dateUtils';
 import { useMemo } from 'react';
 import { AlertTriangle, Clock, CheckCircle2, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
@@ -40,12 +41,9 @@ const TONE_CLASS: Record<BucketMeta['tone'], { bar: string; text: string; bg: st
   muted:  { bar: 'bg-muted-foreground/30', text: 'text-muted-foreground', bg: 'bg-muted/30 border-border' },
 };
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function ObligationAgingWidget({ obligations, asOf }: ObligationAgingWidgetProps) {
-  const asOfDate = asOf ?? today();
+  const asOfDate = asOf ?? todayIso();
 
   const result = useMemo(() =>
     queryObligationAging(obligations, { as_of: asOfDate }),
