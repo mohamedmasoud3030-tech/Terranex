@@ -6,7 +6,8 @@
  *
  * Storage key: terranex.exchangeRates.v1
  */
-import { useState, useMemo } from 'react';
+import { todayIso } from '../../core/lib/dateUtils';
+import React, { useState, useMemo } from 'react';
 import { Plus, X, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -39,9 +40,6 @@ function makeId(): string {
   return `fx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 interface FormState {
   currency: Exclude<Currency, 'EGP'>;
@@ -49,7 +47,7 @@ interface FormState {
   date: string;
 }
 
-const DEFAULT_FORM: FormState = { currency: 'USD', rate: '', date: today() };
+const DEFAULT_FORM: FormState = { currency: 'USD', rate: '', date: todayIso() };
 
 interface Props {
   locale: 'ar' | 'en';
@@ -57,7 +55,15 @@ interface Props {
 
 export function ExchangeRateSection({ locale }: Props) {
   const ar = locale === 'ar';
+  // Listen to storage events so multiple open tabs stay in sync (B4 fix)
   const [rates, setRates] = useState<ExchangeRate[]>(loadRates);
+  React.useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key === STORAGE_KEY) setRates(loadRates());
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [error, setError] = useState('');

@@ -33,6 +33,11 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
 
 // Assets that track live quantity via events + adjustments
 const QUANTITY_TYPES: AssetType[] = ['herd', 'animal_group', 'crop'];
+const QUANTITY_SECTORS = ['agriculture', 'livestock'];
+
+function shouldShowAdjPanel(asset: import('../../core/types/domain').Asset): boolean {
+  return QUANTITY_TYPES.includes(asset.type) && QUANTITY_SECTORS.includes(asset.sector_id);
+}
 
 export function AssetsPage() {
   const { assets, deleteAsset } = useAssets();
@@ -92,7 +97,7 @@ export function AssetsPage() {
                 />
 
                 {/* Stock adjustments panel — only for quantity-bearing assets */}
-                {QUANTITY_TYPES.includes(asset.type) && (
+                {shouldShowAdjPanel(asset) && (
                   <StockAdjustmentPanel asset={asset} />
                 )}
 

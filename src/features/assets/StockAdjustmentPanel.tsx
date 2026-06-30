@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { todayIso } from '../../core/lib/dateUtils';
 import { ClipboardList, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -19,9 +20,6 @@ const REASON_LABELS: Record<AdjustmentReason, string> = {
 
 const REASONS = Object.keys(REASON_LABELS) as AdjustmentReason[];
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 interface StockAdjustmentPanelProps {
   asset: Asset;
@@ -38,7 +36,7 @@ export function StockAdjustmentPanel({ asset }: StockAdjustmentPanelProps) {
   const [valBefore, setValBefore] = useState('');
   const [valAfter, setValAfter] = useState('');
   const [reason, setReason] = useState<AdjustmentReason>('data_correction');
-  const [adjDate, setAdjDate] = useState(today());
+  const [adjDate, setAdjDate] = useState(todayIso());
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 

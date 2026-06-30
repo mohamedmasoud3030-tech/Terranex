@@ -10,6 +10,7 @@ import { useI18n } from '../../core/i18n/context';
 export function ExportGlobalPdfButton() {
   const { locale } = useI18n();
   const { projects } = useProjects();
+  const projectNames = new Map(projects.map(p => [p.id, p.name_ar]));
   const { transactions } = useTransactions();
   const { obligations } = useObligations();
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,7 @@ export function ExportGlobalPdfButton() {
         <GlobalProfitabilityPdfDocument
           global={global}
           projectProfits={projectProfits}
+          projectNames={projectNames}
           transactions={transactions}
           obligations={obligations}
           generatedAt={generatedAt}

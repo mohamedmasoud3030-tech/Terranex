@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
 interface Props {
   global: GlobalSummary;
   projectProfits: ProjectProfitability[];
+  projectNames: Map<string, string>;
   transactions: Transaction[];
   obligations: Obligation[];
   generatedAt?: string;
@@ -47,12 +48,14 @@ interface Props {
 export function GlobalProfitabilityPdfDocument({
   global,
   projectProfits,
+  projectNames,
   transactions,
   obligations,
   generatedAt = new Date().toISOString().replace('T', ' ').slice(0, 19),
   generatedBy = 'Terranex v0.3.0',
 }: Props) {
   const isProfit = global.gross_profit_egp >= 0;
+  const projectName = (id?: string) => id ? (projectNames.get(id) ?? id.slice(-8)) : '—';
 
   // Top 30 recent transactions across all projects
   const recentTx = [...transactions]
@@ -174,7 +177,7 @@ export function GlobalProfitabilityPdfDocument({
         )}
 
         {/* Recent Transactions */}
-        <Text style={styles.sectionTitle}>Recent Transactions / آخر المعاملات (Top {recentTx.length})</Text>
+        <Text style={styles.sectionTitle}>Recent Transactions / آخر المعاملات (Top {recentTx.length} of {transactions.length})</Text>
         <View style={styles.tableHeader}>
           <Text style={[styles.th, { flex: 1.1 }]}>Date</Text>
           <Text style={[styles.th, { flex: 0.7 }]}>Dir</Text>
@@ -189,7 +192,7 @@ export function GlobalProfitabilityPdfDocument({
               {tx.direction === 'income' ? 'IN' : 'EX'}
             </Text>
             <Text style={[styles.td, { flex: 1.5 }]}>{tx.category}</Text>
-            <Text style={[styles.td, { flex: 2 }]}>{tx.project_id?.slice(-8) ?? '—'}</Text>
+            <Text style={[styles.td, { flex: 2 }]}>{projectName(tx.project_id ?? undefined)}</Text>
             <Text style={[styles.tdR, tx.direction === 'income' ? styles.positive : styles.negative]}>
               {tx.direction === 'income' ? '+' : '−'}{formatEgp(tx.amount_egp)}
             </Text>
