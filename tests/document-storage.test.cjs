@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { FakeSupabaseClient, resetFakeSupabase } = require('./helpers/fakeSupabase.cjs');
+const { setSupabaseClient } = require('./.compiled/core/storage/supabaseStore.js');
 
 class MemoryStorage {
   constructor() { this.values = new Map(); }
@@ -12,6 +14,8 @@ class MemoryStorage {
 }
 
 global.localStorage = new MemoryStorage();
+const fakeSupabase = new FakeSupabaseClient();
+setSupabaseClient(fakeSupabase);
 const { documentsStore } = require('./.compiled/features/documents/storage.js');
 
 function input(overrides = {}) {
@@ -25,13 +29,17 @@ function input(overrides = {}) {
   };
 }
 
-test('document storage requires title and project', () => {
+test('document storage requires title and project', async () => {
+  resetFakeSupabase();
+  await documentsStore.ready;
   documentsStore.reset();
   assert.throws(() => documentsStore.create(input({ title_ar: '   ' })), /عنوان المستند/);
   assert.throws(() => documentsStore.create(input({ project_id: undefined })), /ربط المستند بمشروع/);
 });
 
-test('document storage trims user-entered metadata and supports partner lookup', () => {
+test('document storage trims user-entered metadata and supports partner lookup', async () => {
+  resetFakeSupabase();
+  await documentsStore.ready;
   documentsStore.reset();
   const created = documentsStore.create(input());
   assert.equal(created.title_ar, 'عقد شراكة مشروع المرسى');
@@ -39,7 +47,9 @@ test('document storage trims user-entered metadata and supports partner lookup',
   assert.equal(documentsStore.getByPartner('partner-1')[0].id, created.id);
 });
 
-test('document storage rejects partial or invalid local file metadata', () => {
+test('document storage rejects partial or invalid local file metadata', async () => {
+  resetFakeSupabase();
+  await documentsStore.ready;
   documentsStore.reset();
   assert.throws(() => documentsStore.create(input({ file_url: 'indexeddb://document-files/doc-1' })), /بيانات الملف المحلي/);
   assert.throws(() => documentsStore.create(input({
@@ -50,7 +60,9 @@ test('document storage rejects partial or invalid local file metadata', () => {
   })), /حجم الملف المحلي/);
 });
 
-test('document storage accepts complete local file metadata and preserves it on updates', () => {
+test('document storage accepts complete local file metadata and preserves it on updates', async () => {
+  resetFakeSupabase();
+  await documentsStore.ready;
   documentsStore.reset();
   const created = documentsStore.create(input({
     file_url: 'indexeddb://document-files/doc-1',
