@@ -1,25 +1,21 @@
 import { guardDocumentDeletion } from '../../core/lib/deletionGuards';
 import { isFiniteNumber } from '../../core/lib/validation';
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { Document } from '../../core/types/domain';
 
-const KEY = 'terranex.documents.v1';
+const TABLE = 'documents';
 
-function parse(raw: unknown): Document[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (r): r is Document =>
-      r && typeof r === 'object' &&
-      typeof r.id === 'string' &&
-      typeof r.title_ar === 'string',
-  ).sort((a, b) => b.created_at.localeCompare(a.created_at));
+function parseOne(raw: unknown): Document {
+  return raw as Document;
 }
 
 function makeId() {
-  return `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
 
-const store = createLocalStorageStore<Document[]>(KEY, [], parse);
+const store = createSupabaseStore<Document>(TABLE, parseOne);
+
+export const documentsReady = store.ready;
 
 export type DocumentInput = Omit<Document, 'id' | 'created_at'>;
 
@@ -66,8 +62,8 @@ export const documentsStore = {
       return { ...document, ...normalizeInput({ ...document, ...input }) };
     }));
   },
-  remove: (id: string): void => {
-    const guard = guardDocumentDeletion(id);
+  remove: async (id: string): Promise<void> => {
+    const guard = await guardDocumentDeletion(id);
     if (!guard.canDelete) throw new Error(guard.message_ar);
     store.update((all) => all.filter((d) => d.id !== id));
   },

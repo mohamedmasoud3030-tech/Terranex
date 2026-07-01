@@ -7,6 +7,8 @@ import { PageHeader } from '../components/layout/PageHeader';
 import { Card, CardContent } from '../components/ui/Card';
 import { BackupRestoreSection } from '../features/settings/BackupRestoreSection';
 import { ExchangeRateSection } from '../features/settings/ExchangeRateSection';
+import { useAuth } from '../core/auth/AuthProvider';
+import { Button } from '../components/ui/Button';
 import type { Locale } from '../core/types';
 
 export const settingsRoute = createRoute({
@@ -53,6 +55,19 @@ const THEME_OPTIONS: Array<{
     icon: Monitor,
   },
 ];
+
+function AccountSection() {
+  const { user, signOut } = useAuth();
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-6">
+        <h2 className="text-sm font-semibold text-foreground">الحساب</h2>
+        <p className="text-sm text-muted-foreground">مسجل الدخول باسم: {user?.email}</p>
+        <Button variant="secondary" onClick={() => signOut()}>تسجيل الخروج</Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 function SettingsPage() {
   const { t, locale, setLocale } = useI18n();
@@ -135,6 +150,7 @@ function SettingsPage() {
 
         <BackupRestoreSection locale={locale} />
         <ExchangeRateSection locale={locale} />
+        <AccountSection />
       </div>
     </>
   );

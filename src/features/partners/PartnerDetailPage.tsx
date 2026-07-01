@@ -52,8 +52,8 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
   const projectNames = new Map(projects.map((project) => [project.id, project.name_ar]));
   const Icon = partner.category === 'equity_partner' ? Building : User;
 
-  function handleDeletePartner() {
-    const guard = guardPartnerDeletion(currentPartnerId);
+  async function handleDeletePartner() {
+    const guard = await guardPartnerDeletion(currentPartnerId);
     if (!guard.canDelete) {
       window.alert(guard.message_ar);
       return;

@@ -1,25 +1,20 @@
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { guardProjectDeletion } from '../../core/lib/deletionGuards';
 import type { Project } from '../../core/types/domain';
 
-const KEY = 'terranex.projects.v1';
+const TABLE = 'projects';
 
-function parse(raw: unknown): Project[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (r): r is Project =>
-      r && typeof r === 'object' &&
-      typeof r.id === 'string' &&
-      typeof r.name_ar === 'string' &&
-      typeof r.sector_id === 'string',
-  ).sort((a, b) => b.created_at.localeCompare(a.created_at));
+function parseOne(raw: unknown): Project {
+  return raw as Project;
 }
 
 function makeId() {
-  return `prj-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
 
-const store = createLocalStorageStore<Project[]>(KEY, [], parse);
+const store = createSupabaseStore<Project>(TABLE, parseOne);
+
+export const projectsReady = store.ready;
 
 export type ProjectInput = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
 
@@ -36,8 +31,8 @@ export const projectsStore = {
       all.map((p) => p.id === id ? { ...p, ...input, updated_at: new Date().toISOString() } : p),
     );
   },
-  remove: (id: string): void => {
-    const guard = guardProjectDeletion(id);
+  remove: async (id: string): Promise<void> => {
+    const guard = await guardProjectDeletion(id);
     if (!guard.canDelete) throw new Error(guard.message_ar);
     store.update((all) => all.filter((p) => p.id !== id));
   },

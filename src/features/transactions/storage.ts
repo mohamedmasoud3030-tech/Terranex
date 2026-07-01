@@ -1,28 +1,23 @@
 import { guardTransactionDeletion } from '../../core/lib/deletionGuards';
 import { validateTransactionReferences } from '../../core/lib/referenceValidation';
 import { isFiniteNumber } from '../../core/lib/validation';
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { Transaction } from '../../core/types/domain';
 import { bindSupportingDocument, releaseSupportingDocument } from '../documents/transactionDocumentIntegrity';
 
-const KEY = 'terranex.transactions.v2';
+const TABLE = 'transactions';
 
-function parse(raw: unknown): Transaction[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (r): r is Transaction =>
-      r && typeof r === 'object' &&
-      typeof r.id === 'string' &&
-      typeof r.project_id === 'string' &&
-      typeof r.amount === 'number',
-  ).sort((a, b) => b.transaction_date.localeCompare(a.transaction_date));
+function parseOne(raw: unknown): Transaction {
+  return raw as Transaction;
 }
 
 function makeId() {
-  return `trx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
 
-const store = createLocalStorageStore<Transaction[]>(KEY, [], parse);
+const store = createSupabaseStore<Transaction>(TABLE, parseOne, 'transaction_date');
+
+export const transactionsReady = store.ready;
 
 export type TransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
 
@@ -115,9 +110,9 @@ export const transactionsStore = {
       throw error;
     }
   },
-  remove: (id: string): void => {
+  remove: async (id: string): Promise<void> => {
     const existing = requireTransaction(id);
-    const guard = guardTransactionDeletion(id);
+    const guard = await guardTransactionDeletion(id);
     if (!guard.canDelete) throw new Error(guard.message_ar);
 
     const documentReleased = releaseSupportingDocument(existing.document_id!, id);

@@ -1,24 +1,18 @@
 import { isFiniteNumber } from '../../core/lib/validation';
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { recordSettlementAllocation } from '../settlement-allocations/posting';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore } from '../settlements/storage';
 import type { Obligation } from '../../core/types/domain';
 
-const KEY = 'terranex.obligations.v1';
+const TABLE = 'obligations';
 
-function parse(raw: unknown): Obligation[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (record): record is Obligation =>
-      Boolean(record) && typeof record === 'object' &&
-      typeof record.id === 'string' &&
-      typeof record.partner_id === 'string',
-  ).sort((a, b) => b.created_at.localeCompare(a.created_at));
+function parseOne(raw: unknown): Obligation {
+  return raw as Obligation;
 }
 
 function makeId() {
-  return `obl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
 
 function deriveStatus(obligation: Obligation, settledEgp: number): Obligation['status'] {
@@ -28,7 +22,9 @@ function deriveStatus(obligation: Obligation, settledEgp: number): Obligation['s
   return 'open';
 }
 
-const store = createLocalStorageStore<Obligation[]>(KEY, [], parse);
+const store = createSupabaseStore<Obligation>(TABLE, parseOne);
+
+export const obligationsReady = store.ready;
 
 function syncSettlementTotal(id: string, amountSettledEgp: number) {
   if (!isFiniteNumber(amountSettledEgp) || amountSettledEgp < 0) throw new Error('إجمالي التسويات غير صالح.');
@@ -49,8 +45,6 @@ function settle(id: string, amountEgp: number) {
   if (!obligation) throw new Error('تعذر العثور على الالتزام المرتبط بالتسوية.');
   if (obligation.status === 'written_off') throw new Error('لا يمكن تسوية التزام مشطوب.');
   if (obligation.status === 'disputed') throw new Error('لا يمكن تسوية التزام متنازع عليه قبل حل النزاع.');
-  settlementsStore.getAll();
-  settlementAllocationsStore.getAll();
   const activeTotal = getActiveSettlementTotal(id);
   const remaining = Math.max(0, obligation.amount_egp - activeTotal);
   if (amountEgp > remaining) throw new Error('قيمة التسوية أكبر من الرصيد المتبقي.');

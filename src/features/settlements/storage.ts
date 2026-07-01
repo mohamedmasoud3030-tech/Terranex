@@ -1,32 +1,27 @@
 import { isFiniteNumber } from '../../core/lib/validation';
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
-import { migrateLegacySettlementBalances, resetLegacySettlementMigration, SETTLEMENTS_KEY } from './migration';
 import type { Settlement, SettlementPaymentMethod } from './types';
 
 export type { RecordSettlementInput, RecordSettlementWithAllocationsInput, SettlementAllocationPlan } from './workflow';
 
+const TABLE = 'settlements';
+
 function sortSettlements(items: Settlement[]) {
-  return items.sort((a, b) => b.settlement_date.localeCompare(a.settlement_date) || b.created_at.localeCompare(a.created_at));
+  return [...items].sort((a, b) => b.settlement_date.localeCompare(a.settlement_date) || b.created_at.localeCompare(a.created_at));
 }
 
-function parse(raw: unknown): Settlement[] {
-  if (!Array.isArray(raw)) return [];
-  return sortSettlements(raw.filter(
-    (record): record is Settlement =>
-      Boolean(record) && typeof record === 'object' &&
-      typeof record.id === 'string' &&
-      typeof record.obligation_id === 'string' &&
-      typeof record.settlement_date === 'string' &&
-      isFiniteNumber(record.amount_egp),
-  ));
+function parseOne(raw: unknown): Settlement {
+  return raw as Settlement;
 }
 
 function makeId() {
-  return `set-${crypto.randomUUID()}`;
+  return crypto.randomUUID();
 }
 
-const store = createLocalStorageStore<Settlement[]>(SETTLEMENTS_KEY, [], parse);
+const store = createSupabaseStore<Settlement>(TABLE, parseOne, 'settlement_date');
+
+export const settlementsReady = store.ready;
 
 export interface SettlementInput {
   obligation_id: string;
@@ -65,7 +60,6 @@ export function validateSettlementInput(input: SettlementInput) {
 }
 
 function readAll() {
-  migrateLegacySettlementBalances();
   return store.get();
 }
 
@@ -79,7 +73,6 @@ export const settlementsStore = {
   getByReceiptDocument: (documentId: string) => readAll().filter((item) => item.receipt_document_id === documentId),
   getActiveTotalByObligation: (obligationId: string) => settlementAllocationsStore.getActiveTotalByObligation(obligationId, readAll()),
   create: (input: SettlementInput): Settlement => {
-    migrateLegacySettlementBalances();
     const now = new Date().toISOString();
     const settlement: Settlement = { ...validateSettlementInput(input), id: makeId(), status: 'active', created_at: now, updated_at: now };
     store.update((all) => sortSettlements([settlement, ...all]));
@@ -100,7 +93,6 @@ export const settlementsStore = {
     if (!restored) throw new Error('تعذر العثور على سجل التسوية المطلوب استعادته.');
   },
   reverse: (id: string, reason: string): Settlement => {
-    migrateLegacySettlementBalances();
     const normalizedReason = reason.trim();
     if (!normalizedReason) throw new Error('سبب عكس التسوية مطلوب.');
     let reversed: Settlement | undefined;
@@ -114,13 +106,9 @@ export const settlementsStore = {
     if (!reversed) throw new Error('تعذر العثور على التسوية المطلوبة.');
     return reversed;
   },
-  subscribe: (listener: (items: Settlement[]) => void) => {
-    migrateLegacySettlementBalances();
-    return store.subscribe(listener);
-  },
+  subscribe: store.subscribe,
   reset: () => {
     store.reset();
     settlementAllocationsStore.reset();
-    resetLegacySettlementMigration();
   },
 };

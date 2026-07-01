@@ -221,7 +221,7 @@ export function DocumentsPage() {
   }
 
   async function handleDeleteDocument(document: Document) {
-    const guard = guardDocumentDeletion(document.id);
+    const guard = await guardDocumentDeletion(document.id);
     if (!guard.canDelete) {
       window.alert(guard.message_ar);
       return;

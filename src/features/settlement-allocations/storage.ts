@@ -1,33 +1,21 @@
 import { isFiniteNumber } from '../../core/lib/validation';
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
-import { migrateLegacySettlementBalances } from '../settlements/migration';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { Settlement } from '../settlements/types';
-import {
-  migrateLegacySettlementAllocations,
-  resetLegacySettlementAllocationMigration,
-  SETTLEMENT_ALLOCATIONS_KEY,
-} from './migration';
 import type { SettlementAllocation } from './types';
 
-function parse(raw: unknown): SettlementAllocation[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (record): record is SettlementAllocation =>
-      Boolean(record) && typeof record === 'object' &&
-      typeof record.id === 'string' &&
-      typeof record.settlement_id === 'string' &&
-      typeof record.obligation_id === 'string' &&
-      isFiniteNumber(record.allocated_amount_egp) &&
-      record.allocated_amount_egp > 0 &&
-      typeof record.created_at === 'string',
-  );
+const TABLE = 'settlement_allocations';
+
+function parseOne(raw: unknown): SettlementAllocation {
+  return raw as SettlementAllocation;
 }
 
 function makeId() {
-  return `alloc-${globalThis.crypto.randomUUID()}`;
+  return crypto.randomUUID();
 }
 
-const store = createLocalStorageStore<SettlementAllocation[]>(SETTLEMENT_ALLOCATIONS_KEY, [], parse);
+const store = createSupabaseStore<SettlementAllocation>(TABLE, parseOne);
+
+export const settlementAllocationsReady = store.ready;
 
 export interface SettlementAllocationInput {
   settlement_id: string;
@@ -47,8 +35,6 @@ function normalizeInput(input: SettlementAllocationInput): SettlementAllocationI
 }
 
 function readAll() {
-  migrateLegacySettlementBalances();
-  migrateLegacySettlementAllocations();
   return store.get();
 }
 
@@ -92,8 +78,5 @@ export const settlementAllocationsStore = {
   createMany,
   removeForRollback: (id: string): void => removeManyForRollback([id]),
   removeManyForRollback,
-  reset: () => {
-    store.reset();
-    resetLegacySettlementAllocationMigration();
-  },
+  reset: () => store.reset(),
 };

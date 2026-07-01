@@ -46,8 +46,8 @@ export function AssetsPage() {
   const totalAcquisition = assets.reduce((sum, asset) => sum + asset.acquisition_cost_egp, 0);
   const totalCurrentValue = assets.reduce((sum, asset) => sum + (asset.current_value_egp ?? asset.acquisition_cost_egp), 0);
 
-  function handleDeleteAsset(assetId: string) {
-    const guard = guardAssetDeletion(assetId);
+  async function handleDeleteAsset(assetId: string) {
+    const guard = await guardAssetDeletion(assetId);
     if (!guard.canDelete) {
       window.alert(guard.message_ar);
       return;

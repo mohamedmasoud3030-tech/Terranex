@@ -6,12 +6,11 @@ import { I18nProvider } from './core/i18n';
 import { ThemeProvider } from './core/theme';
 import { queryClient } from './core/query';
 import { createAppRouter } from './router';
-import { runAppStorageMigrations } from './core/storage/migrations';
+import { AuthProvider } from './core/auth/AuthProvider';
 import { registerServiceWorker } from './registerServiceWorker';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import './styles.css';
 
-runAppStorageMigrations();
 registerServiceWorker();
 
 const router = createAppRouter(queryClient);
@@ -25,9 +24,11 @@ createRoot(rootElement).render(
       <I18nProvider defaultLocale="ar">
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
-            <ErrorBoundary scope="router">
-              <RouterProvider router={router} />
-            </ErrorBoundary>
+            <AuthProvider>
+              <ErrorBoundary scope="router">
+                <RouterProvider router={router} />
+              </ErrorBoundary>
+            </AuthProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </I18nProvider>

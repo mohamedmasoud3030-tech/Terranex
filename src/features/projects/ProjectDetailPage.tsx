@@ -74,8 +74,8 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     setEditing(false);
   }
 
-  function handleDeleteProject() {
-    const guard = guardProjectDeletion(projectId);
+  async function handleDeleteProject() {
+    const guard = await guardProjectDeletion(projectId);
     if (!guard.canDelete) {
       setDeleteMessage(guard.message_ar);
       return;

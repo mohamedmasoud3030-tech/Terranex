@@ -1,37 +1,27 @@
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { guardPartnerDeletion } from '../../core/lib/deletionGuards';
 import type { Partner, ProjectPartner } from '../../core/types/domain';
 
-const PARTNERS_KEY = 'terranex.partners.v1';
-const PROJECT_PARTNERS_KEY = 'terranex.projectPartners.v1';
+const PARTNERS_TABLE = 'partners';
+const PROJECT_PARTNERS_TABLE = 'project_partners';
 
-function parsePartners(raw: unknown): Partner[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (r): r is Partner =>
-      r && typeof r === 'object' &&
-      typeof r.id === 'string' &&
-      typeof r.name_ar === 'string',
-  ).sort((a, b) => b.created_at.localeCompare(a.created_at));
+function parsePartner(raw: unknown): Partner {
+  return raw as Partner;
 }
 
-function parseProjectPartners(raw: unknown): ProjectPartner[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (r): r is ProjectPartner =>
-      r && typeof r === 'object' &&
-      typeof r.id === 'string' &&
-      typeof r.project_id === 'string' &&
-      typeof r.partner_id === 'string',
-  );
+function parseProjectPartner(raw: unknown): ProjectPartner {
+  return raw as ProjectPartner;
 }
 
-function makeId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+function makeId() {
+  return crypto.randomUUID();
 }
 
-const pStore = createLocalStorageStore<Partner[]>(PARTNERS_KEY, [], parsePartners);
-const ppStore = createLocalStorageStore<ProjectPartner[]>(PROJECT_PARTNERS_KEY, [], parseProjectPartners);
+const pStore = createSupabaseStore<Partner>(PARTNERS_TABLE, parsePartner);
+const ppStore = createSupabaseStore<ProjectPartner>(PROJECT_PARTNERS_TABLE, parseProjectPartner, 'id');
+
+export const partnersReady = pStore.ready;
+export const projectPartnersReady = ppStore.ready;
 
 export type PartnerInput = Omit<Partner, 'id' | 'created_at'>;
 export type ProjectPartnerInput = Omit<ProjectPartner, 'id'>;
@@ -39,15 +29,15 @@ export type ProjectPartnerInput = Omit<ProjectPartner, 'id'>;
 export const partnersStore = {
   getAll: () => pStore.get(),
   create: (input: PartnerInput): Partner => {
-    const partner: Partner = { ...input, id: makeId('prt'), created_at: new Date().toISOString() };
+    const partner: Partner = { ...input, id: makeId(), created_at: new Date().toISOString() };
     pStore.update((all) => [partner, ...all]);
     return partner;
   },
   update: (id: string, input: Partial<PartnerInput>): void => {
     pStore.update((all) => all.map((p) => p.id === id ? { ...p, ...input } : p));
   },
-  remove: (id: string): void => {
-    const guard = guardPartnerDeletion(id);
+  remove: async (id: string): Promise<void> => {
+    const guard = await guardPartnerDeletion(id);
     if (!guard.canDelete) throw new Error(guard.message_ar);
     pStore.update((all) => all.filter((p) => p.id !== id));
   },
@@ -59,7 +49,7 @@ export const projectPartnersStore = {
   getAll: () => ppStore.get(),
   getByProject: (projectId: string) => ppStore.get().filter((pp) => pp.project_id === projectId),
   create: (input: ProjectPartnerInput): ProjectPartner => {
-    const pp: ProjectPartner = { ...input, id: makeId('pp') };
+    const pp: ProjectPartner = { ...input, id: makeId() };
     ppStore.update((all) => [pp, ...all]);
     return pp;
   },

@@ -1,24 +1,20 @@
-import { createLocalStorageStore } from '../../core/storage/localStorageStore';
+import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { guardAssetDeletion } from '../../core/lib/deletionGuards';
 import type { Asset } from '../../core/types/domain';
 
-const KEY = 'terranex.assets.v1';
+const TABLE = 'assets';
 
-function parse(raw: unknown): Asset[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (r): r is Asset =>
-      r && typeof r === 'object' &&
-      typeof r.id === 'string' &&
-      typeof r.name_ar === 'string',
-  ).sort((a, b) => b.created_at.localeCompare(a.created_at));
+function parseOne(raw: unknown): Asset {
+  return raw as Asset;
 }
 
 function makeId() {
-  return `ast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return crypto.randomUUID();
 }
 
-const store = createLocalStorageStore<Asset[]>(KEY, [], parse);
+const store = createSupabaseStore<Asset>(TABLE, parseOne);
+
+export const assetsReady = store.ready;
 
 export type AssetInput = Omit<Asset, 'id' | 'created_at'>;
 
@@ -33,8 +29,8 @@ export const assetsStore = {
   update: (id: string, input: Partial<AssetInput>): void => {
     store.update((all) => all.map((a) => a.id === id ? { ...a, ...input } : a));
   },
-  remove: (id: string): void => {
-    const guard = guardAssetDeletion(id);
+  remove: async (id: string): Promise<void> => {
+    const guard = await guardAssetDeletion(id);
     if (!guard.canDelete) throw new Error(guard.message_ar);
     store.update((all) => all.filter((a) => a.id !== id));
   },
