@@ -1,4 +1,4 @@
-import { supabase } from '../storage/supabaseClient';
+import { requireClient } from '../storage/supabaseClientRegistry';
 
 export interface DeletionGuardResult {
   canDelete: boolean;
@@ -11,7 +11,7 @@ const FAILSAFE: DeletionGuardResult = {
 };
 
 async function callGuard(fn: string, param: string, id: string): Promise<DeletionGuardResult> {
-  const { data, error } = await supabase.rpc(fn, { [param]: id });
+  const { data, error } = await requireClient().rpc(fn, { [param]: id });
   if (error || !data || !Array.isArray(data) || data.length === 0) {
     if (error) console.error(`فشل استدعاء ${fn}:`, error.message);
     return FAILSAFE;
