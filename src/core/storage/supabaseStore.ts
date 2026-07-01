@@ -17,10 +17,19 @@
  * rewriting every feature's call sites in this pass; a follow-up should
  * thread a `Promise` return through the highest-risk paths (transactions,
  * settlements, obligations).
+ *
+ * CLIENT INJECTION: this module does NOT import the real `supabase` client
+ * directly (that would pull `import.meta.env` into every consumer, including
+ * the Node-based test suite). Instead, `setSupabaseClient` must be called
+ * once at app bootstrap (see `supabaseBootstrap.ts`, imported first thing in
+ * `main.tsx`) or, in tests, with an in-memory fake client
+ * (see `tests/helpers/fakeSupabase.cjs`).
  */
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { supabase } from './supabaseClient';
 import type { Listener } from './localStorageStore';
+import { requireClient } from './supabaseClientRegistry';
+
+export { setSupabaseClient } from './supabaseClientRegistry';
 
 export interface SupabaseStore<T extends { id: string }> {
   get(): T[];
@@ -47,7 +56,7 @@ export function createSupabaseStore<T extends { id: string }>(
   }
 
   async function hydrate(): Promise<void> {
-    const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending: false });
+    const { data, error } = await requireClient().from(table).select('*').order(orderColumn, { ascending: false });
     if (error) {
       console.error(`تعذر تحميل بيانات ${table} من Supabase: ${error.message}`);
       loaded = true;
@@ -60,7 +69,7 @@ export function createSupabaseStore<T extends { id: string }>(
 
   function subscribeRealtime() {
     if (typeof window === 'undefined') return;
-    channel = supabase
+    channel = requireClient()
       .channel(`store:${table}`)
       .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
         void hydrate();
@@ -90,15 +99,15 @@ export function createSupabaseStore<T extends { id: string }>(
     void (async () => {
       try {
         if (toInsert.length > 0) {
-          const { error } = await supabase.from(table).insert(toInsert);
+          const { error } = await requireClient().from(table).insert(toInsert);
           if (error) throw error;
         }
         for (const item of toUpdate) {
-          const { error } = await supabase.from(table).update(item).eq('id', item.id);
+          const { error } = await requireClient().from(table).update(item).eq('id', item.id);
           if (error) throw error;
         }
         if (toDeleteIds.length > 0) {
-          const { error } = await supabase.from(table).delete().in('id', toDeleteIds);
+          const { error } = await requireClient().from(table).delete().in('id', toDeleteIds);
           if (error) throw error;
         }
       } catch (error) {
@@ -130,7 +139,7 @@ export function createSupabaseStore<T extends { id: string }>(
       cache = [];
       notify();
       if (idsToDelete.length > 0) {
-        void supabase.from(table).delete().in('id', idsToDelete);
+        void requireClient().from(table).delete().in('id', idsToDelete);
       }
     },
     ready,
@@ -139,5 +148,5 @@ export function createSupabaseStore<T extends { id: string }>(
 }
 
 export function disposeAllRealtimeChannels() {
-  supabase.removeAllChannels();
+  requireClient().removeAllChannels();
 }

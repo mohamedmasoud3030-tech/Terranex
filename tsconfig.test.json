@@ -19,6 +19,8 @@
     "src/core/lib/xlsx.ts",
     "src/features/reports/financeExport.ts",
     "src/core/storage/localStorageStore.ts",
+    "src/core/storage/supabaseClientRegistry.ts",
+    "src/core/storage/supabaseStore.ts",
     "src/core/storage/migrations.ts",
     "src/core/storage/backup.ts",
     "src/core/storage/indexedDbFileStore.ts",
@@ -29,6 +31,9 @@
     "src/features/finance/internalPostingProjection.ts",
     "src/features/finance/obligationQueries.ts",
     "src/features/obligations/storage.ts",
+    "src/features/settlements/storage.ts",
+    "src/features/settlements/workflow.ts",
+    "src/features/settlement-allocations/storage.ts",
     "src/features/settlements/allocationForm.ts",
     "src/features/transactions/storage.ts",
     "src/features/transactions/deferredExpenseWorkflow.ts"
