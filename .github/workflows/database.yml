@@ -1,0 +1,92 @@
+name: Database Schema
+
+# Proves the Supabase schema is reproducible, isolated, and reversible.
+#
+# This job runs against a REAL, EPHEMERAL Postgres created fresh for every run.
+# tests/helpers/fakeSupabase.cjs is deliberately NOT used here: it is a
+# client-side test double with no RLS engine, no constraints, and no RPCs, so it
+# cannot prove any of the properties below. Conversely, this job never touches
+# the production Supabase project.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - 'scripts/db-test.sh'
+      - '.github/workflows/database.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - 'scripts/db-test.sh'
+      - '.github/workflows/database.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: database-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  schema:
+    name: migrations / RLS / RPC / replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Verify Postgres is reachable
+        run: psql -c 'select version();'
+
+      # Runs: replay from empty -> schema contract -> RLS with two identities
+      # -> deletion guard RPCs -> backfill scenarios -> forward/rollback/reapply.
+      - name: Run database test suite
+        run: ./scripts/db-test.sh
+
+      # A migration set that cannot be applied twice from scratch is not
+      # reproducible. Second independent run into a different database.
+      - name: Second independent replay from empty
+        env:
+          TERRANEX_TEST_DB: terranex_replay_2
+        run: ./scripts/db-test.sh
+
+      - name: Confirm no production credentials are referenced
+        run: |
+          if grep -rInE 'supabase\.co|service_role_key|SUPABASE_SERVICE_ROLE' supabase/ scripts/db-test.sh; then
+            echo "::error::Production Supabase reference found in schema assets"
+            exit 1
+          fi
+          echo "No production Supabase host or service-role key referenced."

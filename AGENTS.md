@@ -70,9 +70,13 @@ build     : success ✅
 
 **التخزين:** Supabase (Postgres) — **Auth:** Supabase Auth — كلاهما مستخدم حالياً.
 
-**حالة الإطلاق: NO-GO** — محجوب بـ: غياب Supabase migrations مُدارة بالإصدار،
-غياب RLS/RPC على الخادم، كتابات مالية غير ذرية، ونسخ احتياطي لا يغطي Supabase.
-راجع `IMPLEMENTATION_GUIDE.md` §Launch blockers.
+**قاعدة البيانات (P1A):** المخطط مُعرّف بالكامل في `supabase/migrations/` — 11 جدولاً،
+44 سياسة RLS، 5 دوال `guard_*_deletion`، مع rollback لكل migration. مُثبت على Postgres
+حقيقي عبر `scripts/db-test.sh` (لا يُستخدم FakeSupabase لإثبات قاعدة البيانات).
+
+**حالة الإطلاق: NO-GO** — محجوب بـ: المخطط لم يُنشر على Supabase الإنتاجي بعد،
+كتابات مالية غير ذرية (P1B)، ونسخ احتياطي لا يغطي Supabase.
+راجع `IMPLEMENTATION_GUIDE.md` §Launch blockers و`docs/supabase/INVENTORY.md`.
 
 > أرقام «61/61» في وثائق سابقة تسبق الانتقال إلى Supabase ولا تصف الحالة الحالية.
 
@@ -115,7 +119,12 @@ src/
   core/lib/profitability.ts ← محرك الربحية
   core/storage/migrations.ts← migrations آمنة
   features/                 ← features مستقلة
+supabase/
+  migrations/               ← المخطط المُدار بالإصدار — لا تعدّل migration مدمجة
+  rollback/                 ← تراجع لكل migration
+  tests/                    ← اختبارات قاعدة بيانات على Postgres حقيقي
 docs/
+  supabase/INVENTORY.md     ← الجداول وRPCs المثبتة من الكود
   audit/                    ← تقارير التدقيق 28 يونيو 2026
   decisions/                ← ADRs
   plans/                    ← خطط التنفيذ

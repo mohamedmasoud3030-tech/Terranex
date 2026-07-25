@@ -48,14 +48,53 @@ Callers must respect three rules:
   cache never shows a row Postgres refused. `getLoadError()` / `getWriteError()` expose the
   last failures.
 
-## Launch blockers (Phase 2 scope — not addressed in this branch)
+## Database schema (Phase 1A — complete, not yet deployed)
 
-- **No versioned Supabase migrations.** The Postgres schema is not defined in the repo.
-  There is no reproducible way to stand up a new environment.
-- **No RLS policies and no `guard_*_deletion` RPCs deployed.** `deletionGuards.ts` calls
-  them and fails closed, so in production every guarded delete is currently blocked with
-  "تعذر التحقق من الروابط التشغيلية". The tests exercise the intended behaviour against a
-  fake — that proves the client contract, never the server.
+The Postgres schema is now defined in the repo and reproducible from scratch.
+
+- `supabase/migrations/` — 7 ordered migrations: enum types, the 11 operational tables,
+  circular FKs and indexes, RLS, the 5 deletion-guard RPCs, privileges, and the
+  `owner_id` backfill with its preflight gate.
+- `supabase/rollback/` — one `.down.sql` per migration. Each states plainly what is
+  reversible and what is not (`0002` drops tables and is destructive by nature; `0007`
+  keeps the assigned `owner_id` values because they cannot be recomputed).
+- `supabase/tests/` + `scripts/db-test.sh` — six stages against a real Postgres:
+  replay from empty, schema contract, RLS with two identities, deletion-guard RPCs,
+  backfill scenarios, and forward → rollback → reapply.
+
+**Ownership model.** Every table carries `owner_id uuid NOT NULL DEFAULT auth.uid()`, and
+every table exposes `UNIQUE (id, owner_id)` so financial links can use composite foreign
+keys that carry the tenant:
+
+```
+settlements            (obligation_id, owner_id) -> obligations (id, owner_id)
+settlement_allocations (settlement_id, owner_id) -> settlements (id, owner_id)
+settlement_allocations (obligation_id, owner_id) -> obligations (id, owner_id)
+```
+
+A cross-tenant reference is therefore impossible at the schema level, independent of RLS.
+No trigger is used, and no RLS policy performs a join.
+
+RLS is `enable` + **`force`** on all 11 tables, with four policies each:
+
+```sql
+USING      ((select auth.uid()) = owner_id)
+WITH CHECK ((select auth.uid()) = owner_id)
+```
+
+`WITH CHECK` is what blocks `owner_id` spoofing, on INSERT and on UPDATE in both
+directions. `anon` holds no privileges; `authenticated` holds only SELECT/INSERT/UPDATE/
+DELETE. Every function pins `search_path = ''`.
+
+The guards are `SECURITY INVOKER` on purpose: their counts run under the caller's RLS, so
+a guard can never leak another tenant's row counts through its blocker numbers.
+
+## Launch blockers (still open)
+
+- **The schema is not deployed.** Migrations exist and are proven in CI against an
+  ephemeral Postgres, but no production Supabase project has been migrated. Until then
+  `deletionGuards.ts` still receives PGRST202 and fails closed, blocking every guarded
+  delete with "تعذر التحقق من الروابط التشغيلية".
 - **Financial writes are not atomic.** Recording a settlement writes the settlement, then
   the allocations, then the obligation totals as separate round trips. Application-level
   rollback exists, but a crash or network loss mid-sequence leaves inconsistent data.

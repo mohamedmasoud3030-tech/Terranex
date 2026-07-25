@@ -1,5 +1,5 @@
 # Terranex — وثيقة المشروع الموحدة
-**الإصدار:** v1.6  
+**الإصدار:** v1.7  
 **التاريخ:** 2026-07-25  
 **المرجع الكنسي:** يسبق جميع وثائق `docs/` ما عدا ما في `docs/audit/`
 
@@ -166,8 +166,10 @@ assets                documents           transactions
 obligations           settlements         settlement_allocations
 operational_events    stock_adjustments
 ```
-> ⚠️ هذه الجداول **غير مُعرّفة في الريبو**. لا توجد migrations مُدارة بالإصدار ولا RLS
-> policies ولا دوال `guard_*_deletion`. إنشاؤها نطاق المرحلة الثانية.
+> ✅ **P1A:** هذه الجداول الـ11 صارت مُعرّفة بالكامل في `supabase/migrations/` مع RLS
+> (44 سياسة) ودوال `guard_*_deletion` الخمس، ومُثبتة على Postgres حقيقي عبر
+> `scripts/db-test.sh`. **لكنها لم تُطبَّق على مشروع Supabase إنتاجي بعد.**
+> التفاصيل: `docs/supabase/INVENTORY.md`.
 
 ### مفاتيح localStorage المتبقية — ليست مخزن بيانات
 ```
@@ -211,9 +213,10 @@ build             ✅ success
 
 | البند المحجوب | الحالة |
 |---|---|
-| Supabase migrations مُدارة بالإصدار | ❌ غير موجودة |
-| RLS policies + `guard_*_deletion` RPC | ❌ غير مُنشأة — الحُرّاس تفشل مغلقة في الإنتاج |
-| كتابات مالية ذرية | ❌ تسوية/توزيعات/التزام كتابات منفصلة |
+| Supabase migrations مُدارة بالإصدار | ✅ مُنجز (P1A) — 7 migrations + rollback |
+| RLS policies + `guard_*_deletion` RPC | ✅ مكتوبة ومُختبَرة (P1A) على Postgres حقيقي |
+| **نشر المخطط على Supabase الإنتاجي** | ❌ لم يُطبَّق — الحُرّاس ما زالت تفشل مغلقة في الإنتاج |
+| كتابات مالية ذرية | ❌ تسوية/توزيعات/التزام كتابات منفصلة — نطاق P1B |
 | نسخ احتياطي يغطي Supabase | ❌ النسخ الحالي يقرأ localStorage فقط |
 
 البوابات الخضراء تثبت **عقد العميل** فقط — لا تثبت أن الإنتاج يعمل.
@@ -318,4 +321,4 @@ npm run build       # success
 
 ---
 
-*Terranex MASTER.md — v1.6 — 2026-07-25*
+*Terranex MASTER.md — v1.7 — 2026-07-25 (P1A: versioned schema)*
