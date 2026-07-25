@@ -22,15 +22,15 @@ PGPORT="${PGPORT:-5433}"
 PGUSER="${PGUSER:-postgres}"
 DB="${TERRANEX_TEST_DB:-terranex_test}"
 export PGHOST PGPORT PGUSER
-[ -n "${PGPASSWORD:-}" ] && export PGPASSWORD
+if [[ -n "${PGPASSWORD:-}" ]]; then export PGPASSWORD; fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIG="$ROOT/supabase/migrations"
 ROLL="$ROOT/supabase/rollback"
 TESTS="$ROOT/supabase/tests"
 
-psql_q() { psql -v ON_ERROR_STOP=1 -q "$@"; }
-note()   { printf '\n\033[1m== %s\033[0m\n' "$1"; }
+psql_q() { local args=("$@"); psql -v ON_ERROR_STOP=1 -q "${args[@]}"; }
+note()   { local msg="$1"; printf '\n\033[1m== %s\033[0m\n' "$msg"; }
 strip()  { sed 's/^psql:[^ ]*: NOTICE:  //'; }
 
 recreate_db() {
@@ -82,7 +82,7 @@ after_rb=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemanam
 types_rb=$(psql -tAq -d "$DB" -c "select count(*) from pg_type t join pg_namespace n on n.oid=t.typnamespace where n.nspname='public' and t.typtype='e';")
 funcs_rb=$(psql -tAq -d "$DB" -c "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and (p.proname like 'guard\\_%' or p.proname like 'terranex\\_%');")
 echo "  after rollback       : tables=$after_rb enums=$types_rb guard_fns=$funcs_rb"
-if [ "$after_rb" != "0" ] || [ "$types_rb" != "0" ] || [ "$funcs_rb" != "0" ]; then
+if [[ "$after_rb" != "0" || "$types_rb" != "0" || "$funcs_rb" != "0" ]]; then
   echo "  FAIL: rollback left objects behind"; exit 1
 fi
 echo "  PASS: rollback removed every object"
@@ -90,7 +90,7 @@ echo "  PASS: rollback removed every object"
 apply_forward
 after_re=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemaname='public';")
 echo "  tables after reapply : $after_re"
-if [ "$after_re" != "$before" ]; then
+if [[ "$after_re" != "$before" ]]; then
   echo "  FAIL: reapply produced $after_re tables, expected $before"; exit 1
 fi
 echo "  PASS: reapply reproduced the identical schema"

@@ -17,18 +17,18 @@ begin;
 
 -- Reset to a known state as superuser.
 set local role postgres;
-delete from public.settlement_allocations;
-delete from public.settlements;
-delete from public.obligations;
-delete from public.operational_events;
-delete from public.stock_adjustments;
-delete from public.transactions;
-delete from public.documents;
-delete from public.project_partners;
-delete from public.assets;
-delete from public.partners;
-delete from public.projects;
-delete from auth.users;
+delete from public.settlement_allocations where true;
+delete from public.settlements where true;
+delete from public.obligations where true;
+delete from public.operational_events where true;
+delete from public.stock_adjustments where true;
+delete from public.transactions where true;
+delete from public.documents where true;
+delete from public.project_partners where true;
+delete from public.assets where true;
+delete from public.partners where true;
+delete from public.projects where true;
+delete from auth.users where true;
 
 insert into auth.users (id, email) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'alice@terranex.test'),
