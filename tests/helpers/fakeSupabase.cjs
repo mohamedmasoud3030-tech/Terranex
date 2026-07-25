@@ -143,82 +143,117 @@ class FakeQueryBuilder {
       return { data: null, error: supabaseError(injected) };
     }
 
+    switch (this.operation) {
+      case 'select': return this.executeSelect();
+      case 'insert': return this.executeInsert();
+      case 'update': return this.executeUpdate();
+      case 'delete': return this.executeDelete();
+      default:
+        return { data: null, error: supabaseError(`عملية غير معروفة: ${this.operation}`) };
+    }
+  }
+
+  executeSelect() {
+    calls.select.push({ table: this.tableName, filters: this.filters, order: this.order_ });
+    let result = applyOrder(applyFilters(rows(this.tableName), this.filters), this.order_);
+    if (this.limit_ !== null) result = result.slice(0, this.limit_);
+
+    if (this.single_) {
+      if (result.length !== 1) return { data: null, error: supabaseError('صف واحد متوقع.', 'PGRST116') };
+      return { data: result[0], error: null };
+    }
+    if (this.maybeSingle_) return { data: result[0] ?? null, error: null };
+    return { data: result, error: null };
+  }
+
+  executeInsert() {
     const store = table(this.tableName);
+    const incoming = Array.isArray(this.payload) ? this.payload : [this.payload];
+    calls.insert.push({ table: this.tableName, count: incoming.length });
 
-    if (this.operation === 'select') {
-      calls.select.push({ table: this.tableName, filters: this.filters, order: this.order_ });
-      let result = applyFilters(rows(this.tableName), this.filters);
-      result = applyOrder(result, this.order_);
-      if (this.limit_ !== null) result = result.slice(0, this.limit_);
-      if (this.single_) {
-        if (result.length !== 1) {
-          return { data: null, error: supabaseError('صف واحد متوقع.', 'PGRST116') };
-        }
-        return { data: result[0], error: null };
-      }
-      if (this.maybeSingle_) return { data: result[0] ?? null, error: null };
-      return { data: result, error: null };
+    // Real Postgres rejects duplicate primary keys instead of silently upserting.
+    const duplicate = incoming.find((row) => row.id !== undefined && store.has(row.id));
+    if (duplicate) {
+      return {
+        data: null,
+        error: supabaseError(
+          `duplicate key value violates unique constraint "${this.tableName}_pkey"`,
+          '23505',
+        ),
+      };
     }
 
-    if (this.operation === 'insert') {
-      const incoming = Array.isArray(this.payload) ? this.payload : [this.payload];
-      calls.insert.push({ table: this.tableName, count: incoming.length });
-      // Real Postgres rejects duplicate primary keys instead of silently upserting.
-      for (const row of incoming) {
-        if (row.id !== undefined && store.has(row.id)) {
-          return {
-            data: null,
-            error: supabaseError(
-              `duplicate key value violates unique constraint "${this.tableName}_pkey"`,
-              '23505',
-            ),
-          };
-        }
-      }
-      const written = incoming.map((row) => ({ ...row }));
-      for (const row of written) store.set(row.id, { ...row });
-      return { data: this.returning_ ? written : null, error: null };
-    }
-
-    if (this.operation === 'update') {
-      calls.update.push({ table: this.tableName, filters: this.filters });
-      // The real client requires a filter on update; an unfiltered update is a
-      // whole-table overwrite and must never happen silently in this codebase.
-      if (this.filters.length === 0) {
-        return { data: null, error: supabaseError('تحديث بدون فلتر مرفوض.', 'FAKE_UNFILTERED_UPDATE') };
-      }
-      const matched = applyFilters(rows(this.tableName), this.filters);
-      const written = matched.map((row) => {
-        const updated = { ...row, ...this.payload };
-        store.set(updated.id, { ...updated });
-        return updated;
-      });
-      return { data: this.returning_ ? written : null, error: null };
-    }
-
-    if (this.operation === 'delete') {
-      calls.delete.push({ table: this.tableName, filters: this.filters });
-      if (this.filters.length === 0) {
-        return { data: null, error: supabaseError('حذف بدون فلتر مرفوض.', 'FAKE_UNFILTERED_DELETE') };
-      }
-      const matched = applyFilters(rows(this.tableName), this.filters);
-      for (const row of matched) store.delete(row.id);
-      return { data: this.returning_ ? matched : null, error: null };
-    }
-
-    return { data: null, error: supabaseError(`عملية غير معروفة: ${this.operation}`) };
+    const written = incoming.map((row) => ({ ...row }));
+    for (const row of written) store.set(row.id, { ...row });
+    return { data: this.returning_ ? written : null, error: null };
   }
 
-  then(resolve, reject) {
-    // Deliberately async (microtask) so tests cannot accidentally depend on
-    // synchronous persistence — the real network round trip never is.
-    return Promise.resolve()
-      .then(() => this.execute())
-      .then(resolve, reject);
+  executeUpdate() {
+    const store = table(this.tableName);
+    calls.update.push({ table: this.tableName, filters: this.filters });
+    // The real client requires a filter on update; an unfiltered update is a
+    // whole-table overwrite and must never happen silently in this codebase.
+    if (this.filters.length === 0) {
+      return { data: null, error: supabaseError('تحديث بدون فلتر مرفوض.', 'FAKE_UNFILTERED_UPDATE') };
+    }
+
+    const written = applyFilters(rows(this.tableName), this.filters).map((row) => {
+      const updated = { ...row, ...this.payload };
+      store.set(updated.id, { ...updated });
+      return updated;
+    });
+    return { data: this.returning_ ? written : null, error: null };
   }
 
-  catch(onRejected) { return this.then(undefined, onRejected); }
-  finally(onFinally) { return this.then().finally(onFinally); }
+  executeDelete() {
+    const store = table(this.tableName);
+    calls.delete.push({ table: this.tableName, filters: this.filters });
+    if (this.filters.length === 0) {
+      return { data: null, error: supabaseError('حذف بدون فلتر مرفوض.', 'FAKE_UNFILTERED_DELETE') };
+    }
+
+    const matched = applyFilters(rows(this.tableName), this.filters);
+    for (const row of matched) store.delete(row.id);
+    return { data: this.returning_ ? matched : null, error: null };
+  }
+
+}
+
+const CHAIN_METHODS = [
+  'select', 'order', 'limit', 'single', 'maybeSingle',
+  'eq', 'neq', 'in', 'is', 'gt', 'gte', 'lt', 'lte',
+];
+
+/**
+ * Wraps a builder in a plain thenable object.
+ *
+ * The real PostgrestFilterBuilder is itself a thenable: it is not a promise
+ * until awaited, and chaining returns the same object. We reproduce that here
+ * with an object literal rather than a `then` method on the class, because a
+ * class whose instances are thenable is a genuine footgun (an accidental
+ * `await` inside the class, or returning `this` from an async function, would
+ * recurse). Keeping `then` on a plain wrapper gives identical semantics
+ * without that hazard.
+ */
+function makeThenable(builder) {
+  const thenable = {};
+
+  for (const method of CHAIN_METHODS) {
+    thenable[method] = (...args) => {
+      builder[method](...args);
+      return thenable;
+    };
+  }
+
+  // Deliberately async (microtask) so tests cannot accidentally depend on
+  // synchronous persistence — the real network round trip never is.
+  thenable.then = (resolve, reject) => Promise.resolve()
+    .then(() => builder.execute())
+    .then(resolve, reject);
+  thenable.catch = (onRejected) => thenable.then(undefined, onRejected);
+  thenable.finally = (onFinally) => thenable.then().finally(onFinally);
+
+  return thenable;
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +277,7 @@ function guardResult(blockers, entity) {
 }
 
 function countWhere(tableName, predicate) {
-  return rows(tableName).filter(predicate).length;
+  return rows(tableName).filter((row) => predicate(row)).length;
 }
 
 const RPC_HANDLERS = {
@@ -298,11 +333,11 @@ class FakeSupabaseClient {
   from(tableName) {
     table(tableName);
     return {
-      select: (columns) => new FakeQueryBuilder(tableName, 'select').select(columns),
-      insert: (payload) => new FakeQueryBuilder(tableName, 'insert', payload),
-      upsert: (payload) => new FakeQueryBuilder(tableName, 'insert', payload),
-      update: (payload) => new FakeQueryBuilder(tableName, 'update', payload),
-      delete: () => new FakeQueryBuilder(tableName, 'delete'),
+      select: (columns) => makeThenable(new FakeQueryBuilder(tableName, 'select')).select(columns),
+      insert: (payload) => makeThenable(new FakeQueryBuilder(tableName, 'insert', payload)),
+      upsert: (payload) => makeThenable(new FakeQueryBuilder(tableName, 'insert', payload)),
+      update: (payload) => makeThenable(new FakeQueryBuilder(tableName, 'update', payload)),
+      delete: () => makeThenable(new FakeQueryBuilder(tableName, 'delete')),
     };
   }
 
@@ -351,10 +386,8 @@ function seedFakeTable(tableName, records) {
 
 function resetFakeSupabase() {
   for (const key of Object.keys(fakeDb)) delete fakeDb[key];
-  for (const key of Object.keys(failures)) {
-    if (failures[key] instanceof Map) failures[key].clear();
-    else failures[key].clear();
-  }
+  // Every entry is a Map or a Set; both expose clear().
+  for (const key of Object.keys(failures)) failures[key].clear();
   for (const key of Object.keys(calls)) calls[key].length = 0;
 }
 

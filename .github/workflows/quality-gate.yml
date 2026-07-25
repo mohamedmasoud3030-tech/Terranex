@@ -40,8 +40,10 @@ jobs:
           node-version: '22'
           cache: npm
 
+      # --ignore-scripts blocks dependency lifecycle scripts (supply-chain
+      # hardening). Verified: typecheck, test, and build all pass without them.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Typecheck
         run: npm run typecheck
@@ -77,10 +79,12 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
+      # Use the locally installed compiler rather than `npx`, which can fetch
+      # and execute an unpinned package on demand.
       - name: Compile test sources
-        run: npx tsc -p tsconfig.test.json
+        run: ./node_modules/.bin/tsc -p tsconfig.test.json
 
       - name: Run each test file in a separate process
         run: |
