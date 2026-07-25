@@ -1,30 +1,18 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { resetWorkspace, awaitHydration, failOperation } = require('./helpers/setup.cjs');
 
-class MemoryStorage {
-  constructor() { this.values = new Map(); }
-  get length() { return this.values.size; }
-  key(index) { return [...this.values.keys()][index] ?? null; }
-  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
-  setItem(key, value) { this.values.set(key, String(value)); }
-  removeItem(key) { this.values.delete(key); }
-  clear() { this.values.clear(); }
-}
-
-global.localStorage = new MemoryStorage();
-
-const { obligationsStore } = require('./.compiled/features/obligations/storage.js');
-const { settlementAllocationsStore } = require('./.compiled/features/settlement-allocations/storage.js');
-const { settlementsStore } = require('./.compiled/features/settlements/storage.js');
+const { obligationsStore, obligationsHydration } = require('./.compiled/features/obligations/storage.js');
+const { settlementAllocationsStore, settlementAllocationsHydration } = require('./.compiled/features/settlement-allocations/storage.js');
+const { settlementsStore, settlementsHydration } = require('./.compiled/features/settlements/storage.js');
 const {
   recordSettlementWithAllocations,
   reverseSettlement,
 } = require('./.compiled/features/settlements/workflow.js');
 
-function reset() {
-  global.localStorage.clear();
-  obligationsStore.reset();
-  settlementsStore.reset();
+async function reset() {
+  await resetWorkspace();
+  await awaitHydration(obligationsHydration, settlementsHydration, settlementAllocationsHydration);
 }
 
 function obligation(overrides = {}) {
@@ -40,8 +28,8 @@ function obligation(overrides = {}) {
   });
 }
 
-test('one settlement allocates across obligations and reversal removes all active effects', () => {
-  reset();
+test('one settlement allocates across obligations and reversal removes all active effects', async () => {
+  await reset();
   const first = obligation();
   const second = obligation({ amount: 80, amount_egp: 80 });
 
@@ -74,8 +62,8 @@ test('one settlement allocates across obligations and reversal removes all activ
   assert.equal(obligationsStore.getById(second.id).amount_settled_egp, 0);
 });
 
-test('allocation plan must fully allocate payment and preserve common project and party context', () => {
-  reset();
+test('allocation plan must fully allocate payment and preserve common project and party context', async () => {
+  await reset();
   const first = obligation();
   const second = obligation({ amount: 50, amount_egp: 50 });
   const otherProject = obligation({ project_id: 'project-2' });
@@ -110,8 +98,8 @@ test('allocation plan must fully allocate payment and preserve common project an
   assert.equal(settlementsStore.getAll().length, 0);
 });
 
-test('allocation cannot exceed the remaining balance of a target obligation', () => {
-  reset();
+test('allocation cannot exceed the remaining balance of a target obligation', async () => {
+  await reset();
   const first = obligation();
   const second = obligation({ amount: 50, amount_egp: 50 });
 
@@ -127,4 +115,30 @@ test('allocation cannot exceed the remaining balance of a target obligation', ()
     ],
   }));
   assert.equal(settlementAllocationsStore.getAll().length, 0);
+});
+
+test('a rejected allocation write does not leave the obligation looking settled', async () => {
+  await reset();
+  const target = obligation();
+  await obligationsHydration.flush();
+
+  failOperation('insert', 'settlement_allocations', 'new row violates row-level security policy');
+  recordSettlementWithAllocations({
+    amount: 100,
+    currency: 'EGP',
+    fx_rate: 1,
+    settlement_date: '2026-06-01',
+    payment_method: 'cash',
+    allocations: [{ obligation_id: target.id, allocated_amount_egp: 100 }],
+  });
+
+  await assert.rejects(() => settlementAllocationsHydration.flush(), /row-level security/);
+  assert.equal(settlementAllocationsStore.getAll().length, 0, 'التوزيع المرفوض يجب ألا يبقى في الذاكرة.');
+});
+
+test('allocation state does not bleed between tests', async () => {
+  await reset();
+  assert.equal(settlementAllocationsStore.getAll().length, 0);
+  assert.equal(settlementsStore.getAll().length, 0);
+  assert.equal(obligationsStore.getAll().length, 0);
 });

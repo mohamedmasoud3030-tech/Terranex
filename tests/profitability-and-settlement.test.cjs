@@ -1,20 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { resetWorkspace, awaitHydration } = require('./helpers/setup.cjs');
 
 const { computeProjectProfitability, computeGlobalSummary } = require('./.compiled/core/lib/profitability.js');
-
-class MemoryStorage {
-  constructor() { this.values = new Map(); }
-  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
-  setItem(key, value) { this.values.set(key, String(value)); }
-  removeItem(key) { this.values.delete(key); }
-  clear() { this.values.clear(); }
-}
-
-global.localStorage = new MemoryStorage();
-const { obligationsStore } = require('./.compiled/features/obligations/storage.js');
-const { settlementsStore } = require('./.compiled/features/settlements/storage.js');
+const { obligationsStore, obligationsHydration } = require('./.compiled/features/obligations/storage.js');
+const { settlementsStore, settlementsHydration } = require('./.compiled/features/settlements/storage.js');
+const { settlementAllocationsHydration } = require('./.compiled/features/settlement-allocations/storage.js');
 const { recordSettlement } = require('./.compiled/features/settlements/workflow.js');
+
+async function reset() {
+  await resetWorkspace();
+  await awaitHydration(obligationsHydration, settlementsHydration, settlementAllocationsHydration);
+}
 
 const project = {
   id: 'project-1', sector_id: 'real-estate', name_ar: 'مشروع أول', name_en: 'First project',
@@ -63,9 +60,8 @@ test('global summary aggregates projects and excludes closed obligations from ex
   assert.equal(result.by_sector.agriculture.gross_profit_egp, 200);
 });
 
-test('obligation settlement validates boundaries and supports partial then final settlement', () => {
-  obligationsStore.reset();
-  settlementsStore.reset();
+test('obligation settlement validates boundaries and supports partial then final settlement', async () => {
+  await reset();
   const created = obligationsStore.create({ partner_id: 'partner-1', direction: 'payable', amount: 100, currency: 'EGP', amount_egp: 100, status: 'open' });
   const input = { currency: 'EGP', fx_rate: 1, settlement_date: '2026-06-01', payment_method: 'cash' };
   assert.throws(() => recordSettlement(created.id, { ...input, amount: 0 }));
@@ -80,9 +76,8 @@ test('obligation settlement validates boundaries and supports partial then final
   assert.throws(() => recordSettlement(created.id, { ...input, amount: 1 }));
 });
 
-test('written-off obligations cannot be settled', () => {
-  obligationsStore.reset();
-  settlementsStore.reset();
+test('written-off obligations cannot be settled', async () => {
+  await reset();
   const created = obligationsStore.create({ partner_id: 'partner-1', direction: 'payable', amount: 50, currency: 'EGP', amount_egp: 50, status: 'written_off' });
   assert.throws(() => recordSettlement(created.id, { amount: 10, currency: 'EGP', fx_rate: 1, settlement_date: '2026-06-01', payment_method: 'cash' }));
 });

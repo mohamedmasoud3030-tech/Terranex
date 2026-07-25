@@ -1,6 +1,6 @@
 # Terranex — وثيقة المشروع الموحدة
-**الإصدار:** v1.5  
-**التاريخ:** 2026-06-29  
+**الإصدار:** v1.6  
+**التاريخ:** 2026-07-25  
 **المرجع الكنسي:** يسبق جميع وثائق `docs/` ما عدا ما في `docs/audit/`
 
 > هذه الوثيقة تجمع الحالة الفعلية للمشروع بعد تدقيق 28 يونيو 2026.  
@@ -15,7 +15,11 @@
 
 **الشعار:** لا نبني واجهات لعرض البيانات — نبني العقل الرقمي للشركة الذي يجيب بدقة على سؤال الربحية والالتزامات.
 
-**الحالة:** `v0.3.0-p2` — Production-Ready داخلياً ✅
+**الحالة:** `v0.3.0-p2` — **NO-GO للإطلاق** ⛔
+
+التخزين الحالي **Supabase (Postgres)** و**Supabase Auth مستخدم**. البوابات الخمس خضراء
+(96/96 اختبار)، لكن الإطلاق محجوب بـ: غياب migrations مُدارة بالإصدار، غياب RLS/RPC على
+الخادم، كتابات مالية غير ذرية، ونسخ احتياطي لا يغطي Supabase. التفاصيل في §7.
 
 ---
 
@@ -128,7 +132,9 @@ type Currency = 'EGP' | 'USD' | 'OMR' | 'SAR' | 'AED' | 'EUR' | 'GBP';
 | UI | Tailwind CSS + Radix UI |
 | Charts | Recharts 3.8 (lazy-loaded) |
 | i18n | `useI18n()` hook — AR/EN toggle حي |
-| Storage | localStorage + IndexedDB (files) + ZIP backup |
+| Storage | **Supabase (Postgres) + Realtime** — بيانات النطاق كاملة |
+| Auth | **Supabase Auth** — جلسة مُستمرة + auto-refresh |
+| Local storage | تفضيلات الواجهة فقط (locale, theme, fx) + IndexedDB للملفات + ZIP backup |
 | PWA | Service Worker + manifest |
 | PDF | @react-pdf/renderer |
 
@@ -153,21 +159,26 @@ type Currency = 'EGP' | 'USD' | 'OMR' | 'SAR' | 'AED' | 'EUR' | 'GBP';
 /settings              ← SettingsPage
 ```
 
-### Storage Keys (localStorage)
+### جداول Supabase — مصدر البيانات الحالي
 ```
-terranex.projects.v1
-terranex.assets.v1
-terranex.partners.v1
-terranex.transactions.v2       ← v2 بعد migration
-terranex.obligations.v1
-terranex.documents.v1
-terranex.settlements.v1
-terranex.settlementAllocations.v1
-terranex.operationalEvents.v1
-terranex.stockAdjustments.v1
-terranex.projectPartners.v1
-terranex.migrations.v1         ← حالة الـ migrations المُنفذة
+projects              partners            project_partners
+assets                documents           transactions
+obligations           settlements         settlement_allocations
+operational_events    stock_adjustments
 ```
+> ⚠️ هذه الجداول **غير مُعرّفة في الريبو**. لا توجد migrations مُدارة بالإصدار ولا RLS
+> policies ولا دوال `guard_*_deletion`. إنشاؤها نطاق المرحلة الثانية.
+
+### مفاتيح localStorage المتبقية — ليست مخزن بيانات
+```
+terranex.locale / theme / exchangeRates          ← تفضيلات واجهة
+terranex.migrations.v1                            ← حالة ترحيل البيانات القديمة
+terranex.financialRecords.v1                      ← بيانات ما قبل Supabase (تُصرَّف فقط)
+terranex.settlements.legacy-balance-migration.v1  ← مفتاح ترحيل قديم
+terranex.settlementAllocations.*                  ← مفاتيح ترحيل قديمة
+```
+> مفاتيح `terranex.projects.v1` … `terranex.stockAdjustments.v1` **لم تعد تُكتب**.
+> كانت مخزن البيانات قبل الانتقال إلى Supabase.
 
 ### Bundle Size (بعد code-split)
 ```
@@ -180,16 +191,32 @@ radix-*.js     :  33 KB │ gzip  11 KB
 
 ---
 
-## 7. حالة الجودة — 29 يونيو 2026
+## 7. حالة الجودة — 25 يوليو 2026
 
 ```
-typecheck : 0 errors    ✅
-tests     : 61 / 61     ✅
-lint      : pass        ✅
-build     : success     ✅
+npm ci            ✅
+typecheck         ✅ 0 errors
+lint              ✅ pass
+tests             ✅ 96 / 96
+build             ✅ success
 ```
 
-**التقييم: 8.4 / 10**
+كل ملف اختبار يمر أيضاً منفرداً في عملية Node مستقلة — لا اعتماد على ترتيب أو state مشترك.
+
+> **ملاحظة على الأرقام القديمة:** وثائق سابقة ذكرت «61/61». ذلك الرقم يسبق الانتقال إلى
+> Supabase. القياس الفعلي على `main` عند بدء هذا العمل كان **46 ناجح / 67** (21 فاشل)،
+> وبعد الإصلاح **96/96**.
+
+### ⛔ حالة الإطلاق: NO-GO
+
+| البند المحجوب | الحالة |
+|---|---|
+| Supabase migrations مُدارة بالإصدار | ❌ غير موجودة |
+| RLS policies + `guard_*_deletion` RPC | ❌ غير مُنشأة — الحُرّاس تفشل مغلقة في الإنتاج |
+| كتابات مالية ذرية | ❌ تسوية/توزيعات/التزام كتابات منفصلة |
+| نسخ احتياطي يغطي Supabase | ❌ النسخ الحالي يقرأ localStorage فقط |
+
+البوابات الخضراء تثبت **عقد العميل** فقط — لا تثبت أن الإنتاج يعمل.
 
 | البُعد | التقييم |
 |---|---|
@@ -262,7 +289,7 @@ build     : success     ✅
 | ADR-005 | لا ERP runtime dependencies — كل المنطق Terranex-native TypeScript |
 | ADR-006 | i18n — تفعيل AR/EN ثنائي — `useI18n()` |
 | ADR-007 | بنية المجلدات `src/features/` + `src/core/` |
-| ADR-008 | Local-first — localStorage + IndexedDB — لا demo data في production |
+| ADR-008 | ~~Local-first — localStorage~~ → **متجاوَز**: Supabase Postgres + Auth مصدر البيانات؛ IndexedDB للملفات؛ لا demo data في production |
 | ADR-009 | Migrations آمنة — تحفظ السجلات غير القابلة للترحيل للمراجعة |
 | ADR-010 | Settlement Engine — partial + full + reversal + audit trail |
 
@@ -282,12 +309,13 @@ build     : success     ✅
 
 ### أوامر التحقق
 ```bash
+npm ci
 npm run typecheck   # 0 errors مطلوب قبل أي commit
-npm run test        # 61/61 pass
 npm run lint        # source hygiene
+npm run test        # 96/96 pass
 npm run build       # success
 ```
 
 ---
 
-*Terranex MASTER.md — v1.5 — 2026-06-29*
+*Terranex MASTER.md — v1.6 — 2026-07-25*

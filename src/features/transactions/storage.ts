@@ -4,6 +4,7 @@ import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { Transaction } from '../../core/types/domain';
 import { bindSupportingDocument, releaseSupportingDocument } from '../documents/transactionDocumentIntegrity';
+import { transactionsRegistry } from './registry';
 
 const TABLE = 'transactions';
 
@@ -18,6 +19,10 @@ function makeId() {
 const store = createSupabaseStore<Transaction>(TABLE, parseOne, 'transaction_date');
 
 export const transactionsReady = store.ready;
+export const transactionsHydration = store;
+
+// Lets `referenceValidation.ts` read transactions without a circular import.
+transactionsRegistry.register(() => store.get());
 
 export type TransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
 

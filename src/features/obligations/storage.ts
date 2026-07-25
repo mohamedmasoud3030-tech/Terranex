@@ -25,6 +25,7 @@ function deriveStatus(obligation: Obligation, settledEgp: number): Obligation['s
 const store = createSupabaseStore<Obligation>(TABLE, parseOne);
 
 export const obligationsReady = store.ready;
+export const obligationsHydration = store;
 
 function syncSettlementTotal(id: string, amountSettledEgp: number) {
   if (!isFiniteNumber(amountSettledEgp) || amountSettledEgp < 0) throw new Error('إجمالي التسويات غير صالح.');

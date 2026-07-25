@@ -16,6 +16,7 @@ function makeId() {
 const store = createSupabaseStore<Document>(TABLE, parseOne);
 
 export const documentsReady = store.ready;
+export const documentsHydration = store;
 
 export type DocumentInput = Omit<Document, 'id' | 'created_at'>;
 

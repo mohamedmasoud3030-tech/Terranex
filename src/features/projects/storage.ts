@@ -15,6 +15,7 @@ function makeId() {
 const store = createSupabaseStore<Project>(TABLE, parseOne);
 
 export const projectsReady = store.ready;
+export const projectsHydration = store;
 
 export type ProjectInput = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
 
