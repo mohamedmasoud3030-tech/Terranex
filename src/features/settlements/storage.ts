@@ -22,6 +22,7 @@ function makeId() {
 const store = createSupabaseStore<Settlement>(TABLE, parseOne, 'settlement_date');
 
 export const settlementsReady = store.ready;
+export const settlementsHydration = store;
 
 export interface SettlementInput {
   obligation_id: string;

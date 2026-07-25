@@ -59,16 +59,22 @@
 
 ---
 
-## حالة الكود — 29 يونيو 2026
+## حالة الكود — 25 يوليو 2026
 
 ```
 typecheck : 0 errors ✅
-tests     : 61 / 61 pass ✅
+lint      : pass ✅
+tests     : 96 / 96 pass ✅
 build     : success ✅
-bundle    : 441 KB initial / 126 KB gzip ✅
 ```
 
-**التقييم الحالي: 8.4 / 10**
+**التخزين:** Supabase (Postgres) — **Auth:** Supabase Auth — كلاهما مستخدم حالياً.
+
+**حالة الإطلاق: NO-GO** — محجوب بـ: غياب Supabase migrations مُدارة بالإصدار،
+غياب RLS/RPC على الخادم، كتابات مالية غير ذرية، ونسخ احتياطي لا يغطي Supabase.
+راجع `IMPLEMENTATION_GUIDE.md` §Launch blockers.
+
+> أرقام «61/61» في وثائق سابقة تسبق الانتقال إلى Supabase ولا تصف الحالة الحالية.
 
 ---
 
@@ -115,7 +121,7 @@ docs/
   plans/                    ← خطط التنفيذ
   ai/                       ← توجيهات الوكلاء
   _archive/                 ← وثائق مؤرشفة — لا تُعدّل
-tests/                      ← 16 ملف اختبار — 61 اختبار
+tests/                      ← 17 ملف اختبار — 96 اختبار (+ helpers/)
 ```
 
 ---

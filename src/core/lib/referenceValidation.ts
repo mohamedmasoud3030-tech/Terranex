@@ -1,27 +1,51 @@
+/**
+ * Referential integrity checks for transactions.
+ *
+ * These used to read `terranex.*` localStorage keys directly. After the
+ * Supabase migration those keys are never written, so every lookup silently
+ * saw an empty list and the checks degraded into "the project does not exist"
+ * for every input. They now read the hydrated Supabase-backed stores, which
+ * are the only source of truth.
+ *
+ * The stores are synchronous readers over a cache hydrated asynchronously, so
+ * a caller that validates before hydration finishes would see an empty
+ * workspace. `assertReferenceDataHydrated` fails closed in that window rather
+ * than rejecting valid references.
+ */
 import type { Document, Partner, Project, Transaction } from '../types/domain';
-
-const PROJECTS_KEY = 'terranex.projects.v1';
-const PARTNERS_KEY = 'terranex.partners.v1';
-const DOCUMENTS_KEY = 'terranex.documents.v1';
-const TRANSACTIONS_KEY = 'terranex.transactions.v2';
-
-function readArray<T>(key: string, label: string): T[] {
-  if (typeof localStorage === 'undefined') {
-    throw new Error(`تعذر التحقق من ${label} لأن التخزين المحلي غير متاح.`);
-  }
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) throw new Error();
-    return parsed as T[];
-  } catch {
-    throw new Error(`تعذر التحقق من ${label} بسبب مشكلة في قراءة البيانات المحلية.`);
-  }
-}
+import { documentsStore, documentsHydration } from '../../features/documents/storage';
+import { partnersStore, partnersHydration } from '../../features/partners/storage';
+import { projectsStore, projectsHydration } from '../../features/projects/storage';
+import { transactionsRegistry } from '../../features/transactions/registry';
 
 function findById<T extends { id: string }>(items: T[], id: string) {
   return items.find((item) => item.id === id);
+}
+
+function assertReferenceDataHydrated() {
+  const pending = [
+    projectsHydration.isLoaded() ? null : 'المشاريع',
+    partnersHydration.isLoaded() ? null : 'الأطراف والشركاء',
+    documentsHydration.isLoaded() ? null : 'المستندات',
+  ].filter((label): label is string => Boolean(label));
+
+  if (pending.length > 0) {
+    throw new Error(
+      `تعذر التحقق من المراجع لأن البيانات لم تُحمّل بعد من Supabase (${pending.join('، ')}). أعد المحاولة بعد اكتمال التحميل.`,
+    );
+  }
+
+  const failed = [
+    projectsHydration.getLoadError() ? 'المشاريع' : null,
+    partnersHydration.getLoadError() ? 'الأطراف والشركاء' : null,
+    documentsHydration.getLoadError() ? 'المستندات' : null,
+  ].filter((label): label is string => Boolean(label));
+
+  if (failed.length > 0) {
+    throw new Error(
+      `تعذر التحقق من المراجع بسبب فشل تحميل البيانات من Supabase (${failed.join('، ')}). لم يتم الحفظ لحماية البيانات.`,
+    );
+  }
 }
 
 export interface TransactionReferenceSnapshot {
@@ -42,13 +66,15 @@ export function validateTransactionReferences(
   if (!partnerId) throw new Error('يجب ربط المعاملة بطرف أو شريك.');
   if (!documentId) throw new Error('يجب ربط المعاملة بوثيقة داعمة.');
 
-  const project = findById(readArray<Project>(PROJECTS_KEY, 'المشاريع'), projectId);
+  assertReferenceDataHydrated();
+
+  const project = findById(projectsStore.getAll(), projectId);
   if (!project) throw new Error('المشروع المرتبط بالمعاملة غير موجود.');
 
-  const partner = findById(readArray<Partner>(PARTNERS_KEY, 'الأطراف والشركاء'), partnerId);
+  const partner = findById(partnersStore.getAll(), partnerId);
   if (!partner) throw new Error('الطرف أو الشريك المرتبط بالمعاملة غير موجود.');
 
-  const document = findById(readArray<Document>(DOCUMENTS_KEY, 'المستندات'), documentId);
+  const document = findById(documentsStore.getAll(), documentId);
   if (!document) throw new Error('الوثيقة الداعمة المرتبطة بالمعاملة غير موجودة.');
   if (document.project_id !== projectId) {
     throw new Error('الوثيقة الداعمة لا تنتمي إلى نفس مشروع المعاملة.');
@@ -57,7 +83,7 @@ export function validateTransactionReferences(
     throw new Error('الوثيقة الداعمة مرتبطة بمعاملة أخرى بالفعل.');
   }
 
-  const conflictingTransaction = readArray<Transaction>(TRANSACTIONS_KEY, 'المعاملات')
+  const conflictingTransaction = transactionsRegistry.read()
     .find((transaction) => transaction.document_id === documentId && transaction.id !== transactionId);
   if (conflictingTransaction) {
     throw new Error('الوثيقة الداعمة مستخدمة في معاملة أخرى بالفعل.');

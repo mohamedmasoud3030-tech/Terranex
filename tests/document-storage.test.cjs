@@ -1,22 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { FakeSupabaseClient, resetFakeSupabase } = require('./helpers/fakeSupabase.cjs');
-const { setSupabaseClient } = require('./.compiled/core/storage/supabaseStore.js');
+const { resetWorkspace, awaitHydration } = require('./helpers/setup.cjs');
 
-class MemoryStorage {
-  constructor() { this.values = new Map(); }
-  get length() { return this.values.size; }
-  key(index) { return Array.from(this.values.keys())[index] ?? null; }
-  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
-  setItem(key, value) { this.values.set(key, String(value)); }
-  removeItem(key) { this.values.delete(key); }
-  clear() { this.values.clear(); }
+const { documentsStore, documentsHydration } = require('./.compiled/features/documents/storage.js');
+
+async function reset() {
+  await resetWorkspace();
+  await awaitHydration(documentsHydration);
 }
-
-global.localStorage = new MemoryStorage();
-const fakeSupabase = new FakeSupabaseClient();
-setSupabaseClient(fakeSupabase);
-const { documentsStore } = require('./.compiled/features/documents/storage.js');
 
 function input(overrides = {}) {
   return {
@@ -30,17 +21,13 @@ function input(overrides = {}) {
 }
 
 test('document storage requires title and project', async () => {
-  resetFakeSupabase();
-  await documentsStore.ready;
-  documentsStore.reset();
+  await reset();
   assert.throws(() => documentsStore.create(input({ title_ar: '   ' })), /عنوان المستند/);
   assert.throws(() => documentsStore.create(input({ project_id: undefined })), /ربط المستند بمشروع/);
 });
 
 test('document storage trims user-entered metadata and supports partner lookup', async () => {
-  resetFakeSupabase();
-  await documentsStore.ready;
-  documentsStore.reset();
+  await reset();
   const created = documentsStore.create(input());
   assert.equal(created.title_ar, 'عقد شراكة مشروع المرسى');
   assert.equal(created.notes, 'نسخة معتمدة');
@@ -48,9 +35,7 @@ test('document storage trims user-entered metadata and supports partner lookup',
 });
 
 test('document storage rejects partial or invalid local file metadata', async () => {
-  resetFakeSupabase();
-  await documentsStore.ready;
-  documentsStore.reset();
+  await reset();
   assert.throws(() => documentsStore.create(input({ file_url: 'indexeddb://document-files/doc-1' })), /بيانات الملف المحلي/);
   assert.throws(() => documentsStore.create(input({
     file_url: 'indexeddb://document-files/doc-1',
@@ -61,9 +46,7 @@ test('document storage rejects partial or invalid local file metadata', async ()
 });
 
 test('document storage accepts complete local file metadata and preserves it on updates', async () => {
-  resetFakeSupabase();
-  await documentsStore.ready;
-  documentsStore.reset();
+  await reset();
   const created = documentsStore.create(input({
     file_url: 'indexeddb://document-files/doc-1',
     file_name: 'contract.pdf',

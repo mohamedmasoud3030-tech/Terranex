@@ -21,6 +21,7 @@ const pStore = createSupabaseStore<Partner>(PARTNERS_TABLE, parsePartner);
 const ppStore = createSupabaseStore<ProjectPartner>(PROJECT_PARTNERS_TABLE, parseProjectPartner, 'id');
 
 export const partnersReady = pStore.ready;
+export const partnersHydration = pStore;
 export const projectPartnersReady = ppStore.ready;
 
 export type PartnerInput = Omit<Partner, 'id' | 'created_at'>;
