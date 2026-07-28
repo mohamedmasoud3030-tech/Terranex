@@ -25,14 +25,24 @@ const STATUSES: { id: Project['status']; ar: string; en: string }[] = [
 
 interface Props {
   initial?: Partial<Project>;
-  onSubmit: (input: ProjectInput) => void;
+  onSubmit: (input: ProjectInput) => void | Promise<void>;
   onCancel: () => void;
   loading?: boolean;
   // allow forcing sector (used in sector pages)
   sectorLock?: SectorId;
+  formId?: string;
+  hideActions?: boolean;
 }
 
-export function ProjectForm({ initial, onSubmit, onCancel, loading, sectorLock }: Props) {
+export function ProjectForm({
+  initial,
+  onSubmit,
+  onCancel,
+  loading,
+  sectorLock,
+  formId,
+  hideActions = false,
+}: Props) {
   const { t, locale } = useI18n();
 
   const {
@@ -56,8 +66,8 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading, sectorLock }
     mode: 'onBlur',
   });
 
-  const submit = (values: ProjectFormValues) => {
-    onSubmit({
+  const submit = async (values: ProjectFormValues) => {
+    await onSubmit({
       name_ar: values.name_ar,
       name_en: values.name_en || '',
       sector_id: values.sector_id,
@@ -71,7 +81,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading, sectorLock }
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
           <FormLabel htmlFor="project-name-ar">{t('project_name_ar')} *</FormLabel>
@@ -153,14 +163,16 @@ export function ProjectForm({ initial, onSubmit, onCancel, loading, sectorLock }
         {errors.description_ar && <FormError>{errors.description_ar.message}</FormError>}
       </FormField>
 
-      <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || isSubmitting}>
-          {t('action_cancel')}
-        </Button>
-        <Button type="submit" disabled={loading || isSubmitting}>
-          {loading || isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
-        </Button>
-      </div>
+      {!hideActions && (
+        <div className="flex flex-col gap-3 pt-2 min-[360px]:flex-row min-[360px]:justify-end">
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={loading || isSubmitting}>
+            {t('action_cancel')}
+          </Button>
+          <Button type="submit" disabled={loading || isSubmitting}>
+            {loading || isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
+          </Button>
+        </div>
+      )}
 
       {/* Zod error summary — helps debugging */}
       {Object.keys(errors).length > 0 && (

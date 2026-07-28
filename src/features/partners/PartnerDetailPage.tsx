@@ -1,164 +1,144 @@
+import { useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { ArrowRight, Building, Trash2, User } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { AdaptiveFormSurface } from '../../components/ui/AdaptiveFormSurface';
 import { Button } from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { EmptyState } from '../../components/ui/States';
-import { confirmSafeDeletion, guardPartnerDeletion } from '../../core/lib/deletionGuards';
-import { useProjects } from '../projects/hooks';
-import { useTransactions } from '../transactions/hooks';
-import { useObligations } from '../obligations/hooks';
-import { usePartners } from './hooks';
-import { formatEgp } from '../../core/lib/profitability';
-import type { PartnerCounterpartyRole } from '../../core/types/domain';
-
-const ROLE_LABELS: Record<PartnerCounterpartyRole, string> = {
-  supplier: 'مورد',
-  client: 'عميل',
-  service_provider: 'مزود خدمة',
-  lender: 'ممول',
-  government: 'جهة حكومية',
-  other: 'أخرى',
-};
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { FormErrorSummary } from '../../components/ui/FormContract';
+import { ErrorState } from '../../components/ui/States';
+import { WorkspaceLoadingState } from '../../components/workspace';
+import { guardPartnerDeletion } from '../../core/lib/deletionGuards';
+import { useI18n } from '../../core/i18n/context';
+import type { PortfolioHandoff } from '../portfolio/contracts';
+import { PartnerWorkspaceView } from '../portfolio/PartnerWorkspaceView';
+import { usePortfolioData } from '../portfolio/usePortfolioData';
+import { PartnerForm } from './PartnerForm';
+import {
+  partnersHydration,
+  partnersStore,
+  type PartnerInput,
+} from './storage';
 
 export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
   const router = useRouter();
-  const { partners, deletePartner } = usePartners();
-  const { projects } = useProjects();
-  const { transactions } = useTransactions();
-  const { obligations } = useObligations();
-  const partner = partners.find((item) => item.id === partnerId) ?? null;
+  const { locale } = useI18n();
+  const data = usePortfolioData();
+  const partner = data.partners.find((item) => item.id === partnerId) ?? null;
+  const [editing, setEditing] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const label = (ar: string, en: string) => locale === 'ar' ? ar : en;
 
+  if (data.status === 'loading') {
+    return <WorkspaceLoadingState label={label('جار تحميل مساحة الشريك', 'Loading partner workspace')} />;
+  }
+  if (data.status === 'error') {
+    return <ErrorState title={label('تعذر تحميل الشريك', 'Could not load partner')} description={data.error?.message} onRetry={() => void data.retry()} />;
+  }
   if (!partner) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24">
-        <p className="text-muted-foreground">الشريك غير موجود</p>
-        <Button onClick={() => router.navigate({ to: '/partners' } as any)} variant="secondary">
-          <ArrowRight className="h-4 w-4" /> العودة للشركاء
-        </Button>
-      </div>
-    );
+    return <ErrorState title={label('الشريك غير موجود', 'Partner not found')} description={label('قد يكون السجل حُذف أو أن الرابط غير صالح.', 'The record may have been deleted or the link is invalid.')} />;
   }
-
-  const partnerTransactions = transactions.filter((transaction) => transaction.partner_id === partner.id);
-  const partnerObligations = obligations.filter((obligation) => obligation.partner_id === partner.id);
   const currentPartnerId = partner.id;
-  const receivable = partnerObligations
-    .filter((obligation) => obligation.direction === 'receivable' && obligation.status !== 'settled' && obligation.status !== 'written_off')
-    .reduce((sum, obligation) => sum + obligation.amount_egp - obligation.amount_settled_egp, 0);
-  const payable = partnerObligations
-    .filter((obligation) => obligation.direction === 'payable' && obligation.status !== 'settled' && obligation.status !== 'written_off')
-    .reduce((sum, obligation) => sum + obligation.amount_egp - obligation.amount_settled_egp, 0);
-  const projectNames = new Map(projects.map((project) => [project.id, project.name_ar]));
-  const Icon = partner.category === 'equity_partner' ? Building : User;
 
-  async function handleDeletePartner() {
-    const guard = await guardPartnerDeletion(currentPartnerId);
-    if (!guard.canDelete) {
-      window.alert(guard.message_ar);
-      return;
-    }
-    if (!confirmSafeDeletion(guard.message_ar)) return;
-    deletePartner(currentPartnerId);
-    router.navigate({ to: '/partners' } as any);
+  function handoff(next: PortfolioHandoff) {
+    const search = { partnerId: next.context.partnerId, workspace: next.workspace };
+    const to =
+      next.target === 'intelligence' ? '/finance/profitability'
+        : next.target === 'governance' ? '/documents'
+          : '/finance/obligations';
+    void router.navigate({ to, search } as never);
   }
 
+  async function save(input: PartnerInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      partnersStore.update(currentPartnerId, input);
+      await partnersHydration.flush();
+      setEditing(false);
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : label('تعذر الحفظ.', 'Could not save.'));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function remove() {
+    setPending(true);
+    setServerError(null);
+    try {
+      const guard = await guardPartnerDeletion(currentPartnerId);
+      if (!guard.canDelete) throw new Error(guard.message_ar);
+      await partnersStore.remove(currentPartnerId);
+      await partnersHydration.flush();
+      setDeleteOpen(false);
+      await router.navigate({ to: '/partners' } as never);
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : label('تعذر الحذف.', 'Could not delete.'));
+      setDeleteOpen(false);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const formId = 'partner-workspace-form';
   return (
-    <div className="space-y-6">
-      <div>
-        <button
-          onClick={() => router.navigate({ to: '/partners' } as any)}
-          className="mb-3 flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
-        >
-          <ArrowRight className="h-4 w-4" /> الشركاء
-        </button>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-                  <Icon className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-foreground">{partner.name_ar}</h1>
-                  {partner.name_en && <p className="mt-1 text-sm text-muted-foreground" dir="ltr">{partner.name_en}</p>}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge tone={partner.category === 'equity_partner' ? 'info' : 'neutral'}>
-                      {partner.category === 'equity_partner' ? 'شريك ملكية' : 'طرف تعامل'}
-                    </Badge>
-                    {partner.counterparty_role && <Badge>{ROLE_LABELS[partner.counterparty_role]}</Badge>}
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-2 text-sm md:min-w-64">
-                {partner.phone && <p><span className="text-muted-foreground">الهاتف: </span><span dir="ltr">{partner.phone}</span></p>}
-                {partner.email && <p><span className="text-muted-foreground">البريد: </span><span dir="ltr">{partner.email}</span></p>}
-                {partner.address && <p><span className="text-muted-foreground">العنوان: </span>{partner.address}</p>}
-                <Button variant="danger" size="sm" onClick={handleDeletePartner} className="mt-2 w-full md:w-auto">
-                  <Trash2 className="h-4 w-4" /> حذف الشريك
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="space-y-4">
+      <Button variant="ghost" onClick={() => void router.navigate({ to: '/partners' } as never)}>
+        <ArrowRight className="h-4 w-4" /> {label('العودة للشركاء', 'Back to partners')}
+      </Button>
+      {serverError && !editing && <ErrorState title={label('تعذر تنفيذ العملية', 'Action failed')} description={serverError} />}
+      <PartnerWorkspaceView
+        partner={partner}
+        projects={data.projects}
+        projectPartners={data.projectPartners}
+        transactions={data.transactions}
+        obligations={data.obligations}
+        documents={data.documents}
+        locale={locale}
+        onEdit={() => {
+          setServerError(null);
+          setEditing(true);
+        }}
+        onDelete={() => setDeleteOpen(true)}
+        onOpenProject={(project) => void router.navigate({ to: '/projects/$id', params: { id: project.id } } as never)}
+        onHandoff={handoff}
+      />
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">مدين لنا</p>
-            <p className="mt-2 text-2xl font-bold text-success">{formatEgp(receivable, true)} EGP</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">ندين له</p>
-            <p className="mt-2 text-2xl font-bold text-danger">{formatEgp(payable, true)} EGP</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">صافي العلاقة</p>
-            <p className={`mt-2 text-2xl font-bold ${receivable - payable >= 0 ? 'text-success' : 'text-danger'}`}>
-              {formatEgp(receivable - payable, true)} EGP
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <AdaptiveFormSurface
+        open={editing}
+        onOpenChange={setEditing}
+        title={label('تعديل الشريك أو الطرف', 'Edit partner or party')}
+        description={label('يُغلق النموذج بعد تأكيد Supabase للحفظ.', 'The form closes after Supabase confirms the write.')}
+        mode="edit"
+        pending={pending}
+        formId={formId}
+        submitLabel={label('حفظ', 'Save')}
+        cancelLabel={label('إلغاء', 'Cancel')}
+        closeLabel={label('إغلاق', 'Close')}
+        error={<FormErrorSummary title={label('تعذر الحفظ', 'Could not save')} serverError={serverError} />}
+      >
+        <PartnerForm
+          formId={formId}
+          hideActions
+          initial={partner}
+          onSubmit={save}
+          onCancel={() => setEditing(false)}
+        />
+      </AdaptiveFormSurface>
 
-      <Card>
-        <CardContent>
-          <h2 className="mb-4 text-lg font-bold">المعاملات المرتبطة</h2>
-          {partnerTransactions.length === 0 ? (
-            <EmptyState title="لا توجد معاملات مرتبطة" description="لم يتم تسجيل معاملات لهذا الشريك بعد." />
-          ) : (
-            <div className="divide-y divide-border">
-              {partnerTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex flex-col gap-2 py-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="font-semibold">{transaction.description || 'معاملة مالية'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {projectNames.get(transaction.project_id) ?? 'مشروع غير معروف'} · {transaction.transaction_date}
-                    </p>
-                  </div>
-                  <p className={`font-bold ${transaction.direction === 'income' ? 'text-success' : 'text-danger'}`}>
-                    {transaction.direction === 'income' ? '+' : '−'}{formatEgp(transaction.amount_egp, true)} EGP
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {partner.notes && (
-        <Card>
-          <CardContent>
-            <h2 className="mb-2 text-lg font-bold">ملاحظات</h2>
-            <p className="text-sm leading-7 text-muted-foreground">{partner.notes}</p>
-          </CardContent>
-        </Card>
-      )}
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={label('حذف الشريك؟', 'Delete partner?')}
+        entityName={locale === 'ar' ? partner.name_ar : partner.name_en || partner.name_ar}
+        impact={label('لن يُحذف السجل إذا كان مرتبطًا بمشروع أو معاملة أو ذمة أو مستند.', 'The record will not be deleted while linked to projects, transactions, obligations, or documents.')}
+        confirmLabel={label('حذف', 'Delete')}
+        cancelLabel={label('إلغاء', 'Cancel')}
+        pending={pending}
+        onConfirm={remove}
+      />
     </div>
   );
 }

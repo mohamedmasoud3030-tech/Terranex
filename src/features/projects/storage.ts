@@ -39,4 +39,8 @@ export const projectsStore = {
   },
   subscribe: store.subscribe,
   reset: store.reset,
+  flush: store.flush,
+  ready: store.ready,
+  rehydrate: store.rehydrate,
+  getLoadError: store.getLoadError,
 };

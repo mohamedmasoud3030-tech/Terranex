@@ -33,6 +33,8 @@
     "src/features/finance/obligationQueries.ts",
     "src/features/obligations/storage.ts",
     "src/features/partners/storage.ts",
+    "src/features/portfolio/contracts.ts",
+    "src/features/portfolio/model.ts",
     "src/features/projects/storage.ts",
     "src/features/reports/financeExport.ts",
     "src/features/settlement-allocations/limits.ts",
