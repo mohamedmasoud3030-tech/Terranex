@@ -91,7 +91,7 @@ jobs:
           status=0
           for file in tests/*.test.cjs; do
             echo "::group::$file"
-            node --test "$file" || status=1
+            node --import tsx --test "$file" || status=1
             echo "::endgroup::"
           done
           exit $status
