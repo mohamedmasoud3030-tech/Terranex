@@ -1,0 +1,12 @@
+import { useEffect } from 'react';
+import type { FieldErrors,FieldValues } from 'react-hook-form';
+import { AlertTriangle } from 'lucide-react';
+import { Button } from './Button';
+import { ConfirmDialog } from './ConfirmDialog';
+export interface FormActionsProps {cancelLabel:string;submitLabel:string;onCancel:()=>void;pending?:boolean;readOnly?:boolean}
+export function FormActions({cancelLabel,submitLabel,onCancel,pending=false,readOnly=false}:FormActionsProps){return <div className="flex min-h-11 justify-end gap-3"><Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>{cancelLabel}</Button>{!readOnly&&<Button type="submit" disabled={pending} aria-busy={pending}>{submitLabel}</Button>}</div>}
+function messages(value:unknown):string[]{if(!value||typeof value!=='object')return[];const record=value as Record<string,unknown>;return (typeof record.message==='string'?[record.message]:[]).concat(Object.entries(record).filter(([k])=>k!=='message').flatMap(([,v])=>messages(v)))}
+export interface FormErrorSummaryProps<T extends FieldValues=FieldValues>{errors?:FieldErrors<T>;serverError?:string|null;title:string}
+export function FormErrorSummary<T extends FieldValues>({errors,serverError,title}:FormErrorSummaryProps<T>){const items=[...new Set([...(serverError?[serverError]:[]),...messages(errors)])];if(!items.length)return null;return <div role="alert" tabIndex={-1} className="mb-4 rounded-2xl border border-danger/30 bg-danger/5 p-4 text-danger"><p className="flex gap-2 font-bold"><AlertTriangle className="h-5 w-5"/>{title}</p><ul className="mt-2 list-disc ps-6 text-sm">{items.map(item=><li key={item}>{item}</li>)}</ul></div>}
+export interface UnsavedChangesGuardProps {dirty:boolean;open:boolean;onOpenChange:(open:boolean)=>void;onDiscard:()=>void;title:string;entityName:string;impact:string;discardLabel:string;keepEditingLabel:string}
+export function UnsavedChangesGuard({dirty,open,onOpenChange,onDiscard,title,entityName,impact,discardLabel,keepEditingLabel}:UnsavedChangesGuardProps){useEffect(()=>{const guard=(event:BeforeUnloadEvent)=>{if(dirty)event.preventDefault()};window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard)},[dirty]);return <ConfirmDialog open={dirty&&open} onOpenChange={onOpenChange} title={title} entityName={entityName} impact={impact} confirmLabel={discardLabel} cancelLabel={keepEditingLabel} onConfirm={onDiscard}/>}
