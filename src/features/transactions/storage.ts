@@ -130,4 +130,7 @@ export const transactionsStore = {
   },
   subscribe: store.subscribe,
   reset: store.reset,
+  flush: store.flush,
+  rehydrate: store.rehydrate,
+  getLoadError: store.getLoadError,
 };

@@ -10,6 +10,7 @@ import type { DeferredExpenseTransactionInput } from './deferredExpenseWorkflow'
 import { transactionSchema, type TransactionFormValues } from '../../core/lib/validation';
 import { getLatestFxRate } from '../settings/ExchangeRateSection';
 import { useI18n } from '../../core/i18n/context';
+import { useAssets } from '../assets/hooks';
 
 const CATEGORIES: { id: TransactionCategory; ar: string; en: string; group: string }[] = [
   { id: 'acquisition', ar: 'اقتناء أصل', en: 'Acquisition', group: 'عام' },
@@ -42,15 +43,18 @@ const CURRENCIES: Currency[] = ['EGP', 'USD', 'OMR', 'SAR', 'AED', 'EUR', 'GBP']
 interface Props {
   projectId: string;
   initial?: Partial<Transaction>;
-  onSubmit: (input: DeferredExpenseTransactionInput) => void;
+  onSubmit: (input: DeferredExpenseTransactionInput) => void | Promise<void>;
   onCancel: () => void;
   loading?: boolean;
+  formId?: string;
+  hideActions?: boolean;
 }
 
-export function TransactionForm({ projectId, initial, onSubmit, onCancel, loading }: Props) {
+export function TransactionForm({ projectId, initial, onSubmit, onCancel, loading, formId, hideActions = false }: Props) {
   const { t, locale } = useI18n();
   const { partners } = usePartners();
   const { documents } = useDocuments(projectId);
+  const { assets } = useAssets(projectId);
 
   const {
     register,
@@ -63,6 +67,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
     resolver: zodResolver(transactionSchema) as any,
     defaultValues: {
       project_id: projectId,
+      asset_id: initial?.asset_id ?? '',
       direction: initial?.direction ?? 'expense',
       category: initial?.category ?? 'other',
       amount: initial?.amount ?? undefined,
@@ -110,15 +115,17 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
     }
   }, [currency, setValue]);
 
-  const submit = (values: TransactionFormValues) => {
+  const submit = async (values: TransactionFormValues) => {
     if (direction === 'expense' && createPayableObligation && !payableDueDate) {
       alert(locale === 'ar' ? 'أدخل تاريخ استحقاق الذمة الدائنة' : 'Enter payable due date');
       return;
     }
-    onSubmit({
+    await onSubmit({
       project_id: values.project_id,
+      asset_id: values.asset_id || undefined,
       partner_id: values.partner_id || undefined,
       document_id: values.document_id || undefined,
+      operational_event_id: initial?.operational_event_id,
       direction: values.direction,
       category: values.category as TransactionCategory,
       amount: Number(values.amount),
@@ -134,7 +141,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       {/* Direction */}
       <FormField>
         <FormLabel>{t('transaction_direction')}</FormLabel>
@@ -166,6 +173,13 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <FormField>
+          <FormLabel>{locale === 'ar' ? 'الأصل' : 'Asset'}</FormLabel>
+          <select {...register('asset_id')} className="min-h-11 w-full rounded-xl border border-border bg-background px-3">
+            <option value="">{locale === 'ar' ? 'بدون أصل' : 'No asset'}</option>
+            {assets.map((asset) => <option key={asset.id} value={asset.id}>{locale === 'ar' ? asset.name_ar : asset.name_en}</option>)}
+          </select>
+        </FormField>
         <FormField>
           <FormLabel htmlFor="tx-amount">{t('transaction_amount')} *</FormLabel>
           <input
@@ -278,12 +292,18 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
       <input type="hidden" {...register('project_id')} />
 
-      <div className="flex justify-end gap-2 pt-2">
+      {initial?.operational_event_id && (
+        <p className="rounded-xl border border-info/30 bg-info/5 p-3 text-xs">
+          {locale === 'ar' ? 'السياق محفوظ من الحدث التشغيلي المرتبط.' : 'Context is preserved from the linked operational event.'}
+        </p>
+      )}
+
+      {!hideActions && <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>{t('action_cancel')}</Button>
         <Button type="submit" disabled={loading || isSubmitting} className={direction === 'income' ? 'bg-success hover:bg-success/90' : ''}>
           {loading || isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
         </Button>
-      </div>
+      </div>}
 
             {/* RHF debug — error summary */}
       {Object.keys(errors).length > 0 && (
