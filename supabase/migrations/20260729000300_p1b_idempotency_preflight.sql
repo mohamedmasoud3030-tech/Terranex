@@ -23,6 +23,11 @@ as $fn$
   limit 1;
 $fn$;
 
+-- The owner-scoped seven-argument writer installed by 00200 is authoritative.
+drop function if exists public.terranex_audit_log(
+  uuid, text, text, uuid[], jsonb, jsonb
+);
+
 do $migration$
 begin
   if to_regprocedure('public.record_transaction_atomic_core(uuid,jsonb,jsonb)') is null then
