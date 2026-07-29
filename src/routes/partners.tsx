@@ -1,9 +1,8 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, redirect } from '@tanstack/react-router';
 import { rootRoute } from './__root';
-import { PartnersPage } from '../features/partners/PartnersPage';
 
 export const partnersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/partners',
-  component: PartnersPage,
+  beforeLoad: () => { throw redirect({ to: '/portfolio', search: { workspace: 'partners' } }); },
 });

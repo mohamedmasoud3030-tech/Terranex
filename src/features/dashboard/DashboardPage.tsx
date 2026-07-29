@@ -18,9 +18,9 @@ const RevenueChartLazy = lazy(() => import('../../components/charts/RevenueChart
 const SectorBarChartLazy = lazy(() => import('../../components/charts/SectorBarChart').then(m => ({ default: m.SectorBarChart })));
 
 const SECTOR_META: Record<SectorId, { icon: typeof Building2; i18nKey: 'sector_real_estate_name' | 'sector_agriculture_name' | 'sector_livestock_name'; color: string; bg: string; route: string }> = {
-  'real-estate': { icon: Building2, i18nKey: 'sector_real_estate_name',  color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', route: '/real-estate' },
-  agriculture:   { icon: Wheat,     i18nKey: 'sector_agriculture_name',  color: 'text-green-700', bg: 'bg-green-50 border-green-200', route: '/agriculture' },
-  livestock:     { icon: PawPrint,  i18nKey: 'sector_livestock_name', color: 'text-blue-700',  bg: 'bg-blue-50 border-blue-200',   route: '/livestock' },
+  'real-estate': { icon: Building2, i18nKey: 'sector_real_estate_name',  color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', route: '/operations' },
+  agriculture:   { icon: Wheat,     i18nKey: 'sector_agriculture_name',  color: 'text-green-700', bg: 'bg-green-50 border-green-200', route: '/operations' },
+  livestock:     { icon: PawPrint,  i18nKey: 'sector_livestock_name', color: 'text-blue-700',  bg: 'bg-blue-50 border-blue-200',   route: '/operations' },
 };
 
 export function DashboardPage() {
@@ -59,7 +59,7 @@ export function DashboardPage() {
             <Globe className="h-3.5 w-3.5" />
             {locale === 'ar' ? 'EN' : 'عربي'}
           </button>
-          <Button onClick={() => router.navigate({ to: '/projects' } as any)}>
+          <Button onClick={() => router.navigate({ to: '/portfolio', search: { workspace: 'projects', intent: 'create-project' } } as any)}>
             <Plus className="h-4 w-4" /> {t('project_new')}
           </Button>
         </div>
@@ -145,7 +145,7 @@ export function DashboardPage() {
             return (
               <button
                 key={sId}
-                onClick={() => router.navigate({ to: meta.route } as any)}
+                onClick={() => router.navigate({ to: meta.route, search: { workspace: 'sector', sector: sId } } as any)}
                 className="group text-start rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-primary/30 hover:shadow-md transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <div className="mb-4 flex items-center justify-between">
@@ -182,7 +182,7 @@ export function DashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">{locale === 'ar' ? 'آخر المشاريع' : 'Recent Projects'}</h3>
-              <button onClick={() => router.navigate({ to: '/projects' } as any)} className="text-xs text-primary hover:underline">{t('action_view_all')}</button>
+              <button onClick={() => router.navigate({ to: '/portfolio', search: { workspace: 'projects' } } as any)} className="text-xs text-primary hover:underline">{t('action_view_all')}</button>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -195,7 +195,7 @@ export function DashboardPage() {
                   const Icon = meta.icon;
                   const txCount = transactions.filter(tx => tx.project_id === p.id).length;
                   return (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition">
+                    <button key={p.id} onClick={() => router.navigate({ to: '/portfolio/projects/$id', params: { id: p.id } } as any)} className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-start transition hover:bg-muted/50">
                       <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${meta.bg} flex-shrink-0`}>
                         <Icon className={`h-4 w-4 ${meta.color}`} />
                       </div>
@@ -204,7 +204,7 @@ export function DashboardPage() {
                         <p className="text-xs text-muted-foreground">{txCount} {locale === 'ar' ? 'معاملة' : 'txns'}</p>
                       </div>
                       <Badge tone={p.status === 'active' ? 'positive' : 'neutral'}>{t(`project_status_${p.status}` as any) ?? p.status}</Badge>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -216,7 +216,7 @@ export function DashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">{t('obligations_title')}</h3>
-              <button onClick={() => router.navigate({ to: '/finance/obligations' } as any)} className="text-xs text-primary hover:underline">{t('action_view_all')}</button>
+              <button onClick={() => router.navigate({ to: '/finance', search: { workspace: 'obligations' } } as any)} className="text-xs text-primary hover:underline">{t('action_view_all')}</button>
             </div>
           </CardHeader>
           <CardContent className="p-0">

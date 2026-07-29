@@ -19,8 +19,20 @@ export function useOperationalEvents(assetId?: string, projectId?: string) {
   return {
     events: filtered,
     allEvents: events,
-    createEvent: (input: OperationalEventInput) => operationalEventsStore.create(input),
-    removeEvent: (id: string) => operationalEventsStore.remove(id),
+    createEvent: async (input: OperationalEventInput) => {
+      const created = operationalEventsStore.create(input);
+      await operationalEventsStore.flush();
+      return created;
+    },
+    updateEvent: async (id: string, input: Partial<OperationalEventInput>) => {
+      const updated = operationalEventsStore.update(id, input);
+      await operationalEventsStore.flush();
+      return updated;
+    },
+    removeEvent: async (id: string) => {
+      operationalEventsStore.remove(id);
+      await operationalEventsStore.flush();
+    },
     count: filtered.length,
   };
 }
@@ -39,7 +51,11 @@ export function useStockAdjustments(assetId?: string) {
 
   return {
     adjustments: filtered,
-    createAdjustment: (input: StockAdjustmentInput) => stockAdjustmentsStore.create(input),
+    createAdjustment: async (input: StockAdjustmentInput) => {
+      const created = stockAdjustmentsStore.create(input);
+      await stockAdjustmentsStore.flush();
+      return created;
+    },
     count: filtered.length,
   };
 }

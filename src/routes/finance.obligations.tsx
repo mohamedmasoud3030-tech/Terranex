@@ -1,9 +1,8 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, redirect } from '@tanstack/react-router';
 import { financeRoute } from './finance';
-import { ObligationsPage } from '../features/obligations/ObligationsPage';
 
 export const financeObligationsRoute = createRoute({
   getParentRoute: () => financeRoute,
   path: '/obligations',
-  component: ObligationsPage,
+  beforeLoad: () => { throw redirect({ to: '/finance', search: { workspace: 'obligations' } }); },
 });

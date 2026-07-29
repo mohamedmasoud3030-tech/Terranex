@@ -2,16 +2,10 @@ import type { ComponentType } from 'react';
 import {
   Activity,
   Banknote,
-  Building2,
-  FolderKanban,
-  FolderOpen,
+  BrainCircuit,
+  BriefcaseBusiness,
   LayoutDashboard,
-  PackageOpen,
-  PawPrint,
-  ReceiptText,
-  Settings,
-  Users,
-  Wheat,
+  ShieldCheck,
 } from 'lucide-react';
 
 import type { Locale } from '../../core/types';
@@ -26,17 +20,11 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label_ar: 'لوحة القيادة', label_en: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
-  { id: 'projects', label_ar: 'المشاريع', label_en: 'Projects', icon: FolderKanban, to: '/projects' },
-  { id: 'real-estate', label_ar: 'العقاري', label_en: 'Real Estate', icon: Building2, to: '/real-estate' },
-  { id: 'agriculture', label_ar: 'الزراعي', label_en: 'Agriculture', icon: Wheat, to: '/agriculture' },
-  { id: 'livestock', label_ar: 'الحيواني', label_en: 'Livestock', icon: PawPrint, to: '/livestock' },
-  { id: 'events', label_ar: 'الأحداث التشغيلية', label_en: 'Operational Events', icon: Activity, to: '/events' },
+  { id: 'portfolio', label_ar: 'المحفظة', label_en: 'Portfolio', icon: BriefcaseBusiness, to: '/portfolio' },
+  { id: 'operations', label_ar: 'العمليات', label_en: 'Operations', icon: Activity, to: '/operations' },
   { id: 'finance', label_ar: 'المالية', label_en: 'Finance', icon: Banknote, to: '/finance' },
-  { id: 'transactions', label_ar: 'المعاملات', label_en: 'Transactions', icon: ReceiptText, to: '/transactions' },
-  { id: 'assets', label_ar: 'الأصول', label_en: 'Assets', icon: PackageOpen, to: '/assets' },
-  { id: 'documents', label_ar: 'المستندات', label_en: 'Documents', icon: FolderOpen, to: '/documents' },
-  { id: 'partners', label_ar: 'الشركاء', label_en: 'Partners', icon: Users, to: '/partners' },
-  { id: 'settings', label_ar: 'الإعدادات', label_en: 'Settings', icon: Settings, to: '/settings' },
+  { id: 'intelligence', label_ar: 'الذكاء', label_en: 'Intelligence', icon: BrainCircuit, to: '/intelligence' },
+  { id: 'governance', label_ar: 'الحوكمة', label_en: 'Governance', icon: ShieldCheck, to: '/governance' },
 ];
 
 export function getNavItemLabel(item: NavItem, locale: Locale) {

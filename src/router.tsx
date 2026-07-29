@@ -5,20 +5,12 @@
  *   rootRoute
  *     indexRoute          /          → redirect /dashboard
  *     dashboardRoute      /dashboard
- *     realEstateRoute     /real-estate
- *     agricultureRoute    /agriculture
- *     livestockRoute      /livestock
+ *     portfolioRoute      /portfolio
+ *     operationsRoute     /operations
  *     financeRoute        /finance
- *       financeIndexRoute       /          → redirect /finance/obligations
- *       financeObligationsRoute /obligations
- *       financeAllocationsRoute /allocations
- *       financeProfitabilityRoute /profitability
- *     documentsRoute      /documents
- *     partnersRoute       /partners
- *     partnerDetailRoute  /partners/$id
- *     transactionsRoute   /transactions
- *     assetsRoute         /assets
- *     settingsRoute       /settings
+ *     intelligenceRoute   /intelligence
+ *     governanceRoute     /governance
+ *     legacy routes       redirect while preserving intent
  *     notFoundRoute       /404
  */
 
@@ -28,11 +20,16 @@ import { QueryClient } from '@tanstack/react-query';
 import { rootRoute } from './routes/__root';
 import { indexRoute } from './routes/index';
 import { dashboardRoute } from './routes/dashboard';
+import { portfolioRoute } from './routes/portfolio';
+import { portfolioProjectDetailRoute } from './routes/portfolio.projects.$id';
+import { portfolioPartnerDetailRoute } from './routes/portfolio.partners.$id';
+import { operationsRoute } from './routes/operations';
+import { intelligenceRoute } from './routes/intelligence';
+import { governanceRoute } from './routes/governance';
 import { realEstateRoute } from './routes/real-estate';
 import { agricultureRoute } from './routes/agriculture';
 import { livestockRoute } from './routes/livestock';
 import { financeRoute } from './routes/finance';
-import { financeIndexRoute } from './routes/finance.index';
 import { financeObligationsRoute } from './routes/finance.obligations';
 import { financeAllocationsRoute } from './routes/finance.allocations';
 import { financeProfitabilityRoute } from './routes/finance.profitability';
@@ -49,7 +46,6 @@ import { eventsRoute } from './routes/events';
 import { NotFoundPage } from './routes/404';
 
 const financeTree = financeRoute.addChildren([
-  financeIndexRoute,
   financeObligationsRoute,
   financeAllocationsRoute,
   financeProfitabilityRoute,
@@ -58,6 +54,10 @@ const financeTree = financeRoute.addChildren([
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
+  portfolioRoute,
+  portfolioProjectDetailRoute,
+  portfolioPartnerDetailRoute,
+  operationsRoute,
   projectsRoute,
   projectDetailRoute,
   realEstateRoute,
@@ -65,6 +65,8 @@ const routeTree = rootRoute.addChildren([
   livestockRoute,
   eventsRoute,
   financeTree,
+  intelligenceRoute,
+  governanceRoute,
   transactionsRoute,
   assetsRoute,
   documentsRoute,

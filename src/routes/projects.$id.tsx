@@ -1,14 +1,8 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, redirect } from '@tanstack/react-router';
 import { rootRoute } from './__root';
-import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
 
 export const projectDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/projects/$id',
-  component: ProjectDetailRouteComponent,
+  beforeLoad: ({ params }) => { throw redirect({ to: '/portfolio/projects/$id', params: { id: params.id } }); },
 });
-
-function ProjectDetailRouteComponent() {
-  const { id } = projectDetailRoute.useParams();
-  return <ProjectDetailPage projectId={id} />;
-}

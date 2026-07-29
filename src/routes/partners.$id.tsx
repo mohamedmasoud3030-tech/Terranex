@@ -1,14 +1,8 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, redirect } from '@tanstack/react-router';
 import { rootRoute } from './__root';
-import { PartnerDetailPage } from '../features/partners/PartnerDetailPage';
 
 export const partnerDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/partners/$id',
-  component: PartnerDetailRouteComponent,
+  beforeLoad: ({ params }) => { throw redirect({ to: '/portfolio/partners/$id', params: { id: params.id } }); },
 });
-
-function PartnerDetailRouteComponent() {
-  const { id } = partnerDetailRoute.useParams();
-  return <PartnerDetailPage partnerId={id} />;
-}

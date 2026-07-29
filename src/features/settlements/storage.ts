@@ -108,6 +108,9 @@ export const settlementsStore = {
     return reversed;
   },
   subscribe: store.subscribe,
+  flush: store.flush,
+  rehydrate: store.rehydrate,
+  getLoadError: store.getLoadError,
   reset: () => {
     store.reset();
     settlementAllocationsStore.reset();
