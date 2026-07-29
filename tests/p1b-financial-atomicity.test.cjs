@@ -46,8 +46,10 @@ test('database boundary is owner-scoped, append-only and concurrency-safe', () =
   const retry = read('supabase/migrations/20260729000300_p1b_idempotency_preflight.sql');
 
   assert.match(foundation, /unique \(owner_id, request_id\)/i);
+  assert.match(foundation, /for insert\s+with check \(false\)/i);
+  assert.match(foundation, /for update\s+using \(false\)\s+with check \(false\)/i);
+  assert.match(foundation, /for delete\s+using \(false\)/i);
   assert.match(foundation, /revoke insert, update, delete/i);
-  assert.doesNotMatch(foundation, /for insert/i);
   assert.match(functions, /pg_advisory_xact_lock/);
   assert.match(functions, /terranex_assert_owner/);
   assert.match(functions, /unsupported transaction update field/);
