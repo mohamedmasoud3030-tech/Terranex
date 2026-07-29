@@ -1,27 +1,26 @@
 -- =============================================================================
--- ROLLBACK P1B — Financial Atomicity RPCs & Audit Trail
--- =============================================================================
--- Drops all 6 atomic RPCs, 2 helper functions, and the financial_audit_logs
--- table. After this rollback, financeWriteBoundary.ts must revert to the
--- multi-request write pattern (or the app will fail with PGRST202).
+-- ROLLBACK P1B — Financial atomicity and audit foundation
 -- =============================================================================
 
--- Drop atomic RPCs
+-- Public RPCs and the private transaction core.
 drop function if exists public.record_stock_adjustment_atomic(uuid, jsonb);
 drop function if exists public.reverse_settlement_atomic(uuid, uuid, text);
 drop function if exists public.record_settlement_atomic(uuid, jsonb, jsonb);
 drop function if exists public.delete_transaction_atomic(uuid, uuid);
 drop function if exists public.update_transaction_atomic(uuid, uuid, jsonb, jsonb);
 drop function if exists public.record_transaction_atomic(uuid, jsonb, jsonb);
+drop function if exists public.record_transaction_atomic_core(uuid, jsonb, jsonb);
 
--- Drop helper functions
+-- Internal ownership, locking, idempotency and audit helpers.
+drop function if exists public.terranex_audit_log(uuid, text, text, uuid[], jsonb, jsonb, uuid);
 drop function if exists public.terranex_audit_log(uuid, text, text, uuid[], jsonb, jsonb);
+drop function if exists public.terranex_audit_check_idempotent(uuid, uuid);
 drop function if exists public.terranex_audit_check_idempotent(uuid);
+drop function if exists public.terranex_lock_financial_request(uuid, uuid);
+drop function if exists public.terranex_assert_owner(uuid);
 
--- Drop financial_audit_logs table (cascades indexes, constraints, RLS policies)
 drop table if exists public.financial_audit_logs cascade;
 
--- Restore preflight view to 11 tables (without financial_audit_logs)
 create or replace view public.terranex_ownership_preflight as
   select 'projects'::text as table_name,
          count(*) as total_rows,
@@ -39,3 +38,5 @@ create or replace view public.terranex_ownership_preflight as
   union all select 'stock_adjustments',      count(*), count(*) filter (where owner_id is null) from public.stock_adjustments;
 
 alter view public.terranex_ownership_preflight set (security_invoker = true);
+
+\echo '=== ROLLBACK P1B FINANCIAL ATOMICITY: COMPLETE ==='
