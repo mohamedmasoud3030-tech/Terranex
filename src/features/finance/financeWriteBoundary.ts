@@ -22,11 +22,6 @@ export const P1B_ATOMIC_RPC_NAMES = [
 
 export type P1BAtomicRpcName = typeof P1B_ATOMIC_RPC_NAMES[number];
 
-/**
- * Creates one durable idempotency key per user action. The caller keeps the
- * returned payload/request id when retrying the same action; a new action gets
- * a cryptographically strong UUID instead of a collision-prone content hash.
- */
 export function generateRequestId(_operation?: string, ..._keys: string[]): string {
   return crypto.randomUUID();
 }
@@ -61,8 +56,6 @@ function toRpcError(error: unknown, rpc: string): Error {
 }
 
 function unwrapRpcResult<T>(data: unknown): T {
-  // PostgREST may expose a scalar JSON return directly. Some injected clients
-  // and older generated wrappers expose the same scalar as a one-row array.
   if (Array.isArray(data) && data.length === 1) return data[0] as T;
   return data as T;
 }
@@ -71,21 +64,14 @@ export interface InvokeFinanceRpcOptions {
   refresh?: 'finance' | 'stock' | 'none';
 }
 
-/**
- * The only production entry point for P1B financial writes.
- *
- * It calls `SupabaseClient.rpc()` directly, fails closed on any server error,
- * and rehydrates the affected stores so the optimistic local multi-write path
- * is never used to claim success.
- */
-export async function invokeFinanceRpc<T>(
+export async function invokeFinanceRpc<T, P extends object = Record<string, unknown>>(
   rpc: P1BAtomicRpcName,
-  params: Record<string, unknown>,
+  params: P,
   options: InvokeFinanceRpcOptions = {},
 ): Promise<T> {
   const refresh = options.refresh ?? 'finance';
   const client = requireClient();
-  const { data, error } = await client.rpc(rpc, params);
+  const { data, error } = await client.rpc(rpc, params as Record<string, unknown>);
 
   if (error) {
     if (refresh === 'finance') await rehydrateFinanceStores();
@@ -98,10 +84,6 @@ export async function invokeFinanceRpc<T>(
   return unwrapRpcResult<T>(data);
 }
 
-/**
- * Kept for non-P1B single-table writes. P1B transaction/settlement flows pass
- * an async RPC operation here; no local store flush is performed afterward.
- */
 export async function executeFinanceWrite<T>(operation: () => T | Promise<T>): Promise<T> {
   try {
     return await operation();
