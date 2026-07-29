@@ -21,6 +21,8 @@ const adjStore = createSupabaseStore<StockAdjustment>(ADJUSTMENTS_TABLE, parseAd
 
 export const operationalEventsReady = evStore.ready;
 export const stockAdjustmentsReady = adjStore.ready;
+export const operationalEventsHydration = evStore;
+export const stockAdjustmentsHydration = adjStore;
 
 export type OperationalEventInput = Omit<OperationalEvent, 'id' | 'created_at'>;
 export type StockAdjustmentInput = Omit<StockAdjustment, 'id' | 'created_at'>;
@@ -34,10 +36,20 @@ export const operationalEventsStore = {
     evStore.update((all) => [event, ...all]);
     return event;
   },
+  update: (id: string, input: Partial<OperationalEventInput>): OperationalEvent => {
+    const current = evStore.get().find((event) => event.id === id);
+    if (!current) throw new Error('تعذر العثور على الحدث التشغيلي.');
+    const next = { ...current, ...input };
+    evStore.update((all) => all.map((event) => event.id === id ? next : event));
+    return next;
+  },
   remove: (id: string): void => {
     evStore.update((all) => all.filter((e) => e.id !== id));
   },
   subscribe: evStore.subscribe,
+  flush: evStore.flush,
+  rehydrate: evStore.rehydrate,
+  getLoadError: evStore.getLoadError,
 };
 
 export const stockAdjustmentsStore = {
@@ -49,4 +61,7 @@ export const stockAdjustmentsStore = {
     return adj;
   },
   subscribe: adjStore.subscribe,
+  flush: adjStore.flush,
+  rehydrate: adjStore.rehydrate,
+  getLoadError: adjStore.getLoadError,
 };
