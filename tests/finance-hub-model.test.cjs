@@ -65,7 +65,7 @@ test('finance overview reuses canonical profitability and aging sources', () => 
   assert.equal(result.aging.rows.length, 2);
 });
 
-test('typed finance handoff is shareable and atomicity limitation is explicit', () => {
+test('typed finance handoff is shareable and server-side atomicity is explicit', () => {
   assert.equal(
     financeContextSearch({
       projectId: 'p1',
@@ -76,6 +76,6 @@ test('typed finance handoff is shareable and atomicity limitation is explicit', 
     }),
     'project=p1&asset=a1&partner=party1&event=event1&obligation=o1',
   );
-  assert.match(FINANCE_ATOMICITY_NOTICE.en, /not a database transaction/);
-  assert.match(FINANCE_ATOMICITY_NOTICE.ar, /ليست معاملة قاعدة بيانات ذرية/);
+  assert.match(FINANCE_ATOMICITY_NOTICE.en, /server-side atomic transaction/);
+  assert.match(FINANCE_ATOMICITY_NOTICE.ar, /معاملة ذرية واحدة على الخادم/);
 });

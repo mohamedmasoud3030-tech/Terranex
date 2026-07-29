@@ -29,6 +29,7 @@ export function SettlementAllocationPage() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   const settleable = useMemo(
     () => obligations.filter((item) => item.status === 'open' || item.status === 'partial'),
@@ -58,12 +59,14 @@ export function SettlementAllocationPage() {
     setSuccess(null);
   }
 
-  function submit(e: FormEvent) {
-    e.preventDefault();
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
     try {
       const plans = buildSettlementAllocationFormPlans(candidates, amounts);
       const amount = getSettlementAllocationPlanTotal(plans);
-      const settlement = settleObligations({
+      const settlement = await settleObligations({
         amount,
         currency: 'EGP',
         fx_rate: 1,
@@ -81,6 +84,8 @@ export function SettlementAllocationPage() {
     } catch (submissionError) {
       setSuccess(null);
       setError(submissionError instanceof Error ? submissionError.message : 'تعذر تسجيل الدفعة الموزعة.');
+    } finally {
+      setPending(false);
     }
   }
 
@@ -99,7 +104,7 @@ export function SettlementAllocationPage() {
             <form onSubmit={submit} className="space-y-5">
               <FormField>
                 <FormLabel htmlFor="allocation-anchor">التزام مرجعي</FormLabel>
-                <SelectInput id="allocation-anchor" value={anchorId} onChange={(e) => selectAnchor(e.target.value)}>
+                <SelectInput id="allocation-anchor" value={anchorId} onChange={(event) => selectAnchor(event.target.value)} disabled={pending}>
                   <option value="">اختر التزاماً لعرض التوزيعات المتوافقة…</option>
                   {settleable.map((obligation) => (
                     <option key={obligation.id} value={obligation.id}>
@@ -143,8 +148,9 @@ export function SettlementAllocationPage() {
                             inputMode="decimal"
                             value={amounts[obligation.id] ?? ''}
                             placeholder={`حتى ${formatEgp(remaining)}`}
-                            onChange={(e) => setAmounts((current) => ({ ...current, [obligation.id]: e.target.value }))}
+                            onChange={(event) => setAmounts((current) => ({ ...current, [obligation.id]: event.target.value }))}
                             aria-label={`قيمة توزيع الالتزام ${projectName(obligation.project_id)}`}
+                            disabled={pending}
                           />
                         </div>
                       );
@@ -156,11 +162,11 @@ export function SettlementAllocationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField>
                   <FormLabel htmlFor="allocation-date">تاريخ التسوية</FormLabel>
-                  <TextInput id="allocation-date" type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} required />
+                  <TextInput id="allocation-date" type="date" value={settlementDate} onChange={(event) => setSettlementDate(event.target.value)} required disabled={pending} />
                 </FormField>
                 <FormField>
                   <FormLabel htmlFor="allocation-method">طريقة الدفع</FormLabel>
-                  <SelectInput id="allocation-method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as SettlementPaymentMethod)}>
+                  <SelectInput id="allocation-method" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as SettlementPaymentMethod)} disabled={pending}>
                     <option value="cash">نقدي</option>
                     <option value="bank_transfer">تحويل بنكي</option>
                     <option value="cheque">شيك</option>
@@ -173,11 +179,11 @@ export function SettlementAllocationPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField>
                   <FormLabel htmlFor="allocation-reference">رقم المرجع</FormLabel>
-                  <TextInput id="allocation-reference" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} />
+                  <TextInput id="allocation-reference" value={referenceNumber} onChange={(event) => setReferenceNumber(event.target.value)} disabled={pending} />
                 </FormField>
                 <FormField>
                   <FormLabel htmlFor="allocation-notes">ملاحظات</FormLabel>
-                  <TextInput id="allocation-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                  <TextInput id="allocation-notes" value={notes} onChange={(event) => setNotes(event.target.value)} disabled={pending} />
                 </FormField>
               </div>
 
@@ -185,8 +191,8 @@ export function SettlementAllocationPage() {
               {success && <p className="flex items-center gap-2 text-sm text-success"><CheckCircle2 className="h-4 w-4" />{success}</p>}
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={!anchor || total <= 0}>
-                  <Split className="h-4 w-4" /> تسجيل الدفعة الموزعة
+                <Button type="submit" disabled={!anchor || total <= 0 || pending}>
+                  <Split className="h-4 w-4" /> {pending ? 'جار التسجيل…' : 'تسجيل الدفعة الموزعة'}
                 </Button>
               </div>
             </form>

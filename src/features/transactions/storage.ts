@@ -21,7 +21,6 @@ const store = createSupabaseStore<Transaction>(TABLE, parseOne, 'transaction_dat
 export const transactionsReady = store.ready;
 export const transactionsHydration = store;
 
-// Lets `referenceValidation.ts` read transactions without a circular import.
 transactionsRegistry.register(() => store.get());
 
 export type TransactionInput = Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
@@ -31,7 +30,7 @@ export function toTransactionInput(transaction: Transaction): TransactionInput {
   return input;
 }
 
-function normalizeInput(input: TransactionInput, transactionId?: string): TransactionInput {
+export function normalizeTransactionInput(input: TransactionInput, transactionId?: string): TransactionInput {
   validateTransactionReferences(input, transactionId);
   if (!isFiniteNumber(input.amount) || input.amount <= 0) {
     throw new Error('قيمة المعاملة يجب أن تكون رقماً صالحاً أكبر من صفر.');
@@ -61,7 +60,7 @@ function requireTransaction(id: string) {
 
 function buildUpdatedTransaction(id: string, input: Partial<TransactionInput>): Transaction {
   const existing = requireTransaction(id);
-  const normalized = normalizeInput({ ...toTransactionInput(existing), ...input }, id);
+  const normalized = normalizeTransactionInput({ ...toTransactionInput(existing), ...input }, id);
   return { ...existing, ...normalized, updated_at: new Date().toISOString() };
 }
 
@@ -72,7 +71,7 @@ export const transactionsStore = {
   getByAsset: (assetId: string) => store.get().filter((t) => t.asset_id === assetId),
   getByPartner: (partnerId: string) => store.get().filter((t) => t.partner_id === partnerId),
   create: (input: TransactionInput): Transaction => {
-    const normalized = normalizeInput(input);
+    const normalized = normalizeTransactionInput(input);
     const now = new Date().toISOString();
     const tx: Transaction = { ...normalized, id: makeId(), created_at: now, updated_at: now };
     const documentBound = bindSupportingDocument(tx.document_id!, tx.id);

@@ -1,11 +1,83 @@
 import { isFiniteNumber } from '../../core/lib/validation';
 import type { Document, Obligation } from '../../core/types/domain';
 import { documentsStore } from '../documents/storage';
+import {
+  generateRequestId,
+  invokeFinanceRpc,
+  P1B_ATOMIC_RPC_NAMES,
+} from '../finance/financeWriteBoundary';
 import { obligationsStore } from '../obligations/storage';
 import { recordSettlementAllocation } from '../settlement-allocations/posting';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore, validateSettlementInput, type SettlementInput } from './storage';
 import type { Settlement } from './types';
+
+export interface RecordSettlementAtomicPayload {
+  p_request_id: string;
+  p_settlement: Record<string, unknown>;
+  p_allocations: Array<Record<string, unknown>>;
+}
+
+export interface ReverseSettlementAtomicPayload {
+  p_request_id: string;
+  p_settlement_id: string;
+  p_reason: string;
+}
+
+export interface RecordSettlementAtomicResult {
+  settlement_id: string;
+  allocation_ids: string[];
+  obligation_ids: string[];
+}
+
+export interface ReverseSettlementAtomicResult {
+  settlement_id: string;
+  reversed_obligation_ids: string[];
+  reason: string;
+  reversed_at: string;
+}
+
+export function buildRecordSettlementAtomicPayload(
+  settlementId: string,
+  input: RecordSettlementWithAllocationsInput,
+  allocationIds: string[],
+  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[3]),
+): RecordSettlementAtomicPayload {
+  const amountEgp = input.amount * input.fx_rate;
+  return {
+    p_request_id: requestId,
+    p_settlement: {
+      id: settlementId,
+      obligation_id: input.allocations[0]?.obligation_id,
+      amount: input.amount,
+      currency: input.currency,
+      fx_rate: input.fx_rate,
+      amount_egp: amountEgp,
+      payment_method: input.payment_method,
+      reference_number: input.reference_number,
+      receipt_document_id: input.receipt_document_id,
+      settlement_date: input.settlement_date,
+      notes: input.notes,
+    },
+    p_allocations: input.allocations.map((plan, index) => ({
+      id: allocationIds[index],
+      obligation_id: plan.obligation_id,
+      allocated_amount_egp: plan.allocated_amount_egp,
+    })),
+  };
+}
+
+export function buildReverseSettlementAtomicPayload(
+  settlementId: string,
+  reason: string,
+  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[4]),
+): ReverseSettlementAtomicPayload {
+  return {
+    p_request_id: requestId,
+    p_settlement_id: settlementId,
+    p_reason: reason,
+  };
+}
 
 const MONEY_EPSILON = 0.000001;
 
@@ -80,6 +152,79 @@ function assertAllocationCapacity(plans: SettlementAllocationPlan[], obligations
   }
 }
 
+function prepareSettlement(input: RecordSettlementWithAllocationsInput) {
+  const plans = normalizeAllocationPlans(input.allocations);
+  const { allocations: _allocations, ...settlementInput } = input;
+  const normalizedSettlement = validateSettlementInput({ ...settlementInput, obligation_id: plans[0].obligation_id });
+  const allocationTotal = plans.reduce((sum, plan) => sum + plan.allocated_amount_egp, 0);
+  if (Math.abs(allocationTotal - normalizedSettlement.amount_egp) > MONEY_EPSILON) {
+    throw new Error('يجب أن يساوي إجمالي التوزيعات قيمة التسوية بالكامل.');
+  }
+
+  const obligations = plans.map((plan) => requireObligation(plan.obligation_id));
+  for (const obligation of obligations) {
+    requireSettleable(obligation);
+    validateReceipt(obligation, normalizedSettlement.receipt_document_id);
+  }
+  assertCompatibleObligations(obligations);
+  assertAllocationCapacity(plans, obligations);
+
+  return { plans, normalizedSettlement, obligations };
+}
+
+/** Posts settlement, allocations and obligation balances in one server transaction. */
+export async function recordSettlementWithAllocationsAtomic(
+  input: RecordSettlementWithAllocationsInput,
+): Promise<Settlement> {
+  const { plans, normalizedSettlement } = prepareSettlement(input);
+  const settlementId = crypto.randomUUID();
+  const allocationIds = plans.map(() => crypto.randomUUID());
+  const payloadInput: RecordSettlementWithAllocationsInput = {
+    ...normalizedSettlement,
+    allocations: plans,
+  };
+  const payload = buildRecordSettlementAtomicPayload(settlementId, payloadInput, allocationIds);
+  const result = await invokeFinanceRpc<RecordSettlementAtomicResult>(
+    P1B_ATOMIC_RPC_NAMES[3],
+    payload,
+  );
+  const settlement = settlementsStore.getById(result.settlement_id);
+  if (!settlement) {
+    throw new Error('نجحت التسوية على الخادم لكن تعذر تحميلها بعد المزامنة.');
+  }
+  return settlement;
+}
+
+export async function recordSettlementAtomic(
+  obligationId: string,
+  input: RecordSettlementInput,
+): Promise<Settlement> {
+  const normalized = validateSettlementInput({ ...input, obligation_id: obligationId });
+  return recordSettlementWithAllocationsAtomic({
+    ...input,
+    allocations: [{ obligation_id: normalized.obligation_id, allocated_amount_egp: normalized.amount_egp }],
+  });
+}
+
+/** Reverses a settlement and all affected obligation balances atomically. */
+export async function reverseSettlementAtomic(settlementId: string, reason: string): Promise<Settlement> {
+  const existing = settlementsStore.getById(settlementId);
+  if (!existing) throw new Error('تعذر العثور على التسوية المطلوبة.');
+  const normalizedReason = reason.trim();
+  if (!normalizedReason) throw new Error('سبب عكس التسوية مطلوب.');
+
+  const result = await invokeFinanceRpc<ReverseSettlementAtomicResult>(
+    P1B_ATOMIC_RPC_NAMES[4],
+    buildReverseSettlementAtomicPayload(settlementId, normalizedReason),
+  );
+  const settlement = settlementsStore.getById(result.settlement_id);
+  if (!settlement) {
+    throw new Error('نجح عكس التسوية على الخادم لكن تعذر تحميلها بعد المزامنة.');
+  }
+  return settlement;
+}
+
+// Legacy synchronous implementations are retained for isolated model tests.
 function synchronizeObligations(obligationIds: string[], previous: Obligation[]) {
   const synchronized: string[] = [];
   try {
@@ -105,22 +250,7 @@ export function recordSettlement(obligationId: string, input: RecordSettlementIn
 }
 
 export function recordSettlementWithAllocations(input: RecordSettlementWithAllocationsInput): Settlement {
-  const plans = normalizeAllocationPlans(input.allocations);
-  const { allocations: _allocations, ...settlementInput } = input;
-  const normalizedSettlement = validateSettlementInput({ ...settlementInput, obligation_id: plans[0].obligation_id });
-  const allocationTotal = plans.reduce((sum, plan) => sum + plan.allocated_amount_egp, 0);
-  if (Math.abs(allocationTotal - normalizedSettlement.amount_egp) > MONEY_EPSILON) {
-    throw new Error('يجب أن يساوي إجمالي التوزيعات قيمة التسوية بالكامل.');
-  }
-
-  const obligations = plans.map((plan) => requireObligation(plan.obligation_id));
-  for (const obligation of obligations) {
-    requireSettleable(obligation);
-    validateReceipt(obligation, normalizedSettlement.receipt_document_id);
-  }
-  assertCompatibleObligations(obligations);
-  assertAllocationCapacity(plans, obligations);
-
+  const { plans, normalizedSettlement, obligations } = prepareSettlement(input);
   const previous = obligations.map((obligation) => ({ ...obligation }));
   const settlement = settlementsStore.create(normalizedSettlement);
   const allocationIds: string[] = [];

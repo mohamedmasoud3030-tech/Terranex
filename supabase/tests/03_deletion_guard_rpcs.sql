@@ -11,6 +11,7 @@
 begin;
 set local role postgres;
 
+delete from public.financial_audit_logs where true;
 delete from public.settlement_allocations where true; delete from public.settlements where true;
 delete from public.obligations where true; delete from public.operational_events where true;
 delete from public.stock_adjustments where true; delete from public.transactions where true;

@@ -17,6 +17,7 @@ begin;
 
 -- Reset to a known state as superuser.
 set local role postgres;
+delete from public.financial_audit_logs where true;
 delete from public.settlement_allocations where true;
 delete from public.settlements where true;
 delete from public.obligations where true;
@@ -73,14 +74,15 @@ begin
   -- 1. READ ISOLATION — Bob sees nothing of Alice's, in every table.
   foreach v_tbl in array array[
     'projects','partners','assets','documents','project_partners','transactions',
-    'obligations','settlements','settlement_allocations','operational_events','stock_adjustments'
+    'obligations','settlements','settlement_allocations','operational_events','stock_adjustments',
+    'financial_audit_logs'
   ] loop
     execute format('select count(*) from public.%I', v_tbl) into v_n;
     if v_n <> 0 then
       raise exception 'FAIL read isolation: Bob sees % row(s) in %', v_n, v_tbl;
     end if;
   end loop;
-  raise notice 'PASS read isolation: Bob sees 0 rows across all 11 tables';
+  raise notice 'PASS read isolation: Bob sees 0 rows across all 12 tables';
 
   -- 2. UPDATE ISOLATION — Bob cannot modify Alice's row (USING hides it).
   update public.projects set name_ar = 'اختراق' where id = '11111111-1111-4111-8111-111111111111';
