@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { recordSettlement, recordSettlementWithAllocations, type RecordSettlementWithAllocationsInput } from '../settlements/workflow';
+import {
+  recordSettlementAtomic,
+  recordSettlementWithAllocationsAtomic,
+  type RecordSettlementWithAllocationsInput,
+} from '../settlements/workflow';
 import { obligationsStore, type ObligationInput } from './storage';
 import type { Obligation } from '../../core/types/domain';
 
@@ -13,7 +17,7 @@ export function useObligations(projectId?: string) {
   }), [projectId]);
 
   const createObligation = useCallback((input: ObligationInput) => obligationsStore.create(input), []);
-  const settleObligation = useCallback((id: string, amountEgp: number) => recordSettlement(id, {
+  const settleObligation = useCallback((id: string, amountEgp: number) => recordSettlementAtomic(id, {
     amount: amountEgp,
     currency: 'EGP',
     fx_rate: 1,
@@ -21,7 +25,10 @@ export function useObligations(projectId?: string) {
     payment_method: 'other',
     notes: 'دفعة مسجلة من نموذج الإدخال المختصر.',
   }), []);
-  const settleObligations = useCallback((input: RecordSettlementWithAllocationsInput) => recordSettlementWithAllocations(input), []);
+  const settleObligations = useCallback(
+    (input: RecordSettlementWithAllocationsInput) => recordSettlementWithAllocationsAtomic(input),
+    [],
+  );
   const updateObligation = useCallback((id: string, input: Partial<ObligationInput>) => obligationsStore.update(id, input), []);
   const deleteObligation = useCallback((id: string) => obligationsStore.remove(id), []);
 
