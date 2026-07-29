@@ -64,9 +64,9 @@ export interface InvokeFinanceRpcOptions {
   refresh?: 'finance' | 'stock' | 'none';
 }
 
-export async function invokeFinanceRpc<T, P extends object = Record<string, unknown>>(
+export async function invokeFinanceRpc<T>(
   rpc: P1BAtomicRpcName,
-  params: P,
+  params: object,
   options: InvokeFinanceRpcOptions = {},
 ): Promise<T> {
   const refresh = options.refresh ?? 'finance';
