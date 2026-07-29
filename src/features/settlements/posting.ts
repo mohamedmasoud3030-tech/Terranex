@@ -6,6 +6,71 @@ import { recordSettlementAllocation } from '../settlement-allocations/posting';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore, validateSettlementInput, type SettlementInput } from './storage';
 import type { Settlement } from './types';
+import { generateRequestId, P1B_ATOMIC_RPC_NAMES } from '../finance/financeWriteBoundary';
+
+/**
+ * P1B: Atomic RPC payload for record_settlement_atomic.
+ * When the Supabase backend is available, this payload is sent to the server
+ * instead of making separate store calls, ensuring atomicity and idempotency.
+ */
+export interface RecordSettlementAtomicPayload {
+  p_request_id: string;
+  p_settlement: Record<string, unknown>;
+  p_allocations: Array<Record<string, unknown>>;
+}
+
+/**
+ * P1B: Atomic RPC payload for reverse_settlement_atomic.
+ */
+export interface ReverseSettlementAtomicPayload {
+  p_request_id: string;
+  p_settlement_id: string;
+  p_reason: string;
+}
+
+export function buildRecordSettlementAtomicPayload(
+  settlementId: string,
+  input: RecordSettlementWithAllocationsInput,
+  allocationIds: string[],
+): RecordSettlementAtomicPayload {
+  const amountEgp = input.amount * input.fx_rate;
+  const requestId = generateRequestId(
+    P1B_ATOMIC_RPC_NAMES[3],
+    settlementId,
+    String(amountEgp),
+    input.settlement_date,
+  );
+
+  return {
+    p_request_id: requestId,
+    p_settlement: {
+      id: settlementId,
+      obligation_id: input.allocations[0]?.obligation_id,
+      amount_egp: amountEgp,
+      payment_method: input.payment_method,
+      payment_reference: input.reference_number,
+      receipt_document_id: input.receipt_document_id,
+      settlement_date: input.settlement_date,
+      notes: input.notes,
+    },
+    p_allocations: input.allocations.map((plan, index) => ({
+      id: allocationIds[index],
+      obligation_id: plan.obligation_id,
+      allocated_amount_egp: plan.allocated_amount_egp,
+    })),
+  };
+}
+
+export function buildReverseSettlementAtomicPayload(
+  settlementId: string,
+  reason: string,
+): ReverseSettlementAtomicPayload {
+  return {
+    p_request_id: generateRequestId(P1B_ATOMIC_RPC_NAMES[4], settlementId, reason),
+    p_settlement_id: settlementId,
+    p_reason: reason,
+  };
+}
 
 const MONEY_EPSILON = 0.000001;
 

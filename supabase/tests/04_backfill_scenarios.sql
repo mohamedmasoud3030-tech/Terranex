@@ -59,6 +59,7 @@ rollback;
 begin;
 set local role postgres;
 
+delete from public.financial_audit_logs where true;
 delete from public.settlement_allocations where true; delete from public.settlements where true;
 delete from public.obligations where true; delete from public.operational_events where true;
 delete from public.stock_adjustments where true; delete from public.transactions where true;
@@ -103,6 +104,7 @@ rollback;
 begin;
 set local role postgres;
 
+delete from public.financial_audit_logs where true;
 delete from public.settlement_allocations where true; delete from public.settlements where true;
 delete from public.obligations where true; delete from public.operational_events where true;
 delete from public.stock_adjustments where true; delete from public.transactions where true;
@@ -177,9 +179,9 @@ declare v_tables int; v_unowned bigint;
 begin
   select count(*), coalesce(sum(unowned_rows),0) into v_tables, v_unowned
   from public.terranex_ownership_preflight;
-  if v_tables <> 11 then raise exception 'FAIL preflight view: covers % tables, expected 11', v_tables; end if;
+  if v_tables <> 12 then raise exception 'FAIL preflight view: covers % tables, expected 12', v_tables; end if;
   if v_unowned <> 0 then raise exception 'FAIL preflight view: % unowned rows in a migrated DB', v_unowned; end if;
-  raise notice 'PASS preflight view: all 11 tables reported, 0 unowned rows';
+  raise notice 'PASS preflight view: all 12 tables reported, 0 unowned rows';
 end;
 $$;
 rollback;

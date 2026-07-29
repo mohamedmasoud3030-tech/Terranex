@@ -1,10 +1,67 @@
 import type { Obligation, Transaction } from '../../core/types/domain';
 import { obligationsStore } from '../obligations/storage';
 import { transactionsStore, toTransactionInput, type TransactionInput } from './storage';
+import { generateRequestId, P1B_ATOMIC_RPC_NAMES } from '../finance/financeWriteBoundary';
 
 export interface DeferredExpenseTransactionInput extends TransactionInput {
   create_payable_obligation?: boolean;
   payable_due_date?: string;
+}
+
+/**
+ * P1B: Atomic RPC payload for record_transaction_atomic.
+ * When the Supabase backend is available, this payload is sent to the server
+ * instead of making separate store calls, ensuring atomicity and idempotency.
+ */
+export interface RecordTransactionAtomicPayload {
+  p_request_id: string;
+  p_transaction: Record<string, unknown>;
+  p_payable?: Record<string, unknown> | null;
+}
+
+export function buildRecordTransactionAtomicPayload(
+  input: DeferredExpenseTransactionInput,
+  transactionId: string,
+  payableId?: string,
+): RecordTransactionAtomicPayload {
+  const requestId = generateRequestId(
+    P1B_ATOMIC_RPC_NAMES[0],
+    transactionId,
+    input.project_id,
+    String(input.amount_egp),
+  );
+
+  return {
+    p_request_id: requestId,
+    p_transaction: {
+      id: transactionId,
+      project_id: input.project_id,
+      asset_id: input.asset_id,
+      partner_id: input.partner_id,
+      operational_event_id: input.operational_event_id,
+      direction: input.direction,
+      category: input.category,
+      description: input.description,
+      amount: input.amount,
+      currency: input.currency,
+      fx_rate: input.fx_rate,
+      amount_egp: input.amount_egp,
+      transaction_date: input.transaction_date,
+      document_id: input.document_id,
+      notes: input.notes,
+    },
+    p_payable: input.create_payable_obligation && payableId ? {
+      id: payableId,
+      project_id: input.project_id,
+      partner_id: input.partner_id,
+      amount: input.amount,
+      currency: input.currency,
+      amount_egp: input.amount_egp,
+      due_date: input.payable_due_date,
+      document_id: input.document_id,
+      notes: input.notes,
+    } : null,
+  };
 }
 
 function requireDeferredExpense(input: DeferredExpenseTransactionInput) {
