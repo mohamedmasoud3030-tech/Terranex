@@ -5,18 +5,22 @@ import { FormError, FormField, FormLabel } from '../../components/ui/FormControl
 import { obligationSchema, type ObligationFormValues } from '../../core/lib/validation';
 import { useI18n } from '../../core/i18n/context';
 import type { ObligationInput } from './storage';
-import type { Partner } from '../../core/types/domain';
+import type { Obligation, Partner } from '../../core/types/domain';
 import type { Project } from '../../core/types/domain';
 
 interface Props {
   partners: Partner[];
   projects: Project[];
-  onSubmit: (input: ObligationInput) => void;
+  onSubmit: (input: ObligationInput) => void | Promise<void>;
   onCancel: () => void;
   defaultProjectId?: string;
+  defaultPartnerId?: string;
+  initial?: Partial<Obligation>;
+  formId?: string;
+  hideActions?: boolean;
 }
 
-export function ObligationForm({ partners, projects, onSubmit, onCancel, defaultProjectId }: Props) {
+export function ObligationForm({ partners, projects, onSubmit, onCancel, defaultProjectId, defaultPartnerId, initial, formId, hideActions = false }: Props) {
   const { t, locale } = useI18n();
 
   const {
@@ -28,23 +32,23 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(obligationSchema) as any,
     defaultValues: {
-      direction: 'receivable',
-      partner_id: '',
-      project_id: defaultProjectId ?? '',
-      amount: undefined as any,
-      currency: 'EGP',
-      due_date: '',
-      document_id: '',
-      notes: '',
+      direction: initial?.direction ?? 'receivable',
+      partner_id: initial?.partner_id ?? defaultPartnerId ?? '',
+      project_id: initial?.project_id ?? defaultProjectId ?? '',
+      amount: initial?.amount ?? undefined as any,
+      currency: initial?.currency ?? 'EGP',
+      due_date: initial?.due_date ?? '',
+      document_id: initial?.document_id ?? '',
+      notes: initial?.notes ?? '',
     },
     mode: 'onBlur',
   });
 
   const direction = watch('direction');
 
-  const submit = (v: ObligationFormValues) => {
+  const submit = async (v: ObligationFormValues) => {
     const amountNum = Number(v.amount);
-    onSubmit({
+    await onSubmit({
       direction: v.direction,
       partner_id: v.partner_id,
       project_id: v.project_id || undefined,
@@ -53,7 +57,7 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
       amount_egp: amountNum, // EGP base — fx =1 for Obligation MVP (can extend)
       due_date: v.due_date || undefined,
       document_id: v.document_id || undefined,
-      status: 'open',
+      status: initial?.status ?? 'open',
       notes: v.notes || undefined,
     });
   };
@@ -62,7 +66,7 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
   const lc = 'block text-sm font-medium text-foreground mb-1';
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       <div className="flex gap-2">
         {(['receivable','payable'] as const).map(d => (
           <label key={d} className="flex-1 cursor-pointer">
@@ -123,14 +127,14 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
         <textarea {...register('notes')} rows={2} className={ic} placeholder={locale==='ar' ? 'ملاحظات…' : 'Notes…'} />
       </FormField>
 
-      <div className="flex justify-end gap-2 pt-2">
+      {!hideActions && <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           {t('action_cancel')}
         </Button>
         <Button type="submit" disabled={isSubmitting} className={direction === 'receivable' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'}>
           {isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
         </Button>
-      </div>
+      </div>}
 
       {Object.keys(errors).length > 0 && (
         <div className="rounded-xl bg-warning/5 border border-warning/20 p-3 text-xs text-warning" dir="rtl">

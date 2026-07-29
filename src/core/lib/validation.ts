@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import type { Currency, SectorId, TransactionDirection, TransactionCategory, ProjectStatus } from '../types/domain';
+import type {
+  AssetStatus,
+  AssetType,
+  Currency,
+  ProjectStatus,
+  SectorId,
+  TransactionCategory,
+  TransactionDirection,
+} from '../types/domain';
 
 export const finitePositiveNumberSchema = z
   .number({ error: 'يجب إدخال رقم صحيح.' })
@@ -73,6 +81,48 @@ export const projectSchema = z.object({
 });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;
+
+// ─── Asset ─────────────────────────────────────────────────────────────────
+
+const assetTypeEnum: [AssetType, ...AssetType[]] = [
+  'land',
+  'building',
+  'farm',
+  'equipment',
+  'herd',
+  'animal_group',
+  'crop',
+  'other',
+];
+const assetStatusEnum: [AssetStatus, ...AssetStatus[]] = [
+  'owned',
+  'leased',
+  'sold',
+  'disposed',
+];
+const optionalNonNegativeNumber = z.preprocess(
+  (value) => value === '' || value === null ? undefined : value,
+  z.coerce.number().finite('القيمة غير صالحة').min(0, 'القيمة لا يمكن أن تكون سالبة').optional(),
+);
+
+export const assetSchema = z.object({
+  project_id: z.string().min(1, 'اختر المشروع'),
+  sector_id: z.enum(sectorEnum, { error: 'اختر القطاع' }),
+  type: z.enum(assetTypeEnum, { error: 'اختر نوع الأصل' }),
+  name_ar: arabicText,
+  name_en: z.string().trim().max(200).optional().or(z.literal('')),
+  acquisition_date: isoDate,
+  acquisition_cost: z.coerce.number().finite().min(0, 'تكلفة الاقتناء لا يمكن أن تكون سالبة'),
+  acquisition_currency: z.enum(currencyEnum),
+  acquisition_cost_egp: z.coerce.number().finite().min(0, 'التكلفة بالجنيه لا يمكن أن تكون سالبة'),
+  current_value_egp: optionalNonNegativeNumber,
+  status: z.enum(assetStatusEnum),
+  quantity: optionalNonNegativeNumber,
+  unit: z.string().trim().max(40).optional().or(z.literal('')),
+  notes: optionalText,
+});
+
+export type AssetFormValues = z.infer<typeof assetSchema>;
 
 // ─── Transaction ───────────────────────────────────────────────────────────
 
@@ -195,4 +245,3 @@ export function zodToRHF<T extends z.ZodTypeAny>(schema: T) {
   // helper type bridge — actual resolver is @hookform/resolvers/zod
   return schema;
 }
-

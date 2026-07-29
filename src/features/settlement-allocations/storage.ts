@@ -79,5 +79,9 @@ export const settlementAllocationsStore = {
   createMany,
   removeForRollback: (id: string): void => removeManyForRollback([id]),
   removeManyForRollback,
+  subscribe: store.subscribe,
+  flush: store.flush,
+  rehydrate: store.rehydrate,
+  getLoadError: store.getLoadError,
   reset: () => store.reset(),
 };

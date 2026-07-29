@@ -16,12 +16,20 @@ const ROLES = [
 ] as const;
 
 interface Props {
-  onSubmit: (input: PartnerInput) => void;
+  onSubmit: (input: PartnerInput) => void | Promise<void>;
   onCancel: () => void;
   initial?: Partial<PartnerFormValues>;
+  formId?: string;
+  hideActions?: boolean;
 }
 
-export function PartnerForm({ onSubmit, onCancel, initial }: Props) {
+export function PartnerForm({
+  onSubmit,
+  onCancel,
+  initial,
+  formId,
+  hideActions = false,
+}: Props) {
   const { t, locale } = useI18n();
 
   const {
@@ -49,8 +57,8 @@ export function PartnerForm({ onSubmit, onCancel, initial }: Props) {
   const ic = 'block w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
   const lc = 'block text-sm font-medium text-foreground mb-1';
 
-  const submit = (v: PartnerFormValues) => {
-    onSubmit({
+  const submit = async (v: PartnerFormValues) => {
+    await onSubmit({
       name_ar: v.name_ar,
       name_en: v.name_en || undefined,
       category: v.category,
@@ -63,7 +71,7 @@ export function PartnerForm({ onSubmit, onCancel, initial }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
           <label className={lc}>{t('partner_name_ar')} *</label>
@@ -123,14 +131,16 @@ export function PartnerForm({ onSubmit, onCancel, initial }: Props) {
         {errors.notes && <FormError>{errors.notes.message}</FormError>}
       </FormField>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
-          {t('action_cancel')}
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
-        </Button>
-      </div>
+      {!hideActions && (
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
+            {t('action_cancel')}
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (locale==='ar' ? 'جار الحفظ…' : 'Saving…') : t('action_save')}
+          </Button>
+        </div>
+      )}
 
       {Object.keys(errors).length > 0 && (
         <div className="rounded-xl bg-warning/5 border border-warning/20 p-3 text-xs text-warning" dir="rtl">

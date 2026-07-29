@@ -1,9 +1,8 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, redirect } from '@tanstack/react-router';
 import { rootRoute } from './__root';
-import { LivestockPage } from '../features/livestock/LivestockPage';
 
 export const livestockRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/livestock',
-  component: LivestockPage,
+  beforeLoad: () => { throw redirect({ to: '/operations', search: { sector: 'livestock' } }); },
 });

@@ -15,6 +15,7 @@ function makeId() {
 const store = createSupabaseStore<Asset>(TABLE, parseOne);
 
 export const assetsReady = store.ready;
+export const assetsHydration = store;
 
 export type AssetInput = Omit<Asset, 'id' | 'created_at'>;
 
@@ -36,4 +37,8 @@ export const assetsStore = {
   },
   subscribe: store.subscribe,
   reset: store.reset,
+  flush: store.flush,
+  ready: store.ready,
+  rehydrate: store.rehydrate,
+  getLoadError: store.getLoadError,
 };

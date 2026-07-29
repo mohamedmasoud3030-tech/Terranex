@@ -23,6 +23,7 @@ const ppStore = createSupabaseStore<ProjectPartner>(PROJECT_PARTNERS_TABLE, pars
 export const partnersReady = pStore.ready;
 export const partnersHydration = pStore;
 export const projectPartnersReady = ppStore.ready;
+export const projectPartnersHydration = ppStore;
 
 export type PartnerInput = Omit<Partner, 'id' | 'created_at'>;
 export type ProjectPartnerInput = Omit<ProjectPartner, 'id'>;
@@ -44,6 +45,10 @@ export const partnersStore = {
   },
   subscribe: pStore.subscribe,
   reset: pStore.reset,
+  flush: pStore.flush,
+  ready: pStore.ready,
+  rehydrate: pStore.rehydrate,
+  getLoadError: pStore.getLoadError,
 };
 
 export const projectPartnersStore = {
@@ -58,4 +63,8 @@ export const projectPartnersStore = {
     ppStore.update((all) => all.filter((pp) => pp.id !== id));
   },
   subscribe: ppStore.subscribe,
+  flush: ppStore.flush,
+  ready: ppStore.ready,
+  rehydrate: ppStore.rehydrate,
+  getLoadError: ppStore.getLoadError,
 };
