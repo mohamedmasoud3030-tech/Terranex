@@ -1,7 +1,9 @@
 -- =============================================================================
--- Terranex — P1B idempotency preflight
--- A retried request must return its cached result before validating a payload
--- that may differ from the original request body.
+-- Terranex — P1B request replay preflight
+-- =============================================================================
+-- Wraps transaction creation with an early cache lookup. The core function still
+-- owns validation, locking, writes and audit; retries can return after the target
+-- graph has changed without duplicating the full implementation here.
 -- =============================================================================
 
 create or replace function public.terranex_audit_check_idempotent(
@@ -21,6 +23,15 @@ as $fn$
   limit 1;
 $fn$;
 
+do $migration$
+begin
+  if to_regprocedure('public.record_transaction_atomic_core(uuid,jsonb,jsonb)') is null then
+    alter function public.record_transaction_atomic(uuid, jsonb, jsonb)
+      rename to record_transaction_atomic_core;
+  end if;
+end;
+$migration$;
+
 create or replace function public.record_transaction_atomic(
   p_request_id uuid,
   p_transaction jsonb,
@@ -32,110 +43,30 @@ security definer
 set search_path = public
 as $fn$
 declare
-  v_owner_id uuid;
-  v_project_id uuid;
-  v_transaction_id uuid;
-  v_payable_id uuid;
   v_cached jsonb;
-  v_result jsonb;
 begin
-  -- Idempotency is checked before payload validation. This is essential for
-  -- retries: the caller may resend a stale or reconstructed body, but the same
-  -- request_id represents the already committed operation.
   v_cached := public.terranex_audit_check_idempotent(p_request_id);
-  if v_cached is not null then return v_cached; end if;
-
-  if nullif(p_transaction->>'project_id', '') is null then
-    raise exception using errcode = '23502', message = 'null value in column "project_id" violates not-null constraint';
+  if v_cached is not null then
+    return v_cached;
   end if;
 
-  v_project_id := (p_transaction->>'project_id')::uuid;
-  select owner_id into v_owner_id
-  from public.projects
-  where id = v_project_id;
-
-  if not found then
-    raise exception using errcode = '23503', message = 'project_id does not reference an existing project';
-  end if;
-
-  perform public.terranex_assert_owner(v_owner_id);
-  perform public.terranex_lock_financial_request(v_owner_id, p_request_id);
-
-  -- Recheck while holding the owner/request advisory lock so concurrent retries
-  -- serialize and observe the first committed result.
-  v_cached := public.terranex_audit_check_idempotent(p_request_id, v_owner_id);
-  if v_cached is not null then return v_cached; end if;
-
-  insert into public.transactions (
-    id, owner_id, project_id, asset_id, partner_id, operational_event_id,
-    direction, category, description, amount, currency, fx_rate, amount_egp,
-    transaction_date, document_id, notes
-  ) values (
-    coalesce(nullif(p_transaction->>'id', '')::uuid, gen_random_uuid()),
-    v_owner_id,
-    v_project_id,
-    nullif(p_transaction->>'asset_id', '')::uuid,
-    nullif(p_transaction->>'partner_id', '')::uuid,
-    nullif(p_transaction->>'operational_event_id', '')::uuid,
-    (p_transaction->>'direction')::public.terranex_transaction_direction,
-    p_transaction->>'category',
-    p_transaction->>'description',
-    (p_transaction->>'amount')::numeric,
-    (p_transaction->>'currency')::public.terranex_currency,
-    (p_transaction->>'fx_rate')::numeric,
-    (p_transaction->>'amount_egp')::numeric,
-    (p_transaction->>'transaction_date')::date,
-    nullif(p_transaction->>'document_id', '')::uuid,
-    p_transaction->>'notes'
-  ) returning id into v_transaction_id;
-
-  if p_payable is not null and p_payable <> 'null'::jsonb then
-    insert into public.obligations (
-      id, owner_id, project_id, partner_id, direction, amount, currency,
-      amount_egp, amount_settled_egp, due_date, status,
-      source_transaction_id, document_id, notes
-    ) values (
-      coalesce(nullif(p_payable->>'id', '')::uuid, gen_random_uuid()),
-      v_owner_id,
-      coalesce(nullif(p_payable->>'project_id', '')::uuid, v_project_id),
-      nullif(p_payable->>'partner_id', '')::uuid,
-      'payable'::public.terranex_obligation_direction,
-      (p_payable->>'amount')::numeric,
-      (p_payable->>'currency')::public.terranex_currency,
-      (p_payable->>'amount_egp')::numeric,
-      0,
-      nullif(p_payable->>'due_date', '')::date,
-      'open'::public.terranex_obligation_status,
-      v_transaction_id,
-      nullif(p_payable->>'document_id', '')::uuid,
-      p_payable->>'notes'
-    ) returning id into v_payable_id;
-  end if;
-
-  v_result := jsonb_build_object(
-    'transaction_id', v_transaction_id,
-    'payable_id', v_payable_id
-  );
-
-  perform public.terranex_audit_log(
+  return public.record_transaction_atomic_core(
     p_request_id,
-    'record_transaction',
-    'transaction',
-    case when v_payable_id is null
-      then array[v_transaction_id]
-      else array[v_transaction_id, v_payable_id]
-    end,
-    jsonb_build_object('transaction', p_transaction, 'payable', p_payable),
-    v_result,
-    v_owner_id
+    p_transaction,
+    p_payable
   );
-
-  return v_result;
 end;
 $fn$;
 
-revoke execute on function public.terranex_audit_check_idempotent(uuid) from public, anon, authenticated;
-revoke execute on function public.record_transaction_atomic(uuid, jsonb, jsonb) from public, anon;
-grant execute on function public.record_transaction_atomic(uuid, jsonb, jsonb) to authenticated;
+-- Only the public wrapper is callable by the application. The renamed core is
+-- private and is reached exclusively through the wrapper.
+revoke execute on function public.record_transaction_atomic_core(uuid, jsonb, jsonb)
+  from public, anon, authenticated;
+revoke execute on function public.terranex_audit_check_idempotent(uuid)
+  from public, anon, authenticated;
+revoke execute on function public.record_transaction_atomic(uuid, jsonb, jsonb)
+  from public, anon;
+grant execute on function public.record_transaction_atomic(uuid, jsonb, jsonb)
+  to authenticated;
 
-\echo '=== P1B IDEMPOTENCY PREFLIGHT: MIGRATION COMPLETE ==='
+\echo '=== P1B REQUEST REPLAY PREFLIGHT: MIGRATION COMPLETE ==='
