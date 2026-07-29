@@ -6,14 +6,18 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
-test('operations hub uses contextual surfaces and keeps routing for final assembly', () => {
+test('operations hub uses contextual surfaces and atomic stock correction routing', () => {
   const hub = read('src/features/operations/OperationsHub.tsx');
   const context = read('src/features/operations/useOperationsContext.ts');
+  const stockWorkflow = read('src/features/events/stockAdjustmentWorkflow.ts');
   assert.match(hub, /AdaptiveFormSurface/);
   assert.match(hub, /EntityInspectorDrawer/);
   assert.match(hub, /ConfirmDialog/);
   assert.match(hub, /operationalEventsStore\.flush/);
-  assert.match(hub, /stockAdjustmentsStore\.flush/);
+  assert.match(hub, /recordStockAdjustmentAtomic/);
+  assert.doesNotMatch(hub, /stockAdjustmentsStore\.flush/);
+  assert.match(stockWorkflow, /record_stock_adjustment_atomic|P1B_ATOMIC_RPC_NAMES\[5\]/);
+  assert.match(stockWorkflow, /invokeFinanceRpc/);
   assert.match(context, /URLSearchParams|searchParams/);
   assert.doesNotMatch(hub, /router\.navigate|navigation\.ts|router\.tsx/);
 });
