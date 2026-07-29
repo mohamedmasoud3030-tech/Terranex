@@ -1,18 +1,19 @@
 import { useSyncExternalStore, useMemo } from 'react';
-import { operationalEventsStore, stockAdjustmentsStore, type OperationalEventInput, type StockAdjustmentInput } from './storage';
+import { operationalEventsStore, stockAdjustmentsStore, type OperationalEventInput } from './storage';
+import { recordStockAdjustmentAtomic } from './stockAdjustmentWorkflow';
 import type { OperationalEvent, StockAdjustment } from '../../core/types/domain';
 
 export function useOperationalEvents(assetId?: string, projectId?: string) {
   const events = useSyncExternalStore(
     operationalEventsStore.subscribe,
     operationalEventsStore.getAll,
-    () => [] as OperationalEvent[]
+    () => [] as OperationalEvent[],
   );
 
   const filtered = useMemo(() => {
     let list = events;
-    if (assetId) list = list.filter(e => e.asset_id === assetId);
-    if (projectId) list = list.filter(e => e.project_id === projectId);
+    if (assetId) list = list.filter((event) => event.asset_id === assetId);
+    if (projectId) list = list.filter((event) => event.project_id === projectId);
     return list;
   }, [events, assetId, projectId]);
 
@@ -41,21 +42,17 @@ export function useStockAdjustments(assetId?: string) {
   const adjustments = useSyncExternalStore(
     stockAdjustmentsStore.subscribe,
     stockAdjustmentsStore.getAll,
-    () => [] as StockAdjustment[]
+    () => [] as StockAdjustment[],
   );
 
-  const filtered = useMemo(() => 
-    assetId ? adjustments.filter(a => a.asset_id === assetId) : adjustments,
-    [adjustments, assetId]
+  const filtered = useMemo(
+    () => assetId ? adjustments.filter((adjustment) => adjustment.asset_id === assetId) : adjustments,
+    [adjustments, assetId],
   );
 
   return {
     adjustments: filtered,
-    createAdjustment: async (input: StockAdjustmentInput) => {
-      const created = stockAdjustmentsStore.create(input);
-      await stockAdjustmentsStore.flush();
-      return created;
-    },
+    createAdjustment: recordStockAdjustmentAtomic,
     count: filtered.length,
   };
 }
@@ -67,37 +64,33 @@ export function useStockAdjustments(assetId?: string) {
 export function computeAssetLiveQuantity(
   baseQuantity: number,
   events: OperationalEvent[],
-  adjustments: StockAdjustment[]
+  adjustments: StockAdjustment[],
 ): { quantity: number; lastEventDate?: string; eventCount: number } {
-  const eventDelta = events.reduce((sum, e) => sum + (e.quantity_delta ?? 0), 0);
-  
-  // Apply adjustments in chronological order (last adjustment wins for absolute value)
-  const sortedAdjustments = [...adjustments].sort((a, b) => 
-    a.adjustment_date.localeCompare(b.adjustment_date)
+  const eventDelta = events.reduce((sum, event) => sum + (event.quantity_delta ?? 0), 0);
+
+  const sortedAdjustments = [...adjustments].sort((a, b) =>
+    a.adjustment_date.localeCompare(b.adjustment_date),
   );
-  
+
   let quantity = baseQuantity + eventDelta;
   let lastEventDate: string | undefined;
-  
+
   if (events.length > 0) {
-    lastEventDate = events.reduce((latest, e) => 
-      e.event_date > latest ? e.event_date : latest, events[0].event_date
+    lastEventDate = events.reduce((latest, event) =>
+      event.event_date > latest ? event.event_date : latest, events[0].event_date,
     );
   }
 
-  // If there are adjustments, the most recent adjustment sets absolute quantity,
-  // then add events that occurred after that adjustment
   if (sortedAdjustments.length > 0) {
-    const lastAdj = sortedAdjustments[sortedAdjustments.length - 1];
-    quantity = lastAdj.quantity_after;
-    lastEventDate = lastAdj.adjustment_date > (lastEventDate ?? '') 
-      ? lastAdj.adjustment_date 
+    const lastAdjustment = sortedAdjustments[sortedAdjustments.length - 1];
+    quantity = lastAdjustment.quantity_after;
+    lastEventDate = lastAdjustment.adjustment_date > (lastEventDate ?? '')
+      ? lastAdjustment.adjustment_date
       : lastEventDate;
-    
-    // Add events after last adjustment
-    const postAdjEvents = events.filter(e => e.event_date > lastAdj.adjustment_date);
-    const postAdjDelta = postAdjEvents.reduce((sum, e) => sum + (e.quantity_delta ?? 0), 0);
-    quantity += postAdjDelta;
+
+    const postAdjustmentEvents = events.filter((event) => event.event_date > lastAdjustment.adjustment_date);
+    const postAdjustmentDelta = postAdjustmentEvents.reduce((sum, event) => sum + (event.quantity_delta ?? 0), 0);
+    quantity += postAdjustmentDelta;
   }
 
   return {
