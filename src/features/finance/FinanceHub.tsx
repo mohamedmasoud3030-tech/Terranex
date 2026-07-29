@@ -10,11 +10,18 @@ import { useI18n } from '../../core/i18n/context';
 import type { Obligation, Transaction } from '../../core/types/domain';
 import { ObligationForm } from '../obligations/ObligationForm';
 import { obligationsStore, type ObligationInput } from '../obligations/storage';
-import { reverseSettlement } from '../settlements/posting';
-import { recordSettlementWithAllocations, type RecordSettlementWithAllocationsInput } from '../settlements/workflow';
+import {
+  recordSettlementWithAllocationsAtomic,
+  reverseSettlementAtomic,
+  type RecordSettlementWithAllocationsInput,
+} from '../settlements/workflow';
 import type { Settlement } from '../settlements/types';
 import { TransactionForm } from '../transactions/TransactionForm';
-import { createTransactionWithOptionalPayable, updateTransactionWithLinkedPayable, type DeferredExpenseTransactionInput } from '../transactions/deferredExpenseWorkflow';
+import {
+  createTransactionWithOptionalPayableAtomic,
+  updateTransactionWithLinkedPayableAtomic,
+  type DeferredExpenseTransactionInput,
+} from '../transactions/deferredExpenseWorkflow';
 import type { FinanceHandoff } from './contracts';
 import { executeFinanceWrite, FINANCE_ATOMICITY_NOTICE } from './financeWriteBoundary';
 import { FinanceOverviewView, ObligationsWorkspace, SettlementsWorkspace, TransactionsWorkspace } from './FinanceWorkspaces';
@@ -94,7 +101,7 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
     }
   }, [context.projectId, setWorkspace, status]);
 
-  async function runWrite<T>(operation: () => T, onSuccess: (result: T) => void) {
+  async function runWrite<T>(operation: () => T | Promise<T>, onSuccess: (result: T) => void) {
     setPending(true);
     setWriteError(null);
     try {
@@ -109,7 +116,9 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
 
   function saveTransaction(input: DeferredExpenseTransactionInput, item?: Transaction) {
     return runWrite(
-      () => item ? updateTransactionWithLinkedPayable(item.id, input) : createTransactionWithOptionalPayable(input),
+      () => item
+        ? updateTransactionWithLinkedPayableAtomic(item.id, input)
+        : createTransactionWithOptionalPayableAtomic(input),
       (saved) => {
         setSurface(null);
         setInspected({ kind: 'transaction', item: saved });
@@ -135,7 +144,7 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
 
   function saveSettlement(input: RecordSettlementWithAllocationsInput) {
     return runWrite(
-      () => recordSettlementWithAllocations(input),
+      () => recordSettlementWithAllocationsAtomic(input),
       () => setSurface(null),
     );
   }
@@ -147,7 +156,7 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
       return Promise.resolve();
     }
     return runWrite(
-      () => reverseSettlement(reverseTarget.id, reverseReason),
+      () => reverseSettlementAtomic(reverseTarget.id, reverseReason),
       () => {
         setReverseTarget(null);
         setReverseReason('');
