@@ -11,10 +11,10 @@ import type { Asset, OperationalEvent } from '../../core/types/domain';
 import { computeAssetLiveQuantity } from '../events/hooks';
 import {
   operationalEventsStore,
-  stockAdjustmentsStore,
   type OperationalEventInput,
   type StockAdjustmentInput,
 } from '../events/storage';
+import { recordStockAdjustmentAtomic } from '../events/stockAdjustmentWorkflow';
 import { AssetBalancesWorkspace } from './AssetBalancesWorkspace';
 import type { OperationsHandoff } from './contracts';
 import { EventForm } from './EventForm';
@@ -147,8 +147,7 @@ export function OperationsHub({ onHandoff }: OperationsHubProps) {
     setPending(true);
     setWriteError(null);
     try {
-      stockAdjustmentsStore.create(adjustmentDraft);
-      await stockAdjustmentsStore.flush();
+      await recordStockAdjustmentAtomic(adjustmentDraft);
       setAdjustmentDraft(null);
       setSurface(null);
     } catch (error) {
