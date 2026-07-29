@@ -66,4 +66,47 @@ create or replace view public.terranex_ownership_preflight as
 
 alter view public.terranex_ownership_preflight set (security_invoker = true);
 
+-- Compatibility signatures exist before the RPC migration revokes their public
+-- execution. The replay layer replaces the one-argument lookup and removes the
+-- obsolete six-argument writer once all final helpers are installed.
+create or replace function public.terranex_audit_check_idempotent(p_request_id uuid)
+returns jsonb
+language sql
+security definer
+set search_path = public
+stable
+as $fn$
+  select result
+  from public.financial_audit_logs
+  where request_id = p_request_id
+    and (auth.uid() is null or owner_id = auth.uid())
+  order by owner_id
+  limit 1;
+$fn$;
+
+create or replace function public.terranex_audit_log(
+  p_request_id uuid,
+  p_operation text,
+  p_entity_type text,
+  p_entity_ids uuid[],
+  p_payload jsonb,
+  p_result jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  raise exception using
+    errcode = '42501',
+    message = 'legacy audit writer is disabled; use the owner-scoped RPC boundary';
+end;
+$fn$;
+
+revoke execute on function public.terranex_audit_check_idempotent(uuid)
+  from public, anon, authenticated;
+revoke execute on function public.terranex_audit_log(uuid, text, text, uuid[], jsonb, jsonb)
+  from public, anon, authenticated;
+
 \echo '=== P1B FINANCIAL AUDIT FOUNDATION: MIGRATION COMPLETE ==='
