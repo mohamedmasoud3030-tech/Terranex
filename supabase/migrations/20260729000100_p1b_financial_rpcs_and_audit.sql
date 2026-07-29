@@ -37,11 +37,26 @@ create policy financial_audit_logs_select_own
   for select
   using (owner_id = auth.uid());
 
--- No direct INSERT/UPDATE/DELETE policy is created. Successful SECURITY DEFINER
--- RPCs are the only writers, keeping the financial audit trail append-only.
+-- Explicit deny policies satisfy the shared four-operation RLS contract while
+-- preserving append-only semantics. Table mutation privileges are also revoked.
 drop policy if exists financial_audit_logs_insert_own on public.financial_audit_logs;
+create policy financial_audit_logs_insert_own
+  on public.financial_audit_logs
+  for insert
+  with check (false);
+
 drop policy if exists financial_audit_logs_update_own on public.financial_audit_logs;
+create policy financial_audit_logs_update_own
+  on public.financial_audit_logs
+  for update
+  using (false)
+  with check (false);
+
 drop policy if exists financial_audit_logs_delete_own on public.financial_audit_logs;
+create policy financial_audit_logs_delete_own
+  on public.financial_audit_logs
+  for delete
+  using (false);
 
 revoke all on public.financial_audit_logs from anon;
 revoke insert, update, delete on public.financial_audit_logs from authenticated;
