@@ -9,23 +9,41 @@
 -- Indexes: every column the client filters or orders by. `hydrate()` issues
 -- `.select('*').order(<col>, {ascending:false})` on every load, so each store's
 -- order column must be indexed or every page load is a full scan + sort.
--- Non-destructive: adds constraints and indexes only.
+-- Non-destructive & Idempotent: adds constraints and indexes safely.
 -- =============================================================================
 
 -- ─── circular FKs ────────────────────────────────────────────────────────────
 
 -- Reverse side of the transaction<->document link maintained by
 -- features/documents/transactionDocumentIntegrity.ts.
-alter table public.documents
-  add constraint documents_transaction_fk
-  foreign key (transaction_id, owner_id)
-  references public.transactions (id, owner_id) on delete restrict;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'documents_transaction_fk'
+      and conrelid = 'public.documents'::regclass
+  ) then
+    alter table public.documents
+      add constraint documents_transaction_fk
+      foreign key (transaction_id, owner_id)
+      references public.transactions (id, owner_id) on delete restrict;
+  end if;
+end $$;
 
 -- domain.ts:180 "links to OperationalEvent if auto-generated"
-alter table public.transactions
-  add constraint transactions_operational_event_fk
-  foreign key (operational_event_id, owner_id)
-  references public.operational_events (id, owner_id) on delete restrict;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'transactions_operational_event_fk'
+      and conrelid = 'public.transactions'::regclass
+  ) then
+    alter table public.transactions
+      add constraint transactions_operational_event_fk
+      foreign key (operational_event_id, owner_id)
+      references public.operational_events (id, owner_id) on delete restrict;
+  end if;
+end $$;
 
 -- ─── owner_id indexes ────────────────────────────────────────────────────────
 -- Every RLS policy filters on owner_id, so every table needs it indexed.

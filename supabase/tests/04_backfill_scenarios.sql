@@ -77,7 +77,7 @@ values ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', null, 'agriculture','مشروع 
 do $$
 declare v_result text; v_owner uuid; v_unowned bigint;
 begin
-  select public.terranex_test_backfill('projects') into v_result;
+  select public.terranex_test_backfill('projects'::text) into v_result;
   if v_result <> 'BACKFILLED' then raise exception 'FAIL backfill/C: expected BACKFILLED, got %', v_result; end if;
 
   select owner_id into v_owner from public.projects where id='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
@@ -123,7 +123,7 @@ do $$
 declare v_result text; v_owner uuid;
 begin
   begin
-    select public.terranex_test_backfill('projects') into v_result;
+    select public.terranex_test_backfill('projects'::text) into v_result;
     raise exception 'FAIL backfill/D1: migration proceeded with 2 users instead of aborting';
   exception
     when data_exception then
@@ -159,7 +159,7 @@ do $$
 declare v_result text;
 begin
   begin
-    select public.terranex_test_backfill('projects') into v_result;
+    select public.terranex_test_backfill('projects'::text) into v_result;
     raise exception 'FAIL backfill/D2: migration proceeded with 0 users';
   exception
     when data_exception then
