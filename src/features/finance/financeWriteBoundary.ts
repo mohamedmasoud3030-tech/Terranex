@@ -1,18 +1,16 @@
+import { requireClient } from '../../core/storage/supabaseClientRegistry';
+import { assetsStore } from '../assets/storage';
+import { stockAdjustmentsStore } from '../events/storage';
 import { obligationsStore } from '../obligations/storage';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
 import { settlementsStore } from '../settlements/storage';
 import { transactionsStore } from '../transactions/storage';
 
 export const FINANCE_ATOMICITY_NOTICE = {
-  ar: 'هذه العملية تستخدم دوال ذرية على الخادم عبر request_id لمنع التكرار. لا تُعرض كناجحة قبل اكتمال كل الكتابات.',
-  en: 'This operation uses server-side atomic RPCs with request_id to prevent duplication. It is not reported as successful until every write finishes.',
+  ar: 'هذه العملية تُنفذ كمعاملة ذرية واحدة على الخادم، مع request_id لمنع التكرار وإعادة مزامنة البيانات بعد النجاح.',
+  en: 'This operation runs as one server-side atomic transaction with request-id idempotency and refreshes data after success.',
 };
 
-/**
- * P1B Atomic RPC names — these are the 6 Postgres functions that replace
- * multi-request write patterns with single-transaction atomic operations.
- * Each accepts a request_id for idempotency (prevents double-click effects).
- */
 export const P1B_ATOMIC_RPC_NAMES = [
   'record_transaction_atomic',
   'update_transaction_atomic',
@@ -25,48 +23,88 @@ export const P1B_ATOMIC_RPC_NAMES = [
 export type P1BAtomicRpcName = typeof P1B_ATOMIC_RPC_NAMES[number];
 
 /**
- * Generates a deterministic request_id for idempotency. The same operation
- * with the same inputs produces the same request_id, preventing duplicate
- * financial effects from network retries or double-clicks.
+ * Creates one durable idempotency key per user action. The caller keeps the
+ * returned payload/request id when retrying the same action; a new action gets
+ * a cryptographically strong UUID instead of a collision-prone content hash.
  */
-export function generateRequestId(operation: string, ...keys: string[]): string {
-  const input = [operation, ...keys].join(':');
-  // Simple hash-based UUID generation for idempotency
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
-  return `${hex.slice(0, 8)}-${hex.slice(0, 4)}-4${hex.slice(1, 4)}-8${hex.slice(1, 4)}-${hex.padEnd(12, '0').slice(0, 12)}`;
+export function generateRequestId(_operation?: string, ..._keys: string[]): string {
+  return crypto.randomUUID();
 }
 
-const stores = [
+const financeStores = [
   transactionsStore,
   obligationsStore,
   settlementsStore,
   settlementAllocationsStore,
 ];
 
-async function rehydrateFinanceStores(): Promise<void> {
+const stockStores = [assetsStore, stockAdjustmentsStore];
+
+async function rehydrate(stores: Array<{ rehydrate(): Promise<void> }>): Promise<void> {
   await Promise.all(stores.map((store) => store.rehydrate()));
 }
 
-export async function flushFinanceWrites(): Promise<void> {
-  try {
-    await Promise.all(stores.map((store) => store.flush()));
-  } catch (error) {
-    await rehydrateFinanceStores();
-    throw error;
-  }
+export async function rehydrateFinanceStores(): Promise<void> {
+  await rehydrate(financeStores);
 }
 
-export async function executeFinanceWrite<T>(operation: () => T): Promise<T> {
+export async function rehydrateStockStores(): Promise<void> {
+  await rehydrate(stockStores);
+}
+
+function toRpcError(error: unknown, rpc: string): Error {
+  if (error instanceof Error) return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return new Error(String((error as { message: unknown }).message));
+  }
+  return new Error(`فشل تنفيذ العملية الذرية ${rpc}.`);
+}
+
+function unwrapRpcResult<T>(data: unknown): T {
+  // PostgREST may expose a scalar JSON return directly. Some injected clients
+  // and older generated wrappers expose the same scalar as a one-row array.
+  if (Array.isArray(data) && data.length === 1) return data[0] as T;
+  return data as T;
+}
+
+export interface InvokeFinanceRpcOptions {
+  refresh?: 'finance' | 'stock' | 'none';
+}
+
+/**
+ * The only production entry point for P1B financial writes.
+ *
+ * It calls `SupabaseClient.rpc()` directly, fails closed on any server error,
+ * and rehydrates the affected stores so the optimistic local multi-write path
+ * is never used to claim success.
+ */
+export async function invokeFinanceRpc<T>(
+  rpc: P1BAtomicRpcName,
+  params: Record<string, unknown>,
+  options: InvokeFinanceRpcOptions = {},
+): Promise<T> {
+  const refresh = options.refresh ?? 'finance';
+  const client = requireClient();
+  const { data, error } = await client.rpc(rpc, params);
+
+  if (error) {
+    if (refresh === 'finance') await rehydrateFinanceStores();
+    if (refresh === 'stock') await rehydrateStockStores();
+    throw toRpcError(error, rpc);
+  }
+
+  if (refresh === 'finance') await rehydrateFinanceStores();
+  if (refresh === 'stock') await rehydrateStockStores();
+  return unwrapRpcResult<T>(data);
+}
+
+/**
+ * Kept for non-P1B single-table writes. P1B transaction/settlement flows pass
+ * an async RPC operation here; no local store flush is performed afterward.
+ */
+export async function executeFinanceWrite<T>(operation: () => T | Promise<T>): Promise<T> {
   try {
-    const result = operation();
-    await flushFinanceWrites();
-    return result;
+    return await operation();
   } catch (error) {
     await rehydrateFinanceStores();
     throw error;
