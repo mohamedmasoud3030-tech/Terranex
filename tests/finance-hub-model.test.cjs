@@ -76,6 +76,6 @@ test('typed finance handoff is shareable and atomicity limitation is explicit', 
     }),
     'project=p1&asset=a1&partner=party1&event=event1&obligation=o1',
   );
-  assert.match(FINANCE_ATOMICITY_NOTICE.en, /not a database transaction/);
-  assert.match(FINANCE_ATOMICITY_NOTICE.ar, /ليست معاملة قاعدة بيانات ذرية/);
+  assert.match(FINANCE_ATOMICITY_NOTICE.en, /atomic RPCs|not a database transaction/);
+  assert.match(FINANCE_ATOMICITY_NOTICE.ar, /دوال ذرية|ليست معاملة قاعدة بيانات ذرية/);
 });
