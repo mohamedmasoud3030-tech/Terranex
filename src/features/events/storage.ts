@@ -21,6 +21,8 @@ const adjStore = createSupabaseStore<StockAdjustment>(ADJUSTMENTS_TABLE, parseAd
 
 export const operationalEventsReady = evStore.ready;
 export const stockAdjustmentsReady = adjStore.ready;
+export const operationalEventsHydration = evStore;
+export const stockAdjustmentsHydration = adjStore;
 
 export type OperationalEventInput = Omit<OperationalEvent, 'id' | 'created_at'>;
 export type StockAdjustmentInput = Omit<StockAdjustment, 'id' | 'created_at'>;

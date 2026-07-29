@@ -31,6 +31,7 @@
     "src/features/events/storage.ts",
     "src/features/finance/internalPostingProjection.ts",
     "src/features/finance/obligationQueries.ts",
+    "src/features/governance/dataHealth.ts",
     "src/features/obligations/storage.ts",
     "src/features/partners/storage.ts",
     "src/features/projects/storage.ts",
