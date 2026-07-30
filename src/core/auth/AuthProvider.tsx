@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../storage/supabaseClient';
+import { clearAllStoreCaches, rehydrateAllStores } from '../storage/supabaseStore';
 
 interface AuthContextValue {
   session: Session | null;
@@ -17,15 +18,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    let active = true;
+    let transition = 0;
+
+    async function syncIdentity(nextSession: Session | null) {
+      const currentTransition = ++transition;
+      setLoading(true);
+
+      if (nextSession) {
+        // Stores are created before AuthProvider mounts, so their first anonymous
+        // hydration is correctly denied by RLS. Reload them with the authenticated
+        // identity before exposing the workspace to avoid a stale empty cache.
+        await rehydrateAllStores();
+      } else {
+        // Never leave the previous identity's in-memory rows visible after sign-out
+        // or while the login screen is shown.
+        clearAllStoreCaches();
+      }
+
+      if (!active || currentTransition !== transition) return;
       setSession(nextSession);
       setLoading(false);
+    }
+
+    void supabase.auth.getSession().then(({ data }) => {
+      void syncIdentity(data.session);
     });
-    return () => subscription.subscription.unsubscribe();
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void syncIdentity(nextSession);
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
   async function signInWithPassword(email: string, password: string) {
