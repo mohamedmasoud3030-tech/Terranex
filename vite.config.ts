@@ -9,7 +9,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'tanstack': ['@tanstack/react-router', '@tanstack/react-query', '@tanstack/react-table'],
+          'tanstack': ['@tanstack/react-router', '@tanstack/react-query'],
           'charts': ['recharts'],
           'react-pdf': ['@react-pdf/renderer'],
           'forms': ['react-hook-form', 'zod'],
