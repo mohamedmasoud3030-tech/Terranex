@@ -31,7 +31,7 @@ export interface RecordStockAdjustmentAtomicPayload {
 export function buildStockAdjustmentAtomicPayload(
   input: StockAdjustmentInput,
   adjustmentId: string,
-  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[5]),
+  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[5], adjustmentId),
 ): RecordStockAdjustmentAtomicPayload {
   return {
     p_request_id: requestId,

@@ -41,7 +41,7 @@ export function buildRecordSettlementAtomicPayload(
   settlementId: string,
   input: RecordSettlementWithAllocationsInput,
   allocationIds: string[],
-  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[3]),
+  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[3], settlementId),
 ): RecordSettlementAtomicPayload {
   const amountEgp = input.amount * input.fx_rate;
   return {
@@ -70,7 +70,7 @@ export function buildRecordSettlementAtomicPayload(
 export function buildReverseSettlementAtomicPayload(
   settlementId: string,
   reason: string,
-  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[4]),
+  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[4], settlementId, reason),
 ): ReverseSettlementAtomicPayload {
   return {
     p_request_id: requestId,

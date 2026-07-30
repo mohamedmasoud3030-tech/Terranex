@@ -99,6 +99,15 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   //   foreign, new  → load latest stored rate (only if user hasn't manually edited it)
   //   foreign, same → keep existing value to respect manual edits
   const prevCurrencyRef = React.useRef(currency);
+
+  /**
+   * Stable id for this form instance, mixed into the atomic write's idempotency
+   * key. It survives re-renders, so double-clicking "save" reuses one request
+   * id and the server returns the cached result instead of writing twice. A new
+   * form (a deliberately separate entry) gets a new id, so two identical
+   * transactions entered on purpose are still recorded separately.
+   */
+  const draftIdRef = React.useRef<string>(crypto.randomUUID());
   React.useEffect(() => {
     const prevCurrency = prevCurrencyRef.current;
     prevCurrencyRef.current = currency;
@@ -135,6 +144,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       transaction_date: values.transaction_date,
       description: values.description || undefined,
       notes: values.notes || undefined,
+      draft_id: draftIdRef.current,
       create_payable_obligation: createPayableObligation || undefined,
       payable_due_date: createPayableObligation ? payableDueDate : undefined,
     });

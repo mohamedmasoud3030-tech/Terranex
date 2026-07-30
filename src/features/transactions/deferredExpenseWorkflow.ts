@@ -15,6 +15,16 @@ import {
 export interface DeferredExpenseTransactionInput extends TransactionInput {
   create_payable_obligation?: boolean;
   payable_due_date?: string;
+  /**
+   * Stable identifier for the form instance that produced this input.
+   *
+   * Supplied by the UI (see `TransactionForm`), it is mixed into the
+   * idempotency key so two clicks on the same open form collapse to one
+   * request, while two deliberately separate entries — even with identical
+   * amounts, partner and date — each carry their own draft id and are recorded
+   * as two distinct transactions.
+   */
+  draft_id?: string;
 }
 
 export interface RecordTransactionAtomicPayload {
@@ -37,7 +47,11 @@ export function buildRecordTransactionAtomicPayload(
   input: DeferredExpenseTransactionInput,
   transactionId: string,
   payableId?: string,
-  requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[0]),
+  requestId = generateRequestId(
+    P1B_ATOMIC_RPC_NAMES[0],
+    input.draft_id ?? '',
+    transactionId,
+  ),
 ): RecordTransactionAtomicPayload {
   return {
     p_request_id: requestId,
@@ -173,7 +187,7 @@ export async function updateTransactionWithLinkedPayableAtomic(
   const result = await invokeFinanceRpc<UpdateTransactionAtomicResult>(
     P1B_ATOMIC_RPC_NAMES[1],
     {
-      p_request_id: generateRequestId(P1B_ATOMIC_RPC_NAMES[1]),
+      p_request_id: generateRequestId(P1B_ATOMIC_RPC_NAMES[1], id, JSON.stringify(input)),
       p_transaction_id: id,
       p_updates: toTransactionInput(nextTransaction),
       p_payable_updates: payableUpdates,
@@ -187,7 +201,7 @@ export async function deleteTransactionAtomic(id: string): Promise<void> {
   await invokeFinanceRpc(
     P1B_ATOMIC_RPC_NAMES[2],
     {
-      p_request_id: generateRequestId(P1B_ATOMIC_RPC_NAMES[2]),
+      p_request_id: generateRequestId(P1B_ATOMIC_RPC_NAMES[2], id),
       p_transaction_id: id,
     },
   );

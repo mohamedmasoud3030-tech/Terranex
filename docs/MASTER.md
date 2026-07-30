@@ -253,8 +253,8 @@ build             ✅ success
 - **G5:** ExchangeRate master UI — FX يُدخل يدوياً حالياً
 - **i18n:** باقي الصفحات (Agriculture, Livestock, etc.) ما زالت hard-coded
 
-### Dead Dependency متبقي
-- `@tanstack/react-table` — مُستخدم فعلاً في `ObligationsTable.tsx` + `RealEstateTable.tsx` ← **ليس dead**، توثيق الـ audit خاطئ
+### Dead Dependency — تمت المعالجة ✅
+- `@tanstack/react-table` — **أُزيل** (2026-07-30). كان مستخدماً حصرياً في `ObligationsTable.tsx` و `RealEstateTable.tsx`، وقد حُذف المكوّنان ضمن تنظيف الكود الميت بعد الانتقال إلى معمارية `Workspaces`. أُزيلت الحزمة من `package.json` ومن `manualChunks` في `vite.config.ts`، وتم التأكد من خلو `src/` من أي استيراد لها.
 
 ---
 
