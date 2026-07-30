@@ -31,9 +31,16 @@ export function TopBar() {
   return (
     <header className="surface-glass sticky top-0 z-30 border-b px-4 py-3 lg:px-8">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground">{t('env_badge')}</p>
-          <p className="mt-1 text-sm font-bold text-foreground">{t('app_name')} — {t('app_tagline')}</p>
+        <div className="flex items-center gap-3">
+          <img
+            src="/icons/icon-192.png"
+            alt=""
+            className="h-11 w-11 rounded-xl object-cover shadow-sm"
+          />
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t('env_badge')}</p>
+            <p className="mt-1 text-sm font-bold text-foreground">{t('app_name')} — {t('app_tagline')}</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">

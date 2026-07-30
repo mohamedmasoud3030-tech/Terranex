@@ -1,10 +1,13 @@
-const CACHE_NAME = 'terranex-shell-v1';
+const CACHE_NAME = 'terranex-shell-v2';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
-  '/favicon.svg',
+  '/favicon-48.png',
+  '/favicon-32.png',
+  '/favicon-16.png',
   '/icons/icon-192.png',
-  '/icons/icon-512.svg',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
 ];
 
 self.addEventListener('install', (event) => {

@@ -23,6 +23,11 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="mb-6 text-center">
+          <img
+            src="/brand/terranex-logo.jpeg"
+            alt="Terranex — للاستثمار الحيواني والتنمية الزراعية"
+            className="mx-auto mb-4 w-44 rounded-xl"
+          />
           <h1 className="text-xl font-bold text-foreground">Terranex</h1>
           <p className="mt-1 text-sm text-muted-foreground">تسجيل الدخول للوصول إلى النظام</p>
         </div>
