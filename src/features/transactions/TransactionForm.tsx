@@ -91,6 +91,14 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
   const [createPayableObligation, setCreatePayableObligation] = useState(false);
   const [payableDueDate, setPayableDueDate] = useState('');
+  const prevDirectionRef = React.useRef(direction);
+  React.useEffect(() => {
+    if (prevDirectionRef.current !== direction) {
+      setCreatePayableObligation(false);
+      setPayableDueDate('');
+    }
+    prevDirectionRef.current = direction;
+  }, [direction]);
 
   const availableDocuments = documents.filter((d) => !d.transaction_id || d.transaction_id === initial?.id);
 
@@ -125,8 +133,8 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   }, [currency, setValue]);
 
   const submit = async (values: TransactionFormValues) => {
-    if (direction === 'expense' && createPayableObligation && !payableDueDate) {
-      alert(locale === 'ar' ? 'أدخل تاريخ استحقاق الذمة الدائنة' : 'Enter payable due date');
+    if ((direction === 'expense' || direction === 'income') && createPayableObligation && !payableDueDate) {
+      alert(locale === 'ar' ? 'أدخل تاريخ الاستحقاق' : 'Enter the due date');
       return;
     }
     await onSubmit({
@@ -268,21 +276,27 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
         </FormField>
       </div>
 
-      {direction === 'expense' && (
+      {(direction === 'expense' || direction === 'income') && (
         <div className="rounded-xl border border-border bg-muted/30 p-3">
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={createPayableObligation} onChange={e => setCreatePayableObligation(e.target.checked)} className="mt-1" />
             <span className="text-sm">
-              <b>{locale==='ar' ? 'مصروف آجل لم يُسدد بعد' : 'Deferred expense'}</b>
+              <b>
+                {direction === 'expense'
+                  ? (locale==='ar' ? 'مصروف آجل لم يُسدد بعد' : 'Deferred expense')
+                  : (locale==='ar' ? 'إيراد آجل لم يُحصّل بعد' : 'Deferred income')}
+              </b>
               <br />
               <span className="text-xs text-muted-foreground">
-                {locale==='ar' ? 'سيُنشئ ذمة دائنة تلقائياً' : 'Will auto-create a payable obligation'}
+                {direction === 'expense'
+                  ? (locale==='ar' ? 'سيُنشئ ذمة دائنة تلقائياً (نحن مدينون)' : 'Will auto-create a payable obligation (we owe)')
+                  : (locale==='ar' ? 'سيُنشئ ذمة مدينة تلقائياً (هم مدينون لنا)' : 'Will auto-create a receivable obligation (they owe us)')}
               </span>
             </span>
           </label>
           {createPayableObligation && (
             <div className="mt-3">
-              <FormLabel>تاريخ استحقاق الذمة *</FormLabel>
+              <FormLabel>تاريخ الاستحقاق *</FormLabel>
               <input
                 type="date"
                 value={payableDueDate}
@@ -290,6 +304,11 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 mt-1"
                 required={createPayableObligation}
               />
+              {!watch('partner_id') && (
+                <p className="mt-2 text-xs text-warning">
+                  {locale==='ar' ? 'اختر الطرف/الشريك أعلاه قبل الحفظ — مطلوب للمعاملة الآجلة.' : 'Select a partner above before saving — required for a deferred entry.'}
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -62,10 +62,21 @@ test('deferred expense workflow creates payable obligation linked to transaction
   assert.equal(documentById('document-1').transaction_id, created.id);
 });
 
+test('deferred income workflow creates receivable obligation linked to transaction', async () => {
+  await reset();
+  const created = createTransactionWithOptionalPayable(input({
+    direction: 'income', category: 'sale', create_payable_obligation: true, payable_due_date: '2026-02-15',
+  }));
+  const obligations = obligationsStore.getAll();
+  assert.equal(obligations.length, 1);
+  assert.equal(obligations[0].direction, 'receivable');
+  assert.equal(obligations[0].amount_egp, 250);
+  assert.equal(obligations[0].source_transaction_id, created.id);
+});
+
 test('deferred expense validation rejects invalid requests before persistence', async () => {
   await reset();
-  assert.throws(() => createTransactionWithOptionalPayable(input({ direction: 'income', create_payable_obligation: true, payable_due_date: '2026-02-15' })), /مصروف/);
-  assert.throws(() => createTransactionWithOptionalPayable(input({ create_payable_obligation: true })), /تاريخ استحقاق/);
+  assert.throws(() => createTransactionWithOptionalPayable(input({ create_payable_obligation: true })), /تاريخ الاستحقاق/);
   assert.equal(transactionsStore.getAll().length, 0);
   assert.equal(obligationsStore.getAll().length, 0);
   assert.equal(documentById('document-1').transaction_id, undefined);
@@ -77,6 +88,14 @@ test('transaction storage remains obligation-agnostic when called directly', asy
   assert.equal(transactionsStore.getAll().length, 1);
   assert.equal(obligationsStore.getAll().length, 0);
   assert.equal(documentById('document-1').transaction_id, created.id);
+});
+
+test('deferred obligation rejects a transaction direction other than expense or income', async () => {
+  await reset();
+  assert.throws(
+    () => createTransactionWithOptionalPayable(input({ direction: 'transfer', create_payable_obligation: true, payable_due_date: '2026-02-15' })),
+    /مصروف أو إيراد/,
+  );
 });
 
 test('updating deferred expense keeps linked payable amount and invoice synchronized', async () => {
@@ -112,4 +131,31 @@ test('deferred expense state does not bleed between tests', async () => {
   assert.equal(transactionsStore.getAll().length, 0);
   assert.equal(obligationsStore.getAll().length, 0);
   assert.equal(documentById('document-1').transaction_id, undefined);
+});
+
+test('updating deferred income keeps linked receivable amount synchronized', async () => {
+  await reset();
+  const created = createTransactionWithOptionalPayable(input({
+    direction: 'income', category: 'sale', create_payable_obligation: true, payable_due_date: '2026-02-15',
+  }));
+  const updated = updateTransactionWithLinkedPayable(created.id, { amount: 600 });
+  const receivable = obligationByTransactionId(created.id);
+
+  assert.equal(updated.amount_egp, 600);
+  assert.equal(receivable.direction, 'receivable');
+  assert.equal(receivable.amount_egp, 600);
+});
+
+test('cannot flip a transaction direction across an already-linked obligation', async () => {
+  await reset();
+  const expenseTxn = createTransactionWithOptionalPayable(input({ create_payable_obligation: true, payable_due_date: '2026-02-15' }));
+  assert.throws(() => updateTransactionWithLinkedPayable(expenseTxn.id, { direction: 'income' }), /ذمة دائنة/);
+});
+
+test('cannot flip an income transaction to expense across an already-linked receivable', async () => {
+  await reset();
+  const incomeTxn = createTransactionWithOptionalPayable(input({
+    direction: 'income', category: 'sale', create_payable_obligation: true, payable_due_date: '2026-02-15',
+  }));
+  assert.throws(() => updateTransactionWithLinkedPayable(incomeTxn.id, { direction: 'expense' }), /ذمة مدينة/);
 });

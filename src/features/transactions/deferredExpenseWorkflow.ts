@@ -1,4 +1,4 @@
-import type { Obligation, Transaction } from '../../core/types/domain';
+import type { Obligation, Transaction, TransactionDirection } from '../../core/types/domain';
 import { obligationsStore } from '../obligations/storage';
 import {
   generateRequestId,
@@ -76,6 +76,7 @@ export function buildRecordTransactionAtomicPayload(
       id: payableId,
       project_id: input.project_id,
       partner_id: input.partner_id,
+      direction: input.direction === 'income' ? 'receivable' : 'payable',
       amount: input.amount,
       currency: input.currency,
       amount_egp: input.amount_egp,
@@ -88,30 +89,31 @@ export function buildRecordTransactionAtomicPayload(
 
 function requireDeferredExpense(input: DeferredExpenseTransactionInput) {
   if (!input.create_payable_obligation) return;
-  if (input.direction !== 'expense') {
-    throw new Error('لا يمكن إنشاء ذمة دائنة تلقائياً إلا من معاملة مصروف.');
+  if (input.direction !== 'expense' && input.direction !== 'income') {
+    throw new Error('لا يمكن إنشاء ذمة تلقائياً إلا من معاملة مصروف أو إيراد.');
   }
   if (!input.partner_id?.trim()) {
-    throw new Error('يجب ربط المصروف الآجل بطرف أو شريك.');
+    throw new Error('يجب ربط المعاملة الآجلة بطرف أو شريك.');
   }
   if (!input.payable_due_date?.trim()) {
-    throw new Error('تاريخ استحقاق الذمة الدائنة مطلوب للمصروف الآجل.');
+    throw new Error('تاريخ الاستحقاق مطلوب للمعاملة الآجلة.');
   }
 }
 
 function getLinkedPayable(transactionId: string): Obligation | undefined {
-  const linkedPayables = obligationsStore.getAll().filter(
-    (obligation) => obligation.source_transaction_id === transactionId && obligation.direction === 'payable',
+  const linked = obligationsStore.getAll().filter(
+    (obligation) => obligation.source_transaction_id === transactionId
+      && (obligation.direction === 'payable' || obligation.direction === 'receivable'),
   );
-  if (linkedPayables.length > 1) {
-    throw new Error('توجد أكثر من ذمة دائنة مرتبطة بنفس المعاملة. راجع البيانات قبل المتابعة.');
+  if (linked.length > 1) {
+    throw new Error('توجد أكثر من ذمة مرتبطة بنفس المعاملة. راجع البيانات قبل المتابعة.');
   }
-  return linkedPayables[0];
+  return linked[0];
 }
 
 function buildPayableFields(transaction: Transaction) {
   if (!transaction.partner_id) {
-    throw new Error('يجب أن تظل معاملة المصروف الآجل مرتبطة بطرف أو شريك.');
+    throw new Error('يجب أن تظل المعاملة الآجلة مرتبطة بطرف أو شريك.');
   }
   return {
     project_id: transaction.project_id,
@@ -125,11 +127,16 @@ function buildPayableFields(transaction: Transaction) {
 }
 
 function buildPayableUpdate(transaction: Transaction, payable: Obligation) {
-  if (transaction.direction !== 'expense') {
-    throw new Error('لا يمكن تحويل معاملة مرتبطة بذمة دائنة إلى إيراد.');
+  const expectedDirection: TransactionDirection = payable.direction === 'receivable' ? 'income' : 'expense';
+  if (transaction.direction !== expectedDirection) {
+    throw new Error(
+      payable.direction === 'receivable'
+        ? 'لا يمكن تحويل معاملة مرتبطة بذمة مدينة إلى مصروف.'
+        : 'لا يمكن تحويل معاملة مرتبطة بذمة دائنة إلى إيراد.',
+    );
   }
   if (payable.amount_settled_egp > transaction.amount_egp) {
-    throw new Error('لا يمكن تخفيض قيمة المصروف الآجل عن المبلغ المسدد بالفعل.');
+    throw new Error('لا يمكن تخفيض قيمة المعاملة الآجلة عن المبلغ المسدد بالفعل.');
   }
   if (payable.status === 'written_off' || payable.status === 'disputed') {
     throw new Error('لا يمكن تعديل معاملة مرتبطة بذمة مشطوبة أو متنازع عليها.');
@@ -227,7 +234,7 @@ export function createTransactionWithOptionalPayable(input: DeferredExpenseTrans
   try {
     obligationsStore.create({
       ...buildPayableFields(transaction),
-      direction: 'payable',
+      direction: input.direction === 'income' ? 'receivable' : 'payable',
       due_date: payable_due_date!.trim(),
       status: 'open',
       source_transaction_id: transaction.id,
