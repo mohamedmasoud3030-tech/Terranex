@@ -62,6 +62,28 @@ test('one settlement allocates across obligations and reversal removes all activ
   assert.equal(obligationsStore.getById(second.id).amount_settled_egp, 0);
 });
 
+test('a settlement with a fractional exchange rate fully settles an obligation despite float rounding', async () => {
+  await reset();
+  // 1234.56 * 47.35 = 58456.415999999997... unrounded — obligation.amount_egp below is the
+  // clean two-decimal value it would have been created with. If settlement amount_egp and the
+  // single allocation are not rounded to the same nearest-piaster value, the obligation is left
+  // 'partial' forever even though it was paid in full. Regression for the profitability engine.
+  const target = obligation({ amount: 1234.56, amount_egp: 58456.42 });
+
+  const settlement = recordSettlementWithAllocations({
+    amount: 1234.56,
+    currency: 'USD',
+    fx_rate: 47.35,
+    settlement_date: '2026-06-01',
+    payment_method: 'bank_transfer',
+    allocations: [{ obligation_id: target.id, allocated_amount_egp: 58456.42 }],
+  });
+
+  assert.equal(settlement.amount_egp, 58456.42);
+  assert.equal(obligationsStore.getById(target.id).amount_settled_egp, 58456.42);
+  assert.equal(obligationsStore.getById(target.id).status, 'settled');
+});
+
 test('allocation plan must fully allocate payment and preserve common project and party context', async () => {
   await reset();
   const first = obligation();

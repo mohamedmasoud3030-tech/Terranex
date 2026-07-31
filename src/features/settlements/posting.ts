@@ -1,3 +1,4 @@
+import { roundEgp, toEgp } from '../../core/lib/format';
 import { isFiniteNumber } from '../../core/lib/validation';
 import type { Document, Obligation } from '../../core/types/domain';
 import { documentsStore } from '../documents/storage';
@@ -43,7 +44,7 @@ export function buildRecordSettlementAtomicPayload(
   allocationIds: string[],
   requestId = generateRequestId(P1B_ATOMIC_RPC_NAMES[3], settlementId),
 ): RecordSettlementAtomicPayload {
-  const amountEgp = input.amount * input.fx_rate;
+  const amountEgp = toEgp(input.amount, input.fx_rate);
   return {
     p_request_id: requestId,
     p_settlement: {
@@ -128,7 +129,7 @@ function normalizeAllocationPlans(plans: SettlementAllocationPlan[]): Settlement
     }
     if (seen.has(obligationId)) throw new Error('لا يمكن تكرار الالتزام داخل توزيع التسوية نفسه.');
     seen.add(obligationId);
-    return { obligation_id: obligationId, allocated_amount_egp: plan.allocated_amount_egp };
+    return { obligation_id: obligationId, allocated_amount_egp: roundEgp(plan.allocated_amount_egp) };
   });
 }
 

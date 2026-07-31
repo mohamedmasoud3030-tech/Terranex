@@ -46,6 +46,17 @@ export function toEgp(amount: number, fxRate: number): number {
 }
 
 /**
+ * Round an already-computed EGP value to the nearest piaster.
+ * Use for values entered or derived directly in EGP (e.g. settlement
+ * allocation splits) so they compare exactly against server-side
+ * `numeric` equality checks — never leave raw float arithmetic unrounded
+ * on a value that will be summed or equality-compared later.
+ */
+export function roundEgp(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
  * Sum an array of EGP amounts.
  */
 export function sumEgp(amounts: number[]): number {

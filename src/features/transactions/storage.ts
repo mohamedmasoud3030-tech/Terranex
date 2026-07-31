@@ -1,4 +1,5 @@
 import { guardTransactionDeletion } from '../../core/lib/deletionGuards';
+import { toEgp } from '../../core/lib/format';
 import { validateTransactionReferences } from '../../core/lib/referenceValidation';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
@@ -48,7 +49,7 @@ export function normalizeTransactionInput(input: TransactionInput, transactionId
     partner_id: input.partner_id?.trim(),
     document_id: input.document_id?.trim(),
     fx_rate: fxRate,
-    amount_egp: input.amount * fxRate,
+    amount_egp: toEgp(input.amount, fxRate),
   };
 }
 

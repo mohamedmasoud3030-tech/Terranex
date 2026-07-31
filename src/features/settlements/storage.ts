@@ -1,3 +1,4 @@
+import { toEgp } from '../../core/lib/format';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
@@ -46,7 +47,7 @@ export function validateSettlementInput(input: SettlementInput) {
   if (!date) throw new Error('تاريخ التسوية مطلوب.');
   if (!input.payment_method) throw new Error('طريقة الدفع مطلوبة.');
   if ((input.origin ?? 'user') === 'user' && input.payment_method === 'unknown') throw new Error('اختر طريقة دفع صالحة.');
-  const amountEgp = input.amount * input.fx_rate;
+  const amountEgp = toEgp(input.amount, input.fx_rate);
   if (!isFiniteNumber(amountEgp) || amountEgp <= 0) throw new Error('القيمة المحولة للتسوية غير صالحة.');
   return {
     ...input,

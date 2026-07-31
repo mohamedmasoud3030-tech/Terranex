@@ -90,6 +90,15 @@ test('foreign transactions recompute stored EGP amount from amount and exchange 
   assert.equal(created.amount_egp, 500);
 });
 
+test('foreign transactions with a fractional exchange rate round amount_egp to the nearest piaster', async () => {
+  await reset();
+  // 1234.56 * 47.35 = 58456.415999999997... in raw IEEE754 float — must round to 58456.42,
+  // not the unrounded value, or downstream settlement equality checks against Postgres
+  // `numeric` will never match. See core/lib/format.ts:toEgp.
+  const created = transactionsStore.create(input({ amount: 1234.56, currency: 'USD', fx_rate: 47.35, amount_egp: 1 }));
+  assert.equal(created.amount_egp, 58456.42);
+});
+
 test('updates normalize values and move the reverse document link atomically', async () => {
   await reset();
   const created = transactionsStore.create(input({ amount: 10, currency: 'USD', fx_rate: 50, amount_egp: 1 }));
