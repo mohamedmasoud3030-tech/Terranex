@@ -109,7 +109,38 @@ function dateInputs() {
   ];
 }
 
-test('isoDate rejects impossible calendar dates and accepts real dates in every affected schema', () => {
+test('assetSchema defaults fx_rate to 1 when omitted, and accepts an explicit positive rate', () => {
+  const base = {
+    project_id: 'p1',
+    sector_id: 'agriculture',
+    type: 'farm',
+    name_ar: 'مزرعة',
+    name_en: '',
+    acquisition_date: '2026-01-01',
+    acquisition_cost: 100,
+    acquisition_currency: 'USD',
+    acquisition_cost_egp: 4900,
+    current_value_egp: undefined,
+    status: 'owned',
+    quantity: undefined,
+    unit: '',
+    notes: '',
+  };
+
+  const withoutRate = assetSchema.safeParse(base);
+  assert.equal(withoutRate.success, true);
+  assert.equal(withoutRate.data.fx_rate, 1);
+
+  const withRate = assetSchema.safeParse({ ...base, fx_rate: 49 });
+  assert.equal(withRate.success, true);
+  assert.equal(withRate.data.fx_rate, 49);
+
+  const zeroRate = assetSchema.safeParse({ ...base, fx_rate: 0 });
+  assert.equal(zeroRate.success, false);
+
+  const negativeRate = assetSchema.safeParse({ ...base, fx_rate: -1 });
+  assert.equal(negativeRate.success, false);
+});
   for (const { schema, field, base } of dateInputs()) {
     for (const invalid of INVALID_DATES) {
       const result = schema.safeParse({ ...base, [field]: invalid });

@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../../components/ui/Button';
 import { FormError, FormField, FormLabel } from '../../components/ui/FormControls';
 import { assetSchema, type AssetFormValues } from '../../core/lib/validation';
+import { getLatestFxRate } from '../settings/ExchangeRateSection';
 import type { Asset, AssetStatus, AssetType, Currency, Project } from '../../core/types/domain';
 import type { AssetInput } from './storage';
 
@@ -81,6 +82,7 @@ export function AssetForm({
       acquisition_date: initial?.acquisition_date ?? new Date().toISOString().slice(0, 10),
       acquisition_cost: initial?.acquisition_cost ?? 0,
       acquisition_currency: initial?.acquisition_currency ?? selectedProject?.base_currency ?? 'EGP',
+      fx_rate: 1,
       acquisition_cost_egp: initial?.acquisition_cost_egp ?? 0,
       current_value_egp: initial?.current_value_egp,
       status: initial?.status ?? 'owned',
@@ -96,6 +98,41 @@ export function AssetForm({
     const project = projects.find((item) => item.id === projectId);
     if (project) setValue('sector_id', project.sector_id, { shouldValidate: true });
   }, [projectId, projects, setValue]);
+
+  // auto-fill fx_rate when currency changes:
+  //   EGP           → force 1 (always)
+  //   foreign, new  → load latest stored rate (only if user hasn't manually edited it)
+  //   foreign, same → keep existing value to respect manual edits
+  const currency = watch('acquisition_currency');
+  const prevCurrencyRef = useRef(currency);
+  useEffect(() => {
+    const prevCurrency = prevCurrencyRef.current;
+    prevCurrencyRef.current = currency;
+    if (currency === 'EGP') {
+      setValue('fx_rate', 1, { shouldValidate: true });
+      return;
+    }
+    if (currency !== prevCurrency) {
+      const stored = getLatestFxRate(currency as Currency);
+      if (stored !== null) {
+        setValue('fx_rate', stored, { shouldValidate: true });
+      }
+    }
+  }, [currency, setValue]);
+
+  // acquisition_cost_egp follows acquisition_cost × fx_rate automatically,
+  // unless the user explicitly opts into manual entry (e.g. a negotiated
+  // price that doesn't match the day's rate). This mirrors TransactionForm's
+  // fx_rate pattern instead of leaving the two currency fields disconnected.
+  const [manualEgpCost, setManualEgpCost] = useState(Boolean(initial?.id));
+  const acquisitionCost = watch('acquisition_cost') || 0;
+  const fxRate = watch('fx_rate') || 1;
+  const effectiveFx = currency === 'EGP' ? 1 : fxRate;
+  useEffect(() => {
+    if (manualEgpCost) return;
+    const computed = Math.round(Number(acquisitionCost) * effectiveFx * 100) / 100;
+    setValue('acquisition_cost_egp', computed, { shouldValidate: false });
+  }, [acquisitionCost, effectiveFx, manualEgpCost, setValue]);
 
   const submit = async (values: AssetFormValues) => {
     await onSubmit({
@@ -200,13 +237,49 @@ export function AssetForm({
         <FormField>
           <FormLabel>{label('العملة', 'Currency')}</FormLabel>
           <select {...register('acquisition_currency')} className={inputClass}>
-            {CURRENCIES.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
+            {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           {errors.acquisition_currency && <FormError>{errors.acquisition_currency.message}</FormError>}
         </FormField>
+        {currency !== 'EGP' && (
+          <FormField>
+            <FormLabel>{label('سعر الصرف', 'Exchange rate')}</FormLabel>
+            <input type="number" min="0" step="0.0001" {...register('fx_rate')} className={inputClass} dir="ltr" />
+            {errors.fx_rate && <FormError>{errors.fx_rate.message}</FormError>}
+          </FormField>
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormLabel>{label('التكلفة بالجنيه', 'Cost in EGP')}</FormLabel>
-          <input type="number" min="0" step="0.01" {...register('acquisition_cost_egp')} className={inputClass} />
+          <div className="flex items-center justify-between">
+            <FormLabel>{label('التكلفة بالجنيه', 'Cost in EGP')}</FormLabel>
+            {currency !== 'EGP' && (
+              <button
+                type="button"
+                onClick={() => setManualEgpCost((current) => !current)}
+                className="text-xs text-primary hover:underline"
+              >
+                {manualEgpCost
+                  ? label('احتساب تلقائي', 'Auto-calculate')
+                  : label('تعديل يدوي', 'Edit manually')}
+              </button>
+            )}
+          </div>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            {...register('acquisition_cost_egp')}
+            className={inputClass}
+            readOnly={currency !== 'EGP' && !manualEgpCost}
+            dir="ltr"
+          />
+          {currency !== 'EGP' && !manualEgpCost && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {label('محتسبة تلقائياً من التكلفة × سعر الصرف', 'Auto-calculated from cost × exchange rate')}
+            </p>
+          )}
           {errors.acquisition_cost_egp && <FormError>{errors.acquisition_cost_egp.message}</FormError>}
         </FormField>
       </div>

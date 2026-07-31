@@ -126,6 +126,7 @@ export const assetSchema = z.object({
   acquisition_date: isoDate,
   acquisition_cost: z.coerce.number().finite().min(0, 'تكلفة الاقتناء لا يمكن أن تكون سالبة'),
   acquisition_currency: z.enum(currencyEnum),
+  fx_rate: z.coerce.number().finite().positive('سعر الصرف يجب أن يكون أكبر من صفر').default(1),
   acquisition_cost_egp: z.coerce.number().finite().min(0, 'التكلفة بالجنيه لا يمكن أن تكون سالبة'),
   current_value_egp: optionalNonNegativeNumber,
   status: z.enum(assetStatusEnum),
