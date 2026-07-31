@@ -14,6 +14,7 @@
     "src/core/lib/documentFileValidation.ts",
     "src/core/lib/profitability.ts",
     "src/core/lib/referenceValidation.ts",
+    "src/core/lib/serverErrorTranslator.ts",
     "src/core/lib/validation.ts",
     "src/core/lib/xlsx.ts",
     "src/core/routing/hubSearch.ts",

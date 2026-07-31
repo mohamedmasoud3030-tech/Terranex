@@ -43,12 +43,12 @@ export function DocumentForm({
     event.preventDefault();
     setError('');
     try {
-      if (!title.trim()) throw new Error('Document title is required.');
-      if (!projectId) throw new Error('A linked project is required.');
-      if (!file) throw new Error('Choose a document file.');
+      if (!title.trim()) throw new Error('عنوان المستند مطلوب.');
+      if (!projectId) throw new Error('يجب ربط المستند بمشروع.');
+      if (!file) throw new Error('اختر ملف المستند.');
       validateDocumentUpload(file);
       if (issueDate && expiryDate && expiryDate < issueDate) {
-        throw new Error('Expiry date must be on or after issue date.');
+        throw new Error('تاريخ الانتهاء يجب أن يكون في نفس يوم الإصدار أو بعده.');
       }
       await onSubmit({
         input: {
@@ -64,7 +64,7 @@ export function DocumentForm({
         file,
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save the document.');
+      setError(cause instanceof Error ? cause.message : 'تعذر حفظ المستند.');
     }
   }
 

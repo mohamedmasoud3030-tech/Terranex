@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { FormError, FormField, FormLabel, SelectInput, TextInput } from '../../components/ui/FormControls';
 import { EmptyState } from '../../components/ui/States';
 import { formatEgp } from '../../core/lib/profitability';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import { useObligations } from '../obligations/hooks';
 import {
   buildSettlementAllocationFormPlans,
@@ -83,7 +84,7 @@ export function SettlementAllocationPage() {
       setSuccess(`تم تسجيل السند ${settlement.reference_number ?? settlement.id} وتوزيعه على ${plans.length} التزامات.`);
     } catch (submissionError) {
       setSuccess(null);
-      setError(submissionError instanceof Error ? submissionError.message : 'تعذر تسجيل الدفعة الموزعة.');
+      setError(translateServerError(submissionError));
     } finally {
       setPending(false);
     }

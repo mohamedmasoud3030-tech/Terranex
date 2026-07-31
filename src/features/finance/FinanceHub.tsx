@@ -7,6 +7,7 @@ import { EntityInspectorDrawer } from '../../components/ui/EntityInspectorDrawer
 import { FormErrorSummary } from '../../components/ui/FormContract';
 import { WorkspaceShell, useWorkspaceUrlState } from '../../components/workspace';
 import { useI18n } from '../../core/i18n/context';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import type { Obligation, Transaction } from '../../core/types/domain';
 import { ObligationForm } from '../obligations/ObligationForm';
 import { obligationsStore, type ObligationInput } from '../obligations/storage';
@@ -108,7 +109,7 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
       const result = await executeFinanceWrite(operation);
       onSuccess(result);
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : String(error));
+      setWriteError(translateServerError(error));
     } finally {
       setPending(false);
     }

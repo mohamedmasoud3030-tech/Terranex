@@ -8,6 +8,7 @@ import { FormErrorSummary } from '../../components/ui/FormContract';
 import { ErrorState } from '../../components/ui/States';
 import { WorkspaceLoadingState } from '../../components/workspace';
 import { guardPartnerDeletion } from '../../core/lib/deletionGuards';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import { useI18n } from '../../core/i18n/context';
 import type { PortfolioHandoff } from '../portfolio/contracts';
 import { portfolioHandoffTarget } from '../integration';
@@ -54,7 +55,7 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
       await partnersHydration.flush();
       setEditing(false);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : label('تعذر الحفظ.', 'Could not save.'));
+      setServerError(translateServerError(error));
     } finally {
       setPending(false);
     }
@@ -71,7 +72,7 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
       setDeleteOpen(false);
       await router.navigate({ to: '/portfolio', search: { workspace: 'partners' } } as never);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : label('تعذر الحذف.', 'Could not delete.'));
+      setServerError(translateServerError(error));
       setDeleteOpen(false);
     } finally {
       setPending(false);

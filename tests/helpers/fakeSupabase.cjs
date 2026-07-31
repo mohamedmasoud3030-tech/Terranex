@@ -327,6 +327,40 @@ const RPC_HANDLERS = {
       blockIf(countWhere('operational_events', (r) => r.linked_transaction_id === id), 'أحداث تشغيلية'),
     ], 'المعاملة');
   },
+  record_stock_adjustment_atomic: (params) => {
+    const adj = params.p_adjustment ?? {};
+    const id = adj.id;
+    const asset = rows('assets').find((row) => row.id === adj.asset_id);
+    const quantityBefore = Number(asset?.quantity ?? 0);
+    const valueBefore = Number(asset?.current_value_egp ?? 0);
+    const quantityDelta = Number(adj.quantity_delta ?? 0);
+    const valueDelta = Number(adj.value_egp_delta ?? 0);
+    const quantityAfter = quantityBefore + quantityDelta;
+    const valueAfter = valueBefore + valueDelta;
+    table('stock_adjustments').set(id, {
+      id,
+      asset_id: adj.asset_id,
+      project_id: adj.project_id,
+      adjustment_date: adj.adjustment_date,
+      quantity_before: quantityBefore,
+      quantity_after: quantityAfter,
+      value_egp_before: valueBefore,
+      value_egp_after: valueAfter,
+      reason: adj.reason,
+      notes: adj.notes,
+      created_at: new Date().toISOString(),
+    });
+    if (asset) {
+      table('assets').set(asset.id, { ...asset, quantity: quantityAfter, current_value_egp: valueAfter });
+    }
+    return {
+      adjustment_id: id,
+      quantity_before: quantityBefore,
+      quantity_after: quantityAfter,
+      value_egp_before: valueBefore,
+      value_egp_after: valueAfter,
+    };
+  },
 };
 
 class FakeSupabaseClient {

@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { FormErrorSummary } from '../../components/ui/FormContract';
 import { FormField, FormLabel } from '../../components/ui/FormControls';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import type { Document, Obligation } from '../../core/types/domain';
 import { formatEgp } from '../../core/lib/profitability';
 import {
@@ -66,7 +67,7 @@ export function SettlementFlowForm({ formId, obligations, documents, anchorId, l
       });
       setError(null);
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : String(submissionError));
+      setError(translateServerError(submissionError));
     }
   }
 

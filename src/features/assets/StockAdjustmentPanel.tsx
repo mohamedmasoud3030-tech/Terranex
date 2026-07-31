@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { todayIso } from '../../core/lib/dateUtils';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import { ClipboardList, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { FormField, FormLabel, FormError, TextInput, SelectInput, TextArea } from '../../components/ui/FormControls';
 import { Badge } from '../../components/ui/Badge';
 import { formatEgp } from '../../core/lib/profitability';
+import { validateStockAdjustment } from '../operations/model';
 import { useStockAdjustments, computeAssetLiveQuantity, useOperationalEvents } from './hooks_adj';
 import type { Asset, AdjustmentReason } from '../../core/types/domain';
 import type { StockAdjustmentInput } from '../events/storage';
@@ -19,6 +21,15 @@ const REASON_LABELS: Record<AdjustmentReason, string> = {
 };
 
 const REASONS = Object.keys(REASON_LABELS) as AdjustmentReason[];
+
+/** Arabic labels for the codes returned by validateStockAdjustment(). */
+const ADJUSTMENT_ERRORS_AR: Record<string, string> = {
+  quantity_before_must_match_live_balance: 'الكمية السابقة يجب أن تطابق الرصيد الحي.',
+  quantity_after_must_be_non_negative: 'الكمية الجديدة يجب أن تكون صفرًا أو أكثر.',
+  value_before_must_be_non_negative: 'القيمة السابقة غير صالحة.',
+  value_after_must_be_non_negative: 'القيمة الجديدة يجب أن تكون صفرًا أو أكثر.',
+  adjustment_date_required: 'تاريخ التصحيح مطلوب.',
+};
 
 
 interface StockAdjustmentPanelProps {
@@ -39,9 +50,34 @@ export function StockAdjustmentPanel({ asset }: StockAdjustmentPanelProps) {
   const [adjDate, setAdjDate] = useState(todayIso());
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setError('');
+
+    // حقل فاضي لا يجوز تحويله لصفر (Number('') === 0) — يصفّر الرصيد بالكامل.
+    const numericFields = [
+      { label: 'الكمية قبل', value: qtyBefore },
+      { label: 'الكمية بعد', value: qtyAfter },
+      { label: 'القيمة قبل', value: valBefore },
+      { label: 'القيمة بعد', value: valAfter },
+    ];
+    for (const field of numericFields) {
+      if (field.value === '' || field.value === null || field.value === undefined) {
+        setError('هذا الحقل مطلوب، يرجى إدخال قيمة.');
+        return;
+      }
+      if (Number(field.value) < 0) {
+        setError('القيمة لا يمكن أن تكون سالبة.');
+        return;
+      }
+    }
+    if (!adjDate) {
+      setError('التاريخ مطلوب.');
+      return;
+    }
+
     const qb = Number(qtyBefore);
     const qa = Number(qtyAfter);
     const vb = Number(valBefore);
@@ -50,10 +86,7 @@ export function StockAdjustmentPanel({ asset }: StockAdjustmentPanelProps) {
       setError('أدخل أرقاماً صحيحة لكل الحقول.');
       return;
     }
-    if (!adjDate) {
-      setError('التاريخ مطلوب.');
-      return;
-    }
+
     const input: StockAdjustmentInput = {
       asset_id: asset.id,
       project_id: asset.project_id,
@@ -65,14 +98,31 @@ export function StockAdjustmentPanel({ asset }: StockAdjustmentPanelProps) {
       reason,
       notes: notes.trim() || undefined,
     };
-    createAdjustment(input);
-    setOpen(false);
-    setQtyBefore('');
-    setQtyAfter('');
-    setValBefore('');
-    setValAfter('');
-    setNotes('');
-    setError('');
+
+    // استخدم دالة التحقق المشتركة مع الرصيد الحي (لا تنسخ المنطق).
+    const messages = validateStockAdjustment(liveBalance.quantity, input);
+    if (messages.length > 0) {
+      setError(messages.map((code) => ADJUSTMENT_ERRORS_AR[code] ?? code).join(' '));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await createAdjustment(input);
+      // أغلق اللوحة فقط عند النجاح الفعلي
+      setOpen(false);
+      setQtyBefore('');
+      setQtyAfter('');
+      setValBefore('');
+      setValAfter('');
+      setNotes('');
+      setError('');
+    } catch (error) {
+      // لا تغلق اللوحة — اعرض رسالة عربية واضحة
+      setError(translateServerError(error));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -163,8 +213,10 @@ export function StockAdjustmentPanel({ asset }: StockAdjustmentPanelProps) {
               </FormField>
               {error && <FormError>{error}</FormError>}
               <div className="flex gap-2">
-                <Button type="submit" variant="primary" size="sm" className="flex-1">تسجيل التسوية</Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>إلغاء</Button>
+                <Button type="submit" variant="primary" size="sm" className="flex-1" disabled={saving}>
+                  {saving ? 'جار الحفظ…' : 'تسجيل التسوية'}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={saving}>إلغاء</Button>
               </div>
             </form>
           </CardContent>
