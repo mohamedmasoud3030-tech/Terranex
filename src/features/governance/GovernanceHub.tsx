@@ -9,6 +9,7 @@ import { EntityInspectorDrawer } from '../../components/ui/EntityInspectorDrawer
 import { WorkspaceShell, useWorkspaceUrlState } from '../../components/workspace';
 import { useAuth } from '../../core/auth/AuthProvider';
 import { useI18n } from '../../core/i18n/context';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import {
   deleteDocumentFile,
   getDocumentFile,
@@ -116,7 +117,7 @@ export function GovernanceHub({ onHandoff }: { onHandoff?: (handoff: GovernanceH
       if (created && documentsStore.getAll().some((item) => item.id === created?.id)) {
         await documentsStore.remove(created.id).then(() => documentsHydration.flush()).catch(() => documentsHydration.rehydrate());
       }
-      setDocumentError(cause instanceof Error ? cause.message : 'Could not save the document.');
+      setDocumentError(translateServerError(cause));
       throw cause;
     } finally {
       setDocumentPending(false);

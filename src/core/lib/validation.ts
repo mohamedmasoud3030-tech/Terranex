@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toDateOnly } from './dateOnly';
 import type {
   AssetStatus,
   AssetType,
@@ -40,7 +41,18 @@ const txDirectionEnum: [TransactionDirection, ...TransactionDirection[]] = ['inc
 
 const arabicText = z.string().trim().min(2, 'يجب إدخال نص عربي صحيح (حرفان على الأقل)').max(200, 'النص طويل جداً');
 const optionalText = z.string().trim().max(2000, 'النص طويل جداً').optional().or(z.literal(''));
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'التاريخ يجب أن يكون بصيغة YYYY-MM-DD');
+/**
+ * Validates a real calendar date (YYYY-MM-DD). A plain regex cannot see that
+ * 2026-02-30 or 2026-13-01 do not exist, so we delegate to `toDateOnly` which
+ * checks the actual day/month/year against the calendar.
+ */
+const isoDate = z.string().refine((value) => {
+  try {
+    return toDateOnly(value) !== undefined;
+  } catch {
+    return false;
+  }
+}, 'التاريخ المدخل غير موجود في التقويم، يرجى التحقق من اليوم والشهر والسنة.');
 
 const moneyAmount = z.coerce
   .number({ error: 'أدخل مبلغاً رقمياً صحيحاً' })
@@ -214,6 +226,8 @@ export const obligationSchema = z.object({
 export type ObligationFormValues = z.infer<typeof obligationSchema>;
 
 // ─── Operational Event ─────────────────────────────────────────────────────
+// TODO: ربط هذه السكيمة بـ EventForm أو حذفها — حالياً غير مستخدمة
+//       (EventForm يعتمد على تحقق يدوي في features/operations/model.ts)
 
 export const operationalEventSchema = z.object({
   asset_id: z.string().min(1, 'اختر الأصل'),

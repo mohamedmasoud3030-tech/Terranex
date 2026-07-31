@@ -7,6 +7,7 @@ import { EntityInspectorDrawer } from '../../components/ui/EntityInspectorDrawer
 import { FormErrorSummary } from '../../components/ui/FormContract';
 import { WorkspaceShell, useWorkspaceUrlState } from '../../components/workspace';
 import { useI18n } from '../../core/i18n/context';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import type { Asset, OperationalEvent } from '../../core/types/domain';
 import { computeAssetLiveQuantity } from '../events/hooks';
 import {
@@ -136,7 +137,7 @@ export function OperationsHub({ onHandoff }: OperationsHubProps) {
       setSurface(null);
       if (existing) setInspectedEvent({ ...existing, ...input });
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : String(error));
+      setWriteError(translateServerError(error));
     } finally {
       setPending(false);
     }
@@ -151,7 +152,7 @@ export function OperationsHub({ onHandoff }: OperationsHubProps) {
       setAdjustmentDraft(null);
       setSurface(null);
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : String(error));
+      setWriteError(translateServerError(error));
       const asset = assetById.get(adjustmentDraft.asset_id);
       setAdjustmentDraft(null);
       if (asset) setSurface({ kind: 'adjustment', asset });

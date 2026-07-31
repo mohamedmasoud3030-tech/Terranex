@@ -12,6 +12,7 @@ import { AdaptiveFormSurface } from '../../components/ui/AdaptiveFormSurface';
 import { Button } from '../../components/ui/Button';
 import { FormErrorSummary } from '../../components/ui/FormContract';
 import { useI18n } from '../../core/i18n/context';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import type {
   Asset,
   AssetStatus,
@@ -153,7 +154,7 @@ export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
       await flush();
       setEditor(null);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : label('فشل حفظ التغييرات.', 'Could not save changes.'));
+      setServerError(translateServerError(error));
     } finally {
       setPending(false);
     }

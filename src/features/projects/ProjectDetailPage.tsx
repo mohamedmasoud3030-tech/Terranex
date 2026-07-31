@@ -8,6 +8,7 @@ import { FormErrorSummary } from '../../components/ui/FormContract';
 import { ErrorState } from '../../components/ui/States';
 import { WorkspaceLoadingState } from '../../components/workspace';
 import { guardProjectDeletion } from '../../core/lib/deletionGuards';
+import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import { useI18n } from '../../core/i18n/context';
 import { AssetForm } from '../assets/AssetForm';
 import { assetsHydration, assetsStore, type AssetInput } from '../assets/storage';
@@ -69,7 +70,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
       await flush();
       setEditor(null);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : label('تعذر الحفظ.', 'Could not save.'));
+      setServerError(translateServerError(error));
     } finally {
       setPending(false);
     }
@@ -90,7 +91,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
       setDeleteOpen(false);
       await router.navigate({ to: '/portfolio', search: { workspace: 'projects' } } as never);
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : label('تعذر حذف المشروع.', 'Could not delete project.'));
+      setDeleteError(translateServerError(error));
       setDeleteOpen(false);
     } finally {
       setPending(false);
