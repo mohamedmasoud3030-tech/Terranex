@@ -141,6 +141,8 @@ test('assetSchema defaults fx_rate to 1 when omitted, and accepts an explicit po
   const negativeRate = assetSchema.safeParse({ ...base, fx_rate: -1 });
   assert.equal(negativeRate.success, false);
 });
+
+test('isoDate rejects impossible calendar dates and accepts real dates in every affected schema', () => {
   for (const { schema, field, base } of dateInputs()) {
     for (const invalid of INVALID_DATES) {
       const result = schema.safeParse({ ...base, [field]: invalid });
