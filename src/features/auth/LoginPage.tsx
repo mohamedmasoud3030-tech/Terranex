@@ -24,7 +24,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="mb-6 text-center">
           <img
-            src="/brand/terranex-logo.jpeg"
+            src="/brand/terranex-logo.png"
             alt="Terranex — للاستثمار الحيواني والتنمية الزراعية"
             className="mx-auto mb-4 w-44 rounded-xl"
           />
