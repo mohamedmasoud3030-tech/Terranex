@@ -11,7 +11,8 @@
 do $$
 declare
   v_expected constant text[] := array[
-    'assets','documents','financial_audit_logs','obligations','operational_events','partners',
+    'assets','distribution_allocations','distributions','documents','equity_change_events',
+    'financial_audit_logs','obligations','operational_events','partner_ledger_entries','partners',
     'project_partners','projects','settlement_allocations','settlements',
     'stock_adjustments','transactions'
   ];
@@ -19,14 +20,14 @@ declare
   v_table    text;
   v_count    int;
 begin
-  -- ── 12 tables, exactly ─────────────────────────────────────────────────────
+  -- ── 16 tables, exactly ─────────────────────────────────────────────────────
   select array_agg(tablename order by tablename) into v_actual
   from pg_tables where schemaname = 'public';
 
   if v_actual is distinct from v_expected then
-    raise exception 'FAIL schema: expected 12 tables % but found %', v_expected, v_actual;
+    raise exception 'FAIL schema: expected 16 tables % but found %', v_expected, v_actual;
   end if;
-  raise notice 'PASS schema: exactly 12 operational tables present';
+  raise notice 'PASS schema: exactly 16 operational tables present';
 
   -- ── owner_id NOT NULL + DEFAULT auth.uid() on every table ──────────────────
   foreach v_table in array v_expected loop
@@ -39,7 +40,7 @@ begin
       raise exception 'FAIL owner_id: %.owner_id is not "uuid NOT NULL DEFAULT auth.uid()"', v_table;
     end if;
   end loop;
-  raise notice 'PASS owner_id: uuid NOT NULL DEFAULT auth.uid() on all 12 tables';
+  raise notice 'PASS owner_id: uuid NOT NULL DEFAULT auth.uid() on all 16 tables';
 
   -- ── UNIQUE(id, owner_id) on every table (enables composite FKs) ────────────
   foreach v_table in array v_expected loop
@@ -58,7 +59,7 @@ begin
       raise exception 'FAIL composite key: %.UNIQUE(id, owner_id) missing', v_table;
     end if;
   end loop;
-  raise notice 'PASS composite keys: UNIQUE(id, owner_id) on all 12 tables';
+  raise notice 'PASS composite keys: UNIQUE(id, owner_id) on all 16 tables';
 
   -- ── RLS enabled AND forced everywhere ──────────────────────────────────────
   foreach v_table in array v_expected loop
@@ -73,7 +74,7 @@ begin
       raise exception 'FAIL rls: % has % policies, expected 4 (select/insert/update/delete)', v_table, v_count;
     end if;
   end loop;
-  raise notice 'PASS rls: enabled + forced with 4 policies on all 12 tables';
+  raise notice 'PASS rls: enabled + forced with 4 policies on all 16 tables';
 
   -- ── the 5 guard RPCs exist with the exact signature the client calls ───────
   -- Parameter NAMES matter: the client calls rpc(fn, { p_project_id: id }),
