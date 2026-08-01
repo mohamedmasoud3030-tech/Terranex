@@ -312,6 +312,107 @@ export interface StockAdjustment {
   created_at: string;
 }
 
+// ─── Equity Change History (Effective-dated ownership) ──────────────────────
+// ADR-011: time-based project ownership
+// Records every change in a partner's equity percentage with effective dates.
+// Immutable: corrections are modeled as new entries, not updates.
+
+export type EquityChangeType = 'entry' | 'increase' | 'decrease' | 'exit' | 'correction';
+
+export interface EquityChangeEvent {
+  id: string;
+  project_id: string;
+  partner_id: string;
+  effective_date: string;
+  previous_pct: number;
+  new_pct: number;
+  change_type: EquityChangeType;
+  consideration_amount?: number;
+  consideration_currency?: Currency;
+  frozen_amount_egp?: number;
+  supporting_document_id?: string;
+  reason?: string;
+  notes?: string;
+  created_by: string;
+  created_at: string;
+  reversal_of_id?: string; // references another EquityChangeEvent for corrections
+}
+
+// ─── Partner Ledger Entry (Append-only financial record) ────────────────────
+// ADR-012: append-only partner ledger
+// Every financial movement for a partner within a project. Immutable: reversals
+// are modeled as new entries referencing the original.
+
+export type PartnerLedgerEntryType =
+  | 'capital_contribution'
+  | 'withdrawal'
+  | 'distribution_entitlement'
+  | 'distribution_payment'
+  | 'correction'
+  | 'reversal';
+
+export interface PartnerLedgerEntry {
+  id: string;
+  project_id: string;
+  partner_id: string;
+  entry_type: PartnerLedgerEntryType;
+  amount: number;
+  currency: Currency;
+  fx_rate: number;
+  amount_egp: number;
+  posting_date: string;
+  supporting_document_id?: string;
+  related_equity_event_id?: string;
+  related_distribution_id?: string;
+  notes?: string;
+  reversal_of_id?: string; // references another PartnerLedgerEntry
+  created_by: string;
+  created_at: string;
+}
+
+// ─── Distribution Record (Profit distribution header) ───────────────────────
+// ADR-013: immutable distribution snapshots
+// A distribution cycle for a project. Snapshots the ownership percentages and
+// amounts at the time of creation. Not recalculated from current state.
+
+export type DistributionStatus = 'draft' | 'approved' | 'paid' | 'reversed';
+
+export interface Distribution {
+  id: string;
+  project_id: string;
+  distribution_date: string;
+  ownership_as_of_date: string;
+  total_amount: number;
+  currency: Currency;
+  fx_rate: number;
+  total_amount_egp: number;
+  status: DistributionStatus;
+  notes?: string;
+  supporting_document_id?: string;
+  created_by: string;
+  created_at: string;
+}
+
+// ─── Distribution Allocation (Per-partner share) ────────────────────────────
+// ADR-013: immutable distribution snapshots
+// Each partner's share of a distribution. The equity_pct_snapshot and amounts
+// are frozen at creation time and never recalculated.
+
+export type DistributionAllocationStatus = 'due' | 'paid' | 'reversed';
+
+export interface DistributionAllocation {
+  id: string;
+  distribution_id: string;
+  partner_id: string;
+  equity_pct_snapshot: number; // frozen at distribution creation
+  allocated_amount: number;
+  allocated_amount_egp: number;
+  status: DistributionAllocationStatus;
+  payment_date?: string;
+  payment_document_id?: string;
+  related_ledger_entry_id?: string; // links to PartnerLedgerEntry when paid
+}
+
 // ─── Computed / View Types ────────────────────────────────────────────────────
 
 /** Profitability computed for a project — from v_project_profitability view */

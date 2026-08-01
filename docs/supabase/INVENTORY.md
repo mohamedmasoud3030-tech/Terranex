@@ -7,7 +7,7 @@ a migration and proven by `scripts/db-test.sh` against a real Postgres.
 
 ---
 
-## 1. Tables — the count is **11**, not 13
+## 1. Tables — the count is **15**, not 13
 
 Proven by every `createSupabaseStore<T>(TABLE, ...)` call site and its table constant.
 There are exactly 11 such calls across 9 files.
@@ -25,6 +25,10 @@ There are exactly 11 such calls across 9 files.
 | 9 | `settlement_allocations` | `SettlementAllocation` | `features/settlement-allocations/storage.ts:6` | `created_at` (default) |
 | 10 | `operational_events` | `OperationalEvent` | `features/events/storage.ts:4` | **`event_date`** |
 | 11 | `stock_adjustments` | `StockAdjustment` | `features/events/storage.ts:5` | **`adjustment_date`** |
+| 12 | `equity_change_events` | `EquityChangeEvent` | `features/ownership/storage.ts` | `created_at` (default) |
+| 13 | `partner_ledger_entries` | `PartnerLedgerEntry` | `features/ownership/storage.ts` | **`posting_date`** |
+| 14 | `distributions` | `Distribution` | `features/ownership/storage.ts` | **`distribution_date`** |
+| 15 | `distribution_allocations` | `DistributionAllocation` | `features/ownership/storage.ts` | `created_at` (default) |
 
 ### Explicitly NOT tables (would be wrong to migrate)
 
@@ -41,10 +45,13 @@ orders by `id` — a UUID — which is a correctness smell to flag, not silently
 
 ---
 
-## 2. RPCs — the count is **5**
+## 2. RPCs — the count is **9**
 
 Only one `.rpc(` call site exists in the entire codebase:
 `src/core/lib/deletionGuards.ts:14` → `requireClient().rpc(fn, { [param]: id })`.
+The ownership-domain RPCs (`change_ownership_atomic`, `record_distribution_atomic`,
+`record_partner_ledger_entry_atomic`, `get_ownership_as_of`) are called server-side
+via Supabase client RPC.
 
 | # | Function | Parameter | Caller |
 |---|---|---|---|
@@ -53,6 +60,10 @@ Only one `.rpc(` call site exists in the entire codebase:
 | 3 | `guard_asset_deletion` | `p_asset_id` | `guardAssetDeletion()` |
 | 4 | `guard_document_deletion` | `p_document_id` | `guardDocumentDeletion()` |
 | 5 | `guard_transaction_deletion` | `p_transaction_id` | `guardTransactionDeletion()` |
+| 6 | `change_ownership_atomic` | `p_request_id, p_project_id, ...` | Ownership RPC boundary |
+| 7 | `record_distribution_atomic` | `p_request_id, p_project_id, ...` | Ownership RPC boundary |
+| 8 | `record_partner_ledger_entry_atomic` | `p_request_id, p_project_id, ...` | Ownership RPC boundary |
+| 9 | `get_ownership_as_of` | `p_project_id, p_as_of_date` | Ownership RPC boundary |
 
 **Return contract** (from `callGuard`): a set-returning function whose first row is
 `{ can_delete: boolean, message_ar: text }`. Anything else — error, null, non-array,
@@ -151,6 +162,12 @@ statement instead of once per row.
 | `supabase/migrations/…000500_deletion_guard_rpcs.sql` | the 5 `guard_*_deletion` functions |
 | `supabase/migrations/…000600_grants_and_revokes.sql` | REVOKE public/anon, GRANT authenticated |
 | `supabase/migrations/…000700_owner_backfill_preflight.sql` | safe backfill + preflight gate |
+| `supabase/migrations/…20260801000100_ownership_domain_tables.sql` | 4 ownership tables + enums + indexes |
+| `supabase/migrations/…20260801000200_ownership_domain_rls.sql` | RLS policies for ownership tables |
+| `supabase/migrations/…20260801000300_ownership_domain_grants.sql` | grants for ownership tables |
+| `supabase/migrations/…20260801000400_ownership_domain_rpcs.sql` | atomic ownership RPCs |
+| `supabase/migrations/…20260801000500_ownership_data_migration.sql` | non-destructive data migration |
+| `supabase/migrations/…20260801000600_fix_p1c_idempotency_ordering.sql` | restore idempotent replay before validation in `record_transaction_atomic` |
 | `supabase/rollback/*.down.sql` | one rollback per migration, reversibility documented |
 | `supabase/tests/00–04` | shim + 4 behavioural suites against real Postgres |
 | `scripts/db-test.sh` | 6-stage runner incl. forward → rollback → reapply |

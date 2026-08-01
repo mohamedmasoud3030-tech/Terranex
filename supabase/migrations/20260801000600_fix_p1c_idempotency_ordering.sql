@@ -1,0 +1,156 @@
+-- =============================================================================
+-- Terranex — P1C idempotency ordering fix
+-- =============================================================================
+-- P1C replaced the pre-flight request-replay wrapper (see
+-- 20260729000300_p1b_idempotency_preflight.sql) with an inline implementation.
+-- In doing so it moved the project_id required-field guard AHEAD of the
+-- idempotency cache lookup. A retry carries only the request id — the client
+-- resolves a replayed request from the audit cache before validating a rebuilt
+-- body — so it was being rejected by the guard before the cache was consulted,
+-- surfacing as `null value in column "project_id" violates not-null constraint`.
+--
+-- This migration restores the original ordering: the owner-scoped cache lookup
+-- runs first and short-circuits replayed requests; fresh requests then fall
+-- through to the existing validation/locking/write/audit path unchanged.
+-- =============================================================================
+
+create or replace function public.record_transaction_atomic(
+  p_request_id uuid,
+  p_transaction jsonb,
+  p_payable jsonb default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_owner_id uuid;
+  v_project_id uuid;
+  v_transaction_id uuid;
+  v_payable_id uuid;
+  v_transaction_direction public.terranex_transaction_direction;
+  v_obligation_direction public.terranex_obligation_direction;
+  v_cached jsonb;
+  v_result jsonb;
+begin
+  -- Replay resolution precedes any payload validation: a retry carrying only
+  -- the request id must return the previously-recorded result from the audit
+  -- cache instead of being rejected by a required-field guard below.
+  v_cached := public.terranex_audit_check_idempotent(p_request_id);
+  if v_cached is not null then
+    return v_cached;
+  end if;
+
+  if nullif(p_transaction->>'project_id', '') is null then
+    raise exception using errcode = '23502', message = 'null value in column "project_id" violates not-null constraint';
+  end if;
+
+  v_project_id := (p_transaction->>'project_id')::uuid;
+  select owner_id into v_owner_id
+  from public.projects
+  where id = v_project_id;
+
+  if not found then
+    raise exception using errcode = '23503', message = 'project_id does not reference an existing project';
+  end if;
+
+  perform public.terranex_assert_owner(v_owner_id);
+  perform public.terranex_lock_financial_request(v_owner_id, p_request_id);
+  v_cached := public.terranex_audit_check_idempotent(p_request_id, v_owner_id);
+  if v_cached is not null then return v_cached; end if;
+
+  v_transaction_direction := (p_transaction->>'direction')::public.terranex_transaction_direction;
+
+  insert into public.transactions (
+    id, owner_id, project_id, asset_id, partner_id, operational_event_id,
+    direction, category, description, amount, currency, fx_rate, amount_egp,
+    transaction_date, document_id, notes
+  ) values (
+    coalesce(nullif(p_transaction->>'id', '')::uuid, gen_random_uuid()),
+    v_owner_id,
+    v_project_id,
+    nullif(p_transaction->>'asset_id', '')::uuid,
+    nullif(p_transaction->>'partner_id', '')::uuid,
+    nullif(p_transaction->>'operational_event_id', '')::uuid,
+    v_transaction_direction,
+    p_transaction->>'category',
+    p_transaction->>'description',
+    (p_transaction->>'amount')::numeric,
+    (p_transaction->>'currency')::public.terranex_currency,
+    (p_transaction->>'fx_rate')::numeric,
+    (p_transaction->>'amount_egp')::numeric,
+    (p_transaction->>'transaction_date')::date,
+    nullif(p_transaction->>'document_id', '')::uuid,
+    p_transaction->>'notes'
+  ) returning id into v_transaction_id;
+
+  if p_payable is not null and p_payable <> 'null'::jsonb then
+    -- Direction defaults to 'payable' when omitted, to preserve behavior for
+    -- any existing caller that predates this migration. When supplied, it
+    -- must agree with the transaction's own direction: an expense can only
+    -- spawn a payable (we owe them), an income can only spawn a receivable
+    -- (they owe us). This prevents a mismatched pair from ever being written.
+    v_obligation_direction := coalesce(
+      nullif(p_payable->>'direction', '')::public.terranex_obligation_direction,
+      'payable'::public.terranex_obligation_direction
+    );
+
+    if v_obligation_direction = 'payable' and v_transaction_direction <> 'expense' then
+      raise exception using errcode = '23514',
+        message = 'a payable obligation can only be created from an expense transaction';
+    end if;
+
+    if v_obligation_direction = 'receivable' and v_transaction_direction <> 'income' then
+      raise exception using errcode = '23514',
+        message = 'a receivable obligation can only be created from an income transaction';
+    end if;
+
+    insert into public.obligations (
+      id, owner_id, project_id, partner_id, direction, amount, currency,
+      amount_egp, amount_settled_egp, due_date, status,
+      source_transaction_id, document_id, notes
+    ) values (
+      coalesce(nullif(p_payable->>'id', '')::uuid, gen_random_uuid()),
+      v_owner_id,
+      coalesce(nullif(p_payable->>'project_id', '')::uuid, v_project_id),
+      nullif(p_payable->>'partner_id', '')::uuid,
+      v_obligation_direction,
+      (p_payable->>'amount')::numeric,
+      (p_payable->>'currency')::public.terranex_currency,
+      (p_payable->>'amount_egp')::numeric,
+      0,
+      nullif(p_payable->>'due_date', '')::date,
+      'open'::public.terranex_obligation_status,
+      v_transaction_id,
+      nullif(p_payable->>'document_id', '')::uuid,
+      p_payable->>'notes'
+    ) returning id into v_payable_id;
+  end if;
+
+  v_result := jsonb_build_object(
+    'transaction_id', v_transaction_id,
+    'payable_id', v_payable_id
+  );
+
+  perform public.terranex_audit_log(
+    p_request_id,
+    'record_transaction',
+    'transaction',
+    case when v_payable_id is null
+      then array[v_transaction_id]
+      else array[v_transaction_id, v_payable_id]
+    end,
+    jsonb_build_object('transaction', p_transaction, 'payable', p_payable),
+    v_result,
+    v_owner_id
+  );
+
+  return v_result;
+end;
+$fn$;
+
+comment on function public.record_transaction_atomic(uuid, jsonb, jsonb) is
+  'Atomically records a transaction and an optional linked obligation. Obligation direction (payable/receivable) must match transaction direction (expense/income) and defaults to payable when omitted for backward compatibility. P1C. Idempotent replays resolve from the audit cache before validation.';
+
+\echo '=== P1C IDEMPOTENCY ORDERING FIX: COMPLETE ==='

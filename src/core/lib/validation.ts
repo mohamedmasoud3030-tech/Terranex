@@ -248,6 +248,72 @@ export const operationalEventSchema = z.object({
 
 export type OperationalEventFormValues = z.infer<typeof operationalEventSchema>;
 
+// ─── Equity Change Event ──────────────────────────────────────────────────
+
+export const equityChangeSchema = z.object({
+  project_id: z.string().min(1, 'المشروع مطلوب'),
+  partner_id: z.string().min(1, 'اختر الشريك'),
+  effective_date: isoDate,
+  previous_pct: z.coerce.number().finite().min(0).max(100),
+  new_pct: z.coerce.number().finite().min(0).max(100),
+  change_type: z.enum(['entry', 'increase', 'decrease', 'exit', 'correction'] as const),
+  consideration_amount: z.coerce.number().finite().min(0).optional().or(z.literal('')),
+  consideration_currency: z.enum(currencyEnum).optional(),
+  supporting_document_id: z.string().optional().or(z.literal('')),
+  reason: optionalText,
+  notes: optionalText,
+}).refine((d) => {
+  if (d.change_type === 'entry' && d.new_pct <= d.previous_pct) return false;
+  if (d.change_type === 'exit' && d.new_pct > 0) return false;
+  if (d.change_type === 'increase' && d.new_pct <= d.previous_pct) return false;
+  if (d.change_type === 'decrease' && d.new_pct >= d.previous_pct) return false;
+  return true;
+}, {
+  message: 'نوع التغيير غير متوافق مع اتجاه تغيير النسبة',
+  path: ['change_type'],
+});
+
+export type EquityChangeFormValues = z.infer<typeof equityChangeSchema>;
+
+// ─── Partner Ledger Entry ─────────────────────────────────────────────────
+
+export const partnerLedgerEntrySchema = z.object({
+  project_id: z.string().min(1, 'المشروع مطلوب'),
+  partner_id: z.string().min(1, 'اختر الشريك'),
+  entry_type: z.enum([
+    'capital_contribution', 'withdrawal', 'distribution_entitlement',
+    'distribution_payment', 'correction', 'reversal'
+  ] as const),
+  amount: moneyAmount,
+  currency: z.enum(currencyEnum),
+  fx_rate: fxRateSchema,
+  posting_date: isoDate,
+  supporting_document_id: z.string().optional().or(z.literal('')),
+  related_equity_event_id: z.string().optional().or(z.literal('')),
+  related_distribution_id: z.string().optional().or(z.literal('')),
+  notes: optionalText,
+});
+
+export type PartnerLedgerEntryFormValues = z.infer<typeof partnerLedgerEntrySchema>;
+
+// ─── Distribution ─────────────────────────────────────────────────────────
+
+export const distributionSchema = z.object({
+  project_id: z.string().min(1, 'المشروع مطلوب'),
+  distribution_date: isoDate,
+  ownership_as_of_date: isoDate,
+  total_amount: moneyAmount,
+  currency: z.enum(currencyEnum),
+  fx_rate: fxRateSchema,
+  notes: optionalText,
+  supporting_document_id: z.string().optional().or(z.literal('')),
+}).refine((d) => d.ownership_as_of_date <= d.distribution_date, {
+  message: 'تاريخ ملكية التوزيع يجب أن يكون قبل أو مساويًا لتاريخ التوزيع',
+  path: ['ownership_as_of_date'],
+});
+
+export type DistributionFormValues = z.infer<typeof distributionSchema>;
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 export function getZodFieldError<T>(result: z.ZodSafeParseResult<T>, field: string): string | undefined {
