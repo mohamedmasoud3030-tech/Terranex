@@ -1,4 +1,5 @@
 import { toEgp } from '../../core/lib/format';
+import { newId } from '../../core/lib/id';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { settlementAllocationsStore } from '../settlement-allocations/storage';
@@ -16,9 +17,6 @@ function parseOne(raw: unknown): Settlement {
   return raw as Settlement;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const store = createSupabaseStore<Settlement>(TABLE, parseOne, 'settlement_date');
 
@@ -76,7 +74,7 @@ export const settlementsStore = {
   getActiveTotalByObligation: (obligationId: string) => settlementAllocationsStore.getActiveTotalByObligation(obligationId, readAll()),
   create: (input: SettlementInput): Settlement => {
     const now = new Date().toISOString();
-    const settlement: Settlement = { ...validateSettlementInput(input), id: makeId(), status: 'active', created_at: now, updated_at: now };
+    const settlement: Settlement = { ...validateSettlementInput(input), id: newId(), status: 'active', created_at: now, updated_at: now };
     store.update((all) => sortSettlements([settlement, ...all]));
     return settlement;
   },

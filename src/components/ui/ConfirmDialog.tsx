@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from './Button';
+import { usePendingAction, useReturnFocus } from './dialogBehavior';
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -27,22 +27,8 @@ export function ConfirmDialog({
   pending = false,
   destructive = true,
 }: ConfirmDialogProps) {
-  const confirmLockRef = useRef(false);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const isPending = pending || confirming;
-
-  const confirm = async () => {
-    if (isPending || confirmLockRef.current) return;
-    confirmLockRef.current = true;
-    setConfirming(true);
-    try {
-      await onConfirm();
-    } finally {
-      confirmLockRef.current = false;
-      setConfirming(false);
-    }
-  };
+  const returnFocus = useReturnFocus();
+  const { isPending, run: confirm } = usePendingAction(onConfirm, pending);
 
   return (
     <Dialog.Root
@@ -54,16 +40,7 @@ export function ConfirmDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/60" />
         <Dialog.Content
-          onOpenAutoFocus={() => {
-            const active = document.activeElement;
-            returnFocusRef.current = active instanceof HTMLElement ? active : null;
-          }}
-          onCloseAutoFocus={(event) => {
-            if (returnFocusRef.current?.isConnected) {
-              event.preventDefault();
-              returnFocusRef.current.focus();
-            }
-          }}
+          {...returnFocus}
           onEscapeKeyDown={(event) => {
             if (isPending) event.preventDefault();
           }}

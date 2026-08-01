@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import type { Obligation, Transaction, TransactionDirection } from '../../core/types/domain';
 import { obligationsStore } from '../obligations/storage';
 import {
@@ -171,8 +172,8 @@ export async function createTransactionWithOptionalPayableAtomic(
     create_payable_obligation,
     payable_due_date: payable_due_date?.trim(),
   };
-  const transactionId = crypto.randomUUID();
-  const payableId = create_payable_obligation ? crypto.randomUUID() : undefined;
+  const transactionId = newId();
+  const payableId = create_payable_obligation ? newId() : undefined;
   const payload = buildRecordTransactionAtomicPayload(atomicInput, transactionId, payableId);
 
   const result = await invokeFinanceRpc<RecordTransactionAtomicResult>(

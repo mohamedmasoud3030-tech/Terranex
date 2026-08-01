@@ -1,7 +1,8 @@
-import { useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ExternalLink, X } from 'lucide-react';
 import { Button } from './Button';
+import { useReturnFocus } from './dialogBehavior';
 
 export interface EntityInspectorDrawerProps {
   open: boolean;
@@ -32,7 +33,7 @@ export function EntityInspectorDrawer({
   relationshipsLabel,
   activityLabel,
 }: EntityInspectorDrawerProps) {
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const returnFocus = useReturnFocus();
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -40,16 +41,7 @@ export function EntityInspectorDrawer({
         <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/55" />
         <Dialog.Content
           {...(description ? {} : { 'aria-describedby': undefined })}
-          onOpenAutoFocus={() => {
-            const active = document.activeElement;
-            returnFocusRef.current = active instanceof HTMLElement ? active : null;
-          }}
-          onCloseAutoFocus={(event) => {
-            if (returnFocusRef.current?.isConnected) {
-              event.preventDefault();
-              returnFocusRef.current.focus();
-            }
-          }}
+          {...returnFocus}
           className="fixed inset-y-0 end-0 z-50 flex w-[min(40rem,calc(100vw-1rem))] flex-col border-s bg-card shadow-2xl focus:outline-none"
         >
           <header className="flex items-start justify-between border-b p-5">

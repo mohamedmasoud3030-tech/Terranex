@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '../../components/ui/Button';
 import { FormError, FormField, FormLabel } from '../../components/ui/FormControls';
 import { assetSchema, type AssetFormValues } from '../../core/lib/validation';
-import { getLatestFxRate } from '../settings/ExchangeRateSection';
+import { useAutoFxRate } from '../settings/useAutoFxRate';
 import type { Asset, AssetStatus, AssetType, Currency, Project } from '../../core/types/domain';
 import type { AssetInput } from './storage';
 
@@ -99,26 +99,10 @@ export function AssetForm({
     if (project) setValue('sector_id', project.sector_id, { shouldValidate: true });
   }, [projectId, projects, setValue]);
 
-  // auto-fill fx_rate when currency changes:
-  //   EGP           → force 1 (always)
-  //   foreign, new  → load latest stored rate (only if user hasn't manually edited it)
-  //   foreign, same → keep existing value to respect manual edits
   const currency = watch('acquisition_currency');
-  const prevCurrencyRef = useRef(currency);
-  useEffect(() => {
-    const prevCurrency = prevCurrencyRef.current;
-    prevCurrencyRef.current = currency;
-    if (currency === 'EGP') {
-      setValue('fx_rate', 1, { shouldValidate: true });
-      return;
-    }
-    if (currency !== prevCurrency) {
-      const stored = getLatestFxRate(currency as Currency);
-      if (stored !== null) {
-        setValue('fx_rate', stored, { shouldValidate: true });
-      }
-    }
-  }, [currency, setValue]);
+  useAutoFxRate(currency, useCallback((rate: number) => {
+    setValue('fx_rate', rate, { shouldValidate: true });
+  }, [setValue]));
 
   // acquisition_cost_egp follows acquisition_cost × fx_rate automatically,
   // unless the user explicitly opts into manual entry (e.g. a negotiated

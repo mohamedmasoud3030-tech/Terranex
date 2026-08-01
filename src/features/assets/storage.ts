@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { guardAssetDeletion } from '../../core/lib/deletionGuards';
 import type { Asset } from '../../core/types/domain';
@@ -8,9 +9,6 @@ function parseOne(raw: unknown): Asset {
   return raw as Asset;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const store = createSupabaseStore<Asset>(TABLE, parseOne);
 
@@ -23,7 +21,7 @@ export const assetsStore = {
   getAll: () => store.get(),
   getByProject: (projectId: string) => store.get().filter((a) => a.project_id === projectId),
   create: (input: AssetInput): Asset => {
-    const asset: Asset = { ...input, id: makeId(), created_at: new Date().toISOString() };
+    const asset: Asset = { ...input, id: newId(), created_at: new Date().toISOString() };
     store.update((all) => [asset, ...all]);
     return asset;
   },

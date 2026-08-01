@@ -1,4 +1,5 @@
 import { guardDocumentDeletion } from '../../core/lib/deletionGuards';
+import { newId } from '../../core/lib/id';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { Document } from '../../core/types/domain';
@@ -9,9 +10,6 @@ function parseOne(raw: unknown): Document {
   return raw as Document;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const store = createSupabaseStore<Document>(TABLE, parseOne);
 
@@ -53,7 +51,7 @@ export const documentsStore = {
   getByPartner: (partnerId: string) => store.get().filter((d) => d.partner_id === partnerId),
   getByTransaction: (txId: string) => store.get().filter((d) => d.transaction_id === txId),
   create: (input: DocumentInput): Document => {
-    const doc: Document = { ...normalizeInput(input), id: makeId(), created_at: new Date().toISOString() };
+    const doc: Document = { ...normalizeInput(input), id: newId(), created_at: new Date().toISOString() };
     store.update((all) => [doc, ...all]);
     return doc;
   },

@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { OperationalEvent, StockAdjustment } from '../../core/types/domain';
 
@@ -12,9 +13,6 @@ function parseAdjustment(raw: unknown): StockAdjustment {
   return raw as StockAdjustment;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const evStore = createSupabaseStore<OperationalEvent>(EVENTS_TABLE, parseEvent, 'event_date');
 const adjStore = createSupabaseStore<StockAdjustment>(ADJUSTMENTS_TABLE, parseAdjustment, 'adjustment_date');
@@ -32,7 +30,7 @@ export const operationalEventsStore = {
   getByAsset: (assetId: string) => evStore.get().filter((e) => e.asset_id === assetId),
   getByProject: (projectId: string) => evStore.get().filter((e) => e.project_id === projectId),
   create: (input: OperationalEventInput): OperationalEvent => {
-    const event: OperationalEvent = { ...input, id: makeId(), created_at: new Date().toISOString() };
+    const event: OperationalEvent = { ...input, id: newId(), created_at: new Date().toISOString() };
     evStore.update((all) => [event, ...all]);
     return event;
   },
@@ -56,7 +54,7 @@ export const stockAdjustmentsStore = {
   getAll: () => adjStore.get(),
   getByAsset: (assetId: string) => adjStore.get().filter((a) => a.asset_id === assetId),
   create: (input: StockAdjustmentInput): StockAdjustment => {
-    const adj: StockAdjustment = { ...input, id: makeId(), created_at: new Date().toISOString() };
+    const adj: StockAdjustment = { ...input, id: newId(), created_at: new Date().toISOString() };
     adjStore.update((all) => [adj, ...all]);
     return adj;
   },

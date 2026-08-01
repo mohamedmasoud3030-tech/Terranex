@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { guardProjectDeletion } from '../../core/lib/deletionGuards';
 import type { Project } from '../../core/types/domain';
@@ -8,9 +9,6 @@ function parseOne(raw: unknown): Project {
   return raw as Project;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const store = createSupabaseStore<Project>(TABLE, parseOne);
 
@@ -23,7 +21,7 @@ export const projectsStore = {
   getAll: () => store.get(),
   create: (input: ProjectInput): Project => {
     const now = new Date().toISOString();
-    const project: Project = { ...input, id: makeId(), created_at: now, updated_at: now };
+    const project: Project = { ...input, id: newId(), created_at: now, updated_at: now };
     store.update((all) => [project, ...all]);
     return project;
   },

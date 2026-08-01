@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { guardPartnerDeletion } from '../../core/lib/deletionGuards';
 import type { Partner, ProjectPartner } from '../../core/types/domain';
@@ -13,9 +14,6 @@ function parseProjectPartner(raw: unknown): ProjectPartner {
   return raw as ProjectPartner;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const pStore = createSupabaseStore<Partner>(PARTNERS_TABLE, parsePartner);
 const ppStore = createSupabaseStore<ProjectPartner>(PROJECT_PARTNERS_TABLE, parseProjectPartner, 'id');
@@ -31,7 +29,7 @@ export type ProjectPartnerInput = Omit<ProjectPartner, 'id'>;
 export const partnersStore = {
   getAll: () => pStore.get(),
   create: (input: PartnerInput): Partner => {
-    const partner: Partner = { ...input, id: makeId(), created_at: new Date().toISOString() };
+    const partner: Partner = { ...input, id: newId(), created_at: new Date().toISOString() };
     pStore.update((all) => [partner, ...all]);
     return partner;
   },
@@ -55,7 +53,7 @@ export const projectPartnersStore = {
   getAll: () => ppStore.get(),
   getByProject: (projectId: string) => ppStore.get().filter((pp) => pp.project_id === projectId),
   create: (input: ProjectPartnerInput): ProjectPartner => {
-    const pp: ProjectPartner = { ...input, id: makeId() };
+    const pp: ProjectPartner = { ...input, id: newId() };
     ppStore.update((all) => [pp, ...all]);
     return pp;
   },

@@ -5,6 +5,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { todayIso } from '../../core/lib/dateUtils';
+import { newId } from '../../core/lib/id';
 import type { Currency, ExchangeRate } from '../../core/types/domain';
 
 const STORAGE_KEY = 'terranex.exchangeRates.v1';
@@ -58,7 +59,7 @@ export function ExchangeRateSection({ locale }: { locale: 'ar' | 'en' }) {
       return;
     }
     const entry: ExchangeRate = {
-      id: crypto.randomUUID(),
+      id: newId(),
       from_currency: currency,
       to_currency: 'EGP',
       rate: parsedRate,

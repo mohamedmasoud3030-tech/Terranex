@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { EntityInspectorDrawer } from '../../components/ui/EntityInspectorDrawer';
 import { EmptyState } from '../../components/ui/States';
 import { WorkspaceShell, useWorkspaceUrlState } from '../../components/workspace';
+import { downloadBlob } from '../../core/lib/download';
 import { formatEgp } from '../../core/lib/profitability';
 import { useI18n } from '../../core/i18n/context';
 import type { Asset, Partner, Project, SectorId } from '../../core/types/domain';
@@ -84,12 +85,7 @@ export function IntelligenceHub({ onFinanceDrillDown }: { onFinanceDrillDown?: (
 
   function exportCsv() {
     const blob = new Blob([`\uFEFF${buildFilteredReportCsv(report)}`], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `Terranex-Intelligence-${asOf}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `Terranex-Intelligence-${asOf}.csv`);
   }
 
   async function exportPdf() {

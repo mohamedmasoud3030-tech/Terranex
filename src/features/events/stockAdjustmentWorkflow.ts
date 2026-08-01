@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import type { StockAdjustment } from '../../core/types/domain';
 import {
   generateRequestId,
@@ -56,7 +57,7 @@ export function buildStockAdjustmentAtomicPayload(
 export async function recordStockAdjustmentAtomic(
   input: StockAdjustmentInput,
 ): Promise<StockAdjustment> {
-  const adjustmentId = crypto.randomUUID();
+  const adjustmentId = newId();
   const result = await invokeFinanceRpc<RecordStockAdjustmentAtomicResult>(
     P1B_ATOMIC_RPC_NAMES[5],
     buildStockAdjustmentAtomicPayload(input, adjustmentId),

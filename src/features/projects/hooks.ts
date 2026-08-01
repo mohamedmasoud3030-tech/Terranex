@@ -1,29 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useHydratedCollection } from '../../core/hooks';
 import { projectsHydration, projectsStore, type ProjectInput } from './storage';
 import type { Project } from '../../core/types/domain';
 
 export function useProjects() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const unsubscribe = projectsStore.subscribe((next) => {
-      if (active) setProjects(next);
-    });
-    void projectsHydration.ready.then(() => {
-      if (!active) return;
-      const loadError = projectsHydration.getLoadError();
-      setError(loadError);
-      setStatus(loadError ? 'error' : 'ready');
-      setProjects(projectsStore.getAll());
-    });
-    return () => {
-      active = false;
-      unsubscribe();
-    };
-  }, []);
+  const { items: projects, status, error, retry } = useHydratedCollection<Project>(
+    projectsStore,
+    projectsHydration,
+  );
 
   const createProject = useCallback(async (input: ProjectInput) => {
     const project = projectsStore.create(input);
@@ -41,15 +25,6 @@ export function useProjects() {
   const resetProjects = useCallback(async () => {
     projectsStore.reset();
     await projectsHydration.flush();
-  }, []);
-  const retry = useCallback(async () => {
-    setStatus('loading');
-    setError(null);
-    await projectsHydration.rehydrate();
-    const loadError = projectsHydration.getLoadError();
-    setProjects(projectsStore.getAll());
-    setError(loadError);
-    setStatus(loadError ? 'error' : 'ready');
   }, []);
 
   return { projects, createProject, updateProject, deleteProject, resetProjects, status, error, retry };
