@@ -321,6 +321,27 @@ function ledgerEffect(entry) {
   }
 }
 
+function otherActiveOwnershipPct(projectId, partnerId) {
+  return rows('project_partners')
+    .filter((row) => row.project_id === projectId && row.partner_id !== partnerId && !row.effective_to)
+    .reduce((sum, row) => sum + Number(row.equity_pct), 0);
+}
+
+function validateFakeOwnershipChange(params, currentPct, newPct, otherPct) {
+  const rules = [
+    () => newPct < 0 || newPct > 100 ? 'equity percentage must be between 0 and 100' : null,
+    () => params.p_change_type === 'entry' && currentPct > 0 ? 'cannot create entry: partner already has active ownership' : null,
+    () => params.p_change_type === 'entry' && newPct <= 0 ? 'entry must set a positive percentage' : null,
+    () => params.p_change_type === 'exit' && currentPct === 0 ? 'cannot exit: partner has no active ownership' : null,
+    () => params.p_change_type === 'exit' && newPct > 0 ? 'exit must set percentage to 0' : null,
+    () => params.p_change_type === 'increase' && newPct <= currentPct ? 'increase must set a higher percentage than current' : null,
+    () => params.p_change_type === 'decrease' && newPct >= currentPct ? 'decrease must set a lower percentage than current' : null,
+    () => otherPct + newPct > 100 ? 'total equity would exceed 100%' : null,
+  ];
+  const message = rules.map((rule) => rule()).find(Boolean);
+  if (message) throw new Error(message);
+}
+
 const RPC_HANDLERS = {
   guard_project_deletion: (params) => {
     const id = params.p_project_id;
@@ -406,17 +427,8 @@ const RPC_HANDLERS = {
     const current = activeProjectPartner(params.p_project_id, params.p_partner_id);
     const currentPct = Number(current?.equity_pct ?? 0);
     const newPct = Number(params.p_new_pct);
-    if (newPct < 0 || newPct > 100) throw new Error('equity percentage must be between 0 and 100');
-    if (params.p_change_type === 'entry' && currentPct > 0) throw new Error('cannot create entry: partner already has active ownership');
-    if (params.p_change_type === 'entry' && newPct <= 0) throw new Error('entry must set a positive percentage');
-    if (params.p_change_type === 'exit' && currentPct === 0) throw new Error('cannot exit: partner has no active ownership');
-    if (params.p_change_type === 'exit' && newPct > 0) throw new Error('exit must set percentage to 0');
-    if (params.p_change_type === 'increase' && newPct <= currentPct) throw new Error('increase must set a higher percentage than current');
-    if (params.p_change_type === 'decrease' && newPct >= currentPct) throw new Error('decrease must set a lower percentage than current');
-    const otherPct = rows('project_partners')
-      .filter((row) => row.project_id === params.p_project_id && row.partner_id !== params.p_partner_id && !row.effective_to)
-      .reduce((sum, row) => sum + Number(row.equity_pct), 0);
-    if (otherPct + newPct > 100) throw new Error('total equity would exceed 100%');
+    const otherPct = otherActiveOwnershipPct(params.p_project_id, params.p_partner_id);
+    validateFakeOwnershipChange(params, currentPct, newPct, otherPct);
     if (current) {
       table('project_partners').set(current.id, { ...current, effective_to: params.p_effective_date });
     }

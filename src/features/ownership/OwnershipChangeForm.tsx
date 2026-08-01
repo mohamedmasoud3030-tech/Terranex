@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { FormError, FormField, FormLabel } from '../../components/ui/FormControls';
-import type { EquityChangeType, Partner, ProjectPartner } from '../../core/types/domain';
+import type { EquityChangeEvent, EquityChangeType, Partner, ProjectPartner } from '../../core/types/domain';
 import {
   buildOwnershipTimeline,
   getPartnerOwnershipPct,
@@ -13,7 +13,6 @@ import {
   createOwnershipRequestId,
   type ChangeOwnershipInput,
 } from './service';
-import type { EquityChangeEvent } from '../../core/types/domain';
 
 const changeTypes: EquityChangeType[] = ['entry', 'increase', 'decrease', 'exit', 'correction'];
 
@@ -62,7 +61,7 @@ export function OwnershipChangeForm({
     ? currentProjectPartners
         .filter((record) => record.partner_id === partnerId)
         .map((record) => normalizeDateOnly(record.effective_from, 'تاريخ بداية الملكية'))
-        .sort()
+        .sort((first, second) => first.localeCompare(second))
         .at(-1)
     : undefined;
 
@@ -77,53 +76,56 @@ export function OwnershipChangeForm({
     return labels[type];
   }
 
+  function validationError(): string | null {
+    const rules: Array<() => string | null> = [
+      () => partnerId ? null : label('اختر الشريك أولاً.', 'Choose a partner first.'),
+      () => reason.trim() ? null : label('سبب تغيير الملكية مطلوب للحفظ في السجل التاريخي.', 'A reason is required for the ownership audit trail.'),
+      () => {
+        try {
+          normalizeDateOnly(effectiveDate, 'تاريخ سريان الملكية');
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : label('تاريخ غير صالح.', 'Invalid date.');
+        }
+      },
+      () => partnerLatestDate && effectiveDate < partnerLatestDate
+        ? label(
+          `تاريخ السريان يجب ألا يسبق آخر فترة مسجلة لهذا الشريك (${partnerLatestDate}).`,
+          `Effective date cannot be before the partner's latest recorded period (${partnerLatestDate}).`,
+        )
+        : null,
+      () => Number.isFinite(parsedPct) && parsedPct >= 0 && parsedPct <= 100
+        ? null
+        : label('النسبة الجديدة يجب أن تكون بين 0 و100%.', 'The new percentage must be between 0 and 100%.'),
+      () => changeType === 'entry' && beforePct > 0
+        ? label('الشريك لديه ملكية فعالة بالفعل؛ استخدم زيادة أو تخفيض.', 'The partner already has active ownership; use increase or decrease.')
+        : null,
+      () => changeType === 'increase' && parsedPct <= beforePct
+        ? label('الزيادة يجب أن ترفع النسبة عن الحالة السابقة.', 'An increase must set a higher percentage.')
+        : null,
+      () => changeType === 'decrease' && parsedPct >= beforePct
+        ? label('التخفيض يجب أن يقلل النسبة عن الحالة السابقة.', 'A decrease must set a lower percentage.')
+        : null,
+      () => changeType === 'exit' && beforePct <= 0
+        ? label('لا يمكن إخراج شريك لا يملك حصة فعالة.', 'Cannot exit a partner with no active ownership.')
+        : null,
+      () => summary.exceeds_full
+        ? label('لا يمكن تنفيذ التغيير لأنه سيتجاوز إجمالي الملكية 100%.', 'This change would exceed 100% total ownership.')
+        : null,
+    ];
+    for (const rule of rules) {
+      const message = rule();
+      if (message) return message;
+    }
+    return null;
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    if (!partnerId) {
-      setError(label('اختر الشريك أولاً.', 'Choose a partner first.'));
-      return;
-    }
-    if (!reason.trim()) {
-      setError(label('سبب تغيير الملكية مطلوب للحفظ في السجل التاريخي.', 'A reason is required for the ownership audit trail.'));
-      return;
-    }
-    let date: string;
-    try {
-      date = normalizeDateOnly(effectiveDate, 'تاريخ سريان الملكية');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : label('تاريخ غير صالح.', 'Invalid date.'));
-      return;
-    }
-    if (partnerLatestDate && date < partnerLatestDate) {
-      setError(label(
-        `تاريخ السريان يجب ألا يسبق آخر فترة مسجلة لهذا الشريك (${partnerLatestDate}).`,
-        `Effective date cannot be before the partner's latest recorded period (${partnerLatestDate}).`,
-      ));
-      return;
-    }
-    if (!Number.isFinite(parsedPct) || parsedPct < 0 || parsedPct > 100) {
-      setError(label('النسبة الجديدة يجب أن تكون بين 0 و100%.', 'The new percentage must be between 0 and 100%.'));
-      return;
-    }
-    if (changeType === 'entry' && beforePct > 0) {
-      setError(label('الشريك لديه ملكية فعالة بالفعل؛ استخدم زيادة أو تخفيض.', 'The partner already has active ownership; use increase or decrease.'));
-      return;
-    }
-    if (changeType === 'increase' && parsedPct <= beforePct) {
-      setError(label('الزيادة يجب أن ترفع النسبة عن الحالة السابقة.', 'An increase must set a higher percentage.'));
-      return;
-    }
-    if (changeType === 'decrease' && parsedPct >= beforePct) {
-      setError(label('التخفيض يجب أن يقلل النسبة عن الحالة السابقة.', 'A decrease must set a lower percentage.'));
-      return;
-    }
-    if (changeType === 'exit' && beforePct <= 0) {
-      setError(label('لا يمكن إخراج شريك لا يملك حصة فعالة.', 'Cannot exit a partner with no active ownership.'));
-      return;
-    }
-    if (summary.exceeds_full) {
-      setError(label('لا يمكن تنفيذ التغيير لأنه سيتجاوز إجمالي الملكية 100%.', 'This change would exceed 100% total ownership.'));
+    const message = validationError();
+    if (message) {
+      setError(message);
       return;
     }
 
@@ -131,7 +133,7 @@ export function OwnershipChangeForm({
       requestId: requestId.current,
       project_id: projectId,
       partner_id: partnerId,
-      effective_date: date,
+      effective_date: normalizeDateOnly(effectiveDate, 'تاريخ سريان الملكية'),
       new_pct: parsedPct,
       change_type: changeType,
       reason: reason.trim(),

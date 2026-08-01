@@ -36,6 +36,8 @@ declare
   v_share_egp numeric;
   v_result jsonb;
   v_ledger_ids uuid[] := '{}'::uuid[];
+  v_check_violation constant text := '23514';
+  v_internal_allocation_config constant text := 'terranex.internal_distribution_allocation_adjustment';
 begin
   select owner_id into v_owner_id
   from public.projects
@@ -52,13 +54,13 @@ begin
   if v_cached is not null then return v_cached; end if;
 
   if p_total_amount <= 0 then
-    raise exception using errcode = '23514', message = 'distribution amount must be positive';
+    raise exception using errcode = v_check_violation, message = 'distribution amount must be positive';
   end if;
   if p_fx_rate <= 0 then
-    raise exception using errcode = '23514', message = 'distribution fx_rate must be positive';
+    raise exception using errcode = v_check_violation, message = 'distribution fx_rate must be positive';
   end if;
   if p_ownership_as_of_date > p_distribution_date then
-    raise exception using errcode = '23514',
+    raise exception using errcode = v_check_violation,
       message = 'ownership_as_of_date cannot be after distribution_date';
   end if;
 
@@ -104,7 +106,7 @@ begin
   end loop;
 
   if v_largest_partner_id is null then
-    raise exception using errcode = '23514', message = 'distribution requires at least one active ownership allocation';
+    raise exception using errcode = v_check_violation, message = 'distribution requires at least one active ownership allocation';
   end if;
 
   declare
@@ -115,14 +117,14 @@ begin
     v_rounding_diff_egp := v_total_amount_egp - v_allocated_egp_total;
 
       if abs(v_rounding_diff) > 0.001 or abs(v_rounding_diff_egp) > 0.001 then
-        perform set_config('terranex.internal_distribution_allocation_adjustment', 'on', true);
+        perform set_config(v_internal_allocation_config, 'on', true);
         update public.distribution_allocations
         set allocated_amount = allocated_amount + v_rounding_diff,
             allocated_amount_egp = allocated_amount_egp + v_rounding_diff_egp
         where distribution_id = v_distribution_id
           and partner_id = v_largest_partner_id
           and owner_id = v_owner_id;
-        perform set_config('terranex.internal_distribution_allocation_adjustment', 'off', true);
+        perform set_config(v_internal_allocation_config, 'off', true);
       end if;
   end;
 
@@ -185,8 +187,11 @@ language plpgsql
 security invoker
 set search_path = public
 as $fn$
+declare
+  v_feature_not_supported constant text := '0A000';
+  v_immutable_message constant text := 'immutable ownership history cannot be updated or deleted';
 begin
-  raise exception using errcode = '0A000', message = 'immutable ownership history cannot be updated or deleted';
+  raise exception using errcode = v_feature_not_supported, message = v_immutable_message;
 end;
 $fn$;
 
@@ -196,19 +201,23 @@ language plpgsql
 security invoker
 set search_path = public
 as $fn$
+declare
+  v_feature_not_supported constant text := '0A000';
+  v_internal_allocation_config constant text := 'terranex.internal_distribution_allocation_adjustment';
+  v_immutable_allocation_message constant text := 'distribution allocations are immutable';
 begin
-  if current_setting('terranex.internal_distribution_allocation_adjustment', true) = 'on' then
+  if current_setting(v_internal_allocation_config, true) = 'on' then
     return new;
   end if;
   if tg_op = 'DELETE' then
-    raise exception using errcode = '0A000', message = 'distribution allocations are immutable';
+    raise exception using errcode = v_feature_not_supported, message = v_immutable_allocation_message;
   end if;
   if new.distribution_id is distinct from old.distribution_id
      or new.partner_id is distinct from old.partner_id
      or new.equity_pct_snapshot is distinct from old.equity_pct_snapshot
      or new.allocated_amount is distinct from old.allocated_amount
      or new.allocated_amount_egp is distinct from old.allocated_amount_egp then
-    raise exception using errcode = '0A000', message = 'distribution allocation snapshot cannot be edited';
+    raise exception using errcode = v_feature_not_supported, message = 'distribution allocation snapshot cannot be edited';
   end if;
   return new;
 end;

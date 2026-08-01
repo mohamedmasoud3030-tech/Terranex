@@ -150,7 +150,14 @@ export function DistributionForm({
         </FormField>
         <FormField>
           <FormLabel>{label('العملة', 'Currency')}</FormLabel>
-          <select aria-label={label('العملة', 'Currency')} value={currency} onChange={(event) => { const next = event.target.value as Currency; setCurrency(next); if (next === 'EGP') setFxRate('1'); setConfirmed(false); }} className={inputClass} disabled={pending}>
+          <select aria-label={label('العملة', 'Currency')} value={currency} onChange={(event) => {
+            const next = event.target.value as Currency;
+            setCurrency(next);
+            if (next === 'EGP') {
+              setFxRate('1');
+            }
+            setConfirmed(false);
+          }} className={inputClass} disabled={pending}>
             {currencies.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </FormField>

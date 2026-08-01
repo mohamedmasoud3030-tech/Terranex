@@ -200,7 +200,9 @@ function extractMessage(error: unknown): string {
     const value = error.message;
     return typeof value === 'string' ? value : String(value);
   }
-  return String(error ?? '');
+  if (error === null || error === undefined) return '';
+  if (typeof error === 'object') return JSON.stringify(error);
+  return String(error);
 }
 
 function extractCode(error: unknown): string | undefined {
@@ -222,27 +224,34 @@ function classifyRpcError(error: unknown): OwnershipErrorKind {
   return 'unknown';
 }
 
+const OWNERSHIP_ERROR_TRANSLATIONS: Array<{ includes: string; message: string }> = [
+  { includes: 'total equity would exceed 100', message: 'لا يمكن تنفيذ التغيير لأن إجمالي نسب الملكية سيتجاوز 100%.' },
+  { includes: 'already has active ownership', message: 'لا يمكن إدخال الشريك لأنه يملك حصة فعالة بالفعل في هذا المشروع.' },
+  { includes: 'entry must set a positive', message: 'إدخال الشريك يتطلب نسبة ملكية موجبة.' },
+  { includes: 'has no active ownership', message: 'لا توجد ملكية فعالة لهذا الشريك في المشروع في الوقت الحالي.' },
+  { includes: 'exit must set percentage to 0', message: 'خروج الشريك يتطلب أن تكون النسبة الجديدة صفرًا.' },
+  { includes: 'higher percentage', message: 'عملية الزيادة يجب أن ترفع النسبة عن النسبة الحالية.' },
+  { includes: 'lower percentage', message: 'عملية التخفيض يجب أن تقلل النسبة عن النسبة الحالية.' },
+  { includes: 'ownership_as_of_date cannot be after distribution_date', message: 'تاريخ الملكية المستخدم للتوزيع يجب أن يسبق تاريخ التوزيع أو يساويه.' },
+  { includes: 'distribution amount must be positive', message: 'مبلغ التوزيع يجب أن يكون أكبر من صفر.' },
+  { includes: 'ledger entry amount must be positive', message: 'مبلغ حركة الشريك يجب أن يكون أكبر من صفر.' },
+  { includes: 'project not found', message: 'المشروع غير موجود أو لا تملك صلاحية الوصول إليه.' },
+  { includes: 'reversal target entry not found', message: 'قيد العكس غير موجود أو لا تملك صلاحية الوصول إليه.' },
+];
+
+const ERROR_KIND_MESSAGES: Record<Exclude<OwnershipErrorKind, 'validation'>, string> = {
+  authorization: 'ليست لديك صلاحية تنفيذ هذه العملية على هذه السجلات.',
+  conflict: 'حدث تعارض أثناء الحفظ. تمت إعادة تحميل البيانات، راجع الحالة الحالية ثم أعد المحاولة.',
+  network: 'تعذر الاتصال بالخادم أو العثور على دالة Supabase المطلوبة. تمت إعادة مزامنة البيانات.',
+  not_found: 'السجل المطلوب غير موجود أو لا يمكن الوصول إليه.',
+  unknown: 'تعذر تنفيذ عملية الملكية. تمت إعادة تحميل البيانات، ويمكن مراجعة الخطأ الفني في أدوات التشخيص.',
+};
+
 function arabicMessageFor(kind: OwnershipErrorKind, error: unknown): string {
   const message = extractMessage(error).toLowerCase();
-  if (message.includes('total equity would exceed 100')) return 'لا يمكن تنفيذ التغيير لأن إجمالي نسب الملكية سيتجاوز 100%.';
-  if (message.includes('already has active ownership')) return 'لا يمكن إدخال الشريك لأنه يملك حصة فعالة بالفعل في هذا المشروع.';
-  if (message.includes('entry must set a positive')) return 'إدخال الشريك يتطلب نسبة ملكية موجبة.';
-  if (message.includes('has no active ownership')) return 'لا توجد ملكية فعالة لهذا الشريك في المشروع في الوقت الحالي.';
-  if (message.includes('exit must set percentage to 0')) return 'خروج الشريك يتطلب أن تكون النسبة الجديدة صفرًا.';
-  if (message.includes('higher percentage')) return 'عملية الزيادة يجب أن ترفع النسبة عن النسبة الحالية.';
-  if (message.includes('lower percentage')) return 'عملية التخفيض يجب أن تقلل النسبة عن النسبة الحالية.';
-  if (message.includes('ownership_as_of_date cannot be after distribution_date')) return 'تاريخ الملكية المستخدم للتوزيع يجب أن يسبق تاريخ التوزيع أو يساويه.';
-  if (message.includes('distribution amount must be positive')) return 'مبلغ التوزيع يجب أن يكون أكبر من صفر.';
-  if (message.includes('ledger entry amount must be positive')) return 'مبلغ حركة الشريك يجب أن يكون أكبر من صفر.';
-  if (message.includes('project not found')) return 'المشروع غير موجود أو لا تملك صلاحية الوصول إليه.';
-  if (message.includes('reversal target entry not found')) return 'قيد العكس غير موجود أو لا تملك صلاحية الوصول إليه.';
-
-  if (kind === 'authorization') return 'ليست لديك صلاحية تنفيذ هذه العملية على هذه السجلات.';
-  if (kind === 'conflict') return 'حدث تعارض أثناء الحفظ. تمت إعادة تحميل البيانات، راجع الحالة الحالية ثم أعد المحاولة.';
-  if (kind === 'network') return 'تعذر الاتصال بالخادم أو العثور على دالة Supabase المطلوبة. تمت إعادة مزامنة البيانات.';
-  if (kind === 'validation') return translateServerError(error);
-  if (kind === 'not_found') return 'السجل المطلوب غير موجود أو لا يمكن الوصول إليه.';
-  return 'تعذر تنفيذ عملية الملكية. تمت إعادة تحميل البيانات، ويمكن مراجعة الخطأ الفني في أدوات التشخيص.';
+  const translated = OWNERSHIP_ERROR_TRANSLATIONS.find((item) => message.includes(item.includes));
+  if (translated) return translated.message;
+  return kind === 'validation' ? translateServerError(error) : ERROR_KIND_MESSAGES[kind];
 }
 
 function toOwnershipError(rpc: OwnershipRpcName, params: RpcParams, error: unknown): OwnershipServiceError {
