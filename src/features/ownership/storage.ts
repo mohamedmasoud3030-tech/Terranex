@@ -1,5 +1,5 @@
-import { newId } from '../../core/lib/id';
 import { createSupabaseStore, type SupabaseStore } from '../../core/storage/supabaseStore';
+import { sumLedgerEffects } from './model';
 import type {
   EquityChangeEvent,
   PartnerLedgerEntry,
@@ -94,37 +94,15 @@ export const partnerLedgerEntriesStorage = {
   getAll: () => partnerLedgerEntriesStore.get(),
   ...byProjectAndPartnerFilters(partnerLedgerEntriesStore),
   /**
-   * Calculate partner balance from ledger entries.
-   * Balance = sum of contributions/distributions - sum of withdrawals/payments.
-   * Excludes reversal entries (they cancel the original).
+   * Calculate partner balance from immutable ledger entries. Reversal rows and
+   * originals referenced by reversal rows remain visible but have zero active
+   * financial effect.
    */
   calculateBalance: (projectId: string, partnerId: string): number => {
     const entries = partnerLedgerEntriesStore
       .get()
-      .filter(
-        (e) =>
-          e.project_id === projectId &&
-          e.partner_id === partnerId &&
-          e.entry_type !== 'reversal',
-      );
-
-    let balance = 0;
-    for (const entry of entries) {
-      switch (entry.entry_type) {
-        case 'capital_contribution':
-        case 'distribution_entitlement':
-          balance += entry.amount_egp;
-          break;
-        case 'withdrawal':
-        case 'distribution_payment':
-          balance -= entry.amount_egp;
-          break;
-        case 'correction':
-          balance += entry.amount_egp;
-          break;
-      }
-    }
-    return balance;
+      .filter((e) => e.project_id === projectId && e.partner_id === partnerId);
+    return sumLedgerEffects(entries);
   },
   ...lifecycleMethods(partnerLedgerEntriesStore),
 };
@@ -135,16 +113,6 @@ export const distributionsStorage = {
     distributionsStore.get().filter((d) => d.project_id === projectId),
   getById: (id: string) =>
     distributionsStore.get().find((d) => d.id === id),
-  create: (input: DistributionInput): Distribution => {
-    const distribution: Distribution = {
-      ...input,
-      id: newId(),
-      created_by: '', // Will be set by the server
-      created_at: new Date().toISOString(),
-    };
-    distributionsStore.update((all) => [distribution, ...all]);
-    return distribution;
-  },
   ...lifecycleMethods(distributionsStore),
 };
 
@@ -154,10 +122,5 @@ export const distributionAllocationsStorage = {
     distributionAllocationsStore.get().filter((a) => a.distribution_id === distributionId),
   getByPartner: (partnerId: string) =>
     distributionAllocationsStore.get().filter((a) => a.partner_id === partnerId),
-  createMany: (allocations: DistributionAllocationInput[]): DistributionAllocation[] => {
-    const newAllocations = allocations.map((a) => ({ ...a, id: newId() }));
-    distributionAllocationsStore.update((all) => [...newAllocations, ...all]);
-    return newAllocations;
-  },
   ...lifecycleMethods(distributionAllocationsStore),
 };
