@@ -11,6 +11,7 @@
 - الأرباح والخسائر.
 - الذمم المدينة والدائنة: من له فلوس؟ ومن عليه فلوس؟
 - المستندات والقرارات والسجل التشغيلي.
+- الملكية المؤرخة للمشاريع، دفتر الشريك، وتوزيعات الأرباح المجمدة عبر RPCs ذرية.
 
 ## نطاق البداية
 
@@ -52,7 +53,7 @@
 npm ci          ✅
 npm run typecheck   ✅ 0 errors
 npm run lint        ✅ pass
-npm run test        ✅ 96 / 96 pass
+npm run test        ✅ 226 / 226 pass
 npm run build       ✅ success
 ```
 
@@ -65,7 +66,7 @@ npm run build       ✅ success
 | Supabase migrations مُدارة بالإصدار | ✅ **مُنجز (P1A)** — 7 migrations تحت `supabase/migrations/` مع rollback لكل واحدة |
 | RLS policies + `guard_*_deletion` RPC | ✅ **مكتوبة ومُختبَرة (P1A)** — 44 سياسة + 5 دوال، مُثبتة على Postgres حقيقي |
 | **نشر المخطط على مشروع Supabase الفعلي** | ❌ لم يُطبَّق بعد — الـ migrations موجودة في الريبو فقط |
-| كتابات مالية ذرية (تسوية + توزيعات + التزام) | ❌ كتابات متعددة غير ذرية — نطاق **P1B** |
+| كتابات مالية ذرية (تسوية + توزيعات + التزام) | ✅ RPCs ذرية للتسويات والمعاملات والملكية والتوزيعات داخل الريبو؛ لم تُنشر إنتاجياً |
 | نسخ احتياطي/استرجاع من Supabase | ❌ النسخ الحالي يقرأ localStorage فقط — نطاق مرحلة لاحقة |
 
 **P1A أنجز إعادة إنتاج البنية، لا نشرها.** المخطط الآن قابل لإعادة الإنشاء والمراجعة
@@ -74,9 +75,9 @@ npm run build       ✅ success
 ### طبقة قاعدة البيانات — P1A
 
 ```
-supabase/migrations/   7 ملفات — enums، 11 جدول، فهارس، RLS، RPCs، صلاحيات، backfill
-supabase/rollback/     7 ملفات — تراجع لكل migration مع توثيق ما لا يمكن عكسه
-supabase/tests/        شim + 4 مجموعات اختبار على Postgres حقيقي
+supabase/migrations/   مخطط مُدار بالإصدار — الجداول الأساسية + RPCs المالية + ملكية المشاريع والتوزيعات
+supabase/rollback/     تراجع مقابل لكل migration مع توثيق ما لا يمكن عكسه
+supabase/tests/        shim + مجموعات اختبار على Postgres حقيقي
 scripts/db-test.sh     replay من قاعدة فارغة + forward→rollback→reapply
 ```
 

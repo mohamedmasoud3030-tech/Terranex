@@ -50,8 +50,9 @@ orders by `id` — a UUID — which is a correctness smell to flag, not silently
 Only one `.rpc(` call site exists in the entire codebase:
 `src/core/lib/deletionGuards.ts:14` → `requireClient().rpc(fn, { [param]: id })`.
 The ownership-domain RPCs (`change_ownership_atomic`, `record_distribution_atomic`,
-`record_partner_ledger_entry_atomic`, `get_ownership_as_of`) are called server-side
-via Supabase client RPC.
+`record_partner_ledger_entry_atomic`, `get_ownership_as_of`) are called through the typed
+ownership service boundary. `record_distribution_atomic` creates the distribution header,
+frozen allocations, and `distribution_entitlement` partner-ledger entries in one database transaction.
 
 | # | Function | Parameter | Caller |
 |---|---|---|---|
@@ -168,6 +169,7 @@ statement instead of once per row.
 | `supabase/migrations/…20260801000400_ownership_domain_rpcs.sql` | atomic ownership RPCs |
 | `supabase/migrations/…20260801000500_ownership_data_migration.sql` | non-destructive data migration |
 | `supabase/migrations/…20260801000600_fix_p1c_idempotency_ordering.sql` | restore idempotent replay before validation in `record_transaction_atomic` |
+| `supabase/migrations/…20260801000700_ownership_distribution_entitlements_and_immutability.sql` | post distribution entitlement ledger rows atomically and enforce immutable ownership/ledger/allocation history |
 | `supabase/rollback/*.down.sql` | one rollback per migration, reversibility documented |
 | `supabase/tests/00–04` | shim + 4 behavioural suites against real Postgres |
 | `scripts/db-test.sh` | 6-stage runner incl. forward → rollback → reapply |

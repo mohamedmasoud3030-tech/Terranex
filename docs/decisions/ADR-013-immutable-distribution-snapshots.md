@@ -28,9 +28,11 @@ Implement distributions with immutable snapshots:
    `effective_from <= ownership_as_of_date` and `(effective_to IS NULL OR effective_to >= ownership_as_of_date)`
    to get the ownership percentages at that point in time.
 
-5. **Payment tracking**: Each allocation has a `status` (due/paid/reversed), `payment_date`,
-   and `payment_document_id`. When paid, a corresponding `partner_ledger_entry` is created
-   with `entry_type = 'distribution_payment'` and linked via `related_ledger_entry_id`.
+5. **Ledger integration and payment tracking**: `record_distribution_atomic` creates
+   `distribution_entitlement` ledger entries for every frozen allocation in the same database
+   transaction. Each allocation has a `status` (due/paid/reversed), `payment_date`, and
+   `payment_document_id`. When paid, a corresponding `partner_ledger_entry` is created with
+   `entry_type = 'distribution_payment'` and linked via `related_ledger_entry_id`.
 
 6. **Status workflow**: Distributions follow `draft → approved → paid → reversed`.
    Allocations follow `due → paid → reversed`.

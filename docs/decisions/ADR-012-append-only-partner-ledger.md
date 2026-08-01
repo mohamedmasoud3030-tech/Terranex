@@ -22,9 +22,10 @@ Implement `partner_ledger_entries` as an append-only financial record:
    `distribution_payment`, `correction`, `reversal`. Each type has clear semantics for
    balance calculations.
 
-3. **Balance calculation**: Running balance = sum of contributions/entitlements - sum of
-   withdrawals/payments. Reversals cancel the original entry. The function
-   `partnerLedgerEntriesStorage.calculateBalance()` implements this logic.
+3. **Balance calculation**: Running balance = sum of active contributions/entitlements - sum of
+   active withdrawals/payments. Reversal rows and originals referenced by reversal rows remain
+   visible for audit but have zero active effect. `partnerLedgerEntriesStorage.calculateBalance()`
+   and the ownership model helpers implement this logic.
 
 4. **Linking**: Entries can reference:
    - `related_equity_event_id` — links to ownership changes

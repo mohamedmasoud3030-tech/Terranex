@@ -95,10 +95,6 @@ a guard can never leak another tenant's row counts through its blocker numbers.
   ephemeral Postgres, but no production Supabase project has been migrated. Until then
   `deletionGuards.ts` still receives PGRST202 and fails closed, blocking every guarded
   delete with "تعذر التحقق من الروابط التشغيلية".
-- **Financial writes are not atomic.** Recording a settlement writes the settlement, then
-  the allocations, then the obligation totals as separate round trips. Application-level
-  rollback exists, but a crash or network loss mid-sequence leaves inconsistent data.
-  This needs a transactional RPC.
 - **Backup/restore does not cover Supabase.** `backup.ts` and `archiveBackup.ts` read
   `localStorage`, which no longer holds domain data.
 
@@ -120,11 +116,16 @@ The production runtime does not create demo projects, fixture assets, sample tra
 
 Recoverable legacy finance records migrate into the supported ledger stores. Records that cannot be mapped safely remain preserved for audit without invented project or partner links.
 
-## Profitability definitions
+## Profitability and ownership definitions
 
 - Accounting profit equals income minus expenses.
 - Open receivables and open payables are displayed separately.
 - Cash exposure equals open receivables minus open payables.
+- Ownership is project-specific and effective-dated. Production ownership mutations use only the typed service in `src/features/ownership/service.ts`, which calls `change_ownership_atomic`, `record_distribution_atomic`, and `record_partner_ledger_entry_atomic`.
+- Partner entitlement uses a deterministic temporal rule: every transaction is allocated to partners using the ownership percentages effective on that transaction date. Current ownership is never applied retroactively to earlier transactions.
+- Profit distributions are separate from settlements. Distributions freeze allocations at `ownership_as_of_date`; settlements reduce obligations and are not profit distributions.
+- Distribution amounts do not reduce operational expenses. They are reported as distributed/undistributed profit and partner ledger movements.
+- Ledger balance uses active financial effect: reversal rows and originals referenced by reversal rows remain audit-visible but have zero active effect.
 
 ## Testing
 
@@ -149,7 +150,7 @@ The Node suite compiles a subset of `src/` via `tsconfig.test.json` and runs
 npm ci
 npm run typecheck   # 0 errors
 npm run lint        # source hygiene
-npm run test        # 96 / 96 pass
+npm run test        # 226 / 226 pass
 npm run build       # success
 ```
 
