@@ -111,12 +111,13 @@ scripts/db-test.sh     replay من قاعدة فارغة + forward→rollback→
 
 ---
 
-## الوثائق الكنسية (مُحدّثة يونيو 2026)
+## الوثائق الكنسية (مُحدّثة أغسطس 2026)
 
 1. **[UNIFIED_PROJECT_DEFINITION_AR.md](docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md)** — التعريف الموحد — ابدأ هنا
-2. **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** — دليل التنفيذ الـ runtime — المصدر الكنسي التقني
-3. **[AGENTS.md](AGENTS.md)** — سياسة الريبو للوكلاء
-4. **[docs/architecture-decisions.md](docs/architecture-decisions.md)** — ADR‑001 … ADR‑010 (مع ملاحظات الانحراف في تقرير التعارضات)
+2. **[Terranex-Architecture-English.md](docs/Terranex-Architecture-English.md)** — المعمارية الشاملة لملكية المشاريع والشركاء
+3. **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** — دليل التنفيذ الـ runtime — المصدر الكنسي التقني
+4. **[AGENTS.md](AGENTS.md)** — سياسة الريبو للوكلاء
+5. **[docs/architecture-decisions.md](docs/architecture-decisions.md)** — ADR‑001 … ADR‑010
 5. **[docs/plans/terranex-native-engine-extraction-plan.md](docs/plans/terranex-native-engine-extraction-plan.md)** — يصف Settlement Allocation Engine الفعلي بدقة
 
-> ⚠️ **تحذير:** وثائق `docs/domain-model.md` و `docs/reference/Terranex-Architecture-English.md` تحتوي معلومات قديمة متضاربة — استخدم التعريف الموحد أعلاه.
+> ⚠️ **تحذير:** وثائق `docs/domain-model.md` تحتوي معلومات قديمة متضاربة — استخدم التعريف الموحد أعلاه.

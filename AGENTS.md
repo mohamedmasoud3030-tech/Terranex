@@ -1,5 +1,5 @@
 # Terranex — Agent Policy
-**آخر تحديث:** 2026-06-29  
+**آخر تحديث:** 2026-08-01  
 **الحالة:** كنسي — يسبق جميع الوثائق الأخرى
 
 ---
@@ -34,6 +34,7 @@
 | **4** | `docs/decisions/README.md` + `docs/architecture-decisions.md` | ADR‑001 → ADR‑010 |
 | **5** | `docs/audit/CONFLICTS_ANALYSIS_AR.md` | تعارضات معروفة + حالتها |
 | **6** | `docs/plans/terranex-native-engine-extraction-plan.md` | Settlement Engine — الخطة الفعلية |
+| **7** | `docs/Terranex-Architecture-English.md` | المعمارية الشاملة لملكية المشاريع والشركاء |
 
 ---
 
@@ -44,7 +45,6 @@
 - `docs/_archive/domain-model.STALE.md` — نموذج قديم — استخدم `domain.ts`
 - `docs/_archive/Terranex-Architecture-English.STALE.md` — معمارية مايو 2026 قديمة
 - `docs/_archive/product-vision.STALE.md` — رؤية قديمة — استخدم UNIFIED_PROJECT_DEFINITION_AR.md
-- `docs/reference/Terranex-Architecture-English.md` — **غير موجود** (أُرشف)
 
 **إذا وجد تعارض بين وثيقة وبين `domain.ts` أو `IMPLEMENTATION_GUIDE.md`، فالكود يسبق الوثيقة.**
 
