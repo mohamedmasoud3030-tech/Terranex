@@ -112,8 +112,10 @@ begin
   -- 4. Verify sum <= 100%
   if v_total_other_pct + p_new_pct > 100 then
     raise exception using errcode = '23514',
-      message = 'total equity would exceed 100%%: other partners hold %s%%, new value would be %s%%',
-      v_total_other_pct, p_new_pct;
+      message = format(
+        'total equity would exceed 100%%: other partners hold %s%%, new value would be %s%%',
+        v_total_other_pct, p_new_pct
+      );
   end if;
 
   -- 5. Close previous project_partners record (set effective_to) if it exists

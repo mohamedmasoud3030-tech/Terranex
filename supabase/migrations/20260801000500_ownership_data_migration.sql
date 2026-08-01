@@ -29,8 +29,10 @@ begin
 
   if v_duplicate_count > 0 then
     raise exception using errcode = '23514',
-      message = 'DATA MIGRATION BLOCKED: found % projects with duplicate active ownership records for the same partner. Manual cleanup required before migration.',
-      v_duplicate_count;
+      message = format(
+        'DATA MIGRATION BLOCKED: found %s projects with duplicate active ownership records for the same partner. Manual cleanup required before migration.',
+        v_duplicate_count
+      );
   end if;
 
   -- Check 2: Overlapping periods for same project+partner
@@ -46,8 +48,10 @@ begin
 
   if v_overlap_count > 0 then
     raise exception using errcode = '23514',
-      message = 'DATA MIGRATION BLOCKED: found % overlapping ownership periods for the same project+partner. Manual cleanup required.',
-      v_overlap_count;
+      message = format(
+        'DATA MIGRATION BLOCKED: found %s overlapping ownership periods for the same project+partner. Manual cleanup required.',
+        v_overlap_count
+      );
   end if;
 
   -- Check 3: Projects where active equity sum exceeds 100%
@@ -62,8 +66,10 @@ begin
 
   if v_over_100_count > 0 then
     raise exception using errcode = '23514',
-      message = 'DATA MIGRATION BLOCKED: found % projects where active equity exceeds 100%%. Manual correction required.',
-      v_over_100_count;
+      message = format(
+        'DATA MIGRATION BLOCKED: found %s projects where active equity exceeds 100%%. Manual correction required.',
+        v_over_100_count
+      );
   end if;
 
   raise notice 'DATA PREFLIGHT: all checks passed — % duplicates, % overlaps, % over-allocated',
