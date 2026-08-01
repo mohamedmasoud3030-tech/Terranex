@@ -7,6 +7,16 @@ import {
   stockAdjustmentsHydration,
   stockAdjustmentsStore,
 } from './events/storage';
+import {
+  equityChangeEventsHydration,
+  equityChangeEventsStorage,
+  partnerLedgerEntriesHydration,
+  partnerLedgerEntriesStorage,
+  distributionsHydration,
+  distributionsStorage,
+  distributionAllocationsHydration,
+  distributionAllocationsStorage,
+} from './ownership/storage';
 import { obligationsHydration, obligationsStore } from './obligations/storage';
 import {
   partnersHydration,
@@ -36,6 +46,10 @@ const registry = {
   events: { store: operationalEventsStore, hydration: operationalEventsHydration },
   adjustments: { store: stockAdjustmentsStore, hydration: stockAdjustmentsHydration },
   documents: { store: documentsStore, hydration: documentsHydration },
+  equityChangeEvents: { store: equityChangeEventsStorage, hydration: equityChangeEventsHydration },
+  partnerLedgerEntries: { store: partnerLedgerEntriesStorage, hydration: partnerLedgerEntriesHydration },
+  distributions: { store: distributionsStorage, hydration: distributionsHydration },
+  distributionAllocations: { store: distributionAllocationsStorage, hydration: distributionAllocationsHydration },
 } as const;
 
 export type StoreName = keyof typeof registry;
@@ -44,6 +58,7 @@ export type StoreName = keyof typeof registry;
 export const ALL_STORES = [
   'projects', 'assets', 'partners', 'projectPartners', 'transactions', 'obligations',
   'settlements', 'allocations', 'events', 'adjustments', 'documents',
+  'equityChangeEvents', 'partnerLedgerEntries', 'distributions', 'distributionAllocations',
 ] as const satisfies readonly StoreName[];
 type RowsOf<K extends StoreName> = ReturnType<(typeof registry)[K]['store']['getAll']>;
 export type Records<K extends StoreName> = { [P in K]: RowsOf<P> };
