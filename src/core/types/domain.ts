@@ -424,11 +424,21 @@ export interface ProjectProfitability {
   total_income_egp: number;
   total_expense_egp: number;
   gross_profit_egp: number;
+  net_realized_profit_egp: number;
   open_obligations_egp: number;
   open_receivables_egp: number;
   open_payables_egp: number;
   cash_exposure_egp: number;
   net_profit_egp: number; // gross_profit - open provisions
+  distributed_profit_egp: number;
+  undistributed_profit_egp: number;
+  partner_entitlement_egp: number;
+  paid_distribution_amounts_egp: number;
+  unpaid_distribution_amounts_egp: number;
+  partner_ledger_position_egp: number;
+  as_of_date: string;
+  temporal_rule_ar: string;
+  temporal_rule_en: string;
   partner_splits: PartnerProfitSplit[];
   period: DateRange;
 }
@@ -438,6 +448,10 @@ export interface PartnerProfitSplit {
   partner_name_ar: string;
   equity_pct: number;
   share_egp: number;
+  distributed_egp?: number;
+  paid_egp?: number;
+  unpaid_egp?: number;
+  ledger_balance_egp?: number;
 }
 
 /** Dashboard KPI — computed aggregate */

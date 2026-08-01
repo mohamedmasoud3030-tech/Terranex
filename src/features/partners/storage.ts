@@ -52,14 +52,6 @@ export const partnersStore = {
 export const projectPartnersStore = {
   getAll: () => ppStore.get(),
   getByProject: (projectId: string) => ppStore.get().filter((pp) => pp.project_id === projectId),
-  create: (input: ProjectPartnerInput): ProjectPartner => {
-    const pp: ProjectPartner = { ...input, id: newId() };
-    ppStore.update((all) => [pp, ...all]);
-    return pp;
-  },
-  remove: (id: string): void => {
-    ppStore.update((all) => all.filter((pp) => pp.id !== id));
-  },
   subscribe: ppStore.subscribe,
   flush: ppStore.flush,
   ready: ppStore.ready,

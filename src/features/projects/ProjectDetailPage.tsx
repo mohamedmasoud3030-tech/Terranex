@@ -14,18 +14,20 @@ import { AssetForm } from '../assets/AssetForm';
 import { assetsHydration, assetsStore, type AssetInput } from '../assets/storage';
 import type { PortfolioHandoff } from '../portfolio/contracts';
 import { portfolioHandoffTarget } from '../integration';
-import { ProjectPartnerForm } from '../portfolio/ProjectPartnerForm';
+import { DistributionForm } from '../ownership/DistributionForm';
+import { OwnershipChangeForm } from '../ownership/OwnershipChangeForm';
+import {
+  changeOwnership,
+  createProfitDistribution,
+  type ChangeOwnershipInput,
+  type RecordDistributionInput,
+} from '../ownership/service';
 import { ProjectWorkspaceView } from '../portfolio/ProjectWorkspaceView';
 import { usePortfolioData } from '../portfolio/usePortfolioData';
-import {
-  projectPartnersHydration,
-  projectPartnersStore,
-  type ProjectPartnerInput,
-} from '../partners/storage';
 import { ProjectForm } from './ProjectForm';
 import { projectsHydration, projectsStore, type ProjectInput } from './storage';
 
-type Editor = 'project' | 'asset' | 'project-partner' | null;
+type Editor = 'project' | 'asset' | 'ownership-change' | 'distribution' | null;
 
 export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -76,6 +78,32 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
     }
   }
 
+  async function saveOwnershipChange(input: ChangeOwnershipInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      await changeOwnership(input);
+      setEditor(null);
+    } catch (error) {
+      setServerError(translateServerError(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveDistribution(input: RecordDistributionInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      await createProfitDistribution(input);
+      setEditor(null);
+    } catch (error) {
+      setServerError(translateServerError(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
   function handoff(next: PortfolioHandoff) {
     void router.navigate(portfolioHandoffTarget(next) as never);
   }
@@ -114,6 +142,10 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         obligations={data.obligations}
         documents={data.documents}
         events={data.events}
+        equityChangeEvents={data.equityChangeEvents}
+        partnerLedgerEntries={data.partnerLedgerEntries}
+        distributions={data.distributions}
+        distributionAllocations={data.distributionAllocations}
         locale={locale}
         onEditProject={() => {
           setServerError(null);
@@ -126,7 +158,15 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         }}
         onLinkPartner={() => {
           setServerError(null);
-          setEditor('project-partner');
+          setEditor('ownership-change');
+        }}
+        onOwnershipChange={() => {
+          setServerError(null);
+          setEditor('ownership-change');
+        }}
+        onCreateDistribution={() => {
+          setServerError(null);
+          setEditor('distribution');
         }}
         onHandoff={handoff}
       />
@@ -137,9 +177,12 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         title={
           editor === 'project' ? label('تعديل المشروع', 'Edit project')
             : editor === 'asset' ? label('إضافة أصل للمشروع', 'Add project asset')
-              : label('ربط شريك ملكية', 'Link equity partner')
+              : editor === 'distribution' ? label('إنشاء توزيع أرباح', 'Create profit distribution')
+                : label('تغيير ملكية مشروع', 'Project ownership change')
         }
-        description={label('لا يظهر النجاح قبل تأكيد Supabase.', 'Success is shown only after Supabase confirms the write.')}
+        description={editor === 'ownership-change' || editor === 'distribution'
+          ? label('تُنفذ العملية عبر RPC ذري، ولا يُغلق النموذج إلا بعد نجاح الخادم.', 'The operation uses an atomic RPC and the form closes only after server success.')
+          : label('لا يظهر النجاح قبل تأكيد Supabase.', 'Success is shown only after Supabase confirms the write.')}
         mode={editor === 'project' ? 'edit' : 'create'}
         pending={pending}
         formId={formId}
@@ -176,17 +219,28 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             )}
           />
         )}
-        {editor === 'project-partner' && (
-          <ProjectPartnerForm
+        {editor === 'ownership-change' && (
+          <OwnershipChangeForm
             formId={formId}
             projectId={project.id}
             partners={data.partners}
             projectPartners={data.projectPartners}
+            equityChangeEvents={data.equityChangeEvents}
             locale={locale}
-            onSubmit={(input: ProjectPartnerInput) => write(
-              () => projectPartnersStore.create(input),
-              projectPartnersHydration.flush,
-            )}
+            pending={pending}
+            onSubmit={saveOwnershipChange}
+          />
+        )}
+        {editor === 'distribution' && (
+          <DistributionForm
+            formId={formId}
+            projects={data.projects}
+            partners={data.partners}
+            projectPartners={data.projectPartners}
+            locale={locale}
+            defaultProjectId={project.id}
+            pending={pending}
+            onSubmit={saveDistribution}
           />
         )}
       </AdaptiveFormSurface>

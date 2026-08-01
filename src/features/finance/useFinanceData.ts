@@ -2,8 +2,9 @@ import { useHydratedSnapshot } from '../../core/hooks';
 import { emptyRecords, hydratedSources, readRecords, type Records } from '../storeRegistry';
 
 const stores = [
-  'projects', 'assets', 'partners', 'documents', 'events',
+  'projects', 'assets', 'partners', 'projectPartners', 'documents', 'events',
   'transactions', 'obligations', 'settlements', 'allocations',
+  'equityChangeEvents', 'partnerLedgerEntries', 'distributions', 'distributionAllocations',
 ] as const;
 
 export type FinanceData = Records<(typeof stores)[number]>;

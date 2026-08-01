@@ -17,15 +17,18 @@ import type {
   Asset,
   AssetStatus,
   AssetType,
+  EquityChangeEvent,
   Partner,
   PartnerCategory,
+  PartnerLedgerEntry,
   Project,
+  ProjectPartner,
   ProjectStatus,
   SectorId,
 } from '../../core/types/domain';
 import { AssetForm } from '../assets/AssetForm';
 import { assetsHydration, assetsStore, type AssetInput } from '../assets/storage';
-import { partnersHydration, partnersStore, projectPartnersHydration, projectPartnersStore, type PartnerInput, type ProjectPartnerInput } from '../partners/storage';
+import { partnersHydration, partnersStore, type PartnerInput } from '../partners/storage';
 import { PartnerForm } from '../partners/PartnerForm';
 import { ProjectForm } from '../projects/ProjectForm';
 import { projectsHydration, projectsStore, type ProjectInput } from '../projects/storage';
@@ -38,7 +41,17 @@ import {
   PartnersWorkspace,
   ProjectsWorkspace,
 } from './PortfolioWorkspaces';
-import { ProjectPartnerForm } from './ProjectPartnerForm';
+import { DistributionForm } from '../ownership/DistributionForm';
+import { OwnershipChangeForm } from '../ownership/OwnershipChangeForm';
+import { PartnerLedgerEntryForm } from '../ownership/PartnerLedgerEntryForm';
+import {
+  changeOwnership,
+  createProfitDistribution,
+  recordPartnerLedgerEntry,
+  type ChangeOwnershipInput,
+  type RecordDistributionInput,
+  type RecordPartnerLedgerEntryInput,
+} from '../ownership/service';
 import { ProjectWorkspaceView } from './ProjectWorkspaceView';
 import { usePortfolioData } from './usePortfolioData';
 
@@ -48,7 +61,9 @@ type EditorState =
   | { kind: 'project'; entity?: Project }
   | { kind: 'asset'; entity?: Asset; projectLock?: string }
   | { kind: 'partner'; entity?: Partner }
-  | { kind: 'project-partner'; projectId: string }
+  | { kind: 'ownership-change'; projectId: string }
+  | { kind: 'partner-ledger-entry'; partnerId?: string; projectId?: string }
+  | { kind: 'distribution'; projectId?: string }
   | null;
 
 export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
@@ -181,11 +196,45 @@ export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
         : partnersStore.create(input),
       partnersHydration.flush,
     );
-  const saveProjectPartner = (input: ProjectPartnerInput) =>
-    runWrite(
-      () => projectPartnersStore.create(input),
-      projectPartnersHydration.flush,
-    );
+
+  async function saveOwnershipChange(input: ChangeOwnershipInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      await changeOwnership(input);
+      setEditor(null);
+    } catch (error) {
+      setServerError(translateServerError(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveLedgerEntry(input: RecordPartnerLedgerEntryInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      await recordPartnerLedgerEntry(input);
+      setEditor(null);
+    } catch (error) {
+      setServerError(translateServerError(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveDistribution(input: RecordDistributionInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      await createProfitDistribution(input);
+      setEditor(null);
+    } catch (error) {
+      setServerError(translateServerError(error));
+    } finally {
+      setPending(false);
+    }
+  }
 
   function deliverHandoff(handoff: PortfolioHandoff) {
     onHandoff?.(handoff);
@@ -251,11 +300,17 @@ export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
             obligations={data.obligations}
             documents={data.documents}
             events={data.events}
+            equityChangeEvents={data.equityChangeEvents}
+            partnerLedgerEntries={data.partnerLedgerEntries}
+            distributions={data.distributions}
+            distributionAllocations={data.distributionAllocations}
             locale={locale}
             embedded
             onEditProject={() => startEditor({ kind: 'project', entity: openProject })}
             onAddAsset={() => startEditor({ kind: 'asset', projectLock: openProject.id })}
-            onLinkPartner={() => startEditor({ kind: 'project-partner', projectId: openProject.id })}
+            onLinkPartner={() => startEditor({ kind: 'ownership-change', projectId: openProject.id })}
+            onOwnershipChange={() => startEditor({ kind: 'ownership-change', projectId: openProject.id })}
+            onCreateDistribution={() => startEditor({ kind: 'distribution', projectId: openProject.id })}
             onInspectAsset={(asset) => setInspected({ kind: 'asset', value: asset })}
             onInspectPartner={(partner) => setInspected({ kind: 'partner', value: partner })}
             onHandoff={deliverHandoff}
@@ -268,9 +323,14 @@ export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
             transactions={data.transactions}
             obligations={data.obligations}
             documents={data.documents}
+            equityChangeEvents={data.equityChangeEvents}
+            partnerLedgerEntries={data.partnerLedgerEntries}
+            distributions={data.distributions}
+            distributionAllocations={data.distributionAllocations}
             locale={locale}
             embedded
             onEdit={() => startEditor({ kind: 'partner', entity: openPartner })}
+            onManualLedgerEntry={() => startEditor({ kind: 'partner-ledger-entry', partnerId: openPartner.id })}
             onOpenProject={openProjectWorkspace}
             onHandoff={deliverHandoff}
           />
@@ -362,6 +422,8 @@ export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
         projects={data.projects}
         partners={data.partners}
         projectPartners={data.projectPartners}
+        equityChangeEvents={data.equityChangeEvents}
+        partnerLedgerEntries={data.partnerLedgerEntries}
         locale={locale}
         pending={pending}
         serverError={serverError}
@@ -372,7 +434,9 @@ export function PortfolioHub({ onHandoff }: PortfolioActionHandlers) {
         onSaveProject={saveProject}
         onSaveAsset={saveAsset}
         onSavePartner={savePartner}
-        onSaveProjectPartner={saveProjectPartner}
+        onSaveOwnershipChange={saveOwnershipChange}
+        onSaveLedgerEntry={saveLedgerEntry}
+        onSaveDistribution={saveDistribution}
       />
     </>
   );
@@ -383,6 +447,8 @@ function PortfolioEditorSurface({
   projects,
   partners,
   projectPartners,
+  equityChangeEvents,
+  partnerLedgerEntries,
   locale,
   pending,
   serverError,
@@ -390,12 +456,16 @@ function PortfolioEditorSurface({
   onSaveProject,
   onSaveAsset,
   onSavePartner,
-  onSaveProjectPartner,
+  onSaveOwnershipChange,
+  onSaveLedgerEntry,
+  onSaveDistribution,
 }: {
   editor: EditorState;
   projects: Project[];
   partners: Partner[];
-  projectPartners: ReturnType<typeof projectPartnersStore.getAll>;
+  projectPartners: ProjectPartner[];
+  equityChangeEvents: EquityChangeEvent[];
+  partnerLedgerEntries: PartnerLedgerEntry[];
   locale: 'ar' | 'en';
   pending: boolean;
   serverError: string | null;
@@ -403,21 +473,29 @@ function PortfolioEditorSurface({
   onSaveProject: (input: ProjectInput) => Promise<void>;
   onSaveAsset: (input: AssetInput) => Promise<void>;
   onSavePartner: (input: PartnerInput) => Promise<void>;
-  onSaveProjectPartner: (input: ProjectPartnerInput) => Promise<void>;
+  onSaveOwnershipChange: (input: ChangeOwnershipInput) => Promise<void>;
+  onSaveLedgerEntry: (input: RecordPartnerLedgerEntryInput) => Promise<void>;
+  onSaveDistribution: (input: RecordDistributionInput) => Promise<void>;
 }) {
   if (!editor) return null;
   const label = (ar: string, en: string) => locale === 'ar' ? ar : en;
   const formId = 'portfolio-context-form';
   const editing = 'entity' in editor && Boolean(editor.entity);
   const title =
-    editor.kind === 'project-partner' ? label('ربط شريك ملكية', 'Link equity partner')
-      : editor.kind === 'project' ? (editing ? label('تعديل المشروع', 'Edit project') : label('مشروع جديد', 'New project'))
-        : editor.kind === 'asset' ? (editing ? label('تعديل الأصل', 'Edit asset') : label('أصل جديد', 'New asset'))
-          : (editing ? label('تعديل الشريك أو الطرف', 'Edit partner or party') : label('شريك أو طرف جديد', 'New partner or party'));
+    editor.kind === 'ownership-change' ? label('تغيير ملكية مشروع', 'Project ownership change')
+      : editor.kind === 'partner-ledger-entry' ? label('قيد مالي للشريك', 'Partner ledger entry')
+        : editor.kind === 'distribution' ? label('إنشاء توزيع أرباح', 'Create profit distribution')
+          : editor.kind === 'project' ? (editing ? label('تعديل المشروع', 'Edit project') : label('مشروع جديد', 'New project'))
+            : editor.kind === 'asset' ? (editing ? label('تعديل الأصل', 'Edit asset') : label('أصل جديد', 'New asset'))
+              : (editing ? label('تعديل الشريك أو الطرف', 'Edit partner or party') : label('شريك أو طرف جديد', 'New partner or party'));
   const description =
-    editor.kind === 'project-partner'
-      ? label('يحافظ التحقق على ألا تتجاوز نسب الملكية الفعلية 100%.', 'Validation keeps active ownership at or below 100%.')
-      : label('يُحفظ التغيير في Supabase قبل إعلان النجاح.', 'The change is confirmed by Supabase before success is shown.');
+    editor.kind === 'ownership-change'
+      ? label('تُنفذ كل تغييرات الملكية عبر RPC ذري مع request_id ثابت لهذه المحاولة.', 'Ownership changes run through the atomic RPC with a stable request id for this attempt.')
+      : editor.kind === 'distribution'
+        ? label('تُجمّد التخصيصات حسب الملكية في تاريخ محدد ويكون الخادم هو المرجع النهائي.', 'Allocations are frozen from ownership on a selected date and the server is final authority.')
+        : editor.kind === 'partner-ledger-entry'
+          ? label('قيود الشريك تُسجل في دفتر غير قابل للحذف من خلال RPC ذري.', 'Partner entries are posted to the immutable ledger through the atomic RPC.')
+          : label('يُحفظ التغيير في Supabase قبل إعلان النجاح.', 'The change is confirmed by Supabase before success is shown.');
 
   return (
     <AdaptiveFormSurface
@@ -465,14 +543,41 @@ function PortfolioEditorSurface({
           onCancel={onClose}
         />
       )}
-      {editor.kind === 'project-partner' && (
-        <ProjectPartnerForm
+      {editor.kind === 'ownership-change' && (
+        <OwnershipChangeForm
           formId={formId}
           projectId={editor.projectId}
           partners={partners}
           projectPartners={projectPartners}
+          equityChangeEvents={equityChangeEvents}
           locale={locale}
-          onSubmit={onSaveProjectPartner}
+          pending={pending}
+          onSubmit={onSaveOwnershipChange}
+        />
+      )}
+      {editor.kind === 'partner-ledger-entry' && (
+        <PartnerLedgerEntryForm
+          formId={formId}
+          projects={projects}
+          partners={partners}
+          ledgerEntries={partnerLedgerEntries}
+          locale={locale}
+          defaultProjectId={editor.projectId}
+          defaultPartnerId={editor.partnerId}
+          pending={pending}
+          onSubmit={onSaveLedgerEntry}
+        />
+      )}
+      {editor.kind === 'distribution' && (
+        <DistributionForm
+          formId={formId}
+          projects={projects}
+          partners={partners}
+          projectPartners={projectPartners}
+          locale={locale}
+          defaultProjectId={editor.projectId}
+          pending={pending}
+          onSubmit={onSaveDistribution}
         />
       )}
     </AdaptiveFormSurface>

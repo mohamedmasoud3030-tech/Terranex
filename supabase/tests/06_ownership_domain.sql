@@ -380,7 +380,48 @@ begin
     raise exception 'FAIL distribution: partner 2 allocation wrong';
   end if;
 
-  raise notice 'PASS distribution allocations sum = total';
+  -- The hardened RPC must post partner profit entitlements in the same transaction.
+  if (select count(*) from public.partner_ledger_entries
+      where related_distribution_id = v_distribution_id
+        and entry_type = 'distribution_entitlement') <> 2 then
+    raise exception 'FAIL distribution: expected 2 entitlement ledger entries';
+  end if;
+
+  if (select abs(coalesce(sum(amount_egp), 0) - 1000) from public.partner_ledger_entries
+      where related_distribution_id = v_distribution_id
+        and entry_type = 'distribution_entitlement') > 0.01 then
+    raise exception 'FAIL distribution: entitlement ledger sum does not match distribution total';
+  end if;
+
+  begin
+    update public.distribution_allocations
+    set allocated_amount = allocated_amount + 1
+    where id = (
+      select id from public.distribution_allocations
+      where distribution_id = v_distribution_id
+      limit 1
+    );
+    raise exception 'FAIL immutability: allocation snapshot update unexpectedly succeeded';
+  exception
+    when feature_not_supported then
+      null;
+  end;
+
+  begin
+    update public.partner_ledger_entries
+    set amount = amount + 1
+    where id = (
+      select id from public.partner_ledger_entries
+      where related_distribution_id = v_distribution_id
+      limit 1
+    );
+    raise exception 'FAIL immutability: ledger update unexpectedly succeeded';
+  exception
+    when feature_not_supported then
+      null;
+  end;
+
+  raise notice 'PASS distribution allocations sum = total and entitlement ledger immutable';
 end;
 $test$;
 rollback;

@@ -1,10 +1,14 @@
 import { computeGlobalSummary, computeProjectProfitability } from '../../core/lib/profitability';
 import type {
   Asset,
+  Distribution,
+  DistributionAllocation,
   Document,
+  EquityChangeEvent,
   Obligation,
   OperationalEvent,
   Partner,
+  PartnerLedgerEntry,
   Project,
   ProjectPartner,
   SectorId,
@@ -13,6 +17,7 @@ import type {
 } from '../../core/types/domain';
 import { computeAssetLiveQuantity } from '../events/hooks';
 import { queryObligationAging, queryPartnerStatement } from '../finance/obligationQueries';
+import { calculatePartnerLedgerSummary, decorateLedgerEntries } from '../ownership/model';
 import type { SettlementAllocation } from '../settlement-allocations/types';
 import type { Settlement } from '../settlements/types';
 
@@ -38,6 +43,10 @@ export interface IntelligenceRecords {
   events: OperationalEvent[];
   adjustments: StockAdjustment[];
   documents: Document[];
+  equityChangeEvents: EquityChangeEvent[];
+  partnerLedgerEntries: PartnerLedgerEntry[];
+  distributions: Distribution[];
+  distributionAllocations: DistributionAllocation[];
 }
 
 export function validateReportContext(context: ReportContext): string | undefined {
@@ -48,6 +57,10 @@ export function validateReportContext(context: ReportContext): string | undefine
 }
 
 export function filterReportRecords(records: IntelligenceRecords, context: ReportContext): IntelligenceRecords {
+  const equityChangeEventsSource = records.equityChangeEvents ?? [];
+  const partnerLedgerEntriesSource = records.partnerLedgerEntries ?? [];
+  const distributionsSource = records.distributions ?? [];
+  const distributionAllocationsSource = records.distributionAllocations ?? [];
   const projects = records.projects.filter((project) =>
     (!context.sector || context.sector === 'all' || project.sector_id === context.sector)
     && (!context.projectId || project.id === context.projectId),
@@ -81,6 +94,12 @@ export function filterReportRecords(records: IntelligenceRecords, context: Repor
   );
   const settlementIds = new Set(allocations.map((item) => item.settlement_id));
   const settlements = eligibleSettlements.filter((item) => settlementIds.has(item.id));
+  const distributions = distributionsSource.filter((item) =>
+    projectIds.has(item.project_id)
+    && (!context.dateFrom || item.distribution_date >= context.dateFrom)
+    && (!context.dateTo || item.distribution_date <= context.dateTo),
+  );
+  const distributionIds = new Set(distributions.map((item) => item.id));
   return {
     projects,
     assets,
@@ -97,18 +116,30 @@ export function filterReportRecords(records: IntelligenceRecords, context: Repor
       && (!context.assetId || item.asset_id === context.assetId)
       && (!context.partnerId || item.partner_id === context.partnerId),
     ),
+    equityChangeEvents: equityChangeEventsSource.filter((item) => projectIds.has(item.project_id) && (!context.partnerId || item.partner_id === context.partnerId)),
+    partnerLedgerEntries: partnerLedgerEntriesSource.filter((item) => projectIds.has(item.project_id) && (!context.partnerId || item.partner_id === context.partnerId) && (!context.dateFrom || item.posting_date >= context.dateFrom) && (!context.dateTo || item.posting_date <= context.dateTo)),
+    distributions,
+    distributionAllocations: distributionAllocationsSource.filter((item) => distributionIds.has(item.distribution_id) && (!context.partnerId || item.partner_id === context.partnerId)),
   };
 }
 
 export function buildIntelligenceReport(records: IntelligenceRecords, context: ReportContext, asOf: string) {
   const filtered = filterReportRecords(records, context);
   const executive = computeGlobalSummary(filtered.projects, filtered.transactions, filtered.obligations);
+  const period = { from: context.dateFrom ?? '0001-01-01', to: context.dateTo ?? asOf };
   const projects = filtered.projects.map((project) => computeProjectProfitability(
     project,
     filtered.transactions,
     filtered.obligations,
     filtered.projectPartners,
     filtered.partners,
+    {
+      as_of_date: asOf,
+      period,
+      distributions: filtered.distributions,
+      distributionAllocations: filtered.distributionAllocations,
+      partnerLedgerEntries: filtered.partnerLedgerEntries,
+    },
   )).sort((a, b) => b.gross_profit_egp - a.gross_profit_egp);
   const aging = queryObligationAging(filtered.obligations, {
     as_of: asOf,
@@ -122,6 +153,12 @@ export function buildIntelligenceReport(records: IntelligenceRecords, context: R
         include_reversed: true,
       })
     : undefined;
+  const partnerLedgerRows = context.partnerId
+    ? decorateLedgerEntries(filtered.partnerLedgerEntries.filter((entry) => entry.partner_id === context.partnerId))
+    : [];
+  const partnerLedgerSummary = context.partnerId
+    ? calculatePartnerLedgerSummary(filtered.partnerLedgerEntries.filter((entry) => entry.partner_id === context.partnerId))
+    : undefined;
   const assetPositions = filtered.assets.map((asset) => ({
     asset,
     balance: asset.sector_id === 'real-estate'
@@ -132,7 +169,7 @@ export function buildIntelligenceReport(records: IntelligenceRecords, context: R
           filtered.adjustments.filter((adjustment) => adjustment.asset_id === asset.id),
         ),
   }));
-  return { context, filtered, executive, projects, sectors: executive.by_sector, aging, statement, assetPositions };
+  return { context, filtered, executive, projects, sectors: executive.by_sector, aging, statement, partnerLedgerRows, partnerLedgerSummary, assetPositions };
 }
 
 export function reconcileIntelligenceReport(report: ReturnType<typeof buildIntelligenceReport>) {
@@ -146,14 +183,27 @@ export function reconcileIntelligenceReport(report: ReturnType<typeof buildIntel
   };
 }
 
+function neutralizeCsvCell(value: string | number | undefined): string {
+  const raw = String(value ?? '');
+  const neutral = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  return /[",\n\r]/.test(neutral) ? `"${neutral.replace(/"/g, '""')}"` : neutral;
+}
+
 export function buildFilteredReportCsv(report: ReturnType<typeof buildIntelligenceReport>) {
-  const rows = [
-    ['metric', 'value_egp'],
-    ['income', report.executive.total_income_egp],
-    ['expense', report.executive.total_expense_egp],
-    ['gross_profit', report.executive.gross_profit_egp],
-    ['receivables', report.executive.open_receivables_egp],
-    ['payables', report.executive.open_payables_egp],
+  const rows: Array<Array<string | number | undefined>> = [
+    ['report_type', 'as_of_date', 'metric', 'value_egp'],
+    ['executive', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'income', report.executive.total_income_egp],
+    ['executive', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'expense', report.executive.total_expense_egp],
+    ['executive', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'gross_profit', report.executive.gross_profit_egp],
+    ['executive', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'receivables', report.executive.open_receivables_egp],
+    ['executive', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'payables', report.executive.open_payables_egp],
+    ['ownership', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'equity_change_events', report.filtered.equityChangeEvents.length],
+    ['distribution', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'distributed_profit', report.projects.reduce((sum, item) => sum + item.distributed_profit_egp, 0)],
+    ['distribution', report.projects[0]?.as_of_date ?? report.context.dateTo ?? '', 'unpaid_distributions', report.projects.reduce((sum, item) => sum + item.unpaid_distribution_amounts_egp, 0)],
   ];
-  return rows.map((row) => row.join(',')).join('\n');
+  for (const project of report.projects) {
+    rows.push(['project', project.as_of_date, `${project.project_name_ar} distributed`, project.distributed_profit_egp]);
+    rows.push(['project', project.as_of_date, `${project.project_name_ar} undistributed`, project.undistributed_profit_egp]);
+  }
+  return rows.map((row) => row.map(neutralizeCsvCell).join(',')).join('\n');
 }

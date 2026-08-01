@@ -64,7 +64,7 @@
 ```
 typecheck : 0 errors ✅
 lint      : pass ✅
-tests     : 96 / 96 pass ✅
+tests     : 226 / 226 pass ✅
 build     : success ✅
 ```
 
@@ -75,7 +75,8 @@ build     : success ✅
 حقيقي عبر `scripts/db-test.sh` (لا يُستخدم FakeSupabase لإثبات قاعدة البيانات).
 
 **حالة الإطلاق: NO-GO** — محجوب بـ: المخطط لم يُنشر على Supabase الإنتاجي بعد،
-كتابات مالية غير ذرية (P1B)، ونسخ احتياطي لا يغطي Supabase.
+ونسخ احتياطي لا يغطي Supabase. اكتملت شريحة ملكية المشاريع متعددة الشركاء في الكود
+(UI + RPC boundary + profitability/reporting)، لكن لا توجد مطالبة بنشر إنتاجي.
 راجع `IMPLEMENTATION_GUIDE.md` §Launch blockers و`docs/supabase/INVENTORY.md`.
 
 > أرقام «61/61» في وثائق سابقة تسبق الانتقال إلى Supabase ولا تصف الحالة الحالية.

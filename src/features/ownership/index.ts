@@ -17,3 +17,5 @@ export {
   type DistributionInput,
   type DistributionAllocationInput,
 } from './storage';
+export * from './model';
+export * from './service';

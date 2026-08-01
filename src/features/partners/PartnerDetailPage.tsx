@@ -10,6 +10,11 @@ import { WorkspaceLoadingState } from '../../components/workspace';
 import { guardPartnerDeletion } from '../../core/lib/deletionGuards';
 import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import { useI18n } from '../../core/i18n/context';
+import { PartnerLedgerEntryForm } from '../ownership/PartnerLedgerEntryForm';
+import {
+  recordPartnerLedgerEntry,
+  type RecordPartnerLedgerEntryInput,
+} from '../ownership/service';
 import type { PortfolioHandoff } from '../portfolio/contracts';
 import { portfolioHandoffTarget } from '../integration';
 import { PartnerWorkspaceView } from '../portfolio/PartnerWorkspaceView';
@@ -27,6 +32,7 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
   const data = usePortfolioData();
   const partner = data.partners.find((item) => item.id === partnerId) ?? null;
   const [editing, setEditing] = useState(false);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -54,6 +60,19 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
       partnersStore.update(currentPartnerId, input);
       await partnersHydration.flush();
       setEditing(false);
+    } catch (error) {
+      setServerError(translateServerError(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function saveLedgerEntry(input: RecordPartnerLedgerEntryInput) {
+    setPending(true);
+    setServerError(null);
+    try {
+      await recordPartnerLedgerEntry(input);
+      setLedgerOpen(false);
     } catch (error) {
       setServerError(translateServerError(error));
     } finally {
@@ -93,12 +112,20 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
         transactions={data.transactions}
         obligations={data.obligations}
         documents={data.documents}
+        equityChangeEvents={data.equityChangeEvents}
+        partnerLedgerEntries={data.partnerLedgerEntries}
+        distributions={data.distributions}
+        distributionAllocations={data.distributionAllocations}
         locale={locale}
         onEdit={() => {
           setServerError(null);
           setEditing(true);
         }}
         onDelete={() => setDeleteOpen(true)}
+        onManualLedgerEntry={() => {
+          setServerError(null);
+          setLedgerOpen(true);
+        }}
         onOpenProject={(project) => void router.navigate({ to: '/portfolio/projects/$id', params: { id: project.id } } as never)}
         onHandoff={handoff}
       />
@@ -122,6 +149,31 @@ export function PartnerDetailPage({ partnerId }: { partnerId: string }) {
           initial={partner}
           onSubmit={save}
           onCancel={() => setEditing(false)}
+        />
+      </AdaptiveFormSurface>
+
+      <AdaptiveFormSurface
+        open={ledgerOpen}
+        onOpenChange={setLedgerOpen}
+        title={label('قيد مالي للشريك', 'Partner ledger entry')}
+        description={label('يسجل القيد عبر RPC ذري ولا يختفي سجل العكس أو التصحيح.', 'The entry is recorded through an atomic RPC; reversal and correction history remains visible.')}
+        mode="create"
+        pending={pending}
+        formId="partner-ledger-entry-form"
+        submitLabel={label('تسجيل القيد', 'Record entry')}
+        cancelLabel={label('إلغاء', 'Cancel')}
+        closeLabel={label('إغلاق', 'Close')}
+        error={<FormErrorSummary title={label('تعذر تسجيل القيد', 'Could not record entry')} serverError={serverError} />}
+      >
+        <PartnerLedgerEntryForm
+          formId="partner-ledger-entry-form"
+          projects={data.projects}
+          partners={data.partners}
+          ledgerEntries={data.partnerLedgerEntries}
+          locale={locale}
+          defaultPartnerId={partner.id}
+          pending={pending}
+          onSubmit={saveLedgerEntry}
         />
       </AdaptiveFormSurface>
 

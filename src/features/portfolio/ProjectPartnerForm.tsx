@@ -48,7 +48,8 @@ export function ProjectPartnerForm({
     },
     mode: 'onBlur',
   });
-  // TODO P1B: نقل قاعدة مجموع الملكية للخادم
+  // Legacy local validation mirrors the server RPC boundary; production screens
+  // use OwnershipChangeForm so the database remains the final authority.
   const current = validateEquityAddition(projectPartners, projectId, 0);
   const label = (ar: string, en: string) => locale === 'ar' ? ar : en;
   const inputClass = 'min-h-11 w-full rounded-xl border bg-background px-3 text-sm';

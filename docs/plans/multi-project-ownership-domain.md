@@ -1,6 +1,6 @@
 # Multi-Project Ownership Domain — Implementation Plan
 
-**Status:** Phase 1 Complete (Database + Types + RPCs) — 2026-08-01
+**Status:** Vertical Slice Complete in repository (DB + Types + RPCs + UI + Profitability + Reporting + Tests) — 2026-08-01
 **ADRs:** ADR-011 (Effective-dated ownership), ADR-012 (Append-only ledger), ADR-013 (Immutable distributions), ADR-014 (Settlement vs distribution separation)
 
 ---
@@ -100,6 +100,8 @@
 - `supabase/rollback/20260801000500_ownership_data_migration.down.sql`
 - `supabase/tests/06_ownership_domain.sql`
 - `scripts/db-test.sh` (updated to include 2B test)
+- `supabase/migrations/20260801000700_ownership_distribution_entitlements_and_immutability.sql`
+- `supabase/rollback/20260801000700_ownership_distribution_entitlements_and_immutability.down.sql`
 
 ### Phase 2: Domain Types + Validation ✅ COMPLETE
 
@@ -116,35 +118,33 @@
 - `src/features/ownership/index.ts` (new)
 - `src/features/storeRegistry.ts` (updated)
 
-### Phase 3: UI Components (PENDING)
+### Phase 3: UI Components ✅ COMPLETE
 
-**TODO:**
-- Partners page: Add ledger and distributions sections
-- Profitability page: Add ownership history chart
-- Distribution creation form
-- Distribution allocation view
-- Partner statement with full ledger
+**Delivered:**
+- Project ownership section in the existing Portfolio/project-detail workspaces.
+- Effective-date ownership-as-of selector with assigned/unassigned equity metrics and <100% warning.
+- Ownership history timeline from `equity_change_events` plus migrated `project_partners` fallback records.
+- Ownership change form using the existing `AdaptiveFormSurface`; it blocks duplicate submit through the shared pending state, keeps the form open on server rejection, and closes only after the atomic RPC succeeds.
+- Partner workspace memberships, immutable partner ledger, ledger filters, position summary, distribution list, and manual ledger entry form.
+- Finance Hub distribution workspace and distribution creation form with allocation preview.
+- Existing Arabic-first RTL/mobile surface patterns are reused; no new top-level route was added.
 
-**Design notes:**
-- Use existing `WorkspaceShell` pattern
-- Reuse `Card`, `Table`, `Button` components
-- Follow RTL/AR-first design
-- Integrate with existing `IntelligenceHub` for reporting
+### Phase 4: Integration with Profitability Engine ✅ COMPLETE
 
-### Phase 4: Integration with Profitability Engine (PENDING)
+**Delivered:**
+- `computeProjectProfitability` accepts `as_of_date`/period inputs and ownership/distribution/ledger datasets.
+- Partner entitlement is calculated transaction-by-transaction using ownership effective on each transaction date.
+- Distributed profit, undistributed profit, paid distributions, unpaid distributions, and partner ledger position are reported separately.
+- Settlements remain obligation repayments and are not counted as profit distributions.
+- Distribution amounts do not reduce operating expenses.
 
-**TODO:**
-- Update `computeProjectProfitability` to accept `as_of_date` parameter
-- Add partner breakdown to profitability report
-- Show distributed vs. undistributed profit
-- Link to partner ledger entries
+### Phase 5: Testing ✅ COMPLETE IN NODE SUITE; DB SCRIPT BLOCKED LOCALLY BY MISSING `psql`
 
-### Phase 5: Testing (PENDING)
-
-**TODO:**
-- Unit tests for `partnerLedgerEntriesStorage.calculateBalance()`
-- Integration tests for distribution creation with various ownership scenarios
-- Edge case tests (rounding, zero allocations, etc.)
+**Delivered:**
+- Ownership service payload, retry/idempotency, failure rehydration, distribution allocation, entitlement ledger, and profitability slicing tests in `tests/ownership-vertical-slice.test.cjs`.
+- Existing UI contract tests continue to cover workspace routing, adaptive surfaces, focus, mobile-safe controls, and RTL-compatible component structure.
+- `supabase/tests/06_ownership_domain.sql` now verifies distribution entitlement ledger posting and immutability triggers in addition to existing ownership/domain invariants.
+- Local `scripts/db-test.sh` could not run in this sandbox because `psql` is not installed; the repository SQL suite has been updated for CI/real-Postgres execution.
 
 ---
 
@@ -200,12 +200,10 @@ Each migration has a corresponding rollback script:
 - This plan document
 
 ### Updated
-- `docs/supabase/INVENTORY.md` — Added 4 new tables and 4 new RPCs
-
-### TODO
-- Update `AGENTS.md` with new tables and RPCs
-- Update `IMPLEMENTATION_GUIDE.md` with ownership domain workflow
-- Add examples to `README.md`
+- `docs/supabase/INVENTORY.md` — Added 4 ownership tables, 4 RPCs, and the entitlement/immutability hardening migration.
+- `AGENTS.md` — Status reflects the completed ownership vertical slice and current Node test count.
+- `IMPLEMENTATION_GUIDE.md` — Documents the RPC-only mutation boundary, temporal profitability rule, ledger reversal semantics, and settlement/distribution separation.
+- `README.md` — Launch-status and feature summary updated without claiming production deployment.
 
 ---
 
@@ -213,17 +211,19 @@ Each migration has a corresponding rollback script:
 
 - [x] Typecheck passes
 - [x] Lint passes
-- [x] Tests pass (202/202)
+- [x] Tests pass (226/226)
 - [x] Build succeeds
 - [x] Migrations are non-destructive
-- [x] Rollback scripts exist and are tested
-- [x] Database tests cover all invariants
+- [x] Rollback scripts exist (new local execution blocked by missing `psql`; previous DB suite coverage remains in CI path)
+- [x] Database test SQL covers the required invariants; local execution requires `psql`
 - [x] ADRs created
 - [x] INVENTORY.md updated
-- [ ] UI components created
-- [ ] Profitability engine integrated
-- [ ] Unit tests for storage layer
-- [ ] Integration tests for RPC + storage
+- [x] UI components created
+- [x] Profitability engine integrated
+- [x] Unit tests for ownership model/service layer
+- [x] Integration tests for RPC + store rehydration (Fake Supabase)
+- [x] SQL tests extended for entitlement ledger and immutability
+- [ ] Local real-Postgres script execution in this sandbox (blocked: `psql` unavailable)
 
 ---
 
@@ -232,7 +232,7 @@ Each migration has a corresponding rollback script:
 1. **No multi-currency distributions**: Distributions currently use project's base currency
 2. **No recurring distributions**: Must create each distribution manually
 3. **No approval workflow**: Distributions go directly to `draft` status
-4. **No PDF export**: Cannot export distribution reports (future enhancement)
+4. **No dedicated distribution PDF template**: CSV export is implemented through the Intelligence exporter; PDF remains the existing global profitability PDF.
 5. **No notifications**: Partners are not notified when distributions are created
 
 ---

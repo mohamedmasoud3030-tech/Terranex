@@ -25,6 +25,8 @@
  * Every table is a Map keyed by row id. No auth, no RLS, no owner scoping.
  */
 
+const { randomUUID } = require('node:crypto');
+
 const fakeDb = {};
 
 /** Injected-failure configuration, reset by `resetFakeSupabase()`. */
@@ -280,6 +282,66 @@ function countWhere(tableName, predicate) {
   return rows(tableName).filter((row) => predicate(row)).length;
 }
 
+function rpcCache(fn, requestId, compute) {
+  const key = `${fn}:${requestId}`;
+  const cache = table('__rpc_idempotency');
+  if (cache.has(key)) return cache.get(key);
+  const result = compute();
+  cache.set(key, result);
+  return result;
+}
+
+function activeProjectPartner(projectId, partnerId) {
+  return rows('project_partners').find((row) => row.project_id === projectId && row.partner_id === partnerId && !row.effective_to);
+}
+
+function ownershipRowsAsOf(projectId, asOfDate) {
+  return rows('project_partners')
+    .filter((row) => row.project_id === projectId && row.effective_from <= asOfDate && (!row.effective_to || row.effective_to >= asOfDate))
+    .sort((a, b) => a.effective_from.localeCompare(b.effective_from));
+}
+
+function roundMoney(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function ledgerEffect(entry) {
+  switch (entry.entry_type) {
+    case 'capital_contribution':
+    case 'distribution_entitlement':
+    case 'correction':
+      return entry.amount_egp;
+    case 'withdrawal':
+    case 'distribution_payment':
+      return -entry.amount_egp;
+    case 'reversal':
+      return 0;
+    default:
+      return 0;
+  }
+}
+
+function otherActiveOwnershipPct(projectId, partnerId) {
+  return rows('project_partners')
+    .filter((row) => row.project_id === projectId && row.partner_id !== partnerId && !row.effective_to)
+    .reduce((sum, row) => sum + Number(row.equity_pct), 0);
+}
+
+function validateFakeOwnershipChange(params, currentPct, newPct, otherPct) {
+  const rules = [
+    () => newPct < 0 || newPct > 100 ? 'equity percentage must be between 0 and 100' : null,
+    () => params.p_change_type === 'entry' && currentPct > 0 ? 'cannot create entry: partner already has active ownership' : null,
+    () => params.p_change_type === 'entry' && newPct <= 0 ? 'entry must set a positive percentage' : null,
+    () => params.p_change_type === 'exit' && currentPct === 0 ? 'cannot exit: partner has no active ownership' : null,
+    () => params.p_change_type === 'exit' && newPct > 0 ? 'exit must set percentage to 0' : null,
+    () => params.p_change_type === 'increase' && newPct <= currentPct ? 'increase must set a higher percentage than current' : null,
+    () => params.p_change_type === 'decrease' && newPct >= currentPct ? 'decrease must set a lower percentage than current' : null,
+    () => otherPct + newPct > 100 ? 'total equity would exceed 100%' : null,
+  ];
+  const message = rules.map((rule) => rule()).find(Boolean);
+  if (message) throw new Error(message);
+}
+
 const RPC_HANDLERS = {
   guard_project_deletion: (params) => {
     const id = params.p_project_id;
@@ -361,6 +423,140 @@ const RPC_HANDLERS = {
       value_egp_after: valueAfter,
     };
   },
+  change_ownership_atomic: (params) => rpcCache('change_ownership_atomic', params.p_request_id, () => {
+    const current = activeProjectPartner(params.p_project_id, params.p_partner_id);
+    const currentPct = Number(current?.equity_pct ?? 0);
+    const newPct = Number(params.p_new_pct);
+    const otherPct = otherActiveOwnershipPct(params.p_project_id, params.p_partner_id);
+    validateFakeOwnershipChange(params, currentPct, newPct, otherPct);
+    if (current) {
+      table('project_partners').set(current.id, { ...current, effective_to: params.p_effective_date });
+    }
+    const ppId = newPct > 0 ? randomUUID() : null;
+    if (ppId) {
+      table('project_partners').set(ppId, {
+        id: ppId,
+        project_id: params.p_project_id,
+        partner_id: params.p_partner_id,
+        equity_pct: newPct,
+        effective_from: params.p_effective_date,
+        notes: params.p_notes,
+      });
+    }
+    const eventId = randomUUID();
+    table('equity_change_events').set(eventId, {
+      id: eventId,
+      project_id: params.p_project_id,
+      partner_id: params.p_partner_id,
+      effective_date: params.p_effective_date,
+      previous_pct: currentPct,
+      new_pct: newPct,
+      change_type: params.p_change_type,
+      reason: params.p_reason,
+      notes: params.p_notes,
+      created_by: 'fake-user',
+      created_at: new Date().toISOString(),
+    });
+    return {
+      equity_change_event_id: eventId,
+      project_partner_id: ppId,
+      previous_pct: currentPct,
+      new_pct: newPct,
+      total_equity_allocated: otherPct + newPct,
+    };
+  }),
+  get_ownership_as_of: (params) => ownershipRowsAsOf(params.p_project_id, params.p_as_of_date).map((row) => ({
+    partner_id: row.partner_id,
+    equity_pct: row.equity_pct,
+    effective_from: row.effective_from,
+    effective_to: row.effective_to ?? null,
+    project_partner_id: row.id,
+  })),
+  record_partner_ledger_entry_atomic: (params) => rpcCache('record_partner_ledger_entry_atomic', params.p_request_id, () => {
+    if (Number(params.p_amount) <= 0) throw new Error('ledger entry amount must be positive');
+    if (params.p_reversal_of_id && !rows('partner_ledger_entries').some((row) => row.id === params.p_reversal_of_id)) throw new Error('reversal target entry not found or belongs to a different owner');
+    const id = randomUUID();
+    const amountEgp = Number(params.p_amount) * Number(params.p_fx_rate);
+    const row = {
+      id,
+      project_id: params.p_project_id,
+      partner_id: params.p_partner_id,
+      entry_type: params.p_entry_type,
+      amount: Number(params.p_amount),
+      currency: params.p_currency,
+      fx_rate: Number(params.p_fx_rate),
+      amount_egp: amountEgp,
+      posting_date: params.p_posting_date,
+      supporting_document_id: params.p_supporting_document_id,
+      related_equity_event_id: params.p_related_equity_event_id,
+      related_distribution_id: params.p_related_distribution_id,
+      notes: params.p_notes,
+      reversal_of_id: params.p_reversal_of_id,
+      created_by: 'fake-user',
+      created_at: new Date().toISOString(),
+    };
+    table('partner_ledger_entries').set(id, row);
+    return { ledger_entry_id: id, amount_egp: amountEgp, entry_type: params.p_entry_type };
+  }),
+  record_distribution_atomic: (params) => rpcCache('record_distribution_atomic', params.p_request_id, () => {
+    if (Number(params.p_total_amount) <= 0) throw new Error('distribution amount must be positive');
+    if (params.p_ownership_as_of_date > params.p_distribution_date) throw new Error('ownership_as_of_date cannot be after distribution_date');
+    const ownership = ownershipRowsAsOf(params.p_project_id, params.p_ownership_as_of_date);
+    if (ownership.length === 0) throw new Error('no ownership rows for distribution');
+    const distributionId = randomUUID();
+    const total = Number(params.p_total_amount);
+    const fx = Number(params.p_fx_rate);
+    table('distributions').set(distributionId, {
+      id: distributionId,
+      project_id: params.p_project_id,
+      distribution_date: params.p_distribution_date,
+      ownership_as_of_date: params.p_ownership_as_of_date,
+      total_amount: total,
+      currency: params.p_currency,
+      fx_rate: fx,
+      total_amount_egp: total * fx,
+      status: 'draft',
+      notes: params.p_notes,
+      supporting_document_id: params.p_supporting_document_id,
+      created_by: 'fake-user',
+      created_at: new Date().toISOString(),
+    });
+    const allocations = ownership.map((row) => ({ row, amount: roundMoney(total * Number(row.equity_pct) / 100) }));
+    const sum = roundMoney(allocations.reduce((acc, item) => acc + item.amount, 0));
+    const diff = roundMoney(total - sum);
+    let largest = 0;
+    for (let index = 1; index < allocations.length; index += 1) if (allocations[index].amount > allocations[largest].amount) largest = index;
+    allocations[largest].amount = roundMoney(allocations[largest].amount + diff);
+    for (const allocation of allocations) {
+      const allocationId = randomUUID();
+      table('distribution_allocations').set(allocationId, {
+        id: allocationId,
+        distribution_id: distributionId,
+        partner_id: allocation.row.partner_id,
+        equity_pct_snapshot: allocation.row.equity_pct,
+        allocated_amount: allocation.amount,
+        allocated_amount_egp: allocation.amount * fx,
+        status: 'due',
+      });
+      const ledgerId = randomUUID();
+      table('partner_ledger_entries').set(ledgerId, {
+        id: ledgerId,
+        project_id: params.p_project_id,
+        partner_id: allocation.row.partner_id,
+        entry_type: 'distribution_entitlement',
+        amount: allocation.amount,
+        currency: params.p_currency,
+        fx_rate: fx,
+        amount_egp: allocation.amount * fx,
+        posting_date: params.p_distribution_date,
+        related_distribution_id: distributionId,
+        notes: params.p_notes,
+        created_by: 'fake-user',
+        created_at: new Date().toISOString(),
+      });
+    }
+    return { distribution_id: distributionId, total_amount: total, total_amount_egp: total * fx, status: 'draft' };
+  }),
 };
 
 class FakeSupabaseClient {
@@ -393,8 +589,10 @@ class FakeSupabaseClient {
           error: supabaseError(`Could not find the function public.${fn} in the schema cache`, 'PGRST202'),
         };
       }
-      // Postgres set-returning functions come back as an array of rows.
-      return { data: [handler(params)], error: null };
+      const result = handler(params);
+      // Postgres set-returning functions come back as an array of rows; scalar
+      // jsonb functions are wrapped like the existing guard RPC contract.
+      return { data: Array.isArray(result) ? result : [result], error: null };
     });
   }
 
