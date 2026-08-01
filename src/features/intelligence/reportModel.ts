@@ -16,6 +16,12 @@ import { queryObligationAging, queryPartnerStatement } from '../finance/obligati
 import type { SettlementAllocation } from '../settlement-allocations/types';
 import type { Settlement } from '../settlements/types';
 
+const MONEY_EPSILON = 0.000001;
+
+function moneyEquals(a: number, b: number): boolean {
+  return Math.abs(a - b) <= MONEY_EPSILON;
+}
+
 export interface ReportContext {
   dateFrom?: string;
   dateTo?: string;
@@ -64,12 +70,13 @@ export function filterReportRecords(records: IntelligenceRecords, context: Repor
     && (!context.dateFrom || item.transaction_date >= context.dateFrom)
     && (!context.dateTo || item.transaction_date <= context.dateTo),
   );
-  const obligations = records.obligations.filter((item) =>
-    (!item.project_id || projectIds.has(item.project_id))
-    && (!context.partnerId || item.partner_id === context.partnerId)
-    && (!context.dateFrom || (item.created_at ?? item.due_date ?? '') >= context.dateFrom)
-    && (!context.dateTo || (item.created_at ?? item.due_date ?? '') <= `${context.dateTo}T23:59:59`),
-  );
+  const obligations = records.obligations.filter((item) => {
+    const obligationDate = (item.created_at ?? item.due_date ?? '').slice(0, 10);
+    return (!item.project_id || projectIds.has(item.project_id))
+      && (!context.partnerId || item.partner_id === context.partnerId)
+      && (!context.dateFrom || obligationDate >= context.dateFrom)
+      && (!context.dateTo || obligationDate <= context.dateTo);
+  });
   const obligationIds = new Set(obligations.map((item) => item.id));
   const eligibleSettlements = records.settlements.filter((item) =>
     (!context.dateFrom || item.settlement_date >= context.dateFrom)
@@ -141,8 +148,10 @@ export function reconcileIntelligenceReport(report: ReturnType<typeof buildIntel
   const sectorIncome = Object.values(report.sectors).reduce((sum, item) => sum + item.total_income_egp, 0);
   const sectorExpense = Object.values(report.sectors).reduce((sum, item) => sum + item.total_expense_egp, 0);
   return {
-    income: projectIncome === report.executive.total_income_egp && sectorIncome === report.executive.total_income_egp,
-    expense: projectExpense === report.executive.total_expense_egp && sectorExpense === report.executive.total_expense_egp,
+    income: moneyEquals(projectIncome, report.executive.total_income_egp)
+      && moneyEquals(sectorIncome, report.executive.total_income_egp),
+    expense: moneyEquals(projectExpense, report.executive.total_expense_egp)
+      && moneyEquals(sectorExpense, report.executive.total_expense_egp),
   };
 }
 

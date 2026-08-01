@@ -246,6 +246,38 @@ test('executive, project, and sector reports reconcile from the canonical profit
   );
 });
 
+test('reconcile tolerates floating-point drift within a piaster fraction', () => {
+  const drifted = {
+    projects: [
+      { total_income_egp: 0.1, total_expense_egp: 0 },
+      { total_income_egp: 0.2, total_expense_egp: 0 },
+    ],
+    sectors: { 'real-estate': { total_income_egp: 0.3, total_expense_egp: 0 } },
+    executive: { total_income_egp: 0.3, total_expense_egp: 0 },
+  };
+  // 0.1 + 0.2 === 0.30000000000000004, so strict === would report a false mismatch.
+  assert.notEqual(0.1 + 0.2, 0.3);
+  assert.deepEqual(reconcileIntelligenceReport(drifted), { income: true, expense: true });
+});
+
+test('obligation date filter includes rows at the end-of-day boundary of dateTo', () => {
+  const boundaryRecords = {
+    ...records,
+    obligations: [
+      {
+        ...obligation('obligation-boundary', 'project-real-estate', 'partner-1', 'receivable', 50, '2026-04-07'),
+        created_at: '2026-04-07T23:59:59.999Z',
+      },
+    ],
+  };
+  const filtered = filterReportRecords(boundaryRecords, {
+    dateFrom: '2026-04-01',
+    dateTo: '2026-04-07',
+    displayCurrency: 'EGP',
+  });
+  assert.deepEqual(filtered.obligations.map((item) => item.id), ['obligation-boundary']);
+});
+
 test('statement is ordered and keeps reversed settlement evidence at zero active effect', () => {
   const report = buildIntelligenceReport(
     records,
