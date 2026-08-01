@@ -438,6 +438,11 @@ $fn$;
 
 -- ─── RPC 4: ownership_as_of_date query ──────────────────────────────────────
 -- Returns all active ownership records for a project at a given date.
+-- SECURITY DEFINER with owner assertion, matching the other ownership RPCs:
+-- the caller must own the project, and rows are always scoped to that owner.
+-- (The previous SECURITY INVOKER variant filtered rows on `auth.uid() = owner_id`,
+-- which returned nothing for the bootstrap/superuser test role and could not be
+-- safely widened, so ownership is asserted explicitly instead.)
 create or replace function public.get_ownership_as_of(
   p_project_id uuid,
   p_as_of_date date
@@ -449,18 +454,33 @@ returns table (
   effective_to date,
   project_partner_id uuid
 )
-language sql
-security invoker
+language plpgsql
+security definer
 set search_path = public
 stable
 as $fn$
-  select pp.partner_id, pp.equity_pct, pp.effective_from, pp.effective_to, pp.id
-  from public.project_partners pp
-  where pp.project_id = p_project_id
-    and (select auth.uid()) = pp.owner_id
-    and pp.effective_from <= p_as_of_date
-    and (pp.effective_to is null or pp.effective_to >= p_as_of_date)
-  order by pp.effective_from;
+declare
+  v_owner_id uuid;
+begin
+  select owner_id into v_owner_id
+  from public.projects
+  where id = p_project_id;
+
+  if not found then
+    raise exception using errcode = 'P0002', message = 'project not found';
+  end if;
+
+  perform public.terranex_assert_owner(v_owner_id);
+
+  return query
+    select pp.partner_id, pp.equity_pct, pp.effective_from, pp.effective_to, pp.id
+    from public.project_partners pp
+    where pp.project_id = p_project_id
+      and pp.owner_id = v_owner_id
+      and pp.effective_from <= p_as_of_date
+      and (pp.effective_to is null or pp.effective_to >= p_as_of_date)
+    order by pp.effective_from;
+end;
 $fn$;
 
 -- ─── Grants ──────────────────────────────────────────────────────────────────
@@ -478,7 +498,8 @@ grant execute on function public.record_distribution_atomic(uuid, uuid, date, da
 grant execute on function public.record_partner_ledger_entry_atomic(uuid, uuid, uuid, public.terranex_ledger_entry_type, numeric, public.terranex_currency, numeric, date, uuid, uuid, uuid, text, uuid)
   to authenticated;
 
--- get_ownership_as_of uses security invoker, so it runs under caller's RLS
+-- get_ownership_as_of is SECURITY DEFINER with explicit owner assertion, so it
+-- scopes every result to the caller's ownership without relying on RLS.
 revoke execute on function public.get_ownership_as_of(uuid, date) from public, anon;
 grant execute on function public.get_ownership_as_of(uuid, date) to authenticated;
 

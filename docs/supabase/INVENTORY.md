@@ -167,6 +167,7 @@ statement instead of once per row.
 | `supabase/migrations/…20260801000300_ownership_domain_grants.sql` | grants for ownership tables |
 | `supabase/migrations/…20260801000400_ownership_domain_rpcs.sql` | atomic ownership RPCs |
 | `supabase/migrations/…20260801000500_ownership_data_migration.sql` | non-destructive data migration |
+| `supabase/migrations/…20260801000600_fix_p1c_idempotency_ordering.sql` | restore idempotent replay before validation in `record_transaction_atomic` |
 | `supabase/rollback/*.down.sql` | one rollback per migration, reversibility documented |
 | `supabase/tests/00–04` | shim + 4 behavioural suites against real Postgres |
 | `scripts/db-test.sh` | 6-stage runner incl. forward → rollback → reapply |
