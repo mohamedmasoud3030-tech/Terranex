@@ -1,5 +1,5 @@
 import { newId } from '../../core/lib/id';
-import { createSupabaseStore } from '../../core/storage/supabaseStore';
+import { createSupabaseStore, type SupabaseStore } from '../../core/storage/supabaseStore';
 import type {
   EquityChangeEvent,
   PartnerLedgerEntry,
@@ -7,48 +7,48 @@ import type {
   DistributionAllocation,
 } from '../../core/types/domain';
 
-const EQUITY_CHANGE_EVENTS_TABLE = 'equity_change_events';
-const PARTNER_LEDGER_ENTRIES_TABLE = 'partner_ledger_entries';
-const DISTRIBUTIONS_TABLE = 'distributions';
-const DISTRIBUTION_ALLOCATIONS_TABLE = 'distribution_allocations';
-
-function parseEquityChangeEvent(raw: unknown): EquityChangeEvent {
-  return raw as EquityChangeEvent;
+/**
+ * Every ownership-domain storage facade re-exposes the same lifecycle
+ * methods (subscribe/flush/ready/rehydrate/getLoadError) from its backing
+ * SupabaseStore. Centralizing that here avoids repeating the same five
+ * pass-through lines across all four stores in this file.
+ */
+function lifecycleMethods<T extends { id: string }>(store: SupabaseStore<T>) {
+  return {
+    subscribe: store.subscribe,
+    flush: store.flush,
+    ready: store.ready,
+    rehydrate: store.rehydrate,
+    getLoadError: store.getLoadError,
+  };
 }
 
-function parsePartnerLedgerEntry(raw: unknown): PartnerLedgerEntry {
-  return raw as PartnerLedgerEntry;
-}
-
-function parseDistribution(raw: unknown): Distribution {
-  return raw as Distribution;
-}
-
-function parseDistributionAllocation(raw: unknown): DistributionAllocation {
-  return raw as DistributionAllocation;
-}
+// Every row shape here is already validated server-side (RLS + RPCs), so the
+// parse step is a plain identity cast rather than four near-identical
+// wrapper functions.
+const identity = <T>(raw: unknown): T => raw as T;
 
 export const equityChangeEventsHydration = createSupabaseStore<EquityChangeEvent>(
-  EQUITY_CHANGE_EVENTS_TABLE,
-  parseEquityChangeEvent,
+  'equity_change_events',
+  identity,
   'created_at',
 );
 
 export const partnerLedgerEntriesHydration = createSupabaseStore<PartnerLedgerEntry>(
-  PARTNER_LEDGER_ENTRIES_TABLE,
-  parsePartnerLedgerEntry,
+  'partner_ledger_entries',
+  identity,
   'posting_date',
 );
 
 export const distributionsHydration = createSupabaseStore<Distribution>(
-  DISTRIBUTIONS_TABLE,
-  parseDistribution,
+  'distributions',
+  identity,
   'distribution_date',
 );
 
 export const distributionAllocationsHydration = createSupabaseStore<DistributionAllocation>(
-  DISTRIBUTION_ALLOCATIONS_TABLE,
-  parseDistributionAllocation,
+  'distribution_allocations',
+  identity,
   'created_at',
 );
 
@@ -70,29 +70,29 @@ export type PartnerLedgerEntryInput = Omit<PartnerLedgerEntry, 'id' | 'created_a
 export type DistributionInput = Omit<Distribution, 'id' | 'created_at' | 'created_by'>;
 export type DistributionAllocationInput = Omit<DistributionAllocation, 'id'>;
 
+/** Shared by any ownership record shaped with `project_id` / `partner_id`. */
+function byProjectAndPartnerFilters<
+  T extends { id: string; project_id: string; partner_id: string },
+>(store: SupabaseStore<T>) {
+  return {
+    getByProject: (projectId: string) =>
+      store.get().filter((e) => e.project_id === projectId),
+    getByPartner: (partnerId: string) =>
+      store.get().filter((e) => e.partner_id === partnerId),
+    getByProjectAndPartner: (projectId: string, partnerId: string) =>
+      store.get().filter((e) => e.project_id === projectId && e.partner_id === partnerId),
+  };
+}
+
 export const equityChangeEventsStorage = {
   getAll: () => equityChangeEventsStore.get(),
-  getByProject: (projectId: string) =>
-    equityChangeEventsStore.get().filter((e) => e.project_id === projectId),
-  getByPartner: (partnerId: string) =>
-    equityChangeEventsStore.get().filter((e) => e.partner_id === partnerId),
-  subscribe: equityChangeEventsStore.subscribe,
-  flush: equityChangeEventsStore.flush,
-  ready: equityChangeEventsStore.ready,
-  rehydrate: equityChangeEventsStore.rehydrate,
-  getLoadError: equityChangeEventsStore.getLoadError,
+  ...byProjectAndPartnerFilters(equityChangeEventsStore),
+  ...lifecycleMethods(equityChangeEventsStore),
 };
 
 export const partnerLedgerEntriesStorage = {
   getAll: () => partnerLedgerEntriesStore.get(),
-  getByProject: (projectId: string) =>
-    partnerLedgerEntriesStore.get().filter((e) => e.project_id === projectId),
-  getByPartner: (partnerId: string) =>
-    partnerLedgerEntriesStore.get().filter((e) => e.partner_id === partnerId),
-  getByProjectAndPartner: (projectId: string, partnerId: string) =>
-    partnerLedgerEntriesStore.get().filter(
-      (e) => e.project_id === projectId && e.partner_id === partnerId,
-    ),
+  ...byProjectAndPartnerFilters(partnerLedgerEntriesStore),
   /**
    * Calculate partner balance from ledger entries.
    * Balance = sum of contributions/distributions - sum of withdrawals/payments.
@@ -126,11 +126,7 @@ export const partnerLedgerEntriesStorage = {
     }
     return balance;
   },
-  subscribe: partnerLedgerEntriesStore.subscribe,
-  flush: partnerLedgerEntriesStore.flush,
-  ready: partnerLedgerEntriesStore.ready,
-  rehydrate: partnerLedgerEntriesStore.rehydrate,
-  getLoadError: partnerLedgerEntriesStore.getLoadError,
+  ...lifecycleMethods(partnerLedgerEntriesStore),
 };
 
 export const distributionsStorage = {
@@ -149,11 +145,7 @@ export const distributionsStorage = {
     distributionsStore.update((all) => [distribution, ...all]);
     return distribution;
   },
-  subscribe: distributionsStore.subscribe,
-  flush: distributionsStore.flush,
-  ready: distributionsStore.ready,
-  rehydrate: distributionsStore.rehydrate,
-  getLoadError: distributionsStore.getLoadError,
+  ...lifecycleMethods(distributionsStore),
 };
 
 export const distributionAllocationsStorage = {
@@ -167,9 +159,5 @@ export const distributionAllocationsStorage = {
     distributionAllocationsStore.update((all) => [...newAllocations, ...all]);
     return newAllocations;
   },
-  subscribe: distributionAllocationsStore.subscribe,
-  flush: distributionAllocationsStore.flush,
-  ready: distributionAllocationsStore.ready,
-  rehydrate: distributionAllocationsStore.rehydrate,
-  getLoadError: distributionAllocationsStore.getLoadError,
+  ...lifecycleMethods(distributionAllocationsStore),
 };
