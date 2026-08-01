@@ -35,3 +35,24 @@ test('events stay mobile-first, sector-composed, and free of sector tabs', () =>
   assert.doesNotMatch(workspace, /role=["']tab/);
   assert.doesNotMatch(workspace, /Tabs/);
 });
+
+test('operations data surfaces load errors and retries for every hydrated store', () => {
+  const source = read('src/features/operations/useOperationsData.ts');
+  // Every store whose rows the hub renders must have its load error consulted,
+  // otherwise a failed hydration is silently shown as an empty (but "ready") hub.
+  const stores = [
+    'projectsHydration',
+    'assetsHydration',
+    'operationalEventsHydration',
+    'stockAdjustmentsHydration',
+    'documentsHydration',
+    'transactionsHydration',
+    'obligationsHydration',
+    'partnersHydration',
+    'projectPartnersHydration',
+  ];
+  for (const store of stores) {
+    assert.match(source, new RegExp(`${store}\\.getLoadError\\(\\)`), `${store} load error must be checked`);
+    assert.match(source, new RegExp(`${store}\\.rehydrate\\(\\)`), `${store} must be rehydrated on retry`);
+  }
+});

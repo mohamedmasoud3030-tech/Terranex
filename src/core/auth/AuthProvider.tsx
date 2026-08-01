@@ -25,15 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentTransition = ++transition;
       setLoading(true);
 
-      if (nextSession) {
-        // Stores are created before AuthProvider mounts, so their first anonymous
-        // hydration is correctly denied by RLS. Reload them with the authenticated
-        // identity before exposing the workspace to avoid a stale empty cache.
-        await rehydrateAllStores();
-      } else {
-        // Never leave the previous identity's in-memory rows visible after sign-out
-        // or while the login screen is shown.
-        clearAllStoreCaches();
+      try {
+        if (nextSession) {
+          // Stores are created before AuthProvider mounts, so their first anonymous
+          // hydration is correctly denied by RLS. Reload them with the authenticated
+          // identity before exposing the workspace to avoid a stale empty cache.
+          await rehydrateAllStores();
+        } else {
+          // Never leave the previous identity's in-memory rows visible after sign-out
+          // or while the login screen is shown.
+          clearAllStoreCaches();
+        }
+      } catch (error) {
+        // A failed rehydration must not strand the app on the loading screen or
+        // discard the authenticated session. Each store records its own load
+        // error (surfaced via getLoadError in the workspaces), so we still expose
+        // the session and clear loading below; here we only log the aggregate.
+        console.error('تعذر مزامنة المتاجر مع هوية المستخدم بعد تغيّر الجلسة.', error);
       }
 
       if (!active || currentTransition !== transition) return;
@@ -43,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     void supabase.auth.getSession().then(({ data }) => {
       void syncIdentity(data.session);
+    }).catch((error: unknown) => {
+      // Reading the initial session failed; fall back to the signed-out path so
+      // the login screen is shown instead of hanging on the loading state.
+      console.error('تعذر قراءة جلسة المصادقة الأولية.', error);
+      void syncIdentity(null);
     });
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       void syncIdentity(nextSession);

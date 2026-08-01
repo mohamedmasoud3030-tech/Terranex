@@ -10,7 +10,7 @@ import type {
   StockAdjustment,
   Transaction,
 } from '../../core/types/domain';
-import { assetsReady, assetsStore } from '../assets/storage';
+import { assetsHydration, assetsReady, assetsStore } from '../assets/storage';
 import { documentsHydration, documentsReady, documentsStore } from '../documents/storage';
 import {
   operationalEventsHydration,
@@ -25,6 +25,7 @@ import {
   partnersHydration,
   partnersReady,
   partnersStore,
+  projectPartnersHydration,
   projectPartnersReady,
   projectPartnersStore,
 } from '../partners/storage';
@@ -92,12 +93,14 @@ export function useOperationsData() {
     await ready;
     const loadError = [
       projectsHydration.getLoadError(),
+      assetsHydration.getLoadError(),
       operationalEventsHydration.getLoadError(),
       stockAdjustmentsHydration.getLoadError(),
       documentsHydration.getLoadError(),
       transactionsHydration.getLoadError(),
       obligationsHydration.getLoadError(),
       partnersHydration.getLoadError(),
+      projectPartnersHydration.getLoadError(),
     ].find(Boolean);
     if (loadError) {
       setError(loadError.message);
@@ -127,12 +130,14 @@ export function useOperationsData() {
   const retry = useCallback(async () => {
     await Promise.all([
       projectsHydration.rehydrate(),
+      assetsHydration.rehydrate(),
       operationalEventsHydration.rehydrate(),
       stockAdjustmentsHydration.rehydrate(),
       documentsHydration.rehydrate(),
       transactionsHydration.rehydrate(),
       obligationsHydration.rehydrate(),
       partnersHydration.rehydrate(),
+      projectPartnersHydration.rehydrate(),
     ]);
     await load();
   }, [load]);
