@@ -14,6 +14,7 @@ export interface PortfolioHandoff {
   intent:
     | 'create-event'
     | 'create-transaction'
+    | 'create-distribution'
     | 'attach-document'
     | 'open-statement'
     | 'open-obligations'
@@ -34,6 +35,9 @@ export function projectHandoff(
   }
   if (intent === 'create-transaction') {
     return { target: 'finance', workspace: 'transactions', context: { projectId, sector }, intent };
+  }
+  if (intent === 'create-distribution') {
+    return { target: 'finance', workspace: 'distributions', context: { projectId, sector }, intent };
   }
   return { target: 'operations', workspace: 'events', context: { projectId, sector }, intent };
 }

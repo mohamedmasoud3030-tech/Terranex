@@ -4,6 +4,7 @@ import { emptyRecords, hydratedSources, readRecords } from '../storeRegistry';
 const stores = [
   'projects', 'assets', 'partners', 'projectPartners',
   'transactions', 'obligations', 'documents', 'events',
+  'equityChangeEvents', 'partnerLedgerEntries', 'distributions', 'distributionAllocations',
 ] as const;
 
 const sources = hydratedSources(stores);

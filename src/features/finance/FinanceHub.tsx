@@ -8,7 +8,12 @@ import { FormErrorSummary } from '../../components/ui/FormContract';
 import { WorkspaceShell, useWorkspaceUrlState } from '../../components/workspace';
 import { useI18n } from '../../core/i18n/context';
 import { translateServerError } from '../../core/lib/serverErrorTranslator';
-import type { Obligation, Transaction } from '../../core/types/domain';
+import type { Distribution, Obligation, Transaction } from '../../core/types/domain';
+import { DistributionForm } from '../ownership/DistributionForm';
+import {
+  createProfitDistribution,
+  type RecordDistributionInput,
+} from '../ownership/service';
 import { ObligationForm } from '../obligations/ObligationForm';
 import { obligationsStore, type ObligationInput } from '../obligations/storage';
 import {
@@ -31,11 +36,12 @@ import { SettlementFlowForm } from './SettlementFlowForm';
 import { useFinanceContext } from './useFinanceContext';
 import { useFinanceData } from './useFinanceData';
 
-const workspaceIds = ['overview', 'transactions', 'obligations', 'settlements'] as const;
+const workspaceIds = ['overview', 'transactions', 'obligations', 'settlements', 'distributions'] as const;
 type Surface =
   | { kind: 'transaction'; item?: Transaction }
   | { kind: 'obligation'; item?: Obligation }
   | { kind: 'settlement'; anchorId?: string }
+  | { kind: 'distribution'; projectId?: string }
   | null;
 type Inspected = { kind: 'transaction'; item: Transaction } | { kind: 'obligation'; item: Obligation } | null;
 
@@ -77,6 +83,7 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
     { id: 'transactions', label: locale === 'ar' ? 'المعاملات' : 'Transactions', icon: ReceiptText },
     { id: 'obligations', label: locale === 'ar' ? 'الذمم' : 'Obligations', icon: ListChecks },
     { id: 'settlements', label: locale === 'ar' ? 'التسويات' : 'Settlements', icon: HandCoins },
+    { id: 'distributions', label: locale === 'ar' ? 'توزيعات الأرباح' : 'Profit distributions', icon: CircleDollarSign },
   ];
 
   function beginTransaction(item?: Transaction) {
@@ -97,6 +104,9 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
     if ((intent === 'create-transaction' || intent === 'create-or-link-transaction') && context.projectId) {
       setWorkspace('transactions');
       beginTransaction();
+    } else if (intent === 'create-distribution' && context.projectId) {
+      setWorkspace('distributions');
+      setSurface({ kind: 'distribution', projectId: context.projectId });
     } else if (obligationId && search.get('workspace') === 'settlements') {
       setSurface({ kind: 'settlement', anchorId: obligationId });
     }
@@ -150,6 +160,13 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
     );
   }
 
+  function saveDistribution(input: RecordDistributionInput) {
+    return runWrite(
+      () => createProfitDistribution(input),
+      () => setSurface(null),
+    );
+  }
+
   function confirmReverse() {
     if (!reverseTarget) return Promise.resolve();
     if (!reverseReason.trim()) {
@@ -181,7 +198,9 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
         loadingLabel={locale === 'ar' ? 'جار تحميل المالية' : 'Loading finance'}
         state={shellState}
         errorState={{ title: locale === 'ar' ? 'تعذر تحميل المالية' : 'Finance could not load', description: loadError ?? '', onRetry: () => void retry() }}
-        actions={<Button onClick={() => beginTransaction()}><CircleDollarSign className="h-4 w-4" />{locale === 'ar' ? 'معاملة جديدة' : 'New transaction'}</Button>}
+        actions={workspace === 'distributions'
+          ? <Button onClick={() => setSurface({ kind: 'distribution', projectId: context.projectId })} disabled={!context.projectId}><CircleDollarSign className="h-4 w-4" />{locale === 'ar' ? 'توزيع جديد' : 'New distribution'}</Button>
+          : <Button onClick={() => beginTransaction()}><CircleDollarSign className="h-4 w-4" />{locale === 'ar' ? 'معاملة جديدة' : 'New transaction'}</Button>}
         summaries={
           <div className="grid gap-3 rounded-2xl border bg-muted/20 p-3 sm:grid-cols-2">
             <label className="text-xs font-semibold">{locale === 'ar' ? 'المشروع' : 'Project'}<select value={context.projectId ?? ''} onChange={(event) => setContext({ projectId: event.target.value || undefined, partnerId: context.partnerId })} className="mt-1 min-h-11 w-full rounded-xl border bg-card px-3"><option value="">{locale === 'ar' ? 'كل المشاريع' : 'All projects'}</option>{data.projects.map((item) => <option key={item.id} value={item.id}>{locale === 'ar' ? item.name_ar : item.name_en}</option>)}</select></label>
@@ -193,6 +212,7 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
         {workspace === 'transactions' && <TransactionsWorkspace items={filteredTransactions} projects={data.projects} partners={data.partners} filters={transactionFilters} locale={locale} onFilters={setTransactionFilters} onCreate={() => beginTransaction()} onEdit={beginTransaction} onInspect={(item) => setInspected({ kind: 'transaction', item })} />}
         {workspace === 'obligations' && <ObligationsWorkspace items={filteredObligations} partners={data.partners} filters={obligationFilters} locale={locale} onFilters={setObligationFilters} onCreate={() => setSurface({ kind: 'obligation' })} onEdit={(item) => setSurface({ kind: 'obligation', item })} onInspect={(item) => setInspected({ kind: 'obligation', item })} onSettle={(item) => setSurface({ kind: 'settlement', anchorId: item.id })} />}
         {workspace === 'settlements' && <SettlementsWorkspace settlements={data.settlements} allocations={data.allocations} locale={locale} onReverse={(item) => { setWriteError(null); setReverseTarget(item); }} />}
+        {workspace === 'distributions' && <DistributionsWorkspace distributions={data.distributions} locale={locale} projectNames={projectById} onCreate={() => setSurface({ kind: 'distribution', projectId: context.projectId })} />}
       </WorkspaceShell>
 
       {writeError && !surface && !reverseTarget && <FormErrorSummary serverError={writeError} title={locale === 'ar' ? 'تعذر تنفيذ العملية' : 'Operation could not complete'} />}
@@ -209,12 +229,33 @@ export function FinanceHub({ onHandoff }: { onHandoff?: (handoff: FinanceHandoff
         {surface?.kind === 'settlement' && <SettlementFlowForm key={surface.anchorId ?? 'new'} formId="finance-settlement-form" obligations={data.obligations} documents={data.documents} anchorId={surface.anchorId} locale={locale} serverError={writeError} onSubmit={saveSettlement} />}
       </AdaptiveFormSurface>
 
+      <AdaptiveFormSurface open={surface?.kind === 'distribution'} onOpenChange={(open) => { if (!open) setSurface(null); }} title={locale === 'ar' ? 'إنشاء توزيع أرباح' : 'Create profit distribution'} description={locale === 'ar' ? 'التوزيع منفصل عن التسوية ويجمّد نسب الملكية في تاريخ محدد.' : 'Distributions are separate from settlements and freeze ownership at a selected date.'} pending={pending} submitLabel={locale === 'ar' ? 'إنشاء التوزيع' : 'Create distribution'} cancelLabel={locale === 'ar' ? 'إلغاء' : 'Cancel'} closeLabel={locale === 'ar' ? 'إغلاق' : 'Close'} formId="finance-distribution-form" error={<FormErrorSummary serverError={writeError} title={locale === 'ar' ? 'تعذر إنشاء التوزيع' : 'Could not create distribution'} />}>
+        {surface?.kind === 'distribution' && <DistributionForm key={surface.projectId ?? context.projectId ?? 'new'} formId="finance-distribution-form" projects={data.projects} partners={data.partners} projectPartners={data.projectPartners} locale={locale} defaultProjectId={surface.projectId ?? context.projectId} pending={pending} onSubmit={saveDistribution} />}
+      </AdaptiveFormSurface>
+
       <EntityInspectorDrawer open={Boolean(inspected)} onOpenChange={(open) => { if (!open) setInspected(null); }} title={inspected?.kind === 'transaction' ? (inspected.item.description || inspected.item.category) : inspected?.kind === 'obligation' ? `${inspected.item.direction} · ${inspected.item.status}` : ''} closeLabel={locale === 'ar' ? 'إغلاق' : 'Close'} relationshipsLabel={locale === 'ar' ? 'العلاقات' : 'Relationships'} activityLabel={locale === 'ar' ? 'السجل' : 'Activity'} summary={inspected && <dl className="grid grid-cols-2 gap-3 text-sm">{inspected.kind === 'transaction' ? <><Value label={locale === 'ar' ? 'المبلغ' : 'Amount'} value={`${inspected.item.amount_egp.toLocaleString()} EGP`} /><Value label={locale === 'ar' ? 'التاريخ' : 'Date'} value={inspected.item.transaction_date} /></> : <><Value label={locale === 'ar' ? 'الأصلي' : 'Original'} value={`${inspected.item.amount_egp.toLocaleString()} EGP`} /><Value label={locale === 'ar' ? 'المتبقي' : 'Remaining'} value={`${Math.max(0, inspected.item.amount_egp - inspected.item.amount_settled_egp).toLocaleString()} EGP`} /></>}</dl>} relationships={inspected && <div className="space-y-2 text-sm">{inspected.kind === 'transaction' ? <><p>{selectedProject?.name_ar ?? projectById.get(inspected.item.project_id)?.name_ar}</p><p>{inspected.item.asset_id ? assetById.get(inspected.item.asset_id)?.name_ar : '—'}</p><p>{inspected.item.partner_id ? partnerById.get(inspected.item.partner_id)?.name_ar : '—'}</p><p><FileText className="me-1 inline h-4 w-4" />{inspected.item.document_id ? documentById.get(inspected.item.document_id)?.title_ar : '—'}</p><p>{inspected.item.operational_event_id ? eventById.get(inspected.item.operational_event_id)?.type : '—'}</p></> : <><p>{selectedPartner?.name_ar ?? partnerById.get(inspected.item.partner_id)?.name_ar}</p><p>{inspected.item.project_id ? projectById.get(inspected.item.project_id)?.name_ar : '—'}</p><p><FileText className="me-1 inline h-4 w-4" />{inspected.item.document_id ? documentById.get(inspected.item.document_id)?.title_ar : '—'}</p></>}</div>} activity={inspected?.kind === 'obligation' ? <p className="text-sm">{data.settlements.filter((item) => item.obligation_id === inspected.item.id || data.allocations.some((allocation) => allocation.obligation_id === inspected.item.id && allocation.settlement_id === item.id)).length} {locale === 'ar' ? 'تسوية مرتبطة' : 'linked settlements'}</p> : <p className="text-sm text-muted-foreground">—</p>} actions={inspected && <>{inspected.kind === 'transaction' && <Button variant="secondary" onClick={() => setSurface({ kind: 'transaction', item: inspected.item })}>{locale === 'ar' ? 'تعديل' : 'Edit'}</Button>}{inspected.kind === 'obligation' && <Button onClick={() => setSurface({ kind: 'settlement', anchorId: inspected.item.id })}>{locale === 'ar' ? 'تحصيل/سداد' : 'Settle'}</Button>}{onHandoff && inspected.kind === 'transaction' && inspected.item.document_id && <Button variant="secondary" onClick={() => onHandoff({ destination: 'governance', intent: 'inspect-related', entityId: inspected.item.document_id!, entityType: 'document' })}><FileText className="h-4 w-4" />{locale === 'ar' ? 'فتح الدليل' : 'Open evidence'}</Button>}</>} />
 
       <ConfirmDialog open={Boolean(reverseTarget)} onOpenChange={(open) => { if (!open) { setReverseTarget(null); setReverseReason(''); } }} title={locale === 'ar' ? 'عكس التسوية' : 'Reverse settlement'} entityName={reverseTarget?.reference_number ?? reverseTarget?.id ?? ''} impact={locale === 'ar' ? 'يبقى السجل محفوظًا ويصبح أثره النشط صفرًا. اكتب السبب قبل التأكيد.' : 'History remains and the active effect becomes zero. Enter a reason before confirming.'} confirmLabel={locale === 'ar' ? 'عكس' : 'Reverse'} cancelLabel={locale === 'ar' ? 'إلغاء' : 'Cancel'} pending={pending} onConfirm={confirmReverse} />
       {reverseTarget && <label className="fixed start-1/2 top-[calc(50%+1rem)] z-[60] w-[min(24rem,calc(100vw-5rem))] -translate-x-1/2 rtl:translate-x-1/2"><span className="sr-only">{locale === 'ar' ? 'سبب العكس' : 'Reversal reason'}</span><input value={reverseReason} onChange={(event) => setReverseReason(event.target.value)} placeholder={locale === 'ar' ? 'سبب العكس…' : 'Reversal reason…'} className="min-h-11 w-full rounded-xl border bg-background px-3" /></label>}
     </>
   );
+}
+
+function DistributionsWorkspace({
+  distributions,
+  locale,
+  projectNames,
+  onCreate,
+}: {
+  distributions: Distribution[];
+  locale: 'ar' | 'en';
+  projectNames: Map<string, { name_ar: string; name_en?: string }>;
+  onCreate: () => void;
+}) {
+  if (distributions.length === 0) {
+    return <div className="rounded-2xl border bg-card p-5 text-sm text-muted-foreground"><p className="font-bold text-foreground">{locale === 'ar' ? 'لا توجد توزيعات أرباح' : 'No profit distributions'}</p><p className="mt-1">{locale === 'ar' ? 'اختر مشروعًا ثم أنشئ أول توزيع أرباح من هذا المسار.' : 'Choose a project and create the first profit distribution from this workspace.'}</p><Button className="mt-3" onClick={onCreate}>{locale === 'ar' ? 'توزيع جديد' : 'New distribution'}</Button></div>;
+  }
+  return <div className="space-y-3"><div className="flex justify-end"><Button onClick={onCreate}>{locale === 'ar' ? 'توزيع جديد' : 'New distribution'}</Button></div><div className="overflow-x-auto rounded-2xl border bg-card"><table className="w-full text-sm"><caption className="sr-only">{locale === 'ar' ? 'قائمة توزيعات الأرباح' : 'Profit distributions list'}</caption><thead><tr className="border-b text-xs text-muted-foreground"><th className="p-3 text-start">{locale === 'ar' ? 'المشروع' : 'Project'}</th><th className="p-3 text-start">{locale === 'ar' ? 'تاريخ التوزيع' : 'Distribution date'}</th><th className="p-3 text-start">{locale === 'ar' ? 'ملكية كما في' : 'Ownership as of'}</th><th className="p-3 text-end">{locale === 'ar' ? 'الإجمالي' : 'Total'}</th><th className="p-3 text-start">{locale === 'ar' ? 'الحالة' : 'Status'}</th></tr></thead><tbody>{distributions.map((distribution) => { const project = projectNames.get(distribution.project_id); return <tr key={distribution.id} className="border-b last:border-b-0"><td className="p-3 font-semibold">{project ? (locale === 'ar' ? project.name_ar : project.name_en || project.name_ar) : distribution.project_id}</td><td className="p-3">{distribution.distribution_date}</td><td className="p-3">{distribution.ownership_as_of_date}</td><td className="p-3 text-end font-bold">{distribution.total_amount.toLocaleString()} {distribution.currency}</td><td className="p-3">{distribution.status}</td></tr>; })}</tbody></table></div></div>;
 }
 
 function Value({ label, value }: { label: string; value: string }) {

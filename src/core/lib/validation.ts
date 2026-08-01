@@ -227,8 +227,8 @@ export const obligationSchema = z.object({
 export type ObligationFormValues = z.infer<typeof obligationSchema>;
 
 // ─── Operational Event ─────────────────────────────────────────────────────
-// TODO: ربط هذه السكيمة بـ EventForm أو حذفها — حالياً غير مستخدمة
-//       (EventForm يعتمد على تحقق يدوي في features/operations/model.ts)
+// ملاحظة معمارية: EventForm يعتمد حالياً على تحقق يدوي في
+// features/operations/model.ts، وتبقى هذه السكيمة مرجعاً لمدخلات الأحداث.
 
 export const operationalEventSchema = z.object({
   asset_id: z.string().min(1, 'اختر الأصل'),
