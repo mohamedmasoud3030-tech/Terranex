@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import { recordSettlementAllocation } from '../settlement-allocations/posting';
@@ -11,9 +12,6 @@ function parseOne(raw: unknown): Obligation {
   return raw as Obligation;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 function deriveStatus(obligation: Obligation, settledEgp: number): Obligation['status'] {
   if (obligation.status === 'written_off' || obligation.status === 'disputed') return obligation.status;
@@ -85,7 +83,7 @@ export const obligationsStore = {
   getByPartner: (partnerId: string) => store.get().filter((item) => item.partner_id === partnerId),
   create: (input: ObligationInput): Obligation => {
     const now = new Date().toISOString();
-    const obligation: Obligation = { ...input, id: makeId(), amount_settled_egp: 0, created_at: now, updated_at: now };
+    const obligation: Obligation = { ...input, id: newId(), amount_settled_egp: 0, created_at: now, updated_at: now };
     store.update((all) => [obligation, ...all]);
     return obligation;
   },

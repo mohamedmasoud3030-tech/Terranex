@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { ProjectProfitability, Transaction, Obligation, SectorId } from '../../core/types/domain';
+import { downloadBlob } from '../../core/lib/download';
 import type { GlobalSummary, SectorSummary } from '../../core/lib/profitability';
 import { formatEgp } from '../../core/lib/profitability';
 
@@ -239,12 +240,5 @@ export function GlobalProfitabilityPdfDocument({
 }
 
 export async function downloadGlobalPdf(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, filename);
 }

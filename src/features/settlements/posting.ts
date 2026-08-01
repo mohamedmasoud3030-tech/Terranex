@@ -1,4 +1,5 @@
 import { roundEgp, toEgp } from '../../core/lib/format';
+import { newId } from '../../core/lib/id';
 import { isFiniteNumber } from '../../core/lib/validation';
 import type { Document, Obligation } from '../../core/types/domain';
 import { documentsStore } from '../documents/storage';
@@ -178,8 +179,8 @@ export async function recordSettlementWithAllocationsAtomic(
   input: RecordSettlementWithAllocationsInput,
 ): Promise<Settlement> {
   const { plans, normalizedSettlement } = prepareSettlement(input);
-  const settlementId = crypto.randomUUID();
-  const allocationIds = plans.map(() => crypto.randomUUID());
+  const settlementId = newId();
+  const allocationIds = plans.map(() => newId());
   const payloadInput: RecordSettlementWithAllocationsInput = {
     ...normalizedSettlement,
     allocations: plans,

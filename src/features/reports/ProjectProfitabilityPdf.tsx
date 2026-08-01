@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import type { ProjectProfitability, Project, Transaction, Obligation } from '../../core/types/domain';
+import { downloadBlob } from '../../core/lib/download';
 import { formatEgp } from '../../core/lib/profitability';
 
 // Use built-in Helvetica — Arabic will show as boxes in PDF without Arabic font,
@@ -311,12 +312,5 @@ export function ProjectProfitabilityPdfDocument({
 
 // Helper to trigger browser download
 export async function downloadProjectPdf(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, filename);
 }

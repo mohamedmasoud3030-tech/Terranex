@@ -1,5 +1,6 @@
 import { guardTransactionDeletion } from '../../core/lib/deletionGuards';
 import { toEgp } from '../../core/lib/format';
+import { newId } from '../../core/lib/id';
 import { validateTransactionReferences } from '../../core/lib/referenceValidation';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
@@ -13,9 +14,6 @@ function parseOne(raw: unknown): Transaction {
   return raw as Transaction;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const store = createSupabaseStore<Transaction>(TABLE, parseOne, 'transaction_date');
 
@@ -74,7 +72,7 @@ export const transactionsStore = {
   create: (input: TransactionInput): Transaction => {
     const normalized = normalizeTransactionInput(input);
     const now = new Date().toISOString();
-    const tx: Transaction = { ...normalized, id: makeId(), created_at: now, updated_at: now };
+    const tx: Transaction = { ...normalized, id: newId(), created_at: now, updated_at: now };
     const documentBound = bindSupportingDocument(tx.document_id!, tx.id);
     try {
       store.update((all) => [tx, ...all]);

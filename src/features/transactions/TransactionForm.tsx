@@ -7,8 +7,9 @@ import type { Transaction, Currency, TransactionDirection, TransactionCategory }
 import { useDocuments } from '../documents/hooks';
 import { usePartners } from '../partners/hooks';
 import type { DeferredExpenseTransactionInput } from './deferredExpenseWorkflow';
+import { newId } from '../../core/lib/id';
 import { transactionSchema, type TransactionFormValues } from '../../core/lib/validation';
-import { getLatestFxRate } from '../settings/ExchangeRateSection';
+import { useAutoFxRate } from '../settings/useAutoFxRate';
 import { useI18n } from '../../core/i18n/context';
 import { useAssets } from '../assets/hooks';
 
@@ -102,12 +103,6 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
 
   const availableDocuments = documents.filter((d) => !d.transaction_id || d.transaction_id === initial?.id);
 
-  // auto-fill fx_rate when currency changes:
-  //   EGP           → force 1 (always)
-  //   foreign, new  → load latest stored rate (only if user hasn't manually edited it)
-  //   foreign, same → keep existing value to respect manual edits
-  const prevCurrencyRef = React.useRef(currency);
-
   /**
    * Stable id for this form instance, mixed into the atomic write's idempotency
    * key. It survives re-renders, so double-clicking "save" reuses one request
@@ -115,22 +110,11 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
    * form (a deliberately separate entry) gets a new id, so two identical
    * transactions entered on purpose are still recorded separately.
    */
-  const draftIdRef = React.useRef<string>(crypto.randomUUID());
-  React.useEffect(() => {
-    const prevCurrency = prevCurrencyRef.current;
-    prevCurrencyRef.current = currency;
-    if (currency === 'EGP') {
-      setValue('fx_rate', 1, { shouldValidate: true });
-      return;
-    }
-    // Only auto-fill if the currency actually changed (not on re-render)
-    if (currency !== prevCurrency) {
-      const stored = getLatestFxRate(currency as Currency);
-      if (stored !== null) {
-        setValue('fx_rate', stored, { shouldValidate: true });
-      }
-    }
-  }, [currency, setValue]);
+  const draftIdRef = React.useRef<string>(newId());
+
+  useAutoFxRate(currency, React.useCallback((rate: number) => {
+    setValue('fx_rate', rate, { shouldValidate: true });
+  }, [setValue]));
 
   const submit = async (values: TransactionFormValues) => {
     if ((direction === 'expense' || direction === 'income') && createPayableObligation && !payableDueDate) {

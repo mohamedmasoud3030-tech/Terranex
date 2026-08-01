@@ -9,6 +9,7 @@ import { EntityInspectorDrawer } from '../../components/ui/EntityInspectorDrawer
 import { WorkspaceShell, useWorkspaceUrlState } from '../../components/workspace';
 import { useAuth } from '../../core/auth/AuthProvider';
 import { useI18n } from '../../core/i18n/context';
+import { downloadBlob } from '../../core/lib/download';
 import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import {
   deleteDocumentFile,
@@ -131,12 +132,7 @@ export function GovernanceHub({ onHandoff }: { onHandoff?: (handoff: GovernanceH
       setDocumentError(locale === 'ar' ? 'الملف المحلي غير موجود على هذا الجهاز.' : 'The local file is not available on this device.');
       return;
     }
-    const url = URL.createObjectURL(stored.blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = item.file_name ?? stored.original_file_name;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(stored.blob, item.file_name ?? stored.original_file_name);
   }
 
   return (

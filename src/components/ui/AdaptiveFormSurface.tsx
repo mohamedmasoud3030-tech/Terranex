@@ -1,7 +1,8 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { Button } from './Button';
+import { usePendingAction, useReturnFocus } from './dialogBehavior';
 
 export type FormSurfaceMode = 'create' | 'edit' | 'read-only';
 
@@ -36,22 +37,8 @@ export function AdaptiveFormSurface({
   formId,
   error,
 }: AdaptiveFormSurfaceProps) {
-  const submitLockRef = useRef(false);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const isPending = pending || submitting;
-
-  const submit = async () => {
-    if (!onSubmit || isPending || submitLockRef.current) return;
-    submitLockRef.current = true;
-    setSubmitting(true);
-    try {
-      await onSubmit();
-    } finally {
-      submitLockRef.current = false;
-      setSubmitting(false);
-    }
-  };
+  const returnFocus = useReturnFocus();
+  const { isPending, run: submit } = usePendingAction(onSubmit, pending);
 
   return (
     <Dialog.Root
@@ -63,16 +50,7 @@ export function AdaptiveFormSurface({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/60" />
         <Dialog.Content
-          onOpenAutoFocus={() => {
-            const active = document.activeElement;
-            returnFocusRef.current = active instanceof HTMLElement ? active : null;
-          }}
-          onCloseAutoFocus={(event) => {
-            if (returnFocusRef.current?.isConnected) {
-              event.preventDefault();
-              returnFocusRef.current.focus();
-            }
-          }}
+          {...returnFocus}
           onEscapeKeyDown={(event) => {
             if (isPending) event.preventDefault();
           }}

@@ -1,3 +1,4 @@
+import { newId } from '../../core/lib/id';
 import { isFiniteNumber } from '../../core/lib/validation';
 import { createSupabaseStore } from '../../core/storage/supabaseStore';
 import type { Settlement } from '../settlements/types';
@@ -9,9 +10,6 @@ function parseOne(raw: unknown): SettlementAllocation {
   return raw as SettlementAllocation;
 }
 
-function makeId() {
-  return crypto.randomUUID();
-}
 
 const store = createSupabaseStore<SettlementAllocation>(TABLE, parseOne);
 
@@ -59,7 +57,7 @@ function createMany(inputs: SettlementAllocationInput[]): SettlementAllocation[]
   }
 
   const createdAt = new Date().toISOString();
-  const allocations = normalized.map((input) => ({ ...input, id: makeId(), created_at: createdAt }));
+  const allocations = normalized.map((input) => ({ ...input, id: newId(), created_at: createdAt }));
   store.update((all) => [...allocations, ...all]);
   return allocations;
 }
