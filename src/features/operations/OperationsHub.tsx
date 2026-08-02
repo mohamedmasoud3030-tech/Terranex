@@ -27,6 +27,7 @@ import { SectorWorkspace } from './SectorWorkspace';
 import { StockAdjustmentForm } from './StockAdjustmentForm';
 import { useOperationsContext } from './useOperationsContext';
 import { useOperationsData } from './useOperationsData';
+import { autoConsumeFromEvent } from '../inventory/autoConsume';
 
 const workspaceIds = ['overview', 'events', 'balances', 'sector'] as const;
 type WorkspaceId = typeof workspaceIds[number];
@@ -131,9 +132,15 @@ export function OperationsHub({ onHandoff }: OperationsHubProps) {
     setPending(true);
     setWriteError(null);
     try {
-      if (existing) operationalEventsStore.update(existing.id, input);
-      else operationalEventsStore.create(input);
+      let saved: OperationalEvent;
+      if (existing) {
+        saved = operationalEventsStore.update(existing.id, input);
+      } else {
+        saved = operationalEventsStore.create(input);
+      }
       await operationalEventsStore.flush();
+      // Auto-consume matching inventory if stock exists (non-blocking).
+      void autoConsumeFromEvent(saved);
       setSurface(null);
       if (existing) setInspectedEvent({ ...existing, ...input });
     } catch (error) {
