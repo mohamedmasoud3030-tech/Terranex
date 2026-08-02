@@ -125,6 +125,7 @@ function buildPayableFields(transaction: Transaction) {
     partner_id: transaction.partner_id,
     amount: transaction.amount,
     currency: transaction.currency,
+    fx_rate: transaction.fx_rate,
     amount_egp: transaction.amount_egp,
     document_id: transaction.document_id,
     notes: transaction.notes,

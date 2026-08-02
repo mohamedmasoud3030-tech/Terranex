@@ -220,9 +220,14 @@ export const obligationSchema = z.object({
   direction: z.enum(['receivable', 'payable'] as const, { error: 'اختر نوع الالتزام' }),
   amount: moneyAmount,
   currency: z.enum(currencyEnum),
+  fx_rate: fxRateSchema,
   due_date: isoDate.optional().or(z.literal('')),
   document_id: z.string().optional().or(z.literal('')),
   notes: optionalText,
+}).superRefine((data, ctx) => {
+  if (data.currency === 'EGP' && Math.abs(data.fx_rate - 1) > 0.0001) {
+    ctx.addIssue({ code: 'custom', message: 'سعر صرف الجنيه المصري يجب أن يساوي 1', path: ['fx_rate'] });
+  }
 });
 
 export type ObligationFormValues = z.infer<typeof obligationSchema>;

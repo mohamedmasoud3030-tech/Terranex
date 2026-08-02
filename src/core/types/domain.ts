@@ -207,6 +207,7 @@ export interface Obligation {
   direction: ObligationDirection;
   amount: number;
   currency: Currency;
+  fx_rate: number;
   amount_egp: number;
   due_date?: string;
   status: ObligationStatus;
