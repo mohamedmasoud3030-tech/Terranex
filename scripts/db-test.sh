@@ -10,10 +10,11 @@
 #   3. rls          — two real identities: isolation + spoofing + composite FKs
 #   4. rpc          — guard_*_deletion blocking behaviour and exact Arabic text
 #   5. backfill     — owner_id assignment, and refusal when ownership is ambiguous
-#   6. round-trip   — forward -> rollback -> reapply, ending in a working schema
-#   7. idempotency  — re-application onto existing schema without drop or error
-#   8. p1b-rpcs     — financial atomicity RPCs + idempotency + audit logging
-#   9. ownership     — ownership domain: equity sum <= 100%, temporal, cross-tenant
+#   6. p1b-rpcs     — financial atomicity RPCs + idempotency + audit logging
+#   7. ownership    — ownership domain: equity sum <= 100%, temporal, cross-tenant
+#   8. cash stack   — invoices, banking, inventory, RLS, replay, immutability
+#   9. round-trip   — forward -> rollback -> reapply, ending in a working schema
+#  10. idempotency  — re-application onto existing schema without drop or error
 #
 # Usage:  scripts/db-test.sh
 # Env:    PGHOST PGPORT PGUSER PGPASSWORD (default: local socket cluster)
@@ -56,32 +57,35 @@ apply_rollback() {
 }
 
 # ── 1. replay from an empty database ────────────────────────────────────────
-note "1/9  REPLAY — applying all migrations to an empty database"
+note "1/10  REPLAY — applying all migrations to an empty database"
 recreate_db
 apply_forward
 echo "  migrations applied: $(ls "$MIG"/*.sql | wc -l)"
 
 # ── 2..5 behavioural suites ─────────────────────────────────────────────────
-note "2/9  SCHEMA CONTRACT"
+note "2/10  SCHEMA CONTRACT"
 psql_q -d "$DB" -f "$TESTS/01_schema_contract.sql" 2>&1 | strip
 
-note "3/9  RLS — TWO IDENTITIES"
+note "3/10  RLS — TWO IDENTITIES"
 psql_q -d "$DB" -f "$TESTS/02_rls_two_identities.sql" 2>&1 | strip
 
-note "4/9  DELETION GUARD RPCs"
+note "4/10  DELETION GUARD RPCs"
 psql_q -d "$DB" -f "$TESTS/03_deletion_guard_rpcs.sql" 2>&1 | strip
 
-note "5/9  BACKFILL SCENARIOS"
+note "5/10  BACKFILL SCENARIOS"
 psql_q -d "$DB" -f "$TESTS/04_backfill_scenarios.sql" 2>&1 | strip
 
-note "6/9  P1B FINANCIAL RPCs"
+note "6/10  P1B FINANCIAL RPCs"
 psql_q -d "$DB" -f "$TESTS/05_p1b_financial_rpcs.sql" 2>&1 | strip
 
-note "7/9  2B OWNERSHIP DOMAIN"
+note "7/10  2B OWNERSHIP DOMAIN"
 psql_q -d "$DB" -f "$TESTS/06_ownership_domain.sql" 2>&1 | strip
 
-# ── 7. forward -> rollback -> reapply ───────────────────────────────────────
-note "8/9  ROUND TRIP — forward -> rollback -> reapply"
+note "8/10  CASH / INVOICING / INVENTORY SECURITY"
+psql_q -d "$DB" -f "$TESTS/07_invoices_banking_inventory_rls.sql" 2>&1 | strip
+
+# ── 9. forward -> rollback -> reapply ───────────────────────────────────────
+note "9/10  ROUND TRIP — forward -> rollback -> reapply"
 
 before=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemaname='public';")
 echo "  tables after forward : $before"
@@ -104,8 +108,8 @@ if [[ "$after_re" != "$before" ]]; then
 fi
 echo "  PASS: reapply reproduced the identical schema"
 
-# ── 8. idempotency gate — re-application on top of existing schema ──────────
-note "9/9  IDEMPOTENCY GATE — re-applying all migrations on top of existing schema"
+# ── 10. idempotency gate — re-application on top of existing schema ─────────
+note "10/10  IDEMPOTENCY GATE — re-applying all migrations on top of existing schema"
 apply_forward
 echo "  PASS: re-applied all migrations on top of existing schema without error"
 
@@ -116,5 +120,6 @@ psql_q -d "$DB" -f "$TESTS/02_rls_two_identities.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/03_deletion_guard_rpcs.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/05_p1b_financial_rpcs.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/06_ownership_domain.sql" 2>&1 | strip | tail -1
+psql_q -d "$DB" -f "$TESTS/07_invoices_banking_inventory_rls.sql" 2>&1 | strip | tail -1
 
 printf '\n\033[1;32m=== ALL DATABASE SUITES PASSED ===\033[0m\n'
