@@ -228,6 +228,7 @@ function migrateLegacyFinancialRecords() {
           direction: legacy.type,
           amount: legacy.amount,
           currency: 'EGP',
+          fx_rate: 1,
           amount_egp: legacy.amount,
           status: 'open',
           amount_settled_egp: 0,

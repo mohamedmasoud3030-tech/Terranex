@@ -10,27 +10,41 @@
 
 do $$
 declare
-  v_expected constant text[] := array[
-    'assets','distribution_allocations','distributions','documents','equity_change_events',
-    'financial_audit_logs','obligations','operational_events','partner_ledger_entries','partners',
-    'project_partners','projects','settlement_allocations','settlements',
-    'stock_adjustments','transactions'
+  -- Core operational tables carry full owner-scoped RLS + composite UNIQUE(id, owner_id) + 4 policies.
+  v_operational constant text[] := array[
+    'assets','bank_accounts','bank_transactions',
+    'distribution_allocations','distributions','documents','equity_change_events',
+    'financial_audit_logs','inventory_items','inventory_movements',
+    'obligations','operational_events','partner_ledger_entries','partners',
+    'project_partners','projects','sales_invoice_lines','sales_invoices',
+    'settlement_allocations','settlements','stock_adjustments','transactions'
   ];
+  -- Lookup / singleton / audit / ledger tables exempted from the strict "4 policies + composite (id,owner)" check.
+  --   * currencies        – global lookup (public read, no owner)
+  --   * company_settings  – one row per owner (PK = owner_id, no id column)
+  --   * owner_sequences   – PK = (owner_id, sequence_key), no id column
+  --   * invoice_payments  – immutable audit; inserts via security-definer pay RPC, client gets SELECT only
+  v_lookup constant text[] := array['company_settings','currencies','invoice_payments','owner_sequences'];
+  v_expected_all text[];
   v_actual   text[];
   v_table    text;
   v_count    int;
+  v_oid      uuid;
 begin
-  -- ── 16 tables, exactly ─────────────────────────────────────────────────────
+  v_expected_all := v_operational || v_lookup;
+
+  -- tables exactly equal the union ───────────────────────────────────────────
   select array_agg(tablename order by tablename) into v_actual
   from pg_tables where schemaname = 'public';
 
-  if v_actual is distinct from v_expected then
-    raise exception 'FAIL schema: expected 16 tables % but found %', v_expected, v_actual;
+  if v_actual is distinct from (select array_agg(t order by t) from unnest(v_expected_all) t) then
+    raise exception 'FAIL schema: expected tables % but found %', v_expected_all, v_actual;
   end if;
-  raise notice 'PASS schema: exactly 16 operational tables present';
+  raise notice 'PASS schema: all % operational tables + % support tables present',
+    array_length(v_operational,1), array_length(v_lookup,1);
 
-  -- ── owner_id NOT NULL + DEFAULT auth.uid() on every table ──────────────────
-  foreach v_table in array v_expected loop
+  -- ── owner_id NOT NULL + DEFAULT auth.uid() on every operational table ─────
+  foreach v_table in array v_operational loop
     if not exists (
       select 1 from information_schema.columns
       where table_schema='public' and table_name=v_table and column_name='owner_id'
@@ -40,10 +54,10 @@ begin
       raise exception 'FAIL owner_id: %.owner_id is not "uuid NOT NULL DEFAULT auth.uid()"', v_table;
     end if;
   end loop;
-  raise notice 'PASS owner_id: uuid NOT NULL DEFAULT auth.uid() on all 16 tables';
+  raise notice 'PASS owner_id: uuid NOT NULL DEFAULT auth.uid() on all operational tables';
 
-  -- ── UNIQUE(id, owner_id) on every table (enables composite FKs) ────────────
-  foreach v_table in array v_expected loop
+  -- ── UNIQUE(id, owner_id) on every operational table (composite FKs) ───────
+  foreach v_table in array v_operational loop
     if not exists (
       select 1
       from pg_constraint c
@@ -59,10 +73,10 @@ begin
       raise exception 'FAIL composite key: %.UNIQUE(id, owner_id) missing', v_table;
     end if;
   end loop;
-  raise notice 'PASS composite keys: UNIQUE(id, owner_id) on all 16 tables';
+  raise notice 'PASS composite keys: UNIQUE(id, owner_id) on all operational tables';
 
-  -- ── RLS enabled AND forced everywhere ──────────────────────────────────────
-  foreach v_table in array v_expected loop
+  -- ── RLS enabled AND forced on every operational table ─────────────────────
+  foreach v_table in array v_operational loop
     if not exists (
       select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
       where n.nspname='public' and c.relname=v_table and c.relrowsecurity and c.relforcerowsecurity
@@ -74,7 +88,7 @@ begin
       raise exception 'FAIL rls: % has % policies, expected 4 (select/insert/update/delete)', v_table, v_count;
     end if;
   end loop;
-  raise notice 'PASS rls: enabled + forced with 4 policies on all 16 tables';
+  raise notice 'PASS rls: enabled + forced with 4 policies on all operational tables';
 
   -- ── the 5 guard RPCs exist with the exact signature the client calls ───────
   -- Parameter NAMES matter: the client calls rpc(fn, { p_project_id: id }),
@@ -122,7 +136,10 @@ begin
   for v_table in
     select p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace
     where n.nspname='public'
-      and (p.proname like 'guard\_%\_deletion' or p.proname like 'terranex\_%' or p.proname like '%\_atomic')
+      and (p.proname like 'guard\_%\_deletion'
+        or p.proname like 'terranex\_%'
+        or p.proname like '%\_atomic'
+        or p.proname in ('pay_sales_invoice','create_sales_invoice_atomic','next_owner_seq'))
   loop
     if not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace

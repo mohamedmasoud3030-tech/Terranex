@@ -1,12 +1,13 @@
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/Button';
-import { FormError, FormField, FormLabel } from '../../components/ui/FormControls';
+import { FormError, FormField, FormHint, FormLabel } from '../../components/ui/FormControls';
 import { obligationSchema, type ObligationFormValues } from '../../core/lib/validation';
 import { useI18n } from '../../core/i18n/context';
+import { useAutoFxRate } from '../settings/useAutoFxRate';
 import type { ObligationInput } from './storage';
-import type { Obligation, Partner } from '../../core/types/domain';
-import type { Project } from '../../core/types/domain';
+import type { Obligation, Partner, Project, Currency } from '../../core/types/domain';
 
 interface Props {
   partners: Partner[];
@@ -27,9 +28,9 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ObligationFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(obligationSchema) as any,
     defaultValues: {
       direction: initial?.direction ?? 'receivable',
@@ -37,6 +38,7 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
       project_id: initial?.project_id ?? defaultProjectId ?? '',
       amount: initial?.amount ?? undefined as any,
       currency: initial?.currency ?? 'EGP',
+      fx_rate: initial?.fx_rate ?? 1,
       due_date: initial?.due_date ?? '',
       document_id: initial?.document_id ?? '',
       notes: initial?.notes ?? '',
@@ -45,16 +47,29 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
   });
 
   const direction = watch('direction');
+  const currency = watch('currency') as Currency;
+  const fx_rate = Number(watch('fx_rate')) || 1;
+  const amount = Number(watch('amount')) || 0;
+  const effectiveFx = currency === 'EGP' ? 1 : fx_rate;
+  const amountBase = amount * effectiveFx;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const onFxChange = useCallback((rate: number) => {
+    setValue('fx_rate', rate, { shouldValidate: true });
+  }, [setValue]);
+  useAutoFxRate(currency, onFxChange);
 
   const submit = async (v: ObligationFormValues) => {
     const amountNum = Number(v.amount);
+    const fx = v.currency === 'EGP' ? 1 : Number(v.fx_rate);
     await onSubmit({
       direction: v.direction,
       partner_id: v.partner_id,
       project_id: v.project_id || undefined,
       amount: amountNum,
-      currency: v.currency as any,
-      amount_egp: amountNum, // EGP base — fx =1 for Obligation MVP (can extend)
+      currency: v.currency as Currency,
+      fx_rate: fx,
+      amount_egp: Math.round(amountNum * fx * 1000) / 1000,
       due_date: v.due_date || undefined,
       document_id: v.document_id || undefined,
       status: initial?.status ?? 'open',
@@ -105,7 +120,7 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
       <div className="grid gap-4 sm:grid-cols-3">
         <FormField>
           <label className={lc}>{t('transaction_amount')} *</label>
-          <input type="number" step="0.01" min="0" {...register('amount', { valueAsNumber: true })} className={ic} dir="ltr" placeholder="0.00" />
+          <input type="number" step="0.001" min="0" {...register('amount', { valueAsNumber: true })} className={ic} dir="ltr" placeholder="0.000" />
           {errors.amount && <FormError>{errors.amount.message}</FormError>}
         </FormField>
 
@@ -121,6 +136,15 @@ export function ObligationForm({ partners, projects, onSubmit, onCancel, default
           <input type="date" {...register('due_date')} className={ic} />
         </FormField>
       </div>
+
+      {currency !== 'EGP' && (
+        <FormField>
+          <label className={lc}>{t('transaction_fx_rate')}</label>
+          <input type="number" step="0.0001" min="0" {...register('fx_rate', { valueAsNumber: true })} className={ic} dir="ltr" />
+          {errors.fx_rate && <FormError>{errors.fx_rate.message}</FormError>}
+          <FormHint>المكافئ بالعملة المرجعية: {amountBase.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 3 })}</FormHint>
+        </FormField>
+      )}
 
       <FormField>
         <label className={lc}>{t('transaction_notes')}</label>

@@ -76,6 +76,7 @@ function dateInputs() {
         direction: 'receivable',
         amount: 100,
         currency: 'EGP',
+        fx_rate: 1,
         document_id: '',
         notes: '',
       },

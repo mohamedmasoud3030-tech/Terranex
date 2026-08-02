@@ -23,6 +23,9 @@ import { dashboardRoute } from './routes/dashboard';
 import { portfolioRoute } from './routes/portfolio';
 import { portfolioProjectDetailRoute } from './routes/portfolio.projects.$id';
 import { portfolioPartnerDetailRoute } from './routes/portfolio.partners.$id';
+import { bankingRoute } from './routes/banking';
+import { invoicingRoute } from './routes/invoicing';
+import { inventoryRoute } from './routes/inventory';
 import { operationsRoute } from './routes/operations';
 import { intelligenceRoute } from './routes/intelligence';
 import { governanceRoute } from './routes/governance';
@@ -57,6 +60,9 @@ const routeTree = rootRoute.addChildren([
   portfolioRoute,
   portfolioProjectDetailRoute,
   portfolioPartnerDetailRoute,
+  bankingRoute,
+  invoicingRoute,
+  inventoryRoute,
   operationsRoute,
   projectsRoute,
   projectDetailRoute,

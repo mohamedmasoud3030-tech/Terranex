@@ -59,19 +59,49 @@ export function eventTypesForSector(sector: SectorId): OperationalEventType[] {
   });
 }
 
+export class QuantitySignError extends Error {
+  readonly expected: 'positive' | 'negative' | 'nonzero';
+  constructor(expected: 'positive' | 'negative' | 'nonzero', messageAr: string) {
+    super(messageAr);
+    this.name = 'QuantitySignError';
+    this.expected = expected;
+  }
+}
+
+/**
+ * Validate & normalise the quantity delta for an operational event.
+ *
+ * The previous version silently flipped the sign (e.g. user typed -5 on a
+ * birth event and we stored +5). That hid user mistakes — now we throw an
+ * explicit QuantitySignError with an Arabic message that the UI surfaces.
+ */
 export function normalizeQuantityDelta(
   type: OperationalEventType,
   raw: number | undefined,
 ): number | undefined {
   const rule = EVENT_DEFINITIONS[type].quantity;
   if (rule === 'none') return undefined;
-  if (raw == null || !Number.isFinite(raw) || raw === 0) {
+
+  const isMissing = raw == null || !Number.isFinite(raw) || raw === 0;
+  if (isMissing) {
     if (rule === 'positive') return 1;
     if (rule === 'negative') return -1;
     return undefined;
   }
-  if (rule === 'positive') return Math.abs(raw);
-  if (rule === 'negative') return -Math.abs(raw);
+
+  if (rule === 'positive') {
+    if (raw < 0) {
+      throw new QuantitySignError('positive', 'هذا النوع من الأحداث يتطلب كمية موجبة (زيادة). لا يمكن إدخال قيمة سالبة.');
+    }
+    return Math.abs(raw);
+  }
+  if (rule === 'negative') {
+    if (raw > 0) {
+      throw new QuantitySignError('negative', 'هذا النوع من الأحداث يتطلب كمية سالبة (نقصان). لا يمكن إدخال قيمة موجبة.');
+    }
+    return -Math.abs(raw);
+  }
+  if (raw === 0) return undefined;
   return raw;
 }
 

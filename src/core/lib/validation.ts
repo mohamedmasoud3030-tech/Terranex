@@ -150,6 +150,7 @@ export const transactionSchema = z.object({
   project_id: z.string().min(1, 'اختر المشروع'),
   asset_id: z.string().optional().or(z.literal('')),
   partner_id: z.string().optional().or(z.literal('')),
+  bank_account_id: z.string().optional().or(z.literal('')),
   direction: z.enum(txDirectionEnum, { error: 'اختر اتجاه المعاملة' }),
   category: z.enum(txCategoryValues, { error: 'اختر التصنيف' }),
   amount: moneyAmount,
@@ -219,9 +220,14 @@ export const obligationSchema = z.object({
   direction: z.enum(['receivable', 'payable'] as const, { error: 'اختر نوع الالتزام' }),
   amount: moneyAmount,
   currency: z.enum(currencyEnum),
+  fx_rate: fxRateSchema,
   due_date: isoDate.optional().or(z.literal('')),
   document_id: z.string().optional().or(z.literal('')),
   notes: optionalText,
+}).superRefine((data, ctx) => {
+  if (data.currency === 'EGP' && Math.abs(data.fx_rate - 1) > 0.0001) {
+    ctx.addIssue({ code: 'custom', message: 'سعر صرف الجنيه المصري يجب أن يساوي 1', path: ['fx_rate'] });
+  }
 });
 
 export type ObligationFormValues = z.infer<typeof obligationSchema>;

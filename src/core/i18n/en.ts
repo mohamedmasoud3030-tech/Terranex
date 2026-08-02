@@ -71,6 +71,10 @@ export const en: Record<TranslationKey, string> = {
   kpi_net_profit: 'Net profit / loss',
   kpi_open_receivables: 'Open receivables',
   kpi_open_payables: 'Open payables',
+  kpi_cash_on_hand: 'Cash in banks & funds',
+
+  // Invoicing
+  nav_invoices: 'Invoices',
 
   obligations_title: 'Obligations & upcoming dues',
   obligations_description: 'Each record is linked to a financial amount, sector, counterparty, and document.',

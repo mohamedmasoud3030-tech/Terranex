@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useHydratedCollection } from '../../core/hooks';
+import { syncProjectToOdoo } from '../../core/odoo/hooks';
 import { projectsHydration, projectsStore, type ProjectInput } from './storage';
 import type { Project } from '../../core/types/domain';
 
@@ -12,6 +13,7 @@ export function useProjects() {
   const createProject = useCallback(async (input: ProjectInput) => {
     const project = projectsStore.create(input);
     await projectsHydration.flush();
+    void syncProjectToOdoo(project);
     return project;
   }, []);
   const updateProject = useCallback(async (id: string, input: Partial<ProjectInput>) => {

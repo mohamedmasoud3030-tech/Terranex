@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useHydratedCollection } from '../../core/hooks';
+import { syncPartnerToOdoo } from '../../core/odoo/hooks';
 import {
   partnersHydration,
   partnersStore,
@@ -18,6 +19,8 @@ export function usePartners() {
   const createPartner = useCallback(async (input: PartnerInput) => {
     const partner = partnersStore.create(input);
     await partnersHydration.flush();
+    // Fire-and-forget Odoo sync — never blocks UI.
+    void syncPartnerToOdoo(partner);
     return partner;
   }, []);
   const updatePartner = useCallback(async (id: string, input: Partial<PartnerInput>) => {

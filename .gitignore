@@ -59,3 +59,4 @@ tests/.compiled/
 # Misc
 .cache/
 .parcel-cache/
+scripts/pglite-roundtrip.cjs

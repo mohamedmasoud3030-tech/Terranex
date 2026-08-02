@@ -10,6 +10,7 @@ export type SettlementOrigin = 'user' | 'legacy_balance_migration';
 export interface Settlement {
   id: string;
   obligation_id: string;
+  bank_account_id?: string; // bank/cash/wallet source (set when payment_method is cash-like)
   amount: number;
   currency: Currency;
   fx_rate: number;

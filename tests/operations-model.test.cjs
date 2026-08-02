@@ -43,11 +43,17 @@ test('event field matrix exposes only domain-backed sector event types', () => {
   assert.equal(EVENT_DEFINITIONS.vaccination.cost, true);
 });
 
-test('quantity deltas follow the event matrix and preserve direction', () => {
-  assert.equal(normalizeQuantityDelta('birth', -7), 7);
-  assert.equal(normalizeQuantityDelta('death', 3), -3);
+test('quantity deltas follow the event matrix and reject wrong sign explicitly', () => {
+  // Correct sign for positive-only event returns abs
+  assert.equal(normalizeQuantityDelta('birth', 7), 7);
+  // Correct sign for negative-only event returns -abs
+  assert.equal(normalizeQuantityDelta('death', -3), -3);
+  // Non-quantity events return undefined regardless of value
   assert.equal(normalizeQuantityDelta('weighing', 9), undefined);
   assert.equal(normalizeQuantityDelta('transfer', 0), undefined);
+  // Wrong sign throws QuantitySignError instead of silently correcting
+  assert.throws(() => normalizeQuantityDelta('birth', -7), /كمية موجبة/);
+  assert.throws(() => normalizeQuantityDelta('death', 3), /كمية سالبة/);
 });
 
 test('balance regression applies the latest adjustment then only later events', () => {
