@@ -230,7 +230,13 @@ export function InvoicingPage() {
       </Card>
 
       {previewId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPreviewId(null)}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
+          onClick={() => setPreviewId(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setPreviewId(null); }}
+        >
           <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <Suspense fallback={<p className="text-sm text-muted-foreground">{t('state_loading')}</p>}>
               <PdfViewLazy invoiceId={previewId} />
@@ -243,7 +249,13 @@ export function InvoicingPage() {
       )}
 
       {dialog && typeof dialog === 'object' && dialog.kind === 'pay' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDialog(null)}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
+          onClick={() => setDialog(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        >
           <form onSubmit={submitPay} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl space-y-3">
             <h3 className="mb-2 font-semibold">
               {locale === 'ar' ? 'تسجيل دفعة على الفاتورة' : 'Register payment'} — {dialog.invoice.invoice_number}
@@ -276,7 +288,13 @@ export function InvoicingPage() {
       )}
 
       {dialog === 'create' && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" onClick={() => setDialog(null)}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 cursor-pointer"
+          onClick={() => setDialog(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        >
           <div className="my-8 w-full max-w-3xl rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-4 font-semibold">{locale === 'ar' ? 'فاتورة مبيعات جديدة' : 'New sales invoice'}</h3>
             <InvoiceForm

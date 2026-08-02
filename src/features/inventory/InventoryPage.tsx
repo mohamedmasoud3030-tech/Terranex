@@ -166,7 +166,13 @@ export function InventoryPage() {
       </Card>
 
       {dialog === 'item' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDialog(null)}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
+          onClick={() => setDialog(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        >
           <form onSubmit={addItem} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg space-y-3 rounded-2xl bg-card p-6 shadow-xl">
             <h3 className="font-semibold">{locale === 'ar' ? 'صنف جديد' : 'New inventory item'}</h3>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -196,7 +202,13 @@ export function InventoryPage() {
       )}
 
       {dialog && typeof dialog === 'object' && dialog.kind === 'movement' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDialog(null)}>
+        <div
+          role="button"
+          tabIndex={0}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
+          onClick={() => setDialog(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        >
           <form onSubmit={addMovement} onClick={(e) => e.stopPropagation()} className="w-full max-w-md space-y-3 rounded-2xl bg-card p-6 shadow-xl">
             <h3 className="font-semibold">
               {dialog.type === 'in'
