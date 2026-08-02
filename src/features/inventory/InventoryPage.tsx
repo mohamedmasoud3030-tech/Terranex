@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { FormField, FormLabel } from '../../components/ui/FormControls';
+import { ModalOverlay } from '../../components/ui/ModalOverlay';
 import { useI18n } from '../../core/i18n/context';
 import { formatMoney } from '../../core/lib/format';
 import type { Currency, InventoryCategory, InventoryStockRow } from '../../core/types/domain';
@@ -150,10 +151,10 @@ export function InventoryPage() {
                     </div>
                     {low && <Badge tone="warning">{locale === 'ar' ? 'إعادة طلب' : 'Reorder'}</Badge>}
                     <div className="flex gap-1">
-                      <button onClick={() => setDialog({ kind: 'movement', item, type: 'in' })} title={locale === 'ar' ? 'وارد' : 'Stock in'} className="rounded-lg p-2 text-success hover:bg-success/10">
+                      <button type="button" onClick={() => setDialog({ kind: 'movement', item, type: 'in' })} title={locale === 'ar' ? 'وارد' : 'Stock in'} className="rounded-lg p-2 text-success hover:bg-success/10">
                         <ArrowUpCircle className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setDialog({ kind: 'movement', item, type: 'out' })} title={locale === 'ar' ? 'منصرف' : 'Stock out'} className="rounded-lg p-2 text-danger hover:bg-danger/10">
+                      <button type="button" onClick={() => setDialog({ kind: 'movement', item, type: 'out' })} title={locale === 'ar' ? 'منصرف' : 'Stock out'} className="rounded-lg p-2 text-danger hover:bg-danger/10">
                         <ArrowDownCircle className="h-4 w-4" />
                       </button>
                     </div>
@@ -166,14 +167,12 @@ export function InventoryPage() {
       </Card>
 
       {dialog === 'item' && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
-          onClick={() => setDialog(null)}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        <ModalOverlay
+          closeLabel={locale === 'ar' ? 'إغلاق النافذة' : 'Close dialog'}
+          contentClassName="w-full max-w-lg space-y-3 rounded-2xl bg-card p-6 shadow-xl"
+          onClose={() => setDialog(null)}
+          onSubmit={addItem}
         >
-          <form onSubmit={addItem} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg space-y-3 rounded-2xl bg-card p-6 shadow-xl">
             <h3 className="font-semibold">{locale === 'ar' ? 'صنف جديد' : 'New inventory item'}</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <FormField><FormLabel>{locale === 'ar' ? 'الاسم (عربي)' : 'Name (AR)'}</FormLabel><input name="name_ar" required className="min-h-11 w-full rounded-xl border bg-background px-3" /></FormField>
@@ -197,19 +196,16 @@ export function InventoryPage() {
               <Button type="button" variant="secondary" onClick={() => setDialog(null)}>{locale === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
               <Button type="submit">{locale === 'ar' ? 'حفظ' : 'Save'}</Button>
             </div>
-          </form>
-        </div>
+        </ModalOverlay>
       )}
 
       {dialog && typeof dialog === 'object' && dialog.kind === 'movement' && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
-          onClick={() => setDialog(null)}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        <ModalOverlay
+          closeLabel={locale === 'ar' ? 'إغلاق النافذة' : 'Close dialog'}
+          contentClassName="w-full max-w-md space-y-3 rounded-2xl bg-card p-6 shadow-xl"
+          onClose={() => setDialog(null)}
+          onSubmit={addMovement}
         >
-          <form onSubmit={addMovement} onClick={(e) => e.stopPropagation()} className="w-full max-w-md space-y-3 rounded-2xl bg-card p-6 shadow-xl">
             <h3 className="font-semibold">
               {dialog.type === 'in'
                 ? (locale === 'ar' ? 'وارد: ' : 'Stock in: ')
@@ -232,8 +228,7 @@ export function InventoryPage() {
               <Button type="button" variant="secondary" onClick={() => setDialog(null)}>{locale === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
               <Button type="submit">{locale === 'ar' ? 'تسجيل' : 'Record'}</Button>
             </div>
-          </form>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
