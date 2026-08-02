@@ -612,3 +612,47 @@ export interface SalesInvoice {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Inventory ───────────────────────────────────────────────────────────────
+
+export type InventoryCategory = 'feed' | 'fertilizer' | 'seed' | 'medicine' | 'vaccine' | 'supply' | 'other';
+export type InventoryMovementType = 'purchase' | 'consume' | 'adjustment' | 'transfer_in' | 'transfer_out' | 'waste';
+
+export interface InventoryItem {
+  id: string;
+  owner_id: string;
+  name_ar: string;
+  name_en?: string;
+  sku?: string;
+  category: InventoryCategory;
+  unit: string;
+  project_id?: string;
+  reorder_level: number;
+  default_unit_cost: number;
+  currency: Currency;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryMovement {
+  id: string;
+  owner_id: string;
+  item_id: string;
+  movement_type: InventoryMovementType;
+  quantity: number;
+  unit_cost: number;
+  currency: Currency;
+  fx_rate_to_base: number;
+  total_cost_base: number;
+  movement_date: string;
+  reference_type?: string;
+  reference_id?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryStockRow extends InventoryItem {
+  quantity_on_hand: number;
+}

@@ -7,6 +7,7 @@ import {
   FileText,
   LayoutDashboard,
   Landmark,
+  Package,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'portfolio', label_ar: 'المحفظة', label_en: 'Portfolio', icon: BriefcaseBusiness, to: '/portfolio' },
   { id: 'banking', label_ar: 'البنوك والصناديق', label_en: 'Banking', icon: Landmark, to: '/banking' },
   { id: 'operations', label_ar: 'العمليات', label_en: 'Operations', icon: Activity, to: '/operations' },
+  { id: 'inventory', label_ar: 'المخزون', label_en: 'Inventory', icon: Package, to: '/inventory' },
   { id: 'finance', label_ar: 'المالية', label_en: 'Finance', icon: Banknote, to: '/finance' },
   { id: 'invoicing', label_ar: 'الفواتير', label_en: 'Invoices', icon: FileText, to: '/invoicing' },
   { id: 'intelligence', label_ar: 'الذكاء', label_en: 'Intelligence', icon: BrainCircuit, to: '/intelligence' },
