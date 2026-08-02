@@ -8,7 +8,11 @@ import { Badge } from '../../components/ui/Badge';
 import { useI18n } from '../../core/i18n/context';
 import { formatMoney } from '../../core/lib/format';
 import type { Currency, SalesInvoice } from '../../core/types/domain';
+import { useProjects } from '../projects/hooks';
+import { usePartners } from '../partners/hooks';
+import { useBankAccounts, useCompanySettings } from '../banking/hooks';
 import { listInvoices } from './storage';
+import { InvoiceForm } from './InvoiceForm';
 
 const PdfViewLazy = lazy(() =>
   import('./InvoicePdfView').then((m) => ({ default: m.InvoicePdfView })),
@@ -38,10 +42,19 @@ function statusLabel(locale: 'ar' | 'en', s: string) {
 export function InvoicingPage() {
   const router = useRouter();
   const { t, locale } = useI18n();
+  const { projects } = useProjects();
+  const { partners } = usePartners();
+  const { accounts } = useBankAccounts();
+  const { settings } = useCompanySettings();
+
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<null | 'create'>(null);
+
+  const baseCurrency: Currency = (settings?.base_currency as Currency) ?? 'OMR';
+  const defaultVat = settings?.vat_enabled ? (settings.vat_rate ?? 0) : 0;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -58,11 +71,9 @@ export function InvoicingPage() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const totalDue = invoices
+  const totalDueBase = invoices
     .filter((i) => i.status !== 'void' && i.status !== 'draft')
     .reduce((s, i) => s + Math.max(0, i.total - i.amount_paid), 0);
-
-  const baseCurrency: Currency = 'OMR';
 
   return (
     <div className="space-y-6">
@@ -75,7 +86,7 @@ export function InvoicingPage() {
         <Button onClick={() => router.navigate({ to: '/finance' } as any)} variant="secondary">
           <Receipt className="h-4 w-4" /> {locale === 'ar' ? 'الذمم' : 'Obligations'}
         </Button>
-        <Button onClick={() => router.navigate({ to: '/banking' } as any)}>
+        <Button onClick={() => setDialog('create')}>
           <Plus className="h-4 w-4" /> {locale === 'ar' ? 'فاتورة جديدة' : 'New invoice'}
         </Button>
       </PageHeader>
@@ -96,7 +107,7 @@ export function InvoicingPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">{locale === 'ar' ? 'المبالغ المستحقة' : 'Outstanding'}</p>
-            <p className="text-xl font-bold text-warning">{formatMoney(totalDue, baseCurrency, locale)}</p>
+            <p className="text-xl font-bold text-warning">{formatMoney(totalDueBase, baseCurrency, locale)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -160,6 +171,23 @@ export function InvoicingPage() {
             <div className="flex justify-end pt-4">
               <Button variant="secondary" onClick={() => setPreviewId(null)}>{t('action_cancel')}</Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {dialog === 'create' && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" onClick={() => setDialog(null)}>
+          <div className="my-8 w-full max-w-3xl rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-4 font-semibold">{locale === 'ar' ? 'فاتورة مبيعات جديدة' : 'New sales invoice'}</h3>
+            <InvoiceForm
+              projects={projects}
+              partners={partners}
+              bankAccounts={accounts}
+              defaultCurrency={baseCurrency}
+              defaultVatRate={defaultVat}
+              onCancel={() => setDialog(null)}
+              onSaved={async () => { setDialog(null); await refresh(); }}
+            />
           </div>
         </div>
       )}
