@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { FormError, FormField, FormLabel } from '../../components/ui/FormControls';
+import { ModalOverlay } from '../../components/ui/ModalOverlay';
 import { useI18n } from '../../core/i18n/context';
 import { formatMoney } from '../../core/lib/format';
 import type { Currency, SalesInvoice } from '../../core/types/domain';
@@ -184,7 +185,7 @@ export function InvoicingPage() {
                 const outstanding = Math.max(0, inv.total - inv.amount_paid);
                 return (
                 <div key={inv.id} className="flex min-h-14 w-full items-center gap-3 px-4 py-3 hover:bg-muted/50">
-                  <button onClick={() => setPreviewId(inv.id)} className="flex flex-1 min-w-0 items-center gap-3 text-start">
+                  <button type="button" onClick={() => setPreviewId(inv.id)} className="flex flex-1 min-w-0 items-center gap-3 text-start">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/5">
                       <FileText className="h-4 w-4 text-primary" />
                     </div>
@@ -203,14 +204,14 @@ export function InvoicingPage() {
                   </button>
                   <div className="flex gap-1">
                     {inv.status === 'draft' && (
-                      <button onClick={() => void handleIssue(inv)} disabled={actionPending}
+                      <button type="button" onClick={() => void handleIssue(inv)} disabled={actionPending}
                         title={locale === 'ar' ? 'إصدار' : 'Issue'}
                         className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-50">
                         <Send className="h-4 w-4" />
                       </button>
                     )}
                     {(inv.status === 'issued' || inv.status === 'partial') && (
-                      <button onClick={() => openPay(inv)} disabled={actionPending}
+                      <button type="button" onClick={() => openPay(inv)} disabled={actionPending}
                         title={locale === 'ar' ? 'تسجيل دفعة' : 'Register payment'}
                         className="rounded-lg p-2 text-muted-foreground hover:bg-success/10 hover:text-success disabled:opacity-50">
                         <CreditCard className="h-4 w-4" />
@@ -230,33 +231,27 @@ export function InvoicingPage() {
       </Card>
 
       {previewId && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
-          onClick={() => setPreviewId(null)}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setPreviewId(null); }}
+        <ModalOverlay
+          closeLabel={locale === 'ar' ? 'إغلاق معاينة الفاتورة' : 'Close invoice preview'}
+          contentClassName="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-card p-6 shadow-xl"
+          onClose={() => setPreviewId(null)}
         >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <Suspense fallback={<p className="text-sm text-muted-foreground">{t('state_loading')}</p>}>
               <PdfViewLazy invoiceId={previewId} />
             </Suspense>
             <div className="flex justify-end pt-4">
               <Button variant="secondary" onClick={() => setPreviewId(null)}>{t('action_cancel')}</Button>
             </div>
-          </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {dialog && typeof dialog === 'object' && dialog.kind === 'pay' && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 cursor-pointer"
-          onClick={() => setDialog(null)}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        <ModalOverlay
+          closeLabel={locale === 'ar' ? 'إغلاق نافذة الدفع' : 'Close payment dialog'}
+          contentClassName="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl space-y-3"
+          onClose={() => setDialog(null)}
+          onSubmit={submitPay}
         >
-          <form onSubmit={submitPay} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl space-y-3">
             <h3 className="mb-2 font-semibold">
               {locale === 'ar' ? 'تسجيل دفعة على الفاتورة' : 'Register payment'} — {dialog.invoice.invoice_number}
             </h3>
@@ -283,19 +278,16 @@ export function InvoicingPage() {
               <Button type="button" variant="secondary" onClick={() => setDialog(null)} disabled={actionPending}>{locale === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
               <Button type="submit" disabled={actionPending}>{actionPending ? (locale === 'ar' ? 'جارٍ…' : 'Saving…') : (locale === 'ar' ? 'تسجيل الدفعة' : 'Register payment')}</Button>
             </div>
-          </form>
-        </div>
+        </ModalOverlay>
       )}
 
       {dialog === 'create' && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 cursor-pointer"
-          onClick={() => setDialog(null)}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setDialog(null); }}
+        <ModalOverlay
+          closeLabel={locale === 'ar' ? 'إغلاق نافذة الفاتورة' : 'Close invoice dialog'}
+          contentClassName="my-8 w-full max-w-3xl rounded-2xl bg-card p-6 shadow-xl"
+          onClose={() => setDialog(null)}
+          placement="start"
         >
-          <div className="my-8 w-full max-w-3xl rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-4 font-semibold">{locale === 'ar' ? 'فاتورة مبيعات جديدة' : 'New sales invoice'}</h3>
             <InvoiceForm
               projects={projects}
@@ -306,8 +298,7 @@ export function InvoicingPage() {
               onCancel={() => setDialog(null)}
               onSaved={async () => { setDialog(null); await refresh(); }}
             />
-          </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
