@@ -109,6 +109,11 @@ create table if not exists invoice_payments (
 create index if not exists invoice_payments_invoice_idx on invoice_payments(invoice_id);
 create index if not exists invoice_payments_owner_idx on invoice_payments(owner_id, payment_date desc);
 alter table invoice_payments enable row level security;
+drop policy if exists invoice_payments_owner_all on invoice_payments;
+drop policy if exists invoice_payments_owner_select on invoice_payments;
+drop policy if exists invoice_payments_owner_insert on invoice_payments;
+drop policy if exists invoice_payments_owner_update on invoice_payments;
+drop policy if exists invoice_payments_owner_delete on invoice_payments;
 create policy invoice_payments_owner_all on invoice_payments
   for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 grant select, insert on invoice_payments to authenticated;
@@ -139,6 +144,10 @@ create table if not exists owner_sequences (
   primary key (owner_id, sequence_key)
 );
 alter table owner_sequences enable row level security;
+drop policy if exists owner_sequences_self on owner_sequences;
+drop policy if exists owner_sequences_owner_select on owner_sequences;
+drop policy if exists owner_sequences_owner_insert on owner_sequences;
+drop policy if exists owner_sequences_owner_update on owner_sequences;
 create policy owner_sequences_self on owner_sequences
   for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 grant select, insert, update on owner_sequences to authenticated;
@@ -170,7 +179,10 @@ create or replace function create_sales_invoice_atomic(
   p_vat_rate numeric,
   p_notes text,
   p_lines jsonb
-) returns uuid language plpgsql as $$
+) returns uuid
+language plpgsql
+security definer
+set search_path = public as $$
 declare
   v_owner uuid := auth.uid();
   v_invoice_id uuid;
@@ -253,9 +265,12 @@ create or replace function pay_sales_invoice(
   p_bank_account uuid,
   p_date date,
   p_memo text
-) returns uuid language plpgsql as $$
+) returns uuid
+language plpgsql
+security definer
+set search_path = public as $$
 declare
-  v_owner uuid; v_total numeric; v_paid numeric; v_new_paid numeric;
+  v_owner uuid; v_total numeric; v_paid numeric; v_new_paid numeric; v_status text;
   v_bank_owner uuid; v_currency text; v_fx numeric; v_partner uuid;
   v_btx_id uuid; v_pay_id uuid;
   v_existing_paid numeric; v_existing_bank uuid; v_existing_amount numeric;
@@ -273,7 +288,7 @@ begin
   end if;
 
   select owner_id, total, amount_paid, currency, fx_rate_to_base, partner_id, status
-    into v_owner, v_total, v_paid, v_currency, v_fx, v_partner
+    into v_owner, v_total, v_paid, v_currency, v_fx, v_partner, v_status
     from sales_invoices where id = p_invoice_id for update;
   if not found then raise exception 'الفاتورة غير موجودة'; end if;
   perform public.terranex_assert_owner(v_owner);

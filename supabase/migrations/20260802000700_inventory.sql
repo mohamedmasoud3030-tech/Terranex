@@ -40,9 +40,9 @@ create table if not exists inventory_movements (
   unique (id, owner_id)
 );
 
-create index inventory_items_owner_idx on inventory_items(owner_id) where is_archived = false;
-create index inventory_movements_item_date_idx on inventory_movements(item_id, movement_date desc);
-create index inventory_movements_owner_date_idx on inventory_movements(owner_id, movement_date desc);
+create index if not exists inventory_items_owner_idx on inventory_items(owner_id) where is_archived = false;
+create index if not exists inventory_movements_item_date_idx on inventory_movements(item_id, movement_date desc);
+create index if not exists inventory_movements_owner_date_idx on inventory_movements(owner_id, movement_date desc);
 
 drop trigger if exists trg_inventory_items_updated on inventory_items;
 create trigger trg_inventory_items_updated before update on inventory_items
@@ -54,6 +54,16 @@ create trigger trg_inventory_movements_updated before update on inventory_moveme
 alter table inventory_items enable row level security;
 alter table inventory_movements enable row level security;
 
+drop policy if exists inv_items_owner_all on inventory_items;
+drop policy if exists inv_mvmts_owner_all on inventory_movements;
+drop policy if exists inventory_items_owner_select on inventory_items;
+drop policy if exists inventory_items_owner_insert on inventory_items;
+drop policy if exists inventory_items_owner_update on inventory_items;
+drop policy if exists inventory_items_owner_delete on inventory_items;
+drop policy if exists inventory_movements_owner_select on inventory_movements;
+drop policy if exists inventory_movements_owner_insert on inventory_movements;
+drop policy if exists inventory_movements_owner_update on inventory_movements;
+drop policy if exists inventory_movements_owner_delete on inventory_movements;
 create policy inv_items_owner_all on inventory_items
   for all to authenticated using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 create policy inv_mvmts_owner_all on inventory_movements

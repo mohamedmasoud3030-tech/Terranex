@@ -94,10 +94,6 @@ begin
   if v_inv is null then raise exception 'FAIL create_sales_invoice_atomic returned null'; end if;
 
   -- Server must compute totals and set status draft
-  select total, subtotal, vat_amount, status, owner_id, invoice_number
-    into v_amnt, v_balance, v_balance, v_status, v_balance, v_balance
-  from public.sales_invoices where id = v_inv;
-  -- (ignore v_balance reuse — just verifying values are populated)
   if (select total from public.sales_invoices where id=v_inv) <> 25 then
     raise exception 'FAIL server total: expected 25, got %', (select total from public.sales_invoices where id=v_inv);
   end if;
@@ -250,7 +246,7 @@ end $$;
 -- ==== Bob logs in: he should see nothing of Alice ====
 set local request.jwt.claim.sub = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 do $$
-declare n bigint;
+declare n bigint; v_tbl text;
 begin
   foreach v_tbl in array array[
     'sales_invoices','sales_invoice_lines','bank_accounts','bank_transactions',

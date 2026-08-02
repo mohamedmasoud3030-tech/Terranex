@@ -69,6 +69,10 @@ create trigger trg_company_settings_updated
 -- RLS: owner-only
 alter table company_settings enable row level security;
 
+drop policy if exists company_settings_owner_select on company_settings;
+drop policy if exists company_settings_owner_insert on company_settings;
+drop policy if exists company_settings_owner_update on company_settings;
+drop policy if exists company_settings_owner_delete on company_settings;
 create policy company_settings_owner_select on company_settings
   for select to authenticated using (auth.uid() = owner_id);
 create policy company_settings_owner_insert on company_settings
@@ -117,7 +121,7 @@ create table if not exists bank_accounts (
   unique (id, owner_id)
 );
 
-create index bank_accounts_owner_idx on bank_accounts(owner_id);
+create index if not exists bank_accounts_owner_idx on bank_accounts(owner_id);
 
 drop trigger if exists trg_bank_accounts_updated on bank_accounts;
 create trigger trg_bank_accounts_updated before update on bank_accounts
@@ -125,6 +129,10 @@ create trigger trg_bank_accounts_updated before update on bank_accounts
 
 alter table bank_accounts enable row level security;
 
+drop policy if exists bank_accounts_owner_select on bank_accounts;
+drop policy if exists bank_accounts_owner_insert on bank_accounts;
+drop policy if exists bank_accounts_owner_update on bank_accounts;
+drop policy if exists bank_accounts_owner_delete on bank_accounts;
 create policy bank_accounts_owner_select on bank_accounts
   for select to authenticated using (auth.uid() = owner_id);
 create policy bank_accounts_owner_insert on bank_accounts
@@ -186,9 +194,9 @@ create table if not exists bank_transactions (
   unique (id, owner_id)
 );
 
-create index bank_transactions_account_date_idx on bank_transactions(bank_account_id, transaction_date desc);
-create index bank_transactions_owner_date_idx on bank_transactions(owner_id, transaction_date desc);
-create index bank_transactions_reference_idx on bank_transactions(reference_type, reference_id);
+create index if not exists bank_transactions_account_date_idx on bank_transactions(bank_account_id, transaction_date desc);
+create index if not exists bank_transactions_owner_date_idx on bank_transactions(owner_id, transaction_date desc);
+create index if not exists bank_transactions_reference_idx on bank_transactions(reference_type, reference_id);
 
 drop trigger if exists trg_bank_transactions_updated on bank_transactions;
 create trigger trg_bank_transactions_updated before update on bank_transactions
@@ -196,6 +204,10 @@ create trigger trg_bank_transactions_updated before update on bank_transactions
 
 alter table bank_transactions enable row level security;
 
+drop policy if exists bank_transactions_owner_select on bank_transactions;
+drop policy if exists bank_transactions_owner_insert on bank_transactions;
+drop policy if exists bank_transactions_owner_update on bank_transactions;
+drop policy if exists bank_transactions_owner_delete on bank_transactions;
 create policy bank_transactions_owner_select on bank_transactions
   for select to authenticated using (auth.uid() = owner_id);
 create policy bank_transactions_owner_insert on bank_transactions

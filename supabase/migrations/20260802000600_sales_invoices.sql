@@ -43,9 +43,9 @@ create table if not exists sales_invoice_lines (
   unique (id, owner_id)
 );
 
-create index sales_invoices_owner_idx on sales_invoices(owner_id, issue_date desc);
-create index sales_invoices_partner_idx on sales_invoices(partner_id);
-create index sales_invoice_lines_invoice_idx on sales_invoice_lines(invoice_id);
+create index if not exists sales_invoices_owner_idx on sales_invoices(owner_id, issue_date desc);
+create index if not exists sales_invoices_partner_idx on sales_invoices(partner_id);
+create index if not exists sales_invoice_lines_invoice_idx on sales_invoice_lines(invoice_id);
 
 drop trigger if exists trg_sales_invoices_updated on sales_invoices;
 create trigger trg_sales_invoices_updated before update on sales_invoices
@@ -54,6 +54,10 @@ create trigger trg_sales_invoices_updated before update on sales_invoices
 alter table sales_invoices enable row level security;
 alter table sales_invoice_lines enable row level security;
 
+drop policy if exists sales_invoices_owner_select on sales_invoices;
+drop policy if exists sales_invoices_owner_insert on sales_invoices;
+drop policy if exists sales_invoices_owner_update on sales_invoices;
+drop policy if exists sales_invoices_owner_delete on sales_invoices;
 create policy sales_invoices_owner_select on sales_invoices
   for select to authenticated using (auth.uid() = owner_id);
 create policy sales_invoices_owner_insert on sales_invoices
@@ -63,6 +67,11 @@ create policy sales_invoices_owner_update on sales_invoices
 create policy sales_invoices_owner_delete on sales_invoices
   for delete to authenticated using (auth.uid() = owner_id);
 
+drop policy if exists sales_invoice_lines_owner_select on sales_invoice_lines;
+drop policy if exists sales_invoice_lines_owner_insert on sales_invoice_lines;
+drop policy if exists sales_invoice_lines_owner_update on sales_invoice_lines;
+drop policy if exists sales_invoice_lines_owner_delete on sales_invoice_lines;
+drop policy if exists sales_invoice_lines_owner_all on sales_invoice_lines;
 create policy sales_invoice_lines_owner_select on sales_invoice_lines
   for select to authenticated using (auth.uid() = owner_id);
 create policy sales_invoice_lines_owner_all on sales_invoice_lines
