@@ -1,6 +1,7 @@
 import { newId } from '../../core/lib/id';
 import type { Obligation, Transaction, TransactionDirection } from '../../core/types/domain';
 import { obligationsStore } from '../obligations/storage';
+import { linkFinancialMovement } from '../banking/storage';
 import {
   generateRequestId,
   invokeFinanceRpc,
@@ -16,6 +17,8 @@ import {
 export interface DeferredExpenseTransactionInput extends TransactionInput {
   create_payable_obligation?: boolean;
   payable_due_date?: string;
+  /** Optional bank/cash/wallet account that this transaction moves money through. */
+  bank_account_id?: string;
   /**
    * Stable identifier for the form instance that produced this input.
    *
@@ -62,6 +65,7 @@ export function buildRecordTransactionAtomicPayload(
       asset_id: input.asset_id,
       partner_id: input.partner_id,
       operational_event_id: input.operational_event_id,
+      bank_account_id: input.bank_account_id ?? null,
       direction: input.direction,
       category: input.category,
       description: input.description,
@@ -180,7 +184,31 @@ export async function createTransactionWithOptionalPayableAtomic(
     P1B_ATOMIC_RPC_NAMES[0],
     payload,
   );
-  return requireTransactionAfterRpc(result.transaction_id);
+  const saved = requireTransactionAfterRpc(result.transaction_id);
+
+  // Mirror the movement into the bank ledger if a bank/cash account was chosen.
+  if (input.bank_account_id) {
+    try {
+      await linkFinancialMovement({
+        reference_type: 'transaction',
+        reference_id: saved.id,
+        bank_account_id: input.bank_account_id,
+        direction: input.direction === 'income' ? 'deposit' : 'withdrawal',
+        amount: input.amount,
+        currency: input.currency,
+        fx_rate_to_base: input.fx_rate ?? 1,
+        transaction_date: input.transaction_date,
+        memo: input.description ?? null,
+        partner_id: input.partner_id ?? null,
+        document_id: input.document_id ?? null,
+      }, payload.p_request_id + '_bank');
+    } catch {
+      // Non-fatal: bank ledger entry may be created manually; don't lose the
+      // financial transaction. Operator can reconcile from the Banking page.
+    }
+  }
+
+  return saved;
 }
 
 /** Updates the transaction and its linked payable in one PostgreSQL transaction. */

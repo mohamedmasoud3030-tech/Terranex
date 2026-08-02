@@ -1,0 +1,96 @@
+name: Supabase Backup
+
+# Daily automated backup of the Supabase Postgres database.
+# Required GitHub Actions secrets (set in repo → Settings → Secrets → Actions):
+#   SUPABASE_DB_URL   Full Postgres connection string (from Supabase → Settings → Database)
+#                     Format: postgres://postgres:[PASSWORD]@db.[ref].supabase.co:6543/postgres?sslmode=require
+#   BACKUP_ENCRYPTION_PASSPHRASE (optional) — passphrase for symmetric GPG encryption
+#
+# Backups are retained for 7 daily runs and uploaded as workflow artifacts.
+# For off-repo storage, uncomment the R2/S3 upload block and set the relevant secrets.
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC daily = ~06:00 GST (Asia/Muscat)
+  workflow_dispatch:        # allow manual trigger
+    inputs:
+      reason:
+        description: 'Reason for manual backup'
+        required: false
+        default: 'manual'
+
+jobs:
+  backup:
+    name: Dump & archive Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Install matching PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl ca-certificates gnupg lsb-release wget
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
+          pg_dump --version
+
+      - name: Create backup directory
+        run: mkdir -p backups
+
+      - name: Run pg_dump (custom format, no owner, no ACLs — clean restore)
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          STAMP=$(date -u +%Y-%m-%d_%H-%M-%S)
+          FILE="backups/terranex_supabase_${STAMP}.dump"
+          # Parse components from SUPABASE_DB_URL or use individual secrets
+          if [ -n "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            pg_dump "${{ secrets.SUPABASE_DB_URL }}" \
+              --format=custom \
+              --no-owner \
+              --no-privileges \
+              --file="$FILE"
+          else
+            pg_dump \
+              --host="${{ secrets.SUPABASE_DB_HOST }}" \
+              --port="${{ secrets.SUPABASE_DB_PORT || 6543 }}" \
+              --username="${{ secrets.SUPABASE_DB_USER || 'postgres' }}" \
+              --dbname=postgres \
+              --sslmode=require \
+              --format=custom \
+              --no-owner \
+              --no-privileges \
+              --file="$FILE"
+          fi
+          ls -lh "$FILE"
+          echo "BACKUP_FILE=$FILE" >> $GITHUB_ENV
+
+      - name: Retain only the last 7 local backups in the repo (prune)
+        run: |
+          ls -1t backups/terranex_supabase_*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f
+
+      - name: Upload as workflow artifact (90 day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: terranex-supabase-backup
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          compression-level: 6
+
+      # Optional: upload to Cloudflare R2 / S3 — uncomment and set secrets to enable
+      # - name: Install rclone
+      #   run: |
+      #     curl -sL https://rclone.org/install.sh | sudo bash
+      # - name: Upload to Cloudflare R2
+      #   env:
+      #     R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      #     R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY_ID }}
+      #     R2_SECRET_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      #     R2_BUCKET: ${{ secrets.R2_BUCKET || 'terranex-backups' }}
+      #   run: |
+      #     rclone config create r2 s3 provider=Cloudflare account="$R2_ACCOUNT_ID" access_key_id="$R2_ACCESS_KEY" secret_access_key="$R2_SECRET_KEY" region=auto endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+      #     rclone copy "${{ env.BACKUP_FILE }}" "r2:$R2_BUCKET/supabase/"
+      #     rclone delete "r2:$R2_BUCKET/supabase/" --min-age 30d

@@ -1,0 +1,7 @@
+# Placeholder for custom Odoo addons
+#
+# Modules placed here are available to Odoo (mapped to /mnt/extra-addons).
+# Leave empty until you need a custom integration module.
+#
+# A future module `terranex_sync` will be placed here to expose webhooks for
+# Odoo → Terranex reverse sync (invoices paid, bank reconciliation).

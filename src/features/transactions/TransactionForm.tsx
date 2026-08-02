@@ -6,12 +6,15 @@ import { FormError, FormField, FormHint, FormLabel } from '../../components/ui/F
 import type { Transaction, Currency, TransactionDirection, TransactionCategory } from '../../core/types/domain';
 import { useDocuments } from '../documents/hooks';
 import { usePartners } from '../partners/hooks';
+import { useBankAccounts } from '../banking/hooks';
+import { linkFinancialMovement } from '../banking/storage';
 import type { DeferredExpenseTransactionInput } from './deferredExpenseWorkflow';
 import { newId } from '../../core/lib/id';
 import { transactionSchema, type TransactionFormValues } from '../../core/lib/validation';
 import { useAutoFxRate } from '../settings/useAutoFxRate';
 import { useI18n } from '../../core/i18n/context';
 import { useAssets } from '../assets/hooks';
+import { Landmark } from 'lucide-react';
 
 const CATEGORIES: { id: TransactionCategory; ar: string; en: string; group: string }[] = [
   { id: 'acquisition', ar: 'اقتناء أصل', en: 'Acquisition', group: 'عام' },
@@ -56,6 +59,12 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
   const { partners } = usePartners();
   const { documents } = useDocuments(projectId);
   const { assets } = useAssets(projectId);
+  const { accounts } = useBankAccounts();
+
+  const activeAccounts = React.useMemo(
+    () => accounts.filter((a) => !a.is_archived),
+    [accounts],
+  );
 
   const {
     register,
@@ -77,6 +86,7 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       transaction_date: initial?.transaction_date ?? new Date().toISOString().slice(0, 10),
       partner_id: initial?.partner_id ?? '',
       document_id: initial?.document_id ?? '',
+      bank_account_id: (initial as Partial<Transaction> & { bank_account_id?: string })?.bank_account_id ?? '',
       description: initial?.description ?? '',
       notes: initial?.notes ?? '',
     },
@@ -121,25 +131,30 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
       alert(locale === 'ar' ? 'أدخل تاريخ الاستحقاق' : 'Enter the due date');
       return;
     }
-    await onSubmit({
+    const fxRate = values.currency === 'EGP' ? 1 : Number(values.fx_rate);
+    const amountNum = Number(values.amount);
+    const bankAccountId = values.bank_account_id || undefined;
+    const input: DeferredExpenseTransactionInput & { bank_account_id?: string } = {
       project_id: values.project_id,
       asset_id: values.asset_id || undefined,
       partner_id: values.partner_id || undefined,
       document_id: values.document_id || undefined,
       operational_event_id: initial?.operational_event_id,
+      bank_account_id: bankAccountId,
       direction: values.direction,
       category: values.category as TransactionCategory,
-      amount: Number(values.amount),
+      amount: amountNum,
       currency: values.currency as Currency,
-      fx_rate: values.currency === 'EGP' ? 1 : Number(values.fx_rate),
-      amount_egp: Number(values.amount) * (values.currency === 'EGP' ? 1 : Number(values.fx_rate)),
+      fx_rate: fxRate,
+      amount_egp: amountNum * fxRate,
       transaction_date: values.transaction_date,
       description: values.description || undefined,
       notes: values.notes || undefined,
       draft_id: draftIdRef.current,
       create_payable_obligation: createPayableObligation || undefined,
       payable_due_date: createPayableObligation ? payableDueDate : undefined,
-    });
+    };
+    await onSubmit(input);
   };
 
   return (
@@ -230,6 +245,31 @@ export function TransactionForm({ projectId, initial, onSubmit, onCancel, loadin
             {partners.map(p => <option key={p.id} value={p.id}>{locale==='ar' ? p.name_ar : (p.name_en || p.name_ar)}</option>)}
           </select>
           {errors.partner_id && <FormError>{errors.partner_id.message}</FormError>}
+        </FormField>
+
+        <FormField>
+          <FormLabel>
+            {locale === 'ar' ? 'الحساب البنكي / الصندوق' : 'Bank / Cash account'}
+          </FormLabel>
+          <select {...register('bank_account_id')} className="w-full rounded-xl border border-border bg-background px-3 py-2.5">
+            <option value="">{locale === 'ar' ? 'بدون حساب (لا تؤثر على النقدية)' : 'No account (non-cash)'}</option>
+            {activeAccounts.map((a) => {
+              const label = locale === 'ar' ? a.name_ar : (a.name_en ?? a.name_ar);
+              return (
+                <option key={a.id} value={a.id}>
+                  {a.currency} — {label}
+                </option>
+              );
+            })}
+          </select>
+          {errors.bank_account_id && <FormError>{errors.bank_account_id.message as string}</FormError>}
+          {activeAccounts.length === 0 && (
+            <FormHint>
+              {locale === 'ar'
+                ? 'أضف حسابات بنكية/صناديق من صفحة "البنوك والصناديق" لربط المدفوعات النقدية.'
+                : 'Add bank/cash accounts from the Banking page to link cash payments.'}
+            </FormHint>
+          )}
         </FormField>
 
         <FormField>

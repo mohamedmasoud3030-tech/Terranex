@@ -74,6 +74,10 @@ export const ar = {
   kpi_net_profit: 'صافي الربح / الخسارة',
   kpi_open_receivables: 'الذمم المدينة المفتوحة',
   kpi_open_payables: 'الذمم الدائنة المفتوحة',
+  kpi_cash_on_hand: 'النقدية في البنوك والصناديق',
+
+  // Invoicing
+  nav_invoices: 'الفواتير',
 
   // Obligations table
   obligations_title: 'الذمم والالتزامات القريبة',

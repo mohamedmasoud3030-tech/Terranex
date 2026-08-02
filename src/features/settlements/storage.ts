@@ -25,6 +25,7 @@ export const settlementsHydration = store;
 
 export interface SettlementInput {
   obligation_id: string;
+  bank_account_id?: string;
   amount: number;
   currency: Settlement['currency'];
   fx_rate: number;
@@ -50,6 +51,7 @@ export function validateSettlementInput(input: SettlementInput) {
   return {
     ...input,
     obligation_id: obligationId,
+    bank_account_id: input.bank_account_id?.trim() || undefined,
     settlement_date: date,
     reference_number: input.reference_number?.trim() || undefined,
     receipt_document_id: input.receipt_document_id?.trim() || undefined,

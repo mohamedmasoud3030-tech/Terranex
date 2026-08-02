@@ -13,6 +13,7 @@ import {
   EVENT_DEFINITIONS,
   eventTypesForSector,
   normalizeQuantityDelta,
+  QuantitySignError,
 } from './model';
 
 interface EventFormProps {
@@ -99,12 +100,23 @@ export function EventForm({
     setErrors(nextErrors);
     if (nextErrors.length || !selectedAsset) return;
 
+    let quantityDelta: number | undefined;
+    try {
+      quantityDelta = normalizeQuantityDelta(type, quantity === '' ? undefined : Number(quantity));
+    } catch (err) {
+      if (err instanceof QuantitySignError) {
+        setErrors([...nextErrors, err.message]);
+        return;
+      }
+      throw err;
+    }
+
     await onSubmit({
       asset_id: selectedAsset.id,
       project_id: selectedAsset.project_id,
       type,
       event_date: date,
-      quantity_delta: normalizeQuantityDelta(type, quantity === '' ? undefined : Number(quantity)),
+      quantity_delta: quantityDelta,
       weight_kg: definition.weight ? Number(weight) : undefined,
       unit_cost_egp: unitCost === '' ? undefined : Number(unitCost),
       total_cost_egp: totalCost === '' ? undefined : Number(totalCost),

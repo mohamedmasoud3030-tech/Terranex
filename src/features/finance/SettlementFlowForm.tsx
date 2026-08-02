@@ -1,9 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { FormErrorSummary } from '../../components/ui/FormContract';
-import { FormField, FormLabel } from '../../components/ui/FormControls';
+import { FormField, FormHint, FormLabel } from '../../components/ui/FormControls';
 import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import type { Document, Obligation } from '../../core/types/domain';
 import { formatEgp } from '../../core/lib/profitability';
+import { Landmark } from 'lucide-react';
+import { useBankAccounts } from '../banking/hooks';
 import {
   buildSettlementAllocationFormPlans,
   getCompatibleSettleableObligations,
@@ -30,10 +32,16 @@ export function SettlementFlowForm({ formId, obligations, documents, anchorId, l
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [method, setMethod] = useState<SettlementPaymentMethod>('bank_transfer');
+  const [bankAccountId, setBankAccountId] = useState('');
   const [reference, setReference] = useState('');
   const [receiptId, setReceiptId] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { accounts } = useBankAccounts();
+  const activeAccounts = useMemo(
+    () => accounts.filter((a) => !a.is_archived),
+    [accounts],
+  );
   const anchor = settleable.find((item) => item.id === selectedAnchorId);
   const candidates = useMemo(
     () => getCompatibleSettleableObligations(anchor, settleable),
@@ -60,6 +68,7 @@ export function SettlementFlowForm({ formId, obligations, documents, anchorId, l
         fx_rate: 1,
         settlement_date: date,
         payment_method: method,
+        bank_account_id: bankAccountId || undefined,
         reference_number: reference.trim() || undefined,
         receipt_document_id: receiptId || undefined,
         notes: notes.trim() || undefined,
@@ -99,6 +108,27 @@ export function SettlementFlowForm({ formId, obligations, documents, anchorId, l
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField><FormLabel>{locale === 'ar' ? 'التاريخ' : 'Date'}</FormLabel><input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="min-h-11 w-full rounded-xl border bg-background px-3" /></FormField>
         <FormField><FormLabel>{locale === 'ar' ? 'طريقة الدفع' : 'Payment method'}</FormLabel><select value={method} onChange={(event) => setMethod(event.target.value as SettlementPaymentMethod)} className="min-h-11 w-full rounded-xl border bg-background px-3"><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="cheque">Cheque</option><option value="card">Card</option><option value="other">Other</option></select></FormField>
+        <FormField>
+          <FormLabel>
+            <Landmark className="inline h-3.5 w-3.5 mb-0.5" />{' '}
+            {locale === 'ar' ? 'الحساب البنكي / الصندوق' : 'Bank / Cash account'}
+          </FormLabel>
+          <select value={bankAccountId} onChange={(event) => setBankAccountId(event.target.value)} className="min-h-11 w-full rounded-xl border bg-background px-3">
+            <option value="">{locale === 'ar' ? 'بدون حساب' : 'No account'}</option>
+            {activeAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.currency} — {locale === 'ar' ? a.name_ar : (a.name_en ?? a.name_ar)}
+              </option>
+            ))}
+          </select>
+          {activeAccounts.length === 0 && (
+            <FormHint>
+              {locale === 'ar'
+                ? 'أضف حسابات بنكية/صناديق من صفحة "البنوك والصناديق" لتسجيل حركة النقدية تلقائياً.'
+                : 'Add bank/cash accounts on the Banking page to auto-record cash movements.'}
+            </FormHint>
+          )}
+        </FormField>
         <FormField><FormLabel>{locale === 'ar' ? 'المرجع' : 'Reference'}</FormLabel><input value={reference} onChange={(event) => setReference(event.target.value)} className="min-h-11 w-full rounded-xl border bg-background px-3" /></FormField>
         <FormField><FormLabel>{locale === 'ar' ? 'الإيصال' : 'Receipt'}</FormLabel><select value={receiptId} onChange={(event) => setReceiptId(event.target.value)} className="min-h-11 w-full rounded-xl border bg-background px-3"><option value="">{locale === 'ar' ? 'بدون إيصال' : 'No receipt'}</option>{receipts.map((document) => <option key={document.id} value={document.id}>{document.title_ar}</option>)}</select></FormField>
       </div>

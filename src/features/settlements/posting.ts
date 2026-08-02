@@ -2,6 +2,7 @@ import { roundEgp, toEgp } from '../../core/lib/format';
 import { newId } from '../../core/lib/id';
 import { isFiniteNumber } from '../../core/lib/validation';
 import type { Document, Obligation } from '../../core/types/domain';
+import { linkFinancialMovement } from '../banking/storage';
 import { documentsStore } from '../documents/storage';
 import {
   generateRequestId,
@@ -51,6 +52,7 @@ export function buildRecordSettlementAtomicPayload(
     p_settlement: {
       id: settlementId,
       obligation_id: input.allocations[0]?.obligation_id,
+      bank_account_id: input.bank_account_id ?? null,
       amount: input.amount,
       currency: input.currency,
       fx_rate: input.fx_rate,
@@ -174,11 +176,12 @@ function prepareSettlement(input: RecordSettlementWithAllocationsInput) {
   return { plans, normalizedSettlement, obligations };
 }
 
+
 /** Posts settlement, allocations and obligation balances in one server transaction. */
 export async function recordSettlementWithAllocationsAtomic(
   input: RecordSettlementWithAllocationsInput,
 ): Promise<Settlement> {
-  const { plans, normalizedSettlement } = prepareSettlement(input);
+  const { plans, normalizedSettlement, obligations: settledObligations } = prepareSettlement(input);
   const settlementId = newId();
   const allocationIds = plans.map(() => newId());
   const payloadInput: RecordSettlementWithAllocationsInput = {
@@ -194,6 +197,31 @@ export async function recordSettlementWithAllocationsAtomic(
   if (!settlement) {
     throw new Error('نجحت التسوية على الخادم لكن تعذر تحميلها بعد المزامنة.');
   }
+
+  // Mirror the payment into the bank ledger if a bank/cash account was chosen.
+  // Direction: receivable settlement -> we receive cash (deposit);
+  // payable settlement -> we pay cash (withdrawal).
+  if (normalizedSettlement.bank_account_id) {
+    const firstObligation = settledObligations[0];
+    try {
+      await linkFinancialMovement({
+        reference_type: 'settlement',
+        reference_id: settlement.id,
+        bank_account_id: normalizedSettlement.bank_account_id,
+        direction: firstObligation?.direction === 'receivable' ? 'deposit' : 'withdrawal',
+        amount: settlement.amount,
+        currency: settlement.currency,
+        fx_rate_to_base: settlement.fx_rate,
+        transaction_date: settlement.settlement_date,
+        memo: settlement.notes ?? null,
+        partner_id: firstObligation?.partner_id ?? null,
+        document_id: settlement.receipt_document_id ?? null,
+      }, payload.p_request_id + '_bank');
+    } catch {
+      // Non-fatal — operator can reconcile later.
+    }
+  }
+
   return settlement;
 }
 

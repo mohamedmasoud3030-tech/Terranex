@@ -179,12 +179,13 @@ export interface Transaction {
   asset_id?: string;
   partner_id?: string;
   operational_event_id?: string; // links to OperationalEvent if auto-generated
+  bank_account_id?: string; // payment method / source of funds (cash/bank/wallet)
   direction: TransactionDirection;
   category: TransactionCategory;
   amount: number;
   currency: Currency;
-  fx_rate: number; // 1 unit of currency = fx_rate EGP at time of transaction
-  amount_egp: number; // amount * fx_rate — computed, stored for performance
+  fx_rate: number; // 1 unit of currency = fx_rate BASE (legacy name, was EGP) at time of transaction
+  amount_egp: number; // amount * fx_rate — computed, stored for performance; equals amount_base when base currency is EGP
   transaction_date: string;
   document_id?: string;
   description?: string;
@@ -477,4 +478,137 @@ export interface AssetBalance {
   unit: string;
   estimated_value_egp: number;
   last_event_date: string;
+}
+
+// ─── Company Settings ──────────────────────────────────────────────────────
+
+export type CompanyCountry = 'EG' | 'OM' | 'SA' | 'AE' | 'OTHER';
+
+export interface CompanySettings {
+  owner_id: string;
+  company_name_ar: string;
+  company_name_en?: string;
+  commercial_register?: string;
+  tax_number?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  country: CompanyCountry;
+  fiscal_year_start: string;
+  base_currency: Currency;
+  vat_enabled: boolean;
+  vat_rate: number;
+  vat_number?: string;
+  logo_url?: string;
+  odoo_url?: string;
+  odoo_db?: string;
+  odoo_username?: string;
+  odoo_api_key?: string;
+  odoo_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Bank / Cash Accounts ──────────────────────────────────────────────────
+
+export type BankAccountType = 'bank' | 'cash' | 'wallet';
+export type BankTransactionDirection = 'deposit' | 'withdrawal';
+export type BankTransactionRefType =
+  | 'transaction'
+  | 'settlement'
+  | 'distribution_payment'
+  | 'transfer'
+  | 'manual'
+  | 'opening_balance';
+
+export interface BankAccount {
+  id: string;
+  owner_id: string;
+  name_ar: string;
+  name_en?: string;
+  account_type: BankAccountType;
+  currency: Currency;
+  opening_balance: number;
+  opening_date: string;
+  bank_name?: string;
+  account_number?: string;
+  iban?: string;
+  is_archived: boolean;
+  odoo_res_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BankTransaction {
+  id: string;
+  owner_id: string;
+  bank_account_id: string;
+  direction: BankTransactionDirection;
+  amount: number;
+  currency: Currency;
+  fx_rate_to_base: number;
+  amount_base: number;
+  transaction_date: string;
+  reference_type: BankTransactionRefType;
+  reference_id?: string;
+  counterparty_account_id?: string;
+  partner_id?: string;
+  memo?: string;
+  document_id?: string;
+  is_reconciled: boolean;
+  odoo_res_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Computed view — balance per bank/cash account */
+export interface BankAccountBalance {
+  id: string;
+  owner_id: string;
+  name_ar: string;
+  account_type: BankAccountType;
+  currency: Currency;
+  balance: number;
+  balance_base: number;
+}
+
+// ─── Invoicing ───────────────────────────────────────────────────────────────
+
+export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'partial' | 'void' | 'overdue';
+
+export interface SalesInvoiceLine {
+  id: string;
+  owner_id: string;
+  invoice_id: string;
+  line_no: number;
+  description_ar?: string;
+  description_en?: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  created_at: string;
+}
+
+export interface SalesInvoice {
+  id: string;
+  owner_id: string;
+  invoice_number: string;
+  project_id?: string;
+  partner_id?: string;
+  bank_account_id?: string;
+  issue_date: string;
+  due_date?: string;
+  currency: Currency;
+  fx_rate_to_base: number;
+  subtotal: number;
+  vat_rate: number;
+  vat_amount: number;
+  total: number;
+  amount_paid: number;
+  status: InvoiceStatus;
+  notes?: string;
+  odoo_res_id?: number;
+  created_at: string;
+  updated_at: string;
 }

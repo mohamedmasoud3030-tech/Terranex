@@ -4,7 +4,9 @@ import {
   Banknote,
   BrainCircuit,
   BriefcaseBusiness,
+  FileText,
   LayoutDashboard,
+  Landmark,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -21,8 +23,10 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label_ar: 'لوحة القيادة', label_en: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
   { id: 'portfolio', label_ar: 'المحفظة', label_en: 'Portfolio', icon: BriefcaseBusiness, to: '/portfolio' },
+  { id: 'banking', label_ar: 'البنوك والصناديق', label_en: 'Banking', icon: Landmark, to: '/banking' },
   { id: 'operations', label_ar: 'العمليات', label_en: 'Operations', icon: Activity, to: '/operations' },
   { id: 'finance', label_ar: 'المالية', label_en: 'Finance', icon: Banknote, to: '/finance' },
+  { id: 'invoicing', label_ar: 'الفواتير', label_en: 'Invoices', icon: FileText, to: '/invoicing' },
   { id: 'intelligence', label_ar: 'الذكاء', label_en: 'Intelligence', icon: BrainCircuit, to: '/intelligence' },
   { id: 'governance', label_ar: 'الحوكمة', label_en: 'Governance', icon: ShieldCheck, to: '/governance' },
 ];

@@ -150,6 +150,7 @@ export const transactionSchema = z.object({
   project_id: z.string().min(1, 'اختر المشروع'),
   asset_id: z.string().optional().or(z.literal('')),
   partner_id: z.string().optional().or(z.literal('')),
+  bank_account_id: z.string().optional().or(z.literal('')),
   direction: z.enum(txDirectionEnum, { error: 'اختر اتجاه المعاملة' }),
   category: z.enum(txCategoryValues, { error: 'اختر التصنيف' }),
   amount: moneyAmount,

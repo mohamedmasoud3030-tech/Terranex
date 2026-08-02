@@ -1,5 +1,6 @@
-import { Plus, TrendingUp, TrendingDown, Building2, Wheat, PawPrint, AlertCircle, ArrowLeft, Globe, BarChart2 } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Building2, Wheat, PawPrint, AlertCircle, ArrowLeft, Globe, BarChart2, Landmark, Wallet, PiggyBank } from 'lucide-react';
 import { useRouter } from '@tanstack/react-router';
+import { Suspense, lazy } from 'react';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -9,9 +10,10 @@ import { useTransactions } from '../transactions/hooks';
 import { useObligations } from '../obligations/hooks';
 import { usePartners } from '../partners/hooks';
 import { computeGlobalSummary, formatEgp } from '../../core/lib/profitability';
-import type { SectorId } from '../../core/types/domain';
+import { formatMoney } from '../../core/lib/format';
+import type { Currency, SectorId } from '../../core/types/domain';
 import { useI18n } from '../../core/i18n/context';
-import { Suspense, lazy } from 'react';
+import { useBankAccounts, useCompanySettings } from '../banking/hooks';
 
 // Lazy load charts to enable code-splitting
 const RevenueChartLazy = lazy(() => import('../../components/charts/RevenueChart').then(m => ({ default: m.RevenueChart })));
@@ -23,6 +25,29 @@ const SECTOR_META: Record<SectorId, { icon: typeof Building2; i18nKey: 'sector_r
   livestock:     { icon: PawPrint,  i18nKey: 'sector_livestock_name', color: 'text-blue-700',  bg: 'bg-blue-50 border-blue-200',   route: '/operations' },
 };
 
+const VERSION = 'v0.3.0-p1';
+
+const ACCOUNT_TYPE_ICON: Record<string, typeof Landmark> = {
+  bank: Landmark,
+  cash: Wallet,
+  wallet: PiggyBank,
+};
+
+function currencyLabel(locale: 'ar' | 'en', c: Currency): string {
+  if (locale === 'ar') {
+    switch (c) {
+      case 'OMR': return 'ريال عماني';
+      case 'EGP': return 'جنيه مصري';
+      case 'USD': return 'دولار';
+      case 'SAR': return 'ريال سعودي';
+      case 'AED': return 'درهم إماراتي';
+      case 'EUR': return 'يورو';
+      case 'GBP': return 'جنيه إسترليني';
+    }
+  }
+  return c;
+}
+
 export function DashboardPage() {
   const router = useRouter();
   const { t, locale, setLocale } = useI18n();
@@ -30,9 +55,26 @@ export function DashboardPage() {
   const { transactions } = useTransactions();
   const { obligations, open: openObls } = useObligations();
   const { partners } = usePartners();
+  const { accounts } = useBankAccounts();
+  const { settings } = useCompanySettings();
+
+  const baseCurrency: Currency = (settings?.base_currency as Currency) ?? 'OMR';
 
   const global = computeGlobalSummary(projects, transactions, obligations);
   const isProfit = global.gross_profit_egp >= 0;
+
+  // Cash balances across non-archived accounts
+  const activeAccounts = accounts.filter((a) => !a.is_archived);
+  const cashTotalBase = activeAccounts.reduce((sum, a) => sum + (a.balance_base ?? a.opening_balance ?? 0), 0);
+  // Group active balances by currency for display of multi-currency breakdown
+  const byCurrency = new Map<Currency, { total: number; count: number }>();
+  for (const a of activeAccounts) {
+    const cur = a.currency as Currency;
+    const entry = byCurrency.get(cur) ?? { total: 0, count: 0 };
+    entry.total += a.balance ?? a.opening_balance ?? 0;
+    entry.count += 1;
+    byCurrency.set(cur, entry);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const overdue = openObls.filter((o) => o.due_date && o.due_date < today);
@@ -79,12 +121,13 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* KPI grid — 5 cards with banking added */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
-          { key: 'kpi_total_revenue', value: global.total_income_egp, color: 'text-success', Icon: TrendingUp },
-          { key: 'kpi_total_expenses', value: global.total_expense_egp, color: 'text-danger', Icon: TrendingDown },
-          { key: 'kpi_net_profit', value: global.gross_profit_egp, color: isProfit ? 'text-success' : 'text-danger', Icon: isProfit ? TrendingUp : TrendingDown },
-          { key: 'kpi_open_receivables', value: global.open_receivables_egp, color: 'text-warning', Icon: AlertCircle },
+          { key: 'kpi_total_revenue', value: global.total_income_egp, color: 'text-success', Icon: TrendingUp, onClick: undefined, sub: 'EGP' },
+          { key: 'kpi_total_expenses', value: global.total_expense_egp, color: 'text-danger', Icon: TrendingDown, onClick: undefined, sub: 'EGP' },
+          { key: 'kpi_net_profit', value: global.gross_profit_egp, color: isProfit ? 'text-success' : 'text-danger', Icon: isProfit ? TrendingUp : TrendingDown, onClick: undefined, sub: 'EGP' },
+          { key: 'kpi_open_receivables', value: global.open_receivables_egp, color: 'text-warning', Icon: AlertCircle, onClick: undefined, sub: 'EGP' },
         ].map((kpi) => (
           <Card key={kpi.key}>
             <CardContent className="p-4">
@@ -93,10 +136,31 @@ export function DashboardPage() {
                 <kpi.Icon className={`h-4 w-4 ${kpi.color}`} />
               </div>
               <p className={`text-xl font-bold ${kpi.color}`}>{formatEgp(kpi.value, true)}</p>
-              <p className="text-xs text-muted-foreground">EGP • {t('dashboard_period_label')}</p>
+              <p className="text-xs text-muted-foreground">{kpi.sub} • {t('dashboard_period_label')}</p>
             </CardContent>
           </Card>
         ))}
+
+        {/* Cash & banks KPI — clickable to /banking */}
+        <button
+          onClick={() => router.navigate({ to: '/banking' } as any)}
+          className="group text-start rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm hover:border-primary hover:bg-primary/10 hover:shadow-md transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">{t('kpi_cash_on_hand' as any)}</span>
+            <Landmark className="h-4 w-4 text-primary" />
+          </div>
+          <p className="text-xl font-bold text-primary">{formatMoney(cashTotalBase, baseCurrency, locale)}</p>
+          <p className="text-xs text-muted-foreground">
+            {activeAccounts.length} {locale === 'ar' ? 'حساب نشط' : 'active accounts'}
+            {byCurrency.size > 1 && ' • '}
+            {Array.from(byCurrency.entries())
+              .filter(([c]) => c !== baseCurrency)
+              .slice(0, 2)
+              .map(([c, v]) => formatMoney(v.total, c, locale))
+              .join(' • ')}
+          </p>
+        </button>
       </div>
 
       {/* Charts — Recharts MVP — ADR-007 */}
@@ -266,7 +330,7 @@ export function DashboardPage() {
       </div>
 
       <div className="text-center text-[11px] text-muted-foreground pt-2 border-t border-border">
-        {t('dashboard_period_note')} • {t('profitability_desc')} • v0.2.0-p0
+        {t('dashboard_period_note')} • {t('profitability_desc')} • {VERSION}
       </div>
     </div>
   );

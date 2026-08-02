@@ -28,13 +28,15 @@ const redirects = [
   ['settings.tsx', '/governance', 'settings'],
 ];
 
-test('desktop and mobile navigation share exactly six canonical destinations', () => {
+test('desktop and mobile navigation share exactly eight canonical destinations (banking + invoices added)', () => {
   const destinations = [...navigation.matchAll(/to: '(\/[^']+)'/g)].map((match) => match[1]);
   assert.deepEqual(destinations, [
     '/dashboard',
     '/portfolio',
+    '/banking',
     '/operations',
     '/finance',
+    '/invoicing',
     '/intelligence',
     '/governance',
   ]);
@@ -48,8 +50,10 @@ test('router contains all canonical routes and only legacy routes remain as redi
     'portfolioRoute',
     'portfolioProjectDetailRoute',
     'portfolioPartnerDetailRoute',
+    'bankingRoute',
     'operationsRoute',
     'financeTree',
+    'invoicingRoute',
     'intelligenceRoute',
     'governanceRoute',
   ]) {
