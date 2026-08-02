@@ -3,6 +3,30 @@
 -- Date: 2026-08-02
 
 -- ----------------------------------------------------------------
+-- 0) currencies lookup (referenced by FKs in company_settings/bank_accounts/etc.)
+-- ----------------------------------------------------------------
+create table if not exists currencies (
+  code text primary key,
+  name_ar text,
+  name_en text,
+  symbol text,
+  is_active boolean not null default true
+);
+insert into currencies (code, name_ar, name_en, symbol) values
+  ('OMR', 'ريال عماني', 'Omani Rial', 'ر.ع'),
+  ('EGP', 'جنيه مصري', 'Egyptian Pound', 'ج.م'),
+  ('USD', 'دولار أمريكي', 'US Dollar', '$'),
+  ('SAR', 'ريال سعودي', 'Saudi Riyal', 'ر.س'),
+  ('AED', 'درهم إماراتي', 'UAE Dirham', 'د.إ'),
+  ('EUR', 'يورو', 'Euro', '€'),
+  ('GBP', 'جنيه إسترليني', 'British Pound', '£')
+on conflict (code) do nothing;
+alter table currencies enable row level security;
+drop policy if exists currencies_all_read on currencies;
+create policy currencies_all_read on currencies for select to authenticated using (true);
+grant select on currencies to authenticated, anon;
+
+-- ----------------------------------------------------------------
 -- 1) company_settings: one row per owner (single-company per tenant)
 -- ----------------------------------------------------------------
 create table if not exists company_settings (
@@ -197,7 +221,7 @@ select
   b.name_ar,
   b.account_type,
   b.currency,
-  b.opening_balance + coalesce(dep.total_in, 0) - coalesce(w.total_out, 0) as balance,
+  b.opening_balance + coalesce(d.total_in, 0) - coalesce(w.total_out, 0) as balance,
   b.opening_balance + coalesce(d.total_in_base, 0) - coalesce(w.total_out_base, 0) as balance_base
 from bank_accounts b
 left join (

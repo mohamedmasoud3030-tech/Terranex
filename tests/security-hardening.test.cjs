@@ -121,7 +121,7 @@ test('client-side payInvoice does NOT post its own bank_transaction (RPC does it
 });
 
 test('rollback for 0014 restores company_settings odoo_api_key and previous state', () => {
-  const r = read('supabase/rollback/20260802001400_security_hardening.sql');
+  const r = read('supabase/rollback/20260802001400_security_hardening.down.sql');
   assert.match(r, /add column if not exists odoo_api_key/);
   assert.match(r, /drop table if exists invoice_payments/);
   assert.match(r, /drop function if exists create_sales_invoice_atomic/);

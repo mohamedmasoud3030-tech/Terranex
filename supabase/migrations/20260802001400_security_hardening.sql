@@ -56,22 +56,32 @@ where b.is_archived = false
 grant select on bank_account_balances to authenticated;
 
 -- ============================================================
--- 3) FIX inventory_stock VIEW with security_invoker
+-- 3) FIX inventory_stock VIEW with security_invoker (match original column list)
 -- ============================================================
 create or replace view inventory_stock
   with (security_invoker = on)
 as
 select
-  i.*,
-  coalesce((select sum(m.quantity) from inventory_movements m
+  i.id,
+  i.owner_id,
+  i.name_ar,
+  i.name_en,
+  i.category,
+  i.unit,
+  i.project_id,
+  i.reorder_level,
+  i.default_unit_cost,
+  i.currency,
+  (coalesce((select sum(m.quantity) from inventory_movements m
              where m.item_id = i.id and m.movement_type in ('purchase','transfer_in')), 0)
   - coalesce((select sum(m.quantity) from inventory_movements m
              where m.item_id = i.id and m.movement_type in ('consume','waste','transfer_out')), 0)
   + coalesce((select sum(m.quantity) from inventory_movements m
              where m.item_id = i.id and m.movement_type = 'adjustment'), 0)
-  as quantity_on_hand
+  )::numeric(18,3) as quantity_on_hand
 from inventory_items i
-where i.owner_id = auth.uid();
+where i.owner_id = auth.uid()
+  and i.is_archived = false;
 grant select on inventory_stock to authenticated;
 
 -- ============================================================
