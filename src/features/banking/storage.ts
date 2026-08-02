@@ -20,8 +20,19 @@ const TABLE_ACCOUNTS = 'bank_accounts';
 const TABLE_TX = 'bank_transactions';
 const VIEW_BALANCES = 'bank_account_balances';
 
+function randomSuffix(): string {
+  // Prefer Web Crypto (CSPRNG) for the request-id suffix; fall back to
+  // Math.random only in non-browser environments that lack crypto.subtle.
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const buf = new Uint8Array(6);
+    crypto.getRandomValues(buf);
+    return Array.from(buf, b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return Math.random().toString(36).slice(2, 14);
+}
+
 export function generateRequestId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}_${Date.now()}_${randomSuffix()}`;
 }
 
 // ---- Bank accounts ----

@@ -27,7 +27,7 @@ alter table bank_transactions add constraint bank_transactions_reference_type_ch
 alter table bank_transactions add column if not exists idempotency_key text;
 alter table bank_transactions add column if not exists status text not null default 'posted';
 create unique index if not exists bank_transactions_idempotency_key_idx on bank_transactions(idempotency_key) where idempotency_key is not null;
-update bank_transactions set status = 'posted' where status is null or status = '';
+update bank_transactions set status = 'posted' where status is null or length(coalesce(status, '')) = 0;
 
 -- ============================================================
 -- 2) FIX bank_account_balances VIEW (alias + security_invoker)

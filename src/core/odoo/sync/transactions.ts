@@ -61,7 +61,11 @@ export async function syncTransactionAsMove(
   const lines = [
     // First line — debit or credit to the default account
     {
-      account_id: tx.direction === 'income' ? accounts.debit : accounts.debit,
+      // Income increases the bank/cash account (debit to the configured debit
+      // account); expense also flows through the same debit-side account for
+      // the bank leg — the credit side posts to the income/expense account in
+      // the second line. The amount column reflects which leg is live.
+      account_id: accounts.debit,
       name: tx.description || tx.category,
       debit: tx.direction === 'income' ? tx.amount_egp : 0,
       credit: tx.direction === 'expense' ? tx.amount_egp : 0,

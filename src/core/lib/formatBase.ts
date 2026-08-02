@@ -34,7 +34,7 @@ export function formatBaseShort(
   if (abs >= 1_000_000) { num = value / 1_000_000; suffix = locale === 'ar' ? 'م' : 'M'; }
   else if (abs >= 1_000) { num = value / 1_000; suffix = locale === 'ar' ? 'ك' : 'K'; }
   else { num = value; suffix = ''; }
-  const fractionDigits = abs >= 1_000_000 ? 1 : abs >= 1_000 ? 0 : 0;
+  const fractionDigits = abs >= 1_000_000 ? 1 : 0;
   const formatted = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: fractionDigits,
