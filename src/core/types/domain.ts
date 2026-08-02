@@ -507,7 +507,9 @@ export interface CompanySettings {
   odoo_url?: string;
   odoo_db?: string;
   odoo_username?: string;
-  odoo_api_key?: string;
+  // NOTE: odoo_api_key MUST NOT be exposed to the browser. Sync requests must go
+  // through a server-side boundary (Supabase Edge Function) that holds the secret.
+  // The client-side config keeps only non-secret fields.
   odoo_enabled: boolean;
   created_at: string;
   updated_at: string;

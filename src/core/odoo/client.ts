@@ -178,29 +178,11 @@ let cachedClient: OdooClient | null = null;
  * Build an OdooClient from Vite env vars (build time) OR from a runtime config
  * set via `setOdooClient()`. Returns null if Odoo is disabled in both.
  */
-function readEnv(): { url: string; db: string; username: string; apiKey: string; enabled: boolean } | null {
-  // import.meta.env is replaced by Vite at build time, but tsc still sees the
-  // syntax in a CJS (test) compilation. We route through a globalThis shim
-  // that Vite and Node can both satisfy.
-  try {
-    const g = globalThis as unknown as {
-      // Vite dev/prod
-      __ODOO_ENV__?: Record<string, string>;
-      // Test shim
-      importMeta?: { env?: Record<string, string> };
-    };
-    const env = g.__ODOO_ENV__ ?? g.importMeta?.env;
-    if (!env) return null;
-    const url = env.VITE_ODOO_URL;
-    const db = env.VITE_ODOO_DB;
-    const username = env.VITE_ODOO_USERNAME;
-    const apiKey = env.VITE_ODOO_API_KEY;
-    const enabled = env.VITE_ODOO_ENABLED === 'true';
-    if (!enabled || !url || !db || !username || !apiKey) return null;
-    return { url, db, username, apiKey, enabled };
-  } catch {
-    return null;
-  }
+function readEnv(): null {
+  // SECURITY: Browser-side Odoo client construction from env/settings is disabled.
+  // VITE_ODOO_API_KEY is no longer read from the bundle (it is a privileged secret).
+  // Synchronization will be performed server-side via Supabase Edge Function.
+  return null;
 }
 
 let runtimeClient: OdooClient | null = null;
@@ -214,10 +196,9 @@ export function setOdooClient(client: OdooClient | null): void {
 export function getOdooClient(): OdooClient | null {
   if (cachedClient) return cachedClient;
   if (runtimeClient) return runtimeClient;
-  const env = readEnv();
-  if (!env) return null;
-  cachedClient = new OdooClient({ url: env.url, db: env.db, username: env.username, apiKey: env.apiKey });
-  return cachedClient;
+  // readEnv() intentionally always returns null — browser-side construction is
+  // disabled (see SECURITY note in readEnv). Synchronization runs server-side.
+  return null;
 }
 
 /** Build an OdooClient from an explicit config object (used by runtime settings). */

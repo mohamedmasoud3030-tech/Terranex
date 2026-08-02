@@ -39,7 +39,9 @@ export function CompanySettingsForm() {
   const [odooUrl, setOdooUrl] = useState('');
   const [odooDb, setOdooDb] = useState('');
   const [odooUsername, setOdooUsername] = useState('');
-  const [odooApiKey, setOdooApiKey] = useState('');
+  // SECURITY: odoo_api_key must never be stored in or read from client-accessible
+  // storage. It is configured only on the server (Supabase Edge Function secrets).
+  // The browser never sees the secret.
 
   useEffect(() => { void load(); }, []);
 
@@ -68,7 +70,6 @@ export function CompanySettingsForm() {
         setOdooUrl(data.odoo_url ?? '');
         setOdooDb(data.odoo_db ?? '');
         setOdooUsername(data.odoo_username ?? '');
-        setOdooApiKey(data.odoo_api_key ?? '');
       } else {
         setFiscalYearStart(new Date().toISOString().slice(0,10));
       }
@@ -103,7 +104,7 @@ export function CompanySettingsForm() {
         odoo_url: odooUrl.trim() || null,
         odoo_db: odooDb.trim() || null,
         odoo_username: odooUsername.trim() || null,
-        odoo_api_key: odooApiKey || null,
+        // odoo_api_key is NEVER written from the browser (server-side secret only).
       };
       const { data, error } = await supabase.from('company_settings').select('owner_id').maybeSingle();
       if (error) throw error;
@@ -231,9 +232,12 @@ export function CompanySettingsForm() {
                 <FormLabel>اسم المستخدم</FormLabel>
                 <TextInput value={odooUsername} onChange={e => setOdooUsername(e.target.value)} dir="ltr" />
               </FormField>
-              <FormField>
-                <FormLabel>مفتاح API</FormLabel>
-                <TextInput type="password" value={odooApiKey} onChange={e => setOdooApiKey(e.target.value)} dir="ltr" />
+              <FormField className="md:col-span-2">
+                <FormLabel>مفتاح API (يُضبط على الخادم فقط)</FormLabel>
+                <p className="text-xs text-muted-foreground">
+                  لأسباب أمنية، لا يُخزَّن مفتاح Odoo API في المتصفح. فعّل المزامنة عبر Supabase Edge
+                  Function وضع المفتاح في أسرار الخادم.
+                </p>
               </FormField>
             </div>
           )}
