@@ -19,7 +19,7 @@ export async function listInvoiceLines(invoiceId: string): Promise<SalesInvoiceL
 }
 
 export interface InvoiceInput {
-  request_id?: string; // stable idempotency UUID (client-generated)
+  request_id?: string;
   project_id?: string;
   partner_id?: string;
   bank_account_id?: string;
@@ -32,16 +32,10 @@ export interface InvoiceInput {
   lines: Array<{ description_ar?: string; description_en?: string; quantity: number; unit_price: number }>;
 }
 
-/**
- * Create a sales invoice atomically on the server.
- * The server derives owner_id, computes totals, generates a sequential invoice
- * number, and inserts the header+lines in a single transaction. No orphan rows.
- */
 export async function createInvoice(input: InvoiceInput): Promise<SalesInvoice> {
   const supabase = requireClient();
-  const requestId = input.request_id ?? `inv_${crypto.randomUUID()}`;
   const { data, error } = await supabase.rpc('create_sales_invoice_atomic', {
-    p_request_id: requestId,
+    p_request_id: input.request_id ?? `inv_${crypto.randomUUID()}`,
     p_partner_id: input.partner_id ?? null,
     p_project_id: input.project_id ?? null,
     p_bank_account_id: input.bank_account_id ?? null,
@@ -51,19 +45,17 @@ export async function createInvoice(input: InvoiceInput): Promise<SalesInvoice> 
     p_fx_rate: input.fx_rate_to_base ?? 1,
     p_vat_rate: input.vat_rate ?? 0,
     p_notes: input.notes ?? null,
-    p_lines: input.lines.map(l => ({
-      description_ar: l.description_ar?.trim() ?? null,
-      description_en: l.description_en?.trim() ?? null,
-      quantity: Number(l.quantity),
-      unit_price: Number(l.unit_price),
+    p_lines: input.lines.map(line => ({
+      description_ar: line.description_ar?.trim() || null,
+      description_en: line.description_en?.trim() || null,
+      quantity: Number(line.quantity),
+      unit_price: Number(line.unit_price),
     })),
   });
   if (error) throw new Error(`تعذر إنشاء الفاتورة: ${error.message}`);
 
-  // Return the created invoice
-  const invoiceId = data as unknown as string;
-  const { data: row, error: fe } = await supabase.from(TABLE).select('*').eq('id', invoiceId).single();
-  if (fe) throw new Error(`تعذر تحميل الفاتورة بعد الإنشاء: ${fe.message}`);
+  const { data: row, error: fetchError } = await supabase.from(TABLE).select('*').eq('id', data as string).single();
+  if (fetchError) throw new Error(`تعذر تحميل الفاتورة بعد الإنشاء: ${fetchError.message}`);
   return row as SalesInvoice;
 }
 
@@ -76,15 +68,6 @@ export async function issueInvoice(id: string): Promise<void> {
   if (error) throw new Error(`تعذر إصدار الفاتورة: ${error.message}`);
 }
 
-/**
- * Register a payment against a sales invoice.
- *
- * Server RPC is fully atomic: it (1) idempotency-checks by request_id,
- * (2) writes an immutable invoice_payments audit row, (3) creates the
- * matching bank_transaction, (4) updates invoice.amount_paid/status —
- * all in a single Postgres transaction. The client does NOT post its
- * own bank_transaction (that was a two-phase gap in earlier versions).
- */
 export async function payInvoice(
   id: string,
   amount: number,

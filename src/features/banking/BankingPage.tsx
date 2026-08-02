@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { BankAccountForm } from './BankAccountForm';
 import { ManualTransactionForm, TransferForm } from './BankTransactionForm';
 import { addBankAccount, addManualTransaction, archiveAccount, editBankAccount, transferBetweenAccounts, useBankAccounts, useBankTransactions } from './hooks';
+import { markManuallyReviewed } from './storage';
 import type { BankAccountInput, BankTransactionInput, TransferInput } from './types';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { formatMoney } from '../../core/lib/format';
-import { ArrowLeftRight, Landmark, Plus, Trash2, Wallet, PiggyBank, ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowLeftRight, Landmark, Plus, Trash2, Wallet, PiggyBank, ArrowDown, ArrowUp, CheckCheck, XCircle } from 'lucide-react';
 import { translateServerError } from '../../core/lib/serverErrorTranslator';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { bankingRoute } from '../../routes/banking';
@@ -94,6 +95,13 @@ export function BankingPage() {
     finally { setSaving(false); }
   }
 
+  async function handleManualReview(id: string, reviewed: boolean) {
+    try {
+      await markManuallyReviewed(id, reviewed);
+      await refreshTx();
+    } catch (e) { setError(translateServerError(e)); }
+  }
+
   function openAccount(id: string) {
     navigate({ to: '/banking', search: { account: id } as never });
   }
@@ -155,6 +163,7 @@ export function BankingPage() {
                       </div>
                     </div>
                     <button
+                      type="button"
                       className="text-muted-foreground hover:text-red-500"
                       onClick={(e) => { e.stopPropagation(); void handleArchive(acc.id); }}
                       title="أرشفة"
@@ -181,7 +190,7 @@ export function BankingPage() {
       {/* Selected account details */}
       {selectedAccount && (
         <div className="space-y-3">
-          <button onClick={closeAccount} className="text-sm text-primary hover:underline">← رجوع إلى قائمة الحسابات</button>
+          <button type="button" onClick={closeAccount} className="text-sm text-primary hover:underline">← رجوع إلى قائمة الحسابات</button>
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -209,19 +218,33 @@ export function BankingPage() {
                 <div className="divide-y divide-border">
                   {transactions.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لا توجد حركات على هذا الحساب.</p>}
                   {transactions.map(tx => (
-                    <div key={tx.id} className="flex items-center justify-between gap-3 py-3">
+                    <div key={tx.id} className={`flex items-center justify-between gap-3 py-3 ${tx.is_reconciled ? 'opacity-70' : ''}`}>
                       <div className="flex items-center gap-3">
                         <div className={`rounded-full p-2 ${tx.direction === 'deposit' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
                           {tx.direction === 'deposit' ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{tx.memo ?? (tx.direction === 'deposit' ? 'إيداع' : 'سحب')}</p>
+                          <p className="text-sm font-medium">
+                            {tx.memo ?? (tx.direction === 'deposit' ? 'إيداع' : 'سحب')}
+                            {tx.is_reconciled && <span className="ms-2 rounded-full bg-success/10 px-2 py-0.5 text-[10px] text-success">تمت مراجعته يدويًا</span>}
+                          </p>
                           <p className="text-xs text-muted-foreground">{tx.transaction_date} · {tx.reference_type}</p>
                         </div>
                       </div>
-                      <p className={`font-semibold ${tx.direction === 'deposit' ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {tx.direction === 'deposit' ? '+' : '-'}{formatMoney(tx.amount, tx.currency)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className={`font-semibold ${tx.direction === 'deposit' ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {tx.direction === 'deposit' ? '+' : '-'}{formatMoney(tx.amount, tx.currency)}
+                        </p>
+                        {tx.is_reconciled ? (
+                          <button type="button" onClick={() => handleManualReview(tx.id, false)} title="إلغاء علامة المراجعة اليدوية" className="rounded-lg p-1.5 text-muted-foreground hover:text-danger">
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button type="button" onClick={() => handleManualReview(tx.id, true)} title="وضع علامة تمت مراجعته يدويًا" className="rounded-lg p-1.5 text-muted-foreground hover:text-success">
+                            <CheckCheck className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
