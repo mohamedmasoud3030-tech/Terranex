@@ -15,6 +15,12 @@
 
 const JSONRPC_ENDPOINT = '/jsonrpc';
 
+// Note: Vite injects import.meta.env at build time via define/replace. We don't
+// reference it directly here; instead consumers should call setOdooClient() or
+// rely on the Vite virtual module shim that writes __ODOO_ENV__ before this
+// module loads. To keep test builds (CJS) happy we never touch import.meta
+// directly in code that TypeScript compiles.
+
 export interface OdooConfig {
   url: string;
   db: string;
@@ -168,17 +174,55 @@ export class OdooClient {
 
 let cachedClient: OdooClient | null = null;
 
-/** Build an OdooClient from Vite env vars. Returns null if Odoo is disabled. */
+/**
+ * Build an OdooClient from Vite env vars (build time) OR from a runtime config
+ * set via `setOdooClient()`. Returns null if Odoo is disabled in both.
+ */
+function readEnv(): { url: string; db: string; username: string; apiKey: string; enabled: boolean } | null {
+  // import.meta.env is replaced by Vite at build time, but tsc still sees the
+  // syntax in a CJS (test) compilation. We route through a globalThis shim
+  // that Vite and Node can both satisfy.
+  try {
+    const g = globalThis as unknown as {
+      // Vite dev/prod
+      __ODOO_ENV__?: Record<string, string>;
+      // Test shim
+      importMeta?: { env?: Record<string, string> };
+    };
+    const env = g.__ODOO_ENV__ ?? g.importMeta?.env;
+    if (!env) return null;
+    const url = env.VITE_ODOO_URL;
+    const db = env.VITE_ODOO_DB;
+    const username = env.VITE_ODOO_USERNAME;
+    const apiKey = env.VITE_ODOO_API_KEY;
+    const enabled = env.VITE_ODOO_ENABLED === 'true';
+    if (!enabled || !url || !db || !username || !apiKey) return null;
+    return { url, db, username, apiKey, enabled };
+  } catch {
+    return null;
+  }
+}
+
+let runtimeClient: OdooClient | null = null;
+
+/** Allow callers to inject a client configured at runtime (e.g. from company_settings). */
+export function setOdooClient(client: OdooClient | null): void {
+  runtimeClient = client;
+  cachedClient = client;
+}
+
 export function getOdooClient(): OdooClient | null {
   if (cachedClient) return cachedClient;
-  const url = import.meta.env.VITE_ODOO_URL as string | undefined;
-  const db = import.meta.env.VITE_ODOO_DB as string | undefined;
-  const username = import.meta.env.VITE_ODOO_USERNAME as string | undefined;
-  const apiKey = import.meta.env.VITE_ODOO_API_KEY as string | undefined;
-  const enabled = (import.meta.env.VITE_ODOO_ENABLED as string | undefined) === 'true';
-  if (!enabled || !url || !db || !username || !apiKey) return null;
-  cachedClient = new OdooClient({ url, db, username, apiKey });
+  if (runtimeClient) return runtimeClient;
+  const env = readEnv();
+  if (!env) return null;
+  cachedClient = new OdooClient({ url: env.url, db: env.db, username: env.username, apiKey: env.apiKey });
   return cachedClient;
+}
+
+/** Build an OdooClient from an explicit config object (used by runtime settings). */
+export function createOdooClient(cfg: { url: string; db: string; username: string; apiKey: string }): OdooClient {
+  return new OdooClient(cfg);
 }
 
 /** Reset the cached client (e.g., after changing settings). */

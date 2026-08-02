@@ -36,11 +36,14 @@ function categoryToAccount(tx: Transaction, ctx: Context): { debit: number; cred
   if (tx.direction === 'income') {
     const credit = ctx.defaultRevenueAccountId;
     if (!credit) return null;
-    return { debit: ctx.bankJournalId ?? credit, credit };
+    // If no specific bank/cash account is configured, post to a suspense
+    // receivable account (fall back to the income account itself so the
+    // entry is at least balanced until the accountant configures the chart).
+    return { debit: ctx.partnerReceivableAccountId ?? credit, credit };
   }
   const debit = ctx.defaultExpenseAccountId;
   if (!debit) return null;
-  return { debit, credit: ctx.bankJournalId ?? debit };
+  return { debit, credit: ctx.partnerPayableAccountId ?? debit };
 }
 
 export async function syncTransactionAsMove(

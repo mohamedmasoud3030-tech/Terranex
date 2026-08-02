@@ -2,6 +2,7 @@ import { newId } from '../../core/lib/id';
 import type { Obligation, Transaction, TransactionDirection } from '../../core/types/domain';
 import { obligationsStore } from '../obligations/storage';
 import { linkFinancialMovement } from '../banking/storage';
+import { syncTransactionToOdoo } from '../../core/odoo/hooks';
 import {
   generateRequestId,
   invokeFinanceRpc,
@@ -208,6 +209,22 @@ export async function createTransactionWithOptionalPayableAtomic(
       // financial transaction. Operator can reconcile from the Banking page.
     }
   }
+
+  // Best-effort sync to Odoo (fires only if Odoo is enabled in settings).
+  // Because syncTransactionToOdoo needs full Partner/Project objects only for
+  // their odoo_res_id fields (used to pass Odoo IDs), we lazily look them up
+  // from their respective stores.
+  void (async () => {
+    try {
+      const { partnersStore } = await import('../partners/storage');
+      const { projectsStore } = await import('../projects/storage');
+      const partner = input.partner_id ? partnersStore.getAll().find(p => p.id === input.partner_id) : undefined;
+      const project = projectsStore.getAll().find(p => p.id === input.project_id);
+      await syncTransactionToOdoo(saved, { partner, project });
+    } catch {
+      // Odoo failures are non-fatal.
+    }
+  })();
 
   return saved;
 }

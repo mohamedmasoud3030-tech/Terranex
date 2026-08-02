@@ -53,6 +53,7 @@ export interface Project {
   start_date: string;
   end_date?: string;
   base_currency: Currency; // operating currency of this project
+  odoo_res_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -113,6 +114,7 @@ export interface Partner {
   email?: string;
   address?: string;
   notes?: string;
+  odoo_res_id?: number;
   created_at: string;
 }
 
