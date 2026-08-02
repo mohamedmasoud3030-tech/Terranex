@@ -15,8 +15,10 @@ declare
     'assets','bank_accounts','bank_transactions',
     'distribution_allocations','distributions','documents','equity_change_events',
     'financial_audit_logs','inventory_items','inventory_movements',
+    'journal_entries','journal_entry_lines',
     'obligations','operational_events','partner_ledger_entries','partners',
-    'project_partners','projects','sales_invoice_lines','sales_invoices',
+    'project_partners','projects','purchase_invoice_lines','purchase_invoices',
+    'sales_invoice_lines','sales_invoices',
     'settlement_allocations','settlements','stock_adjustments','transactions'
   ];
   -- Lookup / singleton / audit / ledger tables exempted from the strict "4 policies + composite (id,owner)" check.
@@ -24,7 +26,10 @@ declare
   --   * company_settings  – one row per owner (PK = owner_id, no id column)
   --   * owner_sequences   – PK = (owner_id, sequence_key), no id column
   --   * invoice_payments  – immutable audit; inserts via security-definer pay RPC, client gets SELECT only
-  v_lookup constant text[] := array['company_settings','currencies','invoice_payments','owner_sequences'];
+  v_lookup constant text[] := array[
+    'bank_transaction_review_operations','company_settings','currencies','invoice_payments',
+    'journal_operations','owner_sequences','purchase_invoice_operations','purchase_invoice_payments'
+  ];
   v_expected_all text[];
   v_actual   text[];
   v_table    text;
@@ -139,7 +144,11 @@ begin
       and (p.proname like 'guard\_%\_deletion'
         or p.proname like 'terranex\_%'
         or p.proname like '%\_atomic'
-        or p.proname in ('pay_sales_invoice','create_sales_invoice_atomic','next_owner_seq'))
+        or p.proname in (
+          'pay_sales_invoice','create_sales_invoice_atomic','next_owner_seq',
+          'pay_purchase_invoice','receive_purchase_invoice_with_stock',
+          'post_journal_entry','void_journal_entry','set_bank_transaction_reviewed'
+        ))
   loop
     if not exists (
       select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace

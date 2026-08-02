@@ -525,7 +525,11 @@ export type BankTransactionRefType =
   | 'distribution_payment'
   | 'transfer'
   | 'manual'
-  | 'opening_balance';
+  | 'opening_balance'
+  | 'invoice_payment'
+  | 'bill_payment'
+  | 'journal_posting'
+  | 'journal_reversal';
 
 export interface BankAccount {
   id: string;
@@ -562,6 +566,9 @@ export interface BankTransaction {
   memo?: string;
   document_id?: string;
   is_reconciled: boolean;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  review_note?: string;
   odoo_res_id?: number;
   created_at: string;
   updated_at: string;
@@ -616,6 +623,89 @@ export interface SalesInvoice {
   odoo_res_id?: number;
   created_at: string;
   updated_at: string;
+}
+
+// ─── Purchase Invoices (Bills / فواتير المشتريات) ────────────────────────────
+
+export type PurchaseInvoiceStatus = 'draft' | 'received' | 'paid' | 'partial' | 'void' | 'overdue';
+
+export interface PurchaseInvoiceLine {
+  id: string;
+  owner_id: string;
+  invoice_id: string;
+  line_no: number;
+  description_ar?: string;
+  description_en?: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  inventory_item_id?: string;
+  created_at: string;
+}
+
+export interface PurchaseInvoice {
+  id: string;
+  owner_id: string;
+  invoice_number: string;
+  vendor_invoice_number?: string;
+  project_id?: string;
+  partner_id?: string;
+  bank_account_id?: string;
+  issue_date: string;
+  due_date?: string;
+  currency: Currency;
+  fx_rate_to_base: number;
+  subtotal: number;
+  vat_rate: number;
+  vat_amount: number;
+  total: number;
+  amount_paid: number;
+  status: PurchaseInvoiceStatus;
+  notes?: string;
+  odoo_res_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Journal Entries (قيود يومية عامة) ───────────────────────────────────────
+
+export type JournalEntryStatus = 'draft' | 'posted' | 'reversed' | 'void';
+
+export interface JournalEntryLine {
+  id: string;
+  owner_id: string;
+  entry_id: string;
+  line_no: number;
+  account_code?: string;
+  description_ar?: string;
+  description_en?: string;
+  debit: number;
+  credit: number;
+  bank_account_id?: string;
+  partner_id?: string;
+  project_id?: string;
+  created_at: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  owner_id: string;
+  entry_number: string;
+  entry_date: string;
+  description_ar?: string;
+  description_en?: string;
+  currency: Currency;
+  fx_rate_to_base: number;
+  total_debit: number;
+  total_credit: number;
+  status: JournalEntryStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  posted_at?: string;
+  reversal_of_entry_id?: string;
+  reversed_by_entry_id?: string;
+  reversal_reason?: string;
 }
 
 // ─── Inventory ───────────────────────────────────────────────────────────────

@@ -3,13 +3,16 @@ import { useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { FormError, FormField, FormHint, FormLabel } from '../../components/ui/FormControls';
 import { useI18n } from '../../core/i18n/context';
-import type { BankAccount, Currency, Partner, Project } from '../../core/types/domain';
+import type { BankAccount, Currency, InventoryItem, Partner, Project } from '../../core/types/domain';
+import { createPurchaseInvoice, type PurchaseInvoiceInput } from './purchaseStorage';
 import { createInvoice, type InvoiceInput } from './storage';
 
-interface Props {
+export interface InvoiceFormProps {
   projects: Project[];
   partners: Partner[];
   bankAccounts: BankAccount[];
+  inventoryItems?: InventoryItem[];
+  mode?: 'sales' | 'purchase';
   defaultCurrency: Currency;
   defaultVatRate: number;
   onCancel: () => void;
@@ -22,14 +25,20 @@ interface DraftLine {
   description_en: string;
   quantity: number;
   unit_price: number;
+  inventory_item_id: string;
 }
 
 function newLine(): DraftLine {
-  return { id: crypto.randomUUID(), description_ar: '', description_en: '', quantity: 1, unit_price: 0 };
+  return { id: crypto.randomUUID(), description_ar: '', description_en: '', quantity: 1, unit_price: 0, inventory_item_id: '' };
 }
 
-export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency, defaultVatRate, onCancel, onSaved }: Props) {
+export function InvoiceForm({
+  projects, partners, bankAccounts, inventoryItems = [], mode = 'sales',
+  defaultCurrency, defaultVatRate, onCancel, onSaved,
+}: Readonly<InvoiceFormProps>) {
   const { locale } = useI18n();
+  const isPurchase = mode === 'purchase';
+  const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
   const [projectId, setProjectId] = useState('');
   const [partnerId, setPartnerId] = useState('');
   const [bankAccountId, setBankAccountId] = useState('');
@@ -44,6 +53,10 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
   const [error, setError] = useState<string | null>(null);
 
   const activeBanks = bankAccounts.filter(a => !a.is_archived);
+  const parties = isPurchase
+    ? partners.filter(partner => partner.category === 'counterparty'
+      && (!partner.counterparty_role || ['supplier', 'service_provider', 'other'].includes(partner.counterparty_role)))
+    : partners;
 
   const subtotal = lines.reduce((s, l) => s + (Number(l.quantity) || 0) * (Number(l.unit_price) || 0), 0);
   const vat = Math.round(subtotal * (Number(vatRate) || 0)) / 100;
@@ -59,7 +72,12 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!partnerId) { setError(locale === 'ar' ? 'اختر العميل.' : 'Select a customer.'); return; }
+    if (!partnerId) {
+      setError(isPurchase
+        ? (locale === 'ar' ? 'اختر المورد.' : 'Select a vendor.')
+        : (locale === 'ar' ? 'اختر العميل.' : 'Select a customer.'));
+      return;
+    }
     const fxN = Number(fx);
     if (!Number.isFinite(fxN) || fxN <= 0) { setError(locale === 'ar' ? 'سعر الصرف غير صالح.' : 'Invalid FX rate.'); return; }
     const validLines = lines.filter(l => l.description_ar.trim() && Number(l.quantity) > 0 && Number(l.unit_price) >= 0);
@@ -67,7 +85,7 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
 
     setSaving(true);
     try {
-      const input: InvoiceInput = {
+      const commonInput = {
         project_id: projectId || undefined,
         partner_id: partnerId,
         bank_account_id: bankAccountId || undefined,
@@ -77,14 +95,32 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
         fx_rate_to_base: fxN,
         vat_rate: Number(vatRate) || 0,
         notes: notes.trim() || undefined,
-        lines: validLines.map(l => ({
-          description_ar: l.description_ar.trim(),
-          description_en: l.description_en.trim() || undefined,
-          quantity: Number(l.quantity),
-          unit_price: Number(l.unit_price),
-        })),
       };
-      await createInvoice(input);
+      const sharedLines = validLines.map(line => ({
+          description_ar: line.description_ar.trim(),
+          description_en: line.description_en.trim() || undefined,
+          quantity: Number(line.quantity),
+          unit_price: Number(line.unit_price),
+      }));
+      if (isPurchase) {
+        const input: PurchaseInvoiceInput = {
+          ...commonInput,
+          vendor_invoice_number: vendorInvoiceNo.trim() || undefined,
+          lines: validLines.map((line, index) => ({
+            ...sharedLines[index],
+            inventory_item_id: line.inventory_item_id || undefined,
+          })),
+        };
+        await createPurchaseInvoice(input);
+      } else {
+        const input: InvoiceInput = {
+          ...commonInput,
+          lines: sharedLines.map(line => ({
+            ...line,
+          })),
+        };
+        await createInvoice(input);
+      }
       await onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -98,11 +134,17 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
+        {isPurchase && (
+          <FormField>
+            <FormLabel>{locale === 'ar' ? 'رقم فاتورة المورد' : 'Vendor invoice #'}</FormLabel>
+            <input value={vendorInvoiceNo} onChange={event => setVendorInvoiceNo(event.target.value)} className={`${cell} w-full`} dir="ltr" />
+          </FormField>
+        )}
         <FormField>
-          <FormLabel>{locale === 'ar' ? 'العميل' : 'Customer'} *</FormLabel>
+          <FormLabel>{isPurchase ? (locale === 'ar' ? 'المورد' : 'Vendor') : (locale === 'ar' ? 'العميل' : 'Customer')} *</FormLabel>
           <select value={partnerId} onChange={e => setPartnerId(e.target.value)} className={`${cell} w-full`}>
-            <option value="">{locale === 'ar' ? 'اختر عميلاً…' : 'Choose customer…'}</option>
-            {partners.map(p => <option key={p.id} value={p.id}>{p.name_ar}{p.name_en ? ` (${p.name_en})` : ''}</option>)}
+            <option value="">{isPurchase ? (locale === 'ar' ? 'اختر مورداً…' : 'Choose vendor…') : (locale === 'ar' ? 'اختر عميلاً…' : 'Choose customer…')}</option>
+            {parties.map(p => <option key={p.id} value={p.id}>{p.name_ar}{p.name_en ? ` (${p.name_en})` : ''}</option>)}
           </select>
         </FormField>
         <FormField>
@@ -126,7 +168,7 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
           </select>
         </FormField>
         <FormField>
-          <FormLabel>{locale === 'ar' ? 'تاريخ الإصدار' : 'Issue date'} *</FormLabel>
+          <FormLabel>{isPurchase ? (locale === 'ar' ? 'تاريخ الفاتورة' : 'Bill date') : (locale === 'ar' ? 'تاريخ الإصدار' : 'Issue date')} *</FormLabel>
           <input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className={`${cell} w-full`} />
         </FormField>
         <FormField>
@@ -146,7 +188,7 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <FormLabel>{locale === 'ar' ? 'بنود الفاتورة' : 'Invoice lines'} *</FormLabel>
+          <FormLabel>{isPurchase ? (locale === 'ar' ? 'بنود فاتورة المشتريات' : 'Purchase bill lines') : (locale === 'ar' ? 'بنود الفاتورة' : 'Invoice lines')} *</FormLabel>
           <Button type="button" variant="secondary" size="sm" onClick={() => setLines(cur => [...cur, newLine()])}>
             <Plus className="h-3.5 w-3.5" /> {locale === 'ar' ? 'بند' : 'Line'}
           </Button>
@@ -154,9 +196,25 @@ export function InvoiceForm({ projects, partners, bankAccounts, defaultCurrency,
         <div className="space-y-2">
           {lines.map((l, idx) => (
             <div key={l.id} className="grid grid-cols-12 gap-2 items-start">
-              <input value={l.description_ar} onChange={e => updateLine(l.id, { description_ar: e.target.value })} className={`${cell} col-span-6`} placeholder={locale === 'ar' ? 'وصف البند (عربي)' : 'Description'} />
+              <input value={l.description_ar} onChange={e => updateLine(l.id, { description_ar: e.target.value })} className={`${cell} ${isPurchase ? 'col-span-4' : 'col-span-6'}`} placeholder={locale === 'ar' ? 'وصف البند (عربي)' : 'Description'} />
+              {isPurchase && (
+                <select value={l.inventory_item_id} onChange={event => {
+                  const itemId = event.target.value;
+                  const item = inventoryItems.find(candidate => candidate.id === itemId);
+                  updateLine(l.id, {
+                    inventory_item_id: itemId,
+                    description_ar: item?.name_ar ?? l.description_ar,
+                    unit_price: item ? Number(item.default_unit_cost) : l.unit_price,
+                  });
+                }} className={`${cell} col-span-3`}>
+                  <option value="">{locale === 'ar' ? '(بدون صنف)' : '(no item)'}</option>
+                  {inventoryItems.filter(item => !item.is_archived).map(item => (
+                    <option key={item.id} value={item.id}>{item.name_ar} ({item.sku ?? item.category})</option>
+                  ))}
+                </select>
+              )}
               <input type="number" min="0" step="0.001" value={l.quantity} onChange={e => updateLine(l.id, { quantity: Number(e.target.value) })} className={`${cell} col-span-2`} dir="ltr" placeholder={locale === 'ar' ? 'الكمية' : 'Qty'} />
-              <input type="number" min="0" step="0.001" value={l.unit_price} onChange={e => updateLine(l.id, { unit_price: Number(e.target.value) })} className={`${cell} col-span-3`} dir="ltr" placeholder={locale === 'ar' ? 'سعر الوحدة' : 'Unit price'} />
+              <input type="number" min="0" step="0.001" value={l.unit_price} onChange={e => updateLine(l.id, { unit_price: Number(e.target.value) })} className={`${cell} ${isPurchase ? 'col-span-2' : 'col-span-3'}`} dir="ltr" placeholder={locale === 'ar' ? 'سعر الوحدة' : 'Unit price'} />
               <button type="button" onClick={() => removeLine(l.id)} className="col-span-1 flex h-10 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-danger disabled:opacity-50" disabled={lines.length === 1}>
                 <Trash2 className="h-4 w-4" />
               </button>

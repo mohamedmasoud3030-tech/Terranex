@@ -123,7 +123,7 @@ export async function recordManualBankTransaction(input: BankTransactionInput): 
  * Returns the bank_transaction id or null if no bank account was selected.
  */
 export interface LinkMovementInput {
-  reference_type: 'transaction' | 'settlement' | 'distribution_payment';
+  reference_type: 'transaction' | 'settlement' | 'distribution_payment' | 'invoice_payment' | 'bill_payment' | 'manual' | 'transfer' | 'opening_balance';
   reference_id: string;
   bank_account_id?: string | null;
   direction: 'deposit' | 'withdrawal';
@@ -182,6 +182,18 @@ export async function recordTransfer(input: TransferInput): Promise<BankTransfer
     withdrawal_id: (row as { withdrawal_id: string }).withdrawal_id,
     deposit_id: (row as { deposit_id: string }).deposit_id,
   };
+}
+
+/** Manual review marker only; this is not bank-statement reconciliation. */
+export async function markManuallyReviewed(transactionId: string, reviewed = true, note?: string): Promise<void> {
+  const supabase = requireClient();
+  const { error } = await supabase.rpc('set_bank_transaction_reviewed', {
+    p_request_id: crypto.randomUUID(),
+    p_transaction_id: transactionId,
+    p_reviewed: reviewed,
+    p_note: note ?? null,
+  });
+  if (error) throw new Error(`تعذر تحديث علامة المراجعة اليدوية: ${error.message}`);
 }
 
 /** Default fx rate helper: 1 for base currency; lookup from exchange rates or return 1. */
