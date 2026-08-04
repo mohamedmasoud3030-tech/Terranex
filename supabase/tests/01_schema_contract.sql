@@ -25,8 +25,8 @@ declare
   -- "4 policies + composite (id,owner)" check.
   v_lookup constant text[] := array[
     'bank_transaction_review_operations','company_settings','currencies','invoice_payments',
-    'journal_operations','odoo_entity_mappings','odoo_sync_outbox','owner_sequences',
-    'purchase_invoice_operations','purchase_invoice_payments'
+    'journal_entry_line_accounts','journal_operations','odoo_entity_mappings','odoo_sync_outbox',
+    'owner_sequences','purchase_invoice_operations','purchase_invoice_payments'
   ];
   v_expected_all text[];
   v_actual   text[];
