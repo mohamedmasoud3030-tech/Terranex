@@ -65,7 +65,7 @@ test('internal locking and audit helpers are explicitly forbidden', () => {
     'terranex_audit_check_idempotent',
     'terranex_audit_log',
   ]) {
-    assert.match(document, new RegExp(`- \\`${helper}\\``));
+    assert.ok(document.includes('- `' + helper + '`'));
     assert.ok(!expected.includes(helper));
   }
 });
