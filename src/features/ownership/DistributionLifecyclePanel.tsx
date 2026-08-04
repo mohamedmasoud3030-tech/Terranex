@@ -13,6 +13,7 @@ import type {
   DistributionAllocation,
   Partner,
 } from '../../core/types/domain';
+import { DistributionPaymentReversalAction } from './DistributionPaymentReversalAction';
 import { partnerName } from './model';
 
 interface DistributionLifecyclePanelProps {
@@ -241,20 +242,31 @@ export function DistributionLifecyclePanel({
                                     : label('مستحق', 'Due')}
                               </p>
                             </div>
-                            {distribution.status === 'approved' && allocation.status === 'due' && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => {
-                                  setError(null);
-                                  setPaymentTarget({ distribution, allocation });
-                                }}
-                                disabled={pending}
-                              >
-                                <CreditCard className="h-4 w-4" />
-                                {label('دفع الحصة', 'Pay share')}
-                              </Button>
-                            )}
+                            <div className="flex shrink-0 flex-col gap-2">
+                              {distribution.status === 'approved' && allocation.status === 'due' && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setError(null);
+                                    setPaymentTarget({ distribution, allocation });
+                                  }}
+                                  disabled={pending}
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                  {label('دفع الحصة', 'Pay share')}
+                                </Button>
+                              )}
+                              {allocation.status === 'paid' && (
+                                <DistributionPaymentReversalAction
+                                  distribution={distribution}
+                                  allocation={allocation}
+                                  partner={partner}
+                                  locale={locale}
+                                  disabled={pending}
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
