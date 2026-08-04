@@ -72,8 +72,8 @@ begin
       and p.proname = v_name
       and p.prosecdef
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+      -- has_function_privilege for anon includes any inherited PUBLIC grant.
       and not has_function_privilege('anon', p.oid, 'EXECUTE')
-      and not has_function_privilege('public', p.oid, 'EXECUTE')
       and array_to_string(coalesce(p.proconfig, array[]::text[]), ',') like '%search_path=%';
 
     if v_count <> 1 then
@@ -89,10 +89,7 @@ begin
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
     and p.prosecdef
-    and (
-      has_function_privilege('anon', p.oid, 'EXECUTE')
-      or has_function_privilege('public', p.oid, 'EXECUTE')
-    );
+    and has_function_privilege('anon', p.oid, 'EXECUTE');
   if v_count <> 0 then
     raise exception 'FAIL anonymous exposure: % SECURITY DEFINER function(s) remain executable', v_count;
   end if;
@@ -106,7 +103,6 @@ begin
     and (
       has_function_privilege('authenticated', p.oid, 'EXECUTE')
       or has_function_privilege('anon', p.oid, 'EXECUTE')
-      or has_function_privilege('public', p.oid, 'EXECUTE')
     );
   if v_count <> 0 then
     raise exception 'FAIL trigger exposure: % trigger function(s) remain externally executable', v_count;
