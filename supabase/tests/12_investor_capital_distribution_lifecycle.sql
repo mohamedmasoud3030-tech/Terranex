@@ -20,8 +20,8 @@ insert into auth.users(id,email) values
 set local role authenticated;
 set local request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94';
 
-insert into projects(id,sector_id,name_ar,status,start_date,base_currency)
-values('11111111-1111-4111-8111-111111111194','real-estate','مشروع المستثمرين','active','2026-01-01','EGP');
+insert into projects(id,sector_id,name_ar,name_en,status,start_date,base_currency)
+values('11111111-1111-4111-8111-111111111194','real-estate','مشروع المستثمرين','Investor Project','active','2026-01-01','EGP');
 insert into partners(id,name_ar,category,counterparty_role) values
  ('22222222-2222-4222-8222-222222222194','شريك أول','equity_partner','client'),
  ('22222222-2222-4222-8222-222222222195','شريك ثان','equity_partner','client');
