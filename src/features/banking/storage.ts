@@ -3,6 +3,7 @@
  * Uses createSupabaseStore (existing pattern) plus direct RPC calls for
  * atomic operations (transfers, manual transactions, opening balance).
  */
+import { requestOdooSync } from '../../core/odoo/hooks';
 import { requireClient } from '../../core/storage/supabaseClientRegistry';
 import type {
   BankAccount,
@@ -61,6 +62,9 @@ export async function createBankAccount(input: BankAccountInput): Promise<BankAc
     .select()
     .single();
   if (error) throw new Error(`تعذر إضافة الحساب: ${error.message}`);
+
+  // The database trigger queued account.journal synchronization atomically.
+  void requestOdooSync();
   return data as BankAccount;
 }
 
@@ -73,17 +77,20 @@ export async function updateBankAccount(id: string, patch: Partial<BankAccountIn
     .select()
     .single();
   if (error) throw new Error(`تعذر تحديث الحساب: ${error.message}`);
+
+  void requestOdooSync();
   return data as BankAccount;
 }
 
 export async function archiveBankAccount(id: string): Promise<void> {
-  await updateBankAccount(id, {} as Partial<BankAccountInput>);
   const supabase = requireClient();
   const { error } = await supabase
     .from(TABLE_ACCOUNTS)
     .update({ is_archived: true })
     .eq('id', id);
   if (error) throw new Error(`تعذر أرشفة الحساب: ${error.message}`);
+
+  void requestOdooSync();
 }
 
 // ---- Bank transactions ----
