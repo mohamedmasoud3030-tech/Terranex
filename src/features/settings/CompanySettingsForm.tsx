@@ -8,8 +8,8 @@ import { translateServerError } from '../../core/lib/serverErrorTranslator';
 
 const CURRENCIES: Currency[] = ['EGP', 'USD', 'OMR', 'SAR', 'AED', 'EUR', 'GBP'];
 const COUNTRIES: Array<{ code: CompanySettings['country']; label_ar: string; currency: Currency }> = [
-  { code: 'OM', label_ar: 'سلطنة عُمان', currency: 'OMR' },
   { code: 'EG', label_ar: 'مصر', currency: 'EGP' },
+  { code: 'OM', label_ar: 'سلطنة عُمان', currency: 'OMR' },
   { code: 'SA', label_ar: 'السعودية', currency: 'SAR' },
   { code: 'AE', label_ar: 'الإمارات', currency: 'AED' },
   { code: 'OTHER', label_ar: 'بلد آخر', currency: 'USD' },
@@ -29,8 +29,8 @@ export function CompanySettingsForm() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [country, setCountry] = useState<CompanySettings['country']>('OM');
-  const [baseCurrency, setBaseCurrency] = useState<Currency>('OMR');
+  const [country, setCountry] = useState<CompanySettings['country']>('EG');
+  const [baseCurrency, setBaseCurrency] = useState<Currency>('EGP');
   const [fiscalYearStart, setFiscalYearStart] = useState('');
   const [vatEnabled, setVatEnabled] = useState(false);
   const [vatRate, setVatRate] = useState('0');
@@ -39,9 +39,7 @@ export function CompanySettingsForm() {
   const [odooUrl, setOdooUrl] = useState('');
   const [odooDb, setOdooDb] = useState('');
   const [odooUsername, setOdooUsername] = useState('');
-  // SECURITY: odoo_api_key must never be stored in or read from client-accessible
-  // storage. It is configured only on the server (Supabase Edge Function secrets).
-  // The browser never sees the secret.
+  const [etaBranchCode, setEtaBranchCode] = useState('0');
 
   useEffect(() => { void load(); }, []);
 
@@ -60,9 +58,9 @@ export function CompanySettingsForm() {
         setEmail(data.email ?? '');
         setAddress(data.address ?? '');
         setCity(data.city ?? '');
-        setCountry(data.country ?? 'OM');
-        setBaseCurrency(data.base_currency ?? 'OMR');
-        setFiscalYearStart(data.fiscal_year_start ?? new Date().toISOString().slice(0,10));
+        setCountry(data.country ?? 'EG');
+        setBaseCurrency(data.base_currency ?? 'EGP');
+        setFiscalYearStart(data.fiscal_year_start ?? new Date().toISOString().slice(0, 10));
         setVatEnabled(data.vat_enabled ?? false);
         setVatRate(String(data.vat_rate ?? 0));
         setVatNumber(data.vat_number ?? '');
@@ -70,8 +68,9 @@ export function CompanySettingsForm() {
         setOdooUrl(data.odoo_url ?? '');
         setOdooDb(data.odoo_db ?? '');
         setOdooUsername(data.odoo_username ?? '');
+        setEtaBranchCode(data.eta_branch_code ?? '0');
       } else {
-        setFiscalYearStart(new Date().toISOString().slice(0,10));
+        setFiscalYearStart(new Date().toISOString().slice(0, 10));
       }
     } catch (e) { setError(translateServerError(e)); }
     finally { setLoading(false); }
@@ -84,6 +83,11 @@ export function CompanySettingsForm() {
       if (nameAr.trim().length < 2) throw new Error('اسم الشركة مطلوب.');
       const rate = Number(vatRate);
       if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error('نسبة الضريبة غير صالحة (0–100).');
+      if (odooEnabled && (country !== 'EG' || baseCurrency !== 'EGP')) {
+        throw new Error('مرحلة ربط Odoo الحالية مخصصة لمصر ويجب أن تكون العملة الأساس EGP.');
+      }
+      if (odooEnabled && !etaBranchCode.trim()) throw new Error('كود فرع الضرائب المصرية مطلوب. استخدم 0 عند وجود فرع واحد.');
+
       const supabase = requireClient();
       const values = {
         company_name_ar: nameAr.trim(),
@@ -104,7 +108,9 @@ export function CompanySettingsForm() {
         odoo_url: odooUrl.trim() || null,
         odoo_db: odooDb.trim() || null,
         odoo_username: odooUsername.trim() || null,
-        // odoo_api_key is NEVER written from the browser (server-side secret only).
+        odoo_localization: 'l10n_eg',
+        eta_branch_code: etaBranchCode.trim() || '0',
+        // ODOO_API_KEY is an Edge Function secret and is never written here.
       };
       const { data, error } = await supabase.from('company_settings').select('owner_id').maybeSingle();
       if (error) throw error;
@@ -115,7 +121,7 @@ export function CompanySettingsForm() {
         const { error: insErr } = await supabase.from('company_settings').insert(values);
         if (insErr) throw insErr;
       }
-      setSuccess('تم حفظ إعدادات الشركة بنجاح.');
+      setSuccess('تم حفظ إعدادات الشركة المصرية بنجاح.');
       setTimeout(() => setSuccess(''), 3000);
     } catch (e) { setError(translateServerError(e)); }
     finally { setSaving(false); }
@@ -140,22 +146,22 @@ export function CompanySettingsForm() {
             <FormField>
               <FormLabel>الدولة</FormLabel>
               <SelectInput value={country} onChange={e => {
-                const c = e.target.value as CompanySettings['country'];
-                setCountry(c);
-                const preset = COUNTRIES.find(x => x.code === c);
+                const nextCountry = e.target.value as CompanySettings['country'];
+                setCountry(nextCountry);
+                const preset = COUNTRIES.find(item => item.code === nextCountry);
                 if (preset) setBaseCurrency(preset.currency);
               }}>
-                {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label_ar}</option>)}
+                {COUNTRIES.map(item => <option key={item.code} value={item.code}>{item.label_ar}</option>)}
               </SelectInput>
             </FormField>
             <FormField>
               <FormLabel>المدينة</FormLabel>
-              <TextInput value={city} onChange={e => setCity(e.target.value)} placeholder="مسقط / القاهرة / الرياض…" />
+              <TextInput value={city} onChange={e => setCity(e.target.value)} placeholder="القاهرة / الإسكندرية / الجيزة…" />
             </FormField>
             <FormField>
               <FormLabel>العملة الأساس</FormLabel>
               <SelectInput value={baseCurrency} onChange={e => setBaseCurrency(e.target.value as Currency)}>
-                {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
               </SelectInput>
             </FormField>
             <FormField>
@@ -167,7 +173,7 @@ export function CompanySettingsForm() {
               <TextInput value={commercialRegister} onChange={e => setCommercialRegister(e.target.value)} dir="ltr" />
             </FormField>
             <FormField>
-              <FormLabel>الرقم الضريبي</FormLabel>
+              <FormLabel>رقم التسجيل الضريبي</FormLabel>
               <TextInput value={taxNumber} onChange={e => setTaxNumber(e.target.value)} dir="ltr" />
             </FormField>
             <FormField>
@@ -187,7 +193,7 @@ export function CompanySettingsForm() {
       </Card>
 
       <Card>
-        <CardHeader><span className="text-sm font-semibold">الضريبة (VAT)</span></CardHeader>
+        <CardHeader><span className="text-sm font-semibold">ضريبة القيمة المضافة</span></CardHeader>
         <CardContent className="space-y-3">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={vatEnabled} onChange={e => setVatEnabled(e.target.checked)} />
@@ -209,34 +215,40 @@ export function CompanySettingsForm() {
       </Card>
 
       <Card>
-        <CardHeader><span className="text-sm font-semibold">الربط مع Odoo (اختياري)</span></CardHeader>
+        <CardHeader><span className="text-sm font-semibold">المحاسبة المصرية عبر Odoo 18</span></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Odoo هو نظام محاسبي مفتوح المصدر يُشغَّل في Docker. عند تفعيل الربط، تُزامن المعاملات والشركاء تلقائياً مع دفتر الأستاذ في Odoo للحصول على تقارير محاسبية قانونية.
+            تستخدم المرحلة الحالية الحزمة المصرية <code>l10n_eg</code>. تتم مزامنة الشركاء والمشروعات
+            والفواتير الصادرة أو المعتمدة من خلال Supabase Edge Function، ولا يصل مفتاح Odoo إلى المتصفح.
+            ربط المدفوعات وETA الإلكتروني يأتي في المرحلة التالية ولا يُدّعى تشغيله الآن.
           </p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={odooEnabled} onChange={e => setOdooEnabled(e.target.checked)} />
-            تفعيل المزامنة مع Odoo
+            تفعيل بوابة Odoo الآمنة
           </label>
           {odooEnabled && (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <FormField>
-                <FormLabel>رابط Odoo</FormLabel>
-                <TextInput value={odooUrl} onChange={e => setOdooUrl(e.target.value)} placeholder="http://localhost:8069" dir="ltr" />
+                <FormLabel>رابط Odoo المرجعي</FormLabel>
+                <TextInput value={odooUrl} onChange={e => setOdooUrl(e.target.value)} placeholder="https://odoo.example.com" dir="ltr" />
               </FormField>
               <FormField>
                 <FormLabel>اسم قاعدة البيانات</FormLabel>
-                <TextInput value={odooDb} onChange={e => setOdooDb(e.target.value)} placeholder="terranex" dir="ltr" />
+                <TextInput value={odooDb} onChange={e => setOdooDb(e.target.value)} placeholder="terranex_egypt" dir="ltr" />
               </FormField>
               <FormField>
-                <FormLabel>اسم المستخدم</FormLabel>
+                <FormLabel>اسم مستخدم التكامل</FormLabel>
                 <TextInput value={odooUsername} onChange={e => setOdooUsername(e.target.value)} dir="ltr" />
               </FormField>
+              <FormField>
+                <FormLabel>كود فرع ETA</FormLabel>
+                <TextInput value={etaBranchCode} onChange={e => setEtaBranchCode(e.target.value)} placeholder="0" dir="ltr" />
+              </FormField>
               <FormField className="md:col-span-2">
-                <FormLabel>مفتاح API (يُضبط على الخادم فقط)</FormLabel>
+                <FormLabel>مفتاح Odoo API</FormLabel>
                 <p className="text-xs text-muted-foreground">
-                  لأسباب أمنية، لا يُخزَّن مفتاح Odoo API في المتصفح. فعّل المزامنة عبر Supabase Edge
-                  Function وضع المفتاح في أسرار الخادم.
+                  يُضبط باسم <code>ODOO_API_KEY</code> داخل أسرار Supabase Edge Functions فقط.
+                  لا تضعه في Vite أو قاعدة البيانات أو GitHub.
                 </p>
               </FormField>
             </div>
