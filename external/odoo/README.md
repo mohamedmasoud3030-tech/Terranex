@@ -1,97 +1,129 @@
-# Odoo 18 — Accounting Backend for Terranex
+# Odoo 18 — Accounting Backend for Terranex (Egypt First)
 
-This directory holds the `docker-compose.yml` and configuration for running
-**Odoo 18 Community** as Terranex's accounting backend.
+This directory runs **Odoo 18 Community** as the accounting engine beneath
+Terranex. Terranex remains the source of truth for projects, operations,
+investors, ownership history, partner capital and distributions.
 
-## Why Odoo?
+## First deployment target
 
-Terranex's core strength is its investment/operations layer (project ownership
-with temporal slicing, immutable distribution snapshots, livestock/agriculture
-operational events, partner ledger). These are not things any ERP does well
-out of the box.
+The first supported market is **Egypt**:
 
-For everything accounting (chart of accounts, double-entry ledger, legal
-invoices, VAT, bank reconciliation, fixed-asset depreciation, period close,
-stock/warehouse, financial statements) we delegate to **Odoo 18 Community**
-and integrate it via the built-in JSON-RPC API.
+- Company country: `EG`
+- Base currency: `EGP`
+- Fiscal localization: `l10n_eg`
+- ETA integration later: `l10n_eg_edi_eta`
+- One-branch ETA code: `0`
 
-The React UI remains *Arabic-first, RTL, and purpose-built* for your
-investment company. Odoo's UI is only used by the accountant for advanced
-operations (bank reconciliation, tax reporting, year-end close).
+Do not configure Oman localization for this deployment.
 
-## Setup (first time)
+## Responsibility split
 
-1. Install Docker + Docker Compose (or Docker Desktop).
-2. Copy `config/odoo.conf.example` → `config/odoo.conf` if needed (already present).
-3. Copy `.env.example` → `.env` and edit the passwords.
-4. Run:
+| Terranex owns | Odoo owns |
+| --- | --- |
+| Projects and sector operations | Chart of accounts and double-entry ledger |
+| Investors, ownership and capital workflows | Official customer/vendor accounting |
+| Partner ledger and distribution logic | Tax, period close and financial statements |
+| Operational documents and analytics | Egyptian accounting localization and ETA workflow |
+
+There must never be two competing official ledgers. Terranex financial tables
+are operational subledgers; Odoo becomes the accounting source of truth.
+
+## Secure integration architecture
+
+The browser never calls Odoo and never receives an Odoo API key.
+
+```text
+Terranex browser
+  -> Supabase business RPC / table write
+  -> PostgreSQL transactional outbox
+  -> Supabase Edge Function: odoo-sync
+  -> Odoo 18 JSON-RPC
+```
+
+The outbox row is created in the same database transaction as the Partner,
+Project or Invoice lifecycle change. Failed Odoo calls remain retryable and do
+not disappear silently.
+
+## Setup
+
+1. Install Docker and Docker Compose.
+2. Copy `.env.example` to `.env` and set strong database/master passwords.
+3. Start the stack:
    ```bash
    cd external/odoo
    docker compose up -d
    ```
-5. Open `http://localhost:8069` in your browser.
-6. Create the first database:
-   - **Master Password:** the value of `ODOO_MASTER_PASSWORD` from `.env`
-   - **Database Name:** `terranex` (or your company short name)
-   - **Language:** العربية (Arabic)
-   - **Country:** Oman / Egypt / Saudi Arabia / UAE (loads IFRS chart of accounts + local VAT)
-   - **Email/Password:** admin credentials for the accountant
-7. After login, open **Apps** and install only the following modules:
-   - `Accounting` (Invoicing & Accounting)
-   - `Contacts`
-   - `Inventory` (MRP/stock, needed for feed/fertilizer inventory later)
-   - Do **not** install CRM, Sales, Purchase, Website, eCommerce, etc. (they add menu noise).
-8. In Settings → Users, create an **API user** named `Terranex Sync` with:
-   - Group: `Accounting / Advisor` (full read/write on accounting)
-   - Copy the user ID and set an API key (Preferences → Account Security → API Keys → New).
+4. Open `http://localhost:8069`.
+5. Create the database with:
+   - Database name: `terranex_egypt`
+   - Language: Arabic or English
+   - Country: **Egypt**
+   - Company currency: **EGP**
+6. Install:
+   - Accounting / Invoicing
+   - Contacts
+   - `l10n_eg` (Egypt - Accounting)
+7. Create a dedicated integration user named `Terranex Sync` with only the
+   permissions needed for contacts, analytic accounting and invoices.
+8. Create an API key for that integration user.
 
-## Configure Terranex to talk to Odoo
+Do not install `l10n_eg_edi_eta` until the company has valid ETA registration,
+branch/activity codes, product coding and signing requirements ready.
 
-Add these variables to Terranex's `.env.local`:
+## Supabase Edge Function secrets
 
-```bash
-VITE_ODOO_URL=http://localhost:8069
-VITE_ODOO_DB=terranex
-VITE_ODOO_USERNAME=terranex-sync@yourcompany.com
-VITE_ODOO_API_KEY=xxxxxxxxxxxxxxxxxxxxx
-```
-
-Then open **Governance → Settings** in the app and enable the Odoo integration toggle
-to activate real syncing.
-
-## What syncs to Odoo
-
-| Terranex action                                | Odoo side                                           |
-| ---------------------------------------------- | --------------------------------------------------- |
-| Create Partner (supplier/customer/equity)      | `res.partner` (contact)                             |
-| Create Project                                 | `account.analytic.account` (cost center)            |
-| Create Transaction (income/expense)            | `account.move` journal entry                        |
-| Record Settlement (payment)                    | `account.payment` linked to outstanding invoices     |
-| Record Distribution payment                    | Journal entry on equity / partner payable accounts  |
-| Create Bank/Cash account (when added in Terranex) | `account.account` of type Bank/Cash                |
-
-## What stays in Terranex only
-
-- Project ownership history & equity changes
-- Distribution snapshots and partner entitlements
-- Operational events (birth, death, vaccination, planting, harvest, ...)
-- Live asset quantity (headcount, acreage) derived from events
-- The investor portal
-- Sector-specific profitability dashboards
-- Documents (kept in Supabase storage for now; attach to Odoo records via `ir.attachment` later)
-
-## Backup
-
-Odoo's Postgres volume is `odoo-db-data`. Back it up using:
+Set secrets on Supabase, never in Vite or Git:
 
 ```bash
-docker exec terranex-odoo-db pg_dump -U odoo terranex | gzip > odoo_backup_$(date +%F).sql.gz
+supabase secrets set \
+  ODOO_URL=https://odoo.example.com \
+  ODOO_DB=terranex_egypt \
+  ODOO_USERNAME=terranex-sync@company.com \
+  ODOO_API_KEY=replace-me \
+  ODOO_COMPANY_ID=1 \
+  ODOO_ANALYTIC_PLAN_ID=1
 ```
 
-This should be added to the same daily backup cron as Supabase.
+Deploy the function:
 
-## Useful references
+```bash
+supabase functions deploy odoo-sync
+```
 
-- Odoo JSON-RPC docs: https://www.odoo.com/documentation/18.0/developer/reference/external_api.html
-- Odoo Community Association (OCA): https://github.com/OCA (ZATCA/e-invoicing modules, bank imports, etc.)
-- Arabic chart of accounts: auto-loaded by country when the DB is created; can be customized later.
+Then open **Governance -> Settings**, keep country `Egypt`, base currency `EGP`,
+enter ETA branch code (`0` for one branch), and enable the Odoo bridge.
+
+## Current bridge scope
+
+Implemented in the first slice:
+
+| Terranex lifecycle | Odoo model |
+| --- | --- |
+| Partner create/update | `res.partner` |
+| Project create/update | `account.analytic.account` |
+| Sales invoice issue | posted `account.move` / customer invoice |
+| Purchase invoice receipt | posted `account.move` / vendor bill |
+| Invoice void request | attempts Odoo cancellation and records failure if not allowed |
+
+Not yet claimed as implemented:
+
+- Sales/purchase payment posting and reconciliation
+- Bank journals and statement imports
+- Operational transactions as automatic journal entries
+- Partner capital calls, contributions and distributions accounting entries
+- ETA production submission/signing
+- Reverse synchronization from Odoo to Terranex
+
+Those are the next bridge slices and must use the same outbox/idempotency boundary.
+
+## Backups
+
+Odoo uses a separate PostgreSQL volume. Back it up independently from Supabase:
+
+```bash
+docker exec terranex-odoo-db \
+  pg_dump -U odoo terranex_egypt | gzip > odoo_backup_$(date +%F).sql.gz
+```
+
+A release is not production-ready until both Supabase and Odoo backups have
+been restored successfully in a clean environment.
