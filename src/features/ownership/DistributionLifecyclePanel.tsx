@@ -13,12 +13,6 @@ import type {
   DistributionAllocation,
   Partner,
 } from '../../core/types/domain';
-import { listBankAccounts } from '../banking/storage';
-import {
-  approveProfitDistribution,
-  OwnershipServiceError,
-  payDistributionAllocation,
-} from './service';
 import { partnerName } from './model';
 
 interface DistributionLifecyclePanelProps {
@@ -33,9 +27,39 @@ interface PaymentTarget {
   allocation: DistributionAllocation;
 }
 
+interface DistributionPaymentCommand {
+  allocation_id: string;
+  bank_account_id: string;
+  payment_date: string;
+  notes?: string;
+}
+
 function readableError(error: unknown): string {
-  if (error instanceof OwnershipServiceError) return error.message_ar;
+  if (
+    error
+    && typeof error === 'object'
+    && 'message_ar' in error
+    && typeof error.message_ar === 'string'
+  ) {
+    return error.message_ar;
+  }
   return translateServerError(error);
+}
+
+async function loadEligibleBankAccounts(currency: Distribution['currency']): Promise<BankAccount[]> {
+  const { listBankAccounts } = await import('../banking/storage');
+  const accounts = await listBankAccounts();
+  return accounts.filter((account) => !account.is_archived && account.currency === currency);
+}
+
+async function approveDistributionOnServer(distributionId: string): Promise<void> {
+  const { approveProfitDistribution } = await import('./service');
+  await approveProfitDistribution({ distribution_id: distributionId });
+}
+
+async function payAllocationOnServer(command: DistributionPaymentCommand): Promise<void> {
+  const { payDistributionAllocation } = await import('./service');
+  await payDistributionAllocation(command);
 }
 
 export function DistributionLifecyclePanel({
@@ -69,12 +93,9 @@ export function DistributionLifecyclePanel({
     setLoadingAccounts(true);
     setError(null);
     setBankAccountId('');
-    void listBankAccounts()
-      .then((accounts) => {
+    void loadEligibleBankAccounts(paymentTarget.distribution.currency)
+      .then((eligible) => {
         if (!active) return;
-        const eligible = accounts.filter(
-          (account) => !account.is_archived && account.currency === paymentTarget.distribution.currency,
-        );
         setBankAccounts(eligible);
         if (eligible.length === 1) setBankAccountId(eligible[0].id);
       })
@@ -94,9 +115,10 @@ export function DistributionLifecyclePanel({
     setPending(true);
     setError(null);
     try {
-      await approveProfitDistribution({ distribution_id: approvalTarget.id });
+      await approveDistributionOnServer(approvalTarget.id);
       setApprovalTarget(null);
     } catch (approvalError) {
+      setApprovalTarget(null);
       setError(readableError(approvalError));
     } finally {
       setPending(false);
@@ -117,7 +139,7 @@ export function DistributionLifecyclePanel({
     setPending(true);
     setError(null);
     try {
-      await payDistributionAllocation({
+      await payAllocationOnServer({
         allocation_id: paymentTarget.allocation.id,
         bank_account_id: bankAccountId,
         payment_date: paymentDate,
