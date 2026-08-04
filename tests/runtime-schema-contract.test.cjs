@@ -74,6 +74,16 @@ function extractRuntimeContracts() {
     for (const match of source.matchAll(/\.rpc\(\s*['"]([^'"]+)['"]/g)) {
       rpcNames.add(match[1]);
     }
+
+    // Some production boundaries deliberately call client.rpc(rpcName, ...)
+    // with a typed name selected from an exported *_RPC_NAMES tuple. Include
+    // those tuples so dynamic calls receive the same migration-contract check
+    // as literal .rpc('name') calls.
+    for (const match of source.matchAll(/\bconst\s+[A-Za-z_][A-Za-z0-9_]*_RPC_NAMES\s*=\s*\[([\s\S]*?)\]\s*as\s+const/g)) {
+      for (const name of match[1].matchAll(/['"]([^'"]+)['"]/g)) {
+        rpcNames.add(name[1]);
+      }
+    }
   }
 
   return { relations, orderPairs, rpcNames, unresolved };
@@ -150,11 +160,11 @@ test('every runtime Supabase relation and order column exists in the migration s
   }
 });
 
-test('every literal frontend RPC exists in the migration schema', () => {
+test('every frontend RPC contract exists in the migration schema', () => {
   const runtime = extractRuntimeContracts();
   const schema = parseMigrationSchema(migrationSql());
 
-  assert.ok(runtime.rpcNames.size >= 15, `expected broad RPC coverage, found only ${runtime.rpcNames.size} RPCs`);
+  assert.ok(runtime.rpcNames.size >= 19, `expected broad RPC coverage, found only ${runtime.rpcNames.size} RPCs`);
   for (const rpc of runtime.rpcNames) {
     assert.ok(schema.functions.has(rpc.toLowerCase()), `frontend RPC ${rpc} is missing from migrations`);
   }
