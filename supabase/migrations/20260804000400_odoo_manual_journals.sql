@@ -91,6 +91,7 @@ grant execute on function terranex_queue_odoo_event(uuid, text, uuid, text, json
 -- 3) Queue exactly the accounting event: draft -> posted, or insertion of an
 -- already-posted reversal voucher. Changing the original to `reversed` does
 -- not cancel its Odoo move; the separately posted reversal offsets it.
+-- A reversal remains unavailable until the original Odoo mapping exists.
 -- ---------------------------------------------------------------------------
 create or replace function terranex_enqueue_odoo_manual_journal()
 returns trigger
@@ -98,39 +99,40 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_event_id uuid;
 begin
-  if new.status = 'posted' then
-    if tg_op = 'INSERT' then
-      perform terranex_queue_odoo_event(
-        new.owner_id,
-        'journal_entry',
-        new.id,
-        'upsert',
-        jsonb_build_object(
-          'source_table', 'journal_entries',
-          'entry_number', new.entry_number,
-          'entry_date', new.entry_date,
-          'currency', new.currency,
-          'reversal_of_entry_id', new.reversal_of_entry_id,
-          'source_updated_at', new.updated_at
-        )
-      );
-    elsif old.status is distinct from 'posted' then
-      perform terranex_queue_odoo_event(
-        new.owner_id,
-        'journal_entry',
-        new.id,
-        'upsert',
-        jsonb_build_object(
-          'source_table', 'journal_entries',
-          'entry_number', new.entry_number,
-          'entry_date', new.entry_date,
-          'currency', new.currency,
-          'reversal_of_entry_id', new.reversal_of_entry_id,
-          'source_updated_at', new.updated_at
-        )
-      );
-    end if;
+  if new.status <> 'posted' then return new; end if;
+  if tg_op = 'UPDATE' then
+    if old.status is not distinct from 'posted' then return new; end if;
+  end if;
+
+  v_event_id := terranex_queue_odoo_event(
+    new.owner_id,
+    'journal_entry',
+    new.id,
+    'upsert',
+    jsonb_build_object(
+      'source_table', 'journal_entries',
+      'entry_number', new.entry_number,
+      'entry_date', new.entry_date,
+      'currency', new.currency,
+      'reversal_of_entry_id', new.reversal_of_entry_id,
+      'source_updated_at', new.updated_at
+    )
+  );
+
+  if new.reversal_of_entry_id is not null
+     and not exists (
+       select 1 from odoo_entity_mappings m
+        where m.owner_id = new.owner_id
+          and m.entity_type = 'journal_entry'
+          and m.entity_id = new.reversal_of_entry_id
+     ) then
+    update odoo_sync_outbox
+       set available_at = 'infinity'::timestamptz,
+           updated_at = now()
+     where id = v_event_id;
   end if;
   return new;
 end;
@@ -143,6 +145,40 @@ drop trigger if exists trg_journal_entries_odoo_outbox on journal_entries;
 create trigger trg_journal_entries_odoo_outbox
   after insert or update of status on journal_entries
   for each row execute function terranex_enqueue_odoo_manual_journal();
+
+-- Completing an original journal mapping releases any posted reversal that was
+-- intentionally held to preserve causal ordering and avoid duplicate moves.
+create or replace function terranex_release_odoo_journal_reversals()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.entity_type = 'journal_entry' then
+    update odoo_sync_outbox o
+       set available_at = now(),
+           updated_at = now()
+      from journal_entries j
+     where j.owner_id = new.owner_id
+       and j.reversal_of_entry_id = new.entity_id
+       and o.owner_id = j.owner_id
+       and o.entity_type = 'journal_entry'
+       and o.entity_id = j.id
+       and o.status in ('pending','failed')
+       and o.available_at = 'infinity'::timestamptz;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function terranex_release_odoo_journal_reversals()
+  from public, anon, authenticated;
+
+drop trigger if exists trg_odoo_mapping_release_journal_reversals on odoo_entity_mappings;
+create trigger trg_odoo_mapping_release_journal_reversals
+  after insert or update on odoo_entity_mappings
+  for each row execute function terranex_release_odoo_journal_reversals();
 
 -- Historical vouchers that were posted and later reversed still need their
 -- original Odoo move; the explicit posted reversal then offsets that move.
@@ -167,3 +203,19 @@ where j.status in ('posted','reversed')
        and m.entity_type = 'journal_entry'
        and m.entity_id = j.id
   );
+
+update odoo_sync_outbox o
+   set available_at = 'infinity'::timestamptz,
+       updated_at = now()
+  from journal_entries j
+ where o.owner_id = j.owner_id
+   and o.entity_type = 'journal_entry'
+   and o.entity_id = j.id
+   and j.reversal_of_entry_id is not null
+   and o.status in ('pending','failed')
+   and not exists (
+     select 1 from odoo_entity_mappings m
+      where m.owner_id = j.owner_id
+        and m.entity_type = 'journal_entry'
+        and m.entity_id = j.reversal_of_entry_id
+   );
