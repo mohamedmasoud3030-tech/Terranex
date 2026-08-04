@@ -39,18 +39,16 @@ select change_ownership_atomic(
 
 do $$
 declare
- v_distribution uuid;
- v_first_allocation uuid;
- v_second_allocation uuid;
- v_first_payment uuid;
- v_second_payment uuid;
- v_capital uuid;
- v_capital_reversal uuid;
- v_result jsonb;
- v_count integer;
- v_event uuid;
+  v_distribution uuid;
+  v_first_allocation uuid;
+  v_second_allocation uuid;
+  v_first_payment uuid;
+  v_second_payment uuid;
+  v_capital uuid;
+  v_capital_reversal uuid;
+  v_result jsonb;
+  v_count integer;
 begin
-  -- Cash-like rows cannot be created through the legacy generic RPC.
   begin
     perform record_partner_ledger_entry_atomic(
       '40000000-0000-4000-8000-000000000096',
@@ -77,7 +75,6 @@ begin
     raise exception 'FAIL capital bank deposit missing';
   end if;
 
-  -- Exact retry does not duplicate ledger or bank movement.
   perform record_partner_capital_movement_atomic(
     '40000000-0000-4000-8000-000000000097',
     '11111111-1111-4111-8111-111111111194','22222222-2222-4222-8222-222222222194',
@@ -151,27 +148,6 @@ begin
     raise exception 'FAIL final payment did not close distribution';
   end if;
 
-  -- General worker must not claim investor events.
-  set local role postgres;
-  select count(*) into v_count from claim_odoo_sync_batch(
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94',100,'general-test'
-  ) where entity_type in ('distribution','partner_ledger_entry');
-  if v_count<>0 then raise exception 'FAIL general worker claimed investor events'; end if;
-  set local role authenticated;
-  set local request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94';
-
-  -- Completing declaration releases both payment moves.
-  set local role postgres;
-  select id into v_event from odoo_sync_outbox where entity_type='distribution' and entity_id=v_distribution;
-  perform complete_odoo_sync(v_event,'account.move',9401,'{"test":true}'::jsonb);
-  if exists(select 1 from odoo_sync_outbox where entity_type='partner_ledger_entry'
-      and entity_id in(v_first_payment,v_second_payment) and available_at='infinity'::timestamptz) then
-    raise exception 'FAIL declaration mapping did not release distribution payments';
-  end if;
-
-  -- Capital reversal is held until the original capital move is mapped.
-  set local role authenticated;
-  set local request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94';
   v_result:=reverse_partner_ledger_entry_atomic(
     '40000000-0000-4000-8000-000000000102',v_capital,'2026-08-06','تصحيح مساهمة'
   );
@@ -182,19 +158,66 @@ begin
   if (select available_at from odoo_sync_outbox where entity_type='partner_ledger_entry' and entity_id=v_capital_reversal)<>'infinity'::timestamptz then
     raise exception 'FAIL capital reversal not held for original mapping';
   end if;
-  set local role postgres;
+end $$;
+
+set local role postgres;
+do $$
+declare
+  v_distribution uuid;
+  v_capital uuid;
+  v_capital_reversal uuid;
+  v_first_payment uuid;
+  v_second_payment uuid;
+  v_event uuid;
+  v_count integer;
+begin
+  select id into v_distribution from distributions
+   where owner_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94' and notes='اعتماد مجلس الإدارة';
+  select id into v_capital from partner_ledger_entries
+   where owner_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94' and entry_type='capital_contribution' and notes='مساهمة تأسيسية';
+  select id into v_capital_reversal from partner_ledger_entries
+   where owner_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94' and entry_type='reversal' and reversal_of_id=v_capital;
+  select id into v_first_payment from partner_ledger_entries
+   where owner_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94' and entry_type='distribution_payment' and notes='دفع الشريك الأول';
+  select id into v_second_payment from partner_ledger_entries
+   where owner_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94' and entry_type='distribution_payment' and notes='دفع الشريك الثاني';
+
+  select count(*) into v_count from claim_odoo_sync_batch(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94',100,'general-test'
+  ) where entity_type in ('distribution','partner_ledger_entry');
+  if v_count<>0 then raise exception 'FAIL general worker claimed investor events'; end if;
+
+  select id into v_event from odoo_sync_outbox where entity_type='distribution' and entity_id=v_distribution;
+  perform complete_odoo_sync(v_event,'account.move',9401,'{"test":true}'::jsonb);
+  if exists(select 1 from odoo_sync_outbox where entity_type='partner_ledger_entry'
+      and entity_id in(v_first_payment,v_second_payment) and available_at='infinity'::timestamptz) then
+    raise exception 'FAIL declaration mapping did not release distribution payments';
+  end if;
+
   select id into v_event from odoo_sync_outbox where entity_type='partner_ledger_entry' and entity_id=v_capital;
   perform complete_odoo_sync(v_event,'account.move',9402,'{"test":true}'::jsonb);
   if (select available_at from odoo_sync_outbox where entity_type='partner_ledger_entry' and entity_id=v_capital_reversal)='infinity'::timestamptz then
     raise exception 'FAIL original capital mapping did not release reversal';
   end if;
 
-  -- Reverse first distribution payment: allocation and header reopen.
-  set local role postgres;
   select id into v_event from odoo_sync_outbox where entity_type='partner_ledger_entry' and entity_id=v_first_payment;
   perform complete_odoo_sync(v_event,'account.move',9403,'{"test":true}'::jsonb);
-  set local role authenticated;
-  set local request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94';
+end $$;
+
+set local role authenticated;
+set local request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa94';
+do $$
+declare
+  v_distribution uuid;
+  v_first_allocation uuid;
+  v_first_payment uuid;
+begin
+  select id into v_distribution from distributions where notes='اعتماد مجلس الإدارة';
+  select id into v_first_allocation from distribution_allocations
+   where distribution_id=v_distribution and partner_id='22222222-2222-4222-8222-222222222194';
+  select id into v_first_payment from partner_ledger_entries
+   where related_distribution_id=v_distribution and entry_type='distribution_payment' and notes='دفع الشريك الأول';
+
   perform reverse_partner_ledger_entry_atomic(
     '40000000-0000-4000-8000-000000000103',v_first_payment,'2026-08-06','إلغاء دفعة التوزيع'
   );
@@ -206,25 +229,24 @@ begin
   end if;
 end $$;
 
--- Bob cannot see or mutate Alice investor records.
 set local role authenticated;
 set local request.jwt.claim.sub='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb94';
 do $$
 declare v_count integer;
 begin
- select count(*) into v_count from distributions;
- if v_count<>0 then raise exception 'FAIL Bob sees Alice distributions'; end if;
- select count(*) into v_count from partner_ledger_entries;
- if v_count<>0 then raise exception 'FAIL Bob sees Alice partner ledger'; end if;
- begin
-  perform approve_distribution_atomic(
-    '40000000-0000-4000-8000-000000000104',
-    (select id from distributions limit 1),null
-  );
-  raise exception 'FAIL Bob approved Alice distribution';
- exception when others then
-  if SQLERRM like 'FAIL%' then raise; end if;
- end;
+  select count(*) into v_count from distributions;
+  if v_count<>0 then raise exception 'FAIL Bob sees Alice distributions'; end if;
+  select count(*) into v_count from partner_ledger_entries;
+  if v_count<>0 then raise exception 'FAIL Bob sees Alice partner ledger'; end if;
+  begin
+    perform approve_distribution_atomic(
+      '40000000-0000-4000-8000-000000000104',
+      '00000000-0000-4000-8000-000000000001',null
+    );
+    raise exception 'FAIL Bob approved a foreign distribution';
+  exception when others then
+    if SQLERRM like 'FAIL%' then raise; end if;
+  end;
 end $$;
 
 rollback;
