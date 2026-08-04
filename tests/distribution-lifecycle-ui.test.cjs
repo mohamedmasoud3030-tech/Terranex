@@ -20,10 +20,12 @@ test('distribution lifecycle requires explicit approval before due allocation pa
   const source = read('src/features/ownership/DistributionLifecyclePanel.tsx');
 
   assert.match(source, /distribution\.status === 'draft'/);
-  assert.match(source, /approveProfitDistribution\(\{ distribution_id: approvalTarget\.id \}\)/);
+  assert.match(source, /await import\('\.\/service'\)/);
+  assert.match(source, /approveProfitDistribution/);
+  assert.match(source, /approveDistributionOnServer\(approvalTarget\.id\)/);
   assert.match(source, /ConfirmDialog/);
   assert.match(source, /distribution\.status === 'approved' && allocation\.status === 'due'/);
-  assert.match(source, /payDistributionAllocation\(\{/);
+  assert.match(source, /payAllocationOnServer\(\{/);
   assert.match(source, /allocation_id: paymentTarget\.allocation\.id/);
   assert.match(source, /AdaptiveFormSurface/);
 });
@@ -31,8 +33,10 @@ test('distribution lifecycle requires explicit approval before due allocation pa
 test('distribution payment only offers active accounts matching the distribution currency', () => {
   const source = read('src/features/ownership/DistributionLifecyclePanel.tsx');
 
+  assert.match(source, /await import\('\.\.\/banking\/storage'\)/);
   assert.match(source, /listBankAccounts\(\)/);
-  assert.match(source, /!account\.is_archived && account\.currency === paymentTarget\.distribution\.currency/);
+  assert.match(source, /!account\.is_archived && account\.currency === currency/);
+  assert.match(source, /loadEligibleBankAccounts\(paymentTarget\.distribution\.currency\)/);
   assert.match(source, /bank_account_id: bankAccountId/);
   assert.match(source, /payment_date: paymentDate/);
   assert.match(source, /No active.*account is available/);
@@ -41,9 +45,20 @@ test('distribution payment only offers active accounts matching the distribution
 test('distribution lifecycle exposes pending, validation and server failure states', () => {
   const source = read('src/features/ownership/DistributionLifecyclePanel.tsx');
 
-  assert.match(source, /OwnershipServiceError/);
+  assert.match(source, /'message_ar' in error/);
+  assert.match(source, /setApprovalTarget\(null\);[\s\S]*setError\(readableError\(approvalError\)\)/);
   assert.match(source, /FormErrorSummary/);
   assert.match(source, /role="alert"/);
   assert.match(source, /disabled=\{pending \|\| loadingAccounts\}/);
   assert.match(source, /جار تنفيذ العملية ذريًا/);
+});
+
+test('project workspace remains import-safe until the user starts a server operation', () => {
+  const source = read('src/features/ownership/DistributionLifecyclePanel.tsx');
+
+  assert.doesNotMatch(source, /^import .*from '\.\/service';/m);
+  assert.doesNotMatch(source, /^import .*from '\.\.\/banking\/storage';/m);
+  assert.match(source, /async function approveDistributionOnServer/);
+  assert.match(source, /async function payAllocationOnServer/);
+  assert.match(source, /async function loadEligibleBankAccounts/);
 });
