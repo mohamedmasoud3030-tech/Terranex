@@ -139,8 +139,8 @@ test('investor lifecycle separates draft allocation, approval, bank payment and 
   assert.match(migration, /reverse_partner_ledger_entry_atomic/);
   assert.match(migration, /'status','draft','ledger_entry_ids','\[\]'::jsonb/);
   assert.match(migration, /cash and distribution ledger entries require an atomic lifecycle RPC/);
-  assert.match(migration, /reference_type,'partner_capital'/s);
-  assert.match(migration, /reference_type,'distribution_payment'/s);
+  assert.match(migration, /'partner_capital',v_ledger_id/);
+  assert.match(migration, /'distribution_payment',v_ledger_id/);
   assert.match(migration, /partner_ledger_reversal/);
   assert.match(service, /approveProfitDistribution/);
   assert.match(service, /payDistributionAllocation/);
