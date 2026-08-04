@@ -8,7 +8,7 @@
 --   4. Cross-tenant access prevention
 --   5. Ownership-as-of-date query
 --   6. Distribution draft allocation, approval and entitlement lifecycle
---   7. Append-only ledger enforcement
+--   7. Bank-backed capital ledger enforcement
 -- =============================================================================
 \set ON_ERROR_STOP on
 \timing off
@@ -48,7 +48,6 @@ declare
   v_request uuid;
   v_result jsonb;
 begin
-  -- Partner A: 40% entry
   v_request := public.terranex_test_uuid_2b(100);
   perform public.change_ownership_atomic(
     v_request,
@@ -57,7 +56,6 @@ begin
     '2026-01-01', 40, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Partner B: 35% entry
   v_request := public.terranex_test_uuid_2b(101);
   perform public.change_ownership_atomic(
     v_request,
@@ -66,8 +64,6 @@ begin
     '2026-01-01', 35, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Partner C: 30% should succeed (40+35+30 = 105... wait, that's over 100)
-  -- Actually: 40 + 35 = 75, so 30 would be 105. Let's try 25% instead.
   v_request := public.terranex_test_uuid_2b(102);
   perform public.change_ownership_atomic(
     v_request,
@@ -76,7 +72,6 @@ begin
     '2026-01-01', 25, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Now try to increase Partner A to 50%: 50 + 35 + 25 = 110 > 100. Should fail.
   v_request := public.terranex_test_uuid_2b(103);
   begin
     perform public.change_ownership_atomic(
@@ -126,7 +121,6 @@ declare
   v_prev_pct numeric;
   v_new_pct numeric;
 begin
-  -- Entry at 2026-01-01
   v_request := public.terranex_test_uuid_2b(200);
   perform public.change_ownership_atomic(
     v_request,
@@ -135,7 +129,6 @@ begin
     '2026-01-01', 40, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Verify: previous_pct = 0, new_pct = 40
   select previous_pct, new_pct into v_prev_pct, v_new_pct
   from public.equity_change_events
   where project_id = public.terranex_test_uuid_2b(2)
@@ -145,7 +138,6 @@ begin
     raise exception 'FAIL temporal: wrong percentages % / %', v_prev_pct, v_new_pct;
   end if;
 
-  -- Exit at 2026-06-01
   v_request := public.terranex_test_uuid_2b(201);
   perform public.change_ownership_atomic(
     v_request,
@@ -154,14 +146,12 @@ begin
     '2026-06-01', 0, 'exit'::public.terranex_equity_change_type
   );
 
-  -- Verify: now there are 2 equity_change_events
   if (select count(*) from public.equity_change_events
       where project_id = public.terranex_test_uuid_2b(2)
         and partner_id = public.terranex_test_uuid_2b(20)) <> 2 then
     raise exception 'FAIL temporal: expected 2 equity change events';
   end if;
 
-  -- Verify: project_partners has the old one with effective_to and no active record
   if (select count(*) from public.project_partners
       where project_id = public.terranex_test_uuid_2b(2)
         and partner_id = public.terranex_test_uuid_2b(20)
@@ -202,15 +192,14 @@ do $test$
 declare
   v_request uuid;
 begin
-  -- Set role to owner D, try to change ownership of project owned by owner C
   perform set_config('request.jwt.claim.sub', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', true);
 
   v_request := public.terranex_test_uuid_2b(300);
   begin
     perform public.change_ownership_atomic(
       v_request,
-      public.terranex_test_uuid_2b(3), -- owned by C
-      public.terranex_test_uuid_2b(30), -- owned by D
+      public.terranex_test_uuid_2b(3),
+      public.terranex_test_uuid_2b(30),
       '2026-01-01', 50, 'entry'::public.terranex_equity_change_type
     );
     raise exception 'FAIL cross-tenant: cross-owner RPC unexpectedly succeeded';
@@ -251,7 +240,6 @@ declare
   v_count int;
   v_total numeric;
 begin
-  -- Jan 1: Partner 1 at 60%, Partner 2 at 40%
   v_request := public.terranex_test_uuid_2b(400);
   perform public.change_ownership_atomic(
     v_request, public.terranex_test_uuid_2b(4),
@@ -263,28 +251,24 @@ begin
     public.terranex_test_uuid_2b(41), '2026-01-01', 40, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Jun 1: Partner 2 exits (goes to 0%)
   v_request := public.terranex_test_uuid_2b(402);
   perform public.change_ownership_atomic(
     v_request, public.terranex_test_uuid_2b(4),
     public.terranex_test_uuid_2b(41), '2026-06-01', 0, 'exit'::public.terranex_equity_change_type
   );
 
-  -- Query at 2026-03-01: both partners should be active
   select count(*) into v_count
   from public.get_ownership_as_of(public.terranex_test_uuid_2b(4), '2026-03-01');
   if v_count <> 2 then
     raise exception 'FAIL ownership-as-of at Mar: expected 2 partners, got %', v_count;
   end if;
 
-  -- Query at 2026-09-01: only Partner 1 should be active (Partner 2 exited)
   select count(*) into v_count
   from public.get_ownership_as_of(public.terranex_test_uuid_2b(4), '2026-09-01');
   if v_count <> 1 then
     raise exception 'FAIL ownership-as-of at Sep: expected 1 partner, got %', v_count;
   end if;
 
-  -- Query at 2026-09-01: total equity should be 60%
   select sum(equity_pct) into v_total
   from public.get_ownership_as_of(public.terranex_test_uuid_2b(4), '2026-09-01');
   if v_total <> 60 then
@@ -325,7 +309,6 @@ declare
   v_alloc_sum numeric;
   v_total numeric := 1000;
 begin
-  -- Set up ownership: 60% + 40%
   v_request := public.terranex_test_uuid_2b(500);
   perform public.change_ownership_atomic(
     v_request, public.terranex_test_uuid_2b(5),
@@ -337,7 +320,6 @@ begin
     public.terranex_test_uuid_2b(51), '2026-01-01', 40, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Create a draft distribution of 1000 EGP. It freezes allocations only.
   v_request := public.terranex_test_uuid_2b(502);
   select public.record_distribution_atomic(
     v_request,
@@ -355,7 +337,6 @@ begin
     raise exception 'FAIL distribution: new distribution must remain draft';
   end if;
 
-  -- Draft allocations must reconcile to the header total.
   select sum(allocated_amount) into v_alloc_sum
   from public.distribution_allocations
   where distribution_id = v_distribution_id;
@@ -364,7 +345,6 @@ begin
     raise exception 'FAIL distribution: allocations sum % does not equal total %', v_alloc_sum, v_total;
   end if;
 
-  -- Verify individual allocations: 60% of 1000 = 600, 40% of 1000 = 400.
   if not exists (
     select 1 from public.distribution_allocations
     where distribution_id = v_distribution_id
@@ -383,7 +363,6 @@ begin
     raise exception 'FAIL distribution: partner 2 allocation wrong';
   end if;
 
-  -- Draft distributions must not create accounting entitlements.
   if exists (
     select 1 from public.partner_ledger_entries
     where related_distribution_id = v_distribution_id
@@ -392,7 +371,6 @@ begin
     raise exception 'FAIL distribution: draft unexpectedly created entitlement ledger entries';
   end if;
 
-  -- Approval posts the frozen partner entitlements atomically.
   v_request := public.terranex_test_uuid_2b(503);
   select public.approve_distribution_atomic(
     v_request,
@@ -449,7 +427,7 @@ end;
 $test$;
 rollback;
 
--- ═══ TEST 6: append-only ledger ═════════════════════════════════════════════
+-- ═══ TEST 6: bank-backed capital ledger ═════════════════════════════════════
 begin;
 set local role postgres;
 
@@ -472,46 +450,72 @@ values (
   'شريك حساب', 'equity_partner'
 );
 
+insert into public.bank_accounts (
+  id, owner_id, name_ar, name_en, account_type, currency, opening_balance, opening_date
+) values (
+  public.terranex_test_uuid_2b(61),
+  '11111111-1111-4111-8111-111111111111',
+  'خزينة اختبار', 'Test Cash', 'cash', 'EGP', 0, '2026-01-01'
+);
+
 do $test$
 declare
   v_request uuid;
   v_result jsonb;
-  v_entry_id uuid;
   v_count int;
   v_balance numeric;
 begin
-  -- Capital contribution: 50000
   v_request := public.terranex_test_uuid_2b(600);
-  select public.record_partner_ledger_entry_atomic(
+  select public.record_partner_capital_movement_atomic(
     v_request,
     public.terranex_test_uuid_2b(6),
     public.terranex_test_uuid_2b(60),
     'capital_contribution'::public.terranex_ledger_entry_type,
-    50000, 'EGP'::public.terranex_currency, 1, '2026-01-15'
+    50000, 'EGP'::public.terranex_currency, 1, '2026-01-15',
+    public.terranex_test_uuid_2b(61)
   ) into v_result;
 
-  v_entry_id := (v_result->>'ledger_entry_id')::uuid;
+  if (v_result->>'bank_transaction_id') is null then
+    raise exception 'FAIL capital: contribution did not create bank transaction';
+  end if;
 
-  -- Withdrawal: 10000
   v_request := public.terranex_test_uuid_2b(601);
-  perform public.record_partner_ledger_entry_atomic(
+  perform public.record_partner_capital_movement_atomic(
     v_request,
     public.terranex_test_uuid_2b(6),
     public.terranex_test_uuid_2b(60),
     'withdrawal'::public.terranex_ledger_entry_type,
-    10000, 'EGP'::public.terranex_currency, 1, '2026-03-01'
+    10000, 'EGP'::public.terranex_currency, 1, '2026-03-01',
+    public.terranex_test_uuid_2b(61)
   );
 
-  -- Verify 2 entries exist
   select count(*) into v_count
   from public.partner_ledger_entries
   where project_id = public.terranex_test_uuid_2b(6)
-    and partner_id = public.terranex_test_uuid_2b(60);
+    and partner_id = public.terranex_test_uuid_2b(60)
+    and bank_account_id = public.terranex_test_uuid_2b(61);
   if v_count <> 2 then
-    raise exception 'FAIL ledger: expected 2 entries, got %', v_count;
+    raise exception 'FAIL capital ledger: expected 2 bank-backed entries, got %', v_count;
   end if;
 
-  -- Verify balance calculation: contribution - withdrawal = 40000
+  if (select count(*) from public.bank_transactions
+      where bank_account_id = public.terranex_test_uuid_2b(61)
+        and reference_type = 'partner_capital') <> 2 then
+    raise exception 'FAIL capital bank: expected 2 partner capital bank transactions';
+  end if;
+
+  if not exists (
+    select 1 from public.bank_transactions
+    where bank_account_id = public.terranex_test_uuid_2b(61)
+      and direction = 'deposit' and amount = 50000
+  ) or not exists (
+    select 1 from public.bank_transactions
+    where bank_account_id = public.terranex_test_uuid_2b(61)
+      and direction = 'withdrawal' and amount = 10000
+  ) then
+    raise exception 'FAIL capital bank: contribution/withdrawal directions or amounts are wrong';
+  end if;
+
   select coalesce(sum(case when entry_type = 'capital_contribution' then amount_egp else 0 end), 0)
        - coalesce(sum(case when entry_type = 'withdrawal' then amount_egp else 0 end), 0)
     into v_balance
@@ -521,10 +525,10 @@ begin
     and entry_type not in ('reversal'::public.terranex_ledger_entry_type);
 
   if v_balance <> 40000 then
-    raise exception 'FAIL ledger balance: expected 40000, got %', v_balance;
+    raise exception 'FAIL capital balance: expected 40000, got %', v_balance;
   end if;
 
-  raise notice 'PASS append-only ledger: entries created, balance correct';
+  raise notice 'PASS bank-backed capital ledger: atomic cash movements and balance correct';
 end;
 $test$;
 rollback;
@@ -559,7 +563,6 @@ declare
   v_result2 jsonb;
   v_count int;
 begin
-  -- First call
   select public.change_ownership_atomic(
     v_request,
     public.terranex_test_uuid_2b(7),
@@ -567,7 +570,6 @@ begin
     '2026-01-01', 50, 'entry'::public.terranex_equity_change_type
   ) into v_result1;
 
-  -- Second call with same request_id
   select public.change_ownership_atomic(
     v_request,
     public.terranex_test_uuid_2b(7),
@@ -575,12 +577,10 @@ begin
     '2026-01-01', 50, 'entry'::public.terranex_equity_change_type
   ) into v_result2;
 
-  -- Results should be identical
   if v_result1 is distinct from v_result2 then
     raise exception 'FAIL idempotency: results differ';
   end if;
 
-  -- Only one equity_change_event should exist
   select count(*) into v_count
   from public.equity_change_events
   where project_id = public.terranex_test_uuid_2b(7)
@@ -605,6 +605,7 @@ begin
     'record_distribution_atomic',
     'approve_distribution_atomic',
     'record_partner_ledger_entry_atomic',
+    'record_partner_capital_movement_atomic',
     'get_ownership_as_of'
   ] loop
     if not exists (
@@ -619,12 +620,12 @@ begin
     v_count := v_count + 1;
   end loop;
 
-  -- Verify search_path is pinned on SECURITY DEFINER functions
   foreach v_fn in array array[
     'change_ownership_atomic',
     'record_distribution_atomic',
     'approve_distribution_atomic',
-    'record_partner_ledger_entry_atomic'
+    'record_partner_ledger_entry_atomic',
+    'record_partner_capital_movement_atomic'
   ] loop
     if not exists (
       select 1
@@ -638,7 +639,6 @@ begin
     end if;
   end loop;
 
-  -- Verify RLS is enabled and forced on all four tables
   if not exists (
     select 1 from pg_class
     where relname = 'equity_change_events'
