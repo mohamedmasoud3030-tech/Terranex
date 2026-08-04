@@ -141,7 +141,7 @@ test('profitability slices partner entitlement by transaction date and keeps dis
     { id: 't-jan', project_id: project.id, direction: 'income', category: 'sale', amount: 100, currency: 'EGP', fx_rate: 1, amount_egp: 100, transaction_date: '2026-02-01', created_at: '', updated_at: '' },
     { id: 't-aug', project_id: project.id, direction: 'income', category: 'sale', amount: 100, currency: 'EGP', fx_rate: 1, amount_egp: 100, transaction_date: '2026-08-01', created_at: '', updated_at: '' },
   ];
-  const distributions = [{ id: 'dist-1', project_id: project.id, distribution_date: '2026-09-01', ownership_as_of_date: '2026-08-01', total_amount: 80, currency: 'EGP', fx_rate: 1, total_amount_egp: 80, status: 'draft', created_by: 'u', created_at: '' }];
+  const distributions = [{ id: 'dist-1', project_id: project.id, distribution_date: '2026-09-01', ownership_as_of_date: '2026-08-01', total_amount: 80, currency: 'EGP', fx_rate: 1, total_amount_egp: 80, status: 'approved', created_by: 'u', created_at: '' }];
 
   const report = computeProjectProfitability(project, transactions, [], projectPartners, [partnerA, partnerB], {
     as_of_date: '2026-09-30',

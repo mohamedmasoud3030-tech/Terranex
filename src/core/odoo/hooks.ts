@@ -2,8 +2,8 @@
  * Browser-safe Odoo synchronization entry point.
  *
  * Business writes enqueue outbox rows inside Postgres triggers. The browser
- * only asks the authenticated Supabase Edge Function to drain this tenant's
- * queue; Odoo credentials remain server-side secrets.
+ * only asks authenticated Supabase Edge Functions to drain this tenant's
+ * queues; Odoo credentials remain server-side secrets.
  */
 import { requireClient } from '../storage/supabaseClientRegistry';
 import type { Partner, Project, Transaction } from '../types/domain';
@@ -23,21 +23,31 @@ export async function getRuntimeOdooClient(): Promise<null> {
   return null;
 }
 
+async function invokeWorker(name: 'odoo-sync' | 'odoo-investor-sync', limit: number): Promise<OdooSyncRunResult> {
+  const supabase = requireClient();
+  const { data, error } = await supabase.functions.invoke(name, { body: { limit } });
+  if (error) throw new Error(`تعذر تشغيل مزامنة Odoo (${name}): ${error.message}`);
+  return (data ?? { processed: 0 }) as OdooSyncRunResult;
+}
+
 /**
- * Drain pending Odoo outbox events for the signed-in owner.
- * Concurrent UI calls share one request so form saves cannot start a worker
- * stampede. A failed sync never rolls back the already-committed Terranex row;
- * the outbox retains the failure and retries with backoff.
+ * Drain operational dependencies first, then investor accounting. This order
+ * ensures partner, project, and bank-journal mappings exist before capital or
+ * distribution moves are posted. Concurrent UI calls share one request.
  */
 export function requestOdooSync(limit = 20): Promise<OdooSyncRunResult | null> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
-    const supabase = requireClient();
-    const { data, error } = await supabase.functions.invoke('odoo-sync', {
-      body: { limit: Math.max(1, Math.min(100, Math.trunc(limit))) },
-    });
-    if (error) throw new Error(`تعذر تشغيل مزامنة Odoo: ${error.message}`);
-    return (data ?? null) as OdooSyncRunResult | null;
+    const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+    const general = await invokeWorker('odoo-sync', safeLimit);
+    const investor = await invokeWorker('odoo-investor-sync', safeLimit);
+    return {
+      processed: general.processed + investor.processed,
+      synced: (general.synced ?? 0) + (investor.synced ?? 0),
+      failed: (general.failed ?? 0) + (investor.failed ?? 0),
+      skipped: Boolean(general.skipped && investor.skipped),
+      reason: [general.reason, investor.reason].filter(Boolean).join(' | ') || undefined,
+    };
   })().finally(() => {
     inFlight = null;
   });
@@ -48,7 +58,7 @@ async function drainWithoutBlockingBusinessWrite(): Promise<null> {
   try {
     await requestOdooSync();
   } catch {
-    // The durable outbox remains pending/failed and can be retried later.
+    // Durable outbox rows remain pending/failed and can be retried later.
   }
   return null;
 }
@@ -64,8 +74,9 @@ export async function syncProjectToOdoo(_project: Project): Promise<number | nul
 }
 
 /**
- * Transaction accounting is the next bridge slice. Keep this call browser-safe
- * without claiming that operational transactions are already posted to Odoo.
+ * Generic operational transactions are still intentionally excluded. Explicit
+ * invoices, payments, manual vouchers, capital, and distributions have their
+ * own authoritative accounting boundaries.
  */
 export async function syncTransactionToOdoo(
   _transaction: Transaction,

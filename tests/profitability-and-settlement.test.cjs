@@ -46,6 +46,27 @@ test('profitability keeps accounting profit separate from open cash exposure', (
   assert.equal(result.partner_splits[0].share_egp, 300);
 });
 
+test('draft distributions do not reduce undistributed profit or create partner entitlement', () => {
+  const ownership = [{ id: 'pp-1', project_id: project.id, partner_id: 'partner-1', equity_pct: 100, effective_from: '2026-01-01' }];
+  const partners = [{ id: 'partner-1', name_ar: 'شريك', category: 'equity_partner', created_at: '2026-01-01' }];
+  const draft = {
+    id: 'dist-draft', project_id: project.id, distribution_date: '2026-01-10', ownership_as_of_date: '2026-01-10',
+    total_amount: 300, currency: 'EGP', fx_rate: 1, total_amount_egp: 300, status: 'draft', created_at: '2026-01-10', updated_at: '2026-01-10',
+  };
+  const allocation = {
+    id: 'alloc-draft', distribution_id: draft.id, partner_id: 'partner-1', equity_pct_snapshot: 100,
+    allocated_amount: 300, allocated_amount_egp: 300, status: 'due', created_at: '2026-01-10', updated_at: '2026-01-10',
+  };
+  const result = computeProjectProfitability(
+    project, transactions, obligations, ownership, partners,
+    { distributions: [draft], distributionAllocations: [allocation], partnerLedgerEntries: [] },
+  );
+  assert.equal(result.distributed_profit_egp, 0);
+  assert.equal(result.undistributed_profit_egp, 750);
+  assert.equal(result.unpaid_distribution_amounts_egp, 0);
+  assert.equal(result.partner_splits[0].distributed_egp, 0);
+});
+
 test('global summary aggregates projects and excludes closed obligations from exposure', () => {
   const second = { ...project, id: 'project-2', sector_id: 'agriculture', name_ar: 'مشروع ثان', name_en: 'Second project' };
   const result = computeGlobalSummary(

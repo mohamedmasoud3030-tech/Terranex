@@ -1,5 +1,6 @@
 import { requireDateOnly } from '../../core/lib/dateOnly';
 import { translateServerError } from '../../core/lib/serverErrorTranslator';
+import { requestOdooSync } from '../../core/odoo/hooks';
 import { requireClient } from '../../core/storage/supabaseClientRegistry';
 import type {
   Currency,
@@ -27,7 +28,11 @@ import { calculatePartnerLedgerSummary, type PartnerLedgerSummary } from './mode
 export const OWNERSHIP_RPC_NAMES = [
   'change_ownership_atomic',
   'record_distribution_atomic',
+  'approve_distribution_atomic',
+  'pay_distribution_allocation_atomic',
+  'record_partner_capital_movement_atomic',
   'record_partner_ledger_entry_atomic',
+  'reverse_partner_ledger_entry_atomic',
   'get_ownership_as_of',
 ] as const;
 
@@ -59,9 +64,7 @@ export class OwnershipServiceError extends Error {
   }
 }
 
-export interface OwnershipMutationContext {
-  requestId?: string;
-}
+export interface OwnershipMutationContext { requestId?: string }
 
 export interface ChangeOwnershipInput extends OwnershipMutationContext {
   project_id: string;
@@ -144,6 +147,7 @@ export interface RecordPartnerLedgerEntryInput extends OwnershipMutationContext 
   currency: Currency;
   fx_rate: number;
   posting_date: string;
+  bank_account_id?: string;
   supporting_document_id?: string;
   related_equity_event_id?: string;
   related_distribution_id?: string;
@@ -169,8 +173,42 @@ export interface RecordPartnerLedgerEntryRpcParams extends RpcParams {
 
 export interface RecordPartnerLedgerEntryResult {
   ledger_entry_id: string;
+  bank_transaction_id?: string;
   amount_egp: number;
   entry_type: PartnerLedgerEntryType;
+}
+
+export interface ApproveDistributionInput extends OwnershipMutationContext {
+  distribution_id: string;
+  notes?: string;
+}
+export interface ApproveDistributionResult {
+  distribution_id: string;
+  status: 'approved';
+  ledger_entry_ids: string[];
+}
+export interface PayDistributionAllocationInput extends OwnershipMutationContext {
+  allocation_id: string;
+  bank_account_id: string;
+  payment_date: string;
+  payment_document_id?: string;
+  notes?: string;
+}
+export interface PayDistributionAllocationResult {
+  allocation_id: string;
+  ledger_entry_id: string;
+  bank_transaction_id: string;
+  distribution_status: 'approved' | 'paid';
+}
+export interface ReversePartnerLedgerInput extends OwnershipMutationContext {
+  entry_id: string;
+  posting_date: string;
+  reason: string;
+}
+export interface ReversePartnerLedgerResult {
+  original_entry_id: string;
+  reversal_entry_id: string;
+  bank_transaction_id?: string;
 }
 
 const ownershipHydrations = [
@@ -185,9 +223,7 @@ const ownershipHydrations = [
   obligationsHydration,
 ] as const;
 
-export function createOwnershipRequestId(): string {
-  return crypto.randomUUID();
-}
+export function createOwnershipRequestId(): string { return crypto.randomUUID(); }
 
 async function rehydrateOwnershipStores(): Promise<void> {
   await Promise.all(ownershipHydrations.map((store) => store.rehydrate()));
@@ -204,7 +240,6 @@ function extractMessage(error: unknown): string {
   if (typeof error === 'object') return JSON.stringify(error);
   return String(error);
 }
-
 function extractCode(error: unknown): string | undefined {
   if (error && typeof error === 'object' && 'code' in error) {
     const value = error.code;
@@ -212,11 +247,10 @@ function extractCode(error: unknown): string | undefined {
   }
   return undefined;
 }
-
 function classifyRpcError(error: unknown): OwnershipErrorKind {
   const code = extractCode(error);
   const message = extractMessage(error).toLowerCase();
-  if (code === '23514' || message.includes('must') || message.includes('cannot') || message.includes('invalid') || message.includes('total equity')) return 'validation';
+  if (code === '23514' || code === '0A000' || message.includes('must') || message.includes('cannot') || message.includes('invalid') || message.includes('total equity')) return 'validation';
   if (code === '42501' || message.includes('permission') || message.includes('not authorized') || message.includes('rls')) return 'authorization';
   if (code === '23505' || code === '40001' || code === '40P01' || message.includes('duplicate') || message.includes('conflict')) return 'conflict';
   if (code === 'P0002' || message.includes('not found')) return 'not_found';
@@ -234,6 +268,13 @@ const OWNERSHIP_ERROR_TRANSLATIONS: Array<{ includes: string; message: string }>
   { includes: 'lower percentage', message: 'عملية التخفيض يجب أن تقلل النسبة عن النسبة الحالية.' },
   { includes: 'ownership_as_of_date cannot be after distribution_date', message: 'تاريخ الملكية المستخدم للتوزيع يجب أن يسبق تاريخ التوزيع أو يساويه.' },
   { includes: 'distribution amount must be positive', message: 'مبلغ التوزيع يجب أن يكون أكبر من صفر.' },
+  { includes: 'only draft distributions can be approved', message: 'لا يمكن اعتماد هذا التوزيع لأنه ليس في حالة مسودة.' },
+  { includes: 'distribution must be approved before payment', message: 'يجب اعتماد التوزيع قبل دفع حصة الشريك.' },
+  { includes: 'distribution allocation is not due', message: 'هذه الحصة مدفوعة أو معكوسة بالفعل.' },
+  { includes: 'currency must match the selected bank account', message: 'عملة الحركة لا تطابق عملة الحساب البنكي المختار.' },
+  { includes: 'cash and distribution ledger entries require', message: 'حركات رأس المال والتوزيعات يجب تسجيلها من التدفق البنكي المعتمد.' },
+  { includes: 'reversal reason is required', message: 'سبب العكس مطلوب.' },
+  { includes: 'already reversed', message: 'تم عكس هذا القيد من قبل.' },
   { includes: 'ledger entry amount must be positive', message: 'مبلغ حركة الشريك يجب أن يكون أكبر من صفر.' },
   { includes: 'project not found', message: 'المشروع غير موجود أو لا تملك صلاحية الوصول إليه.' },
   { includes: 'reversal target entry not found', message: 'قيد العكس غير موجود أو لا تملك صلاحية الوصول إليه.' },
@@ -246,19 +287,16 @@ const ERROR_KIND_MESSAGES: Record<Exclude<OwnershipErrorKind, 'validation'>, str
   not_found: 'السجل المطلوب غير موجود أو لا يمكن الوصول إليه.',
   unknown: 'تعذر تنفيذ عملية الملكية. تمت إعادة تحميل البيانات، ويمكن مراجعة الخطأ الفني في أدوات التشخيص.',
 };
-
 function arabicMessageFor(kind: OwnershipErrorKind, error: unknown): string {
   const message = extractMessage(error).toLowerCase();
   const translated = OWNERSHIP_ERROR_TRANSLATIONS.find((item) => message.includes(item.includes));
   if (translated) return translated.message;
   return kind === 'validation' ? translateServerError(error) : ERROR_KIND_MESSAGES[kind];
 }
-
 function toOwnershipError(rpc: OwnershipRpcName, params: RpcParams, error: unknown): OwnershipServiceError {
   const kind = classifyRpcError(error);
   return new OwnershipServiceError(kind, arabicMessageFor(kind, error), { rpc, params, original: error });
 }
-
 function unwrapObjectResult<T>(data: unknown): T {
   if (Array.isArray(data)) {
     if (data.length !== 1) throw new Error('استجابة الخادم غير متوقعة لعملية الملكية.');
@@ -266,12 +304,10 @@ function unwrapObjectResult<T>(data: unknown): T {
   }
   return data as T;
 }
-
 function unwrapArrayResult<T>(data: unknown): T[] {
   if (!Array.isArray(data)) throw new Error('استجابة الخادم غير متوقعة لاستعلام الملكية.');
   return data as T[];
 }
-
 async function invokeOwnershipRpc<T>(rpc: OwnershipRpcName, params: RpcParams): Promise<T> {
   try {
     const { data, error } = await requireClient().rpc(rpc, params);
@@ -283,7 +319,6 @@ async function invokeOwnershipRpc<T>(rpc: OwnershipRpcName, params: RpcParams): 
     throw toOwnershipError(rpc, params, error);
   }
 }
-
 async function queryOwnershipRpc<T>(rpc: OwnershipRpcName, params: RpcParams): Promise<T[]> {
   try {
     const { data, error } = await requireClient().rpc(rpc, params);
@@ -298,130 +333,159 @@ async function queryOwnershipRpc<T>(rpc: OwnershipRpcName, params: RpcParams): P
 
 export function buildChangeOwnershipParams(input: ChangeOwnershipInput): ChangeOwnershipRpcParams {
   return {
-    p_request_id: input.requestId ?? createOwnershipRequestId(),
-    p_project_id: input.project_id,
-    p_partner_id: input.partner_id,
-    p_effective_date: requireDateOnly(input.effective_date, 'تاريخ سريان الملكية'),
-    p_new_pct: input.new_pct,
-    p_change_type: input.change_type,
-    p_consideration_amount: input.consideration_amount,
-    p_consideration_currency: input.consideration_currency,
+    p_request_id: input.requestId ?? createOwnershipRequestId(), p_project_id: input.project_id,
+    p_partner_id: input.partner_id, p_effective_date: requireDateOnly(input.effective_date, 'تاريخ سريان الملكية'),
+    p_new_pct: input.new_pct, p_change_type: input.change_type,
+    p_consideration_amount: input.consideration_amount, p_consideration_currency: input.consideration_currency,
     p_supporting_document_id: input.supporting_document_id || undefined,
-    p_reason: input.reason || undefined,
-    p_notes: input.notes || undefined,
+    p_reason: input.reason || undefined, p_notes: input.notes || undefined,
   };
 }
-
 export function buildRecordDistributionParams(input: RecordDistributionInput): RecordDistributionRpcParams {
   return {
-    p_request_id: input.requestId ?? createOwnershipRequestId(),
-    p_project_id: input.project_id,
+    p_request_id: input.requestId ?? createOwnershipRequestId(), p_project_id: input.project_id,
     p_distribution_date: requireDateOnly(input.distribution_date, 'تاريخ التوزيع'),
     p_ownership_as_of_date: requireDateOnly(input.ownership_as_of_date, 'تاريخ ملكية التوزيع'),
-    p_total_amount: input.total_amount,
-    p_currency: input.currency,
-    p_fx_rate: input.fx_rate,
-    p_notes: input.notes || undefined,
-    p_supporting_document_id: input.supporting_document_id || undefined,
+    p_total_amount: input.total_amount, p_currency: input.currency, p_fx_rate: input.fx_rate,
+    p_notes: input.notes || undefined, p_supporting_document_id: input.supporting_document_id || undefined,
   };
 }
-
 export function buildRecordPartnerLedgerEntryParams(input: RecordPartnerLedgerEntryInput): RecordPartnerLedgerEntryRpcParams {
   return {
-    p_request_id: input.requestId ?? createOwnershipRequestId(),
-    p_project_id: input.project_id,
-    p_partner_id: input.partner_id,
-    p_entry_type: input.entry_type,
-    p_amount: input.amount,
-    p_currency: input.currency,
-    p_fx_rate: input.fx_rate,
+    p_request_id: input.requestId ?? createOwnershipRequestId(), p_project_id: input.project_id,
+    p_partner_id: input.partner_id, p_entry_type: input.entry_type, p_amount: input.amount,
+    p_currency: input.currency, p_fx_rate: input.fx_rate,
     p_posting_date: requireDateOnly(input.posting_date, 'تاريخ القيد'),
     p_supporting_document_id: input.supporting_document_id || undefined,
     p_related_equity_event_id: input.related_equity_event_id || undefined,
     p_related_distribution_id: input.related_distribution_id || undefined,
-    p_notes: input.notes || undefined,
-    p_reversal_of_id: input.reversal_of_id || undefined,
+    p_notes: input.notes || undefined, p_reversal_of_id: input.reversal_of_id || undefined,
   };
 }
 
 export async function changeOwnership(input: ChangeOwnershipInput): Promise<ChangeOwnershipResult> {
   return invokeOwnershipRpc<ChangeOwnershipResult>('change_ownership_atomic', buildChangeOwnershipParams(input));
 }
-
 export async function enterPartnerIntoProject(input: Omit<ChangeOwnershipInput, 'change_type'>): Promise<ChangeOwnershipResult> {
   return changeOwnership({ ...input, change_type: 'entry' });
 }
-
 export async function increaseOwnership(input: Omit<ChangeOwnershipInput, 'change_type'>): Promise<ChangeOwnershipResult> {
   return changeOwnership({ ...input, change_type: 'increase' });
 }
-
 export async function decreaseOwnership(input: Omit<ChangeOwnershipInput, 'change_type'>): Promise<ChangeOwnershipResult> {
   return changeOwnership({ ...input, change_type: 'decrease' });
 }
-
 export async function exitPartnerFromProject(input: Omit<ChangeOwnershipInput, 'change_type' | 'new_pct'>): Promise<ChangeOwnershipResult> {
   return changeOwnership({ ...input, change_type: 'exit', new_pct: 0 });
 }
-
 export async function reenterPartnerIntoProject(input: Omit<ChangeOwnershipInput, 'change_type'>): Promise<ChangeOwnershipResult> {
   return changeOwnership({ ...input, change_type: 'entry' });
 }
-
 export async function getOwnershipAsOf(projectId: string, asOfDate: string): Promise<OwnershipAsOfRow[]> {
   return queryOwnershipRpc<OwnershipAsOfRow>('get_ownership_as_of', {
-    p_project_id: projectId,
-    p_as_of_date: requireDateOnly(asOfDate, 'تاريخ الملكية'),
+    p_project_id: projectId, p_as_of_date: requireDateOnly(asOfDate, 'تاريخ الملكية'),
   });
 }
 
 export async function createProfitDistribution(input: RecordDistributionInput): Promise<RecordDistributionResult> {
   return invokeOwnershipRpc<RecordDistributionResult>('record_distribution_atomic', buildRecordDistributionParams(input));
 }
+export async function approveProfitDistribution(input: ApproveDistributionInput): Promise<ApproveDistributionResult> {
+  const result = await invokeOwnershipRpc<ApproveDistributionResult>('approve_distribution_atomic', {
+    p_request_id: input.requestId ?? createOwnershipRequestId(),
+    p_distribution_id: input.distribution_id,
+    p_notes: input.notes || undefined,
+  });
+  void requestOdooSync();
+  return result;
+}
+export async function payDistributionAllocation(input: PayDistributionAllocationInput): Promise<PayDistributionAllocationResult> {
+  const result = await invokeOwnershipRpc<PayDistributionAllocationResult>('pay_distribution_allocation_atomic', {
+    p_request_id: input.requestId ?? createOwnershipRequestId(),
+    p_allocation_id: input.allocation_id,
+    p_bank_account_id: input.bank_account_id,
+    p_payment_date: requireDateOnly(input.payment_date, 'تاريخ دفع التوزيع'),
+    p_payment_document_id: input.payment_document_id || undefined,
+    p_notes: input.notes || undefined,
+  });
+  void requestOdooSync();
+  return result;
+}
 
 export async function recordPartnerLedgerEntry(input: RecordPartnerLedgerEntryInput): Promise<RecordPartnerLedgerEntryResult> {
+  if (input.entry_type === 'distribution_entitlement' || input.entry_type === 'distribution_payment') {
+    throw new Error('استحقاقات ودفعات التوزيع تُدار فقط من دورة اعتماد ودفع التوزيع.');
+  }
+  if (input.entry_type === 'capital_contribution' || input.entry_type === 'withdrawal') {
+    if (!input.bank_account_id) throw new Error('اختر حساب البنك أو الخزينة لحركة رأس المال.');
+    const result = await invokeOwnershipRpc<RecordPartnerLedgerEntryResult>('record_partner_capital_movement_atomic', {
+      p_request_id: input.requestId ?? createOwnershipRequestId(),
+      p_project_id: input.project_id,
+      p_partner_id: input.partner_id,
+      p_entry_type: input.entry_type,
+      p_amount: input.amount,
+      p_currency: input.currency,
+      p_fx_rate: input.fx_rate,
+      p_posting_date: requireDateOnly(input.posting_date, 'تاريخ حركة رأس المال'),
+      p_bank_account_id: input.bank_account_id,
+      p_supporting_document_id: input.supporting_document_id || undefined,
+      p_related_equity_event_id: input.related_equity_event_id || undefined,
+      p_notes: input.notes || undefined,
+    });
+    void requestOdooSync();
+    return result;
+  }
+  if (input.entry_type === 'reversal') {
+    if (!input.reversal_of_id) throw new Error('اختر القيد الأصلي المطلوب عكسه.');
+    const result = await reversePartnerLedgerEntry({
+      requestId: input.requestId,
+      entry_id: input.reversal_of_id,
+      posting_date: input.posting_date,
+      reason: input.notes ?? '',
+    });
+    return {
+      ledger_entry_id: result.reversal_entry_id,
+      bank_transaction_id: result.bank_transaction_id,
+      amount_egp: input.amount * input.fx_rate,
+      entry_type: 'reversal',
+    };
+  }
   return invokeOwnershipRpc<RecordPartnerLedgerEntryResult>(
-    'record_partner_ledger_entry_atomic',
-    buildRecordPartnerLedgerEntryParams(input),
+    'record_partner_ledger_entry_atomic', buildRecordPartnerLedgerEntryParams(input),
   );
 }
 
+export async function reversePartnerLedgerEntry(input: ReversePartnerLedgerInput): Promise<ReversePartnerLedgerResult> {
+  const result = await invokeOwnershipRpc<ReversePartnerLedgerResult>('reverse_partner_ledger_entry_atomic', {
+    p_request_id: input.requestId ?? createOwnershipRequestId(),
+    p_entry_id: input.entry_id,
+    p_posting_date: requireDateOnly(input.posting_date, 'تاريخ عكس القيد'),
+    p_reason: input.reason,
+  });
+  void requestOdooSync();
+  return result;
+}
 export async function recordPartnerContribution(input: Omit<RecordPartnerLedgerEntryInput, 'entry_type'>): Promise<RecordPartnerLedgerEntryResult> {
   return recordPartnerLedgerEntry({ ...input, entry_type: 'capital_contribution' });
 }
-
 export async function recordPartnerWithdrawal(input: Omit<RecordPartnerLedgerEntryInput, 'entry_type'>): Promise<RecordPartnerLedgerEntryResult> {
   return recordPartnerLedgerEntry({ ...input, entry_type: 'withdrawal' });
-}
-
-export async function recordPartnerProfitEntitlement(input: Omit<RecordPartnerLedgerEntryInput, 'entry_type'>): Promise<RecordPartnerLedgerEntryResult> {
-  return recordPartnerLedgerEntry({ ...input, entry_type: 'distribution_entitlement' });
-}
-
-export async function recordPartnerPayment(input: Omit<RecordPartnerLedgerEntryInput, 'entry_type'>): Promise<RecordPartnerLedgerEntryResult> {
-  return recordPartnerLedgerEntry({ ...input, entry_type: 'distribution_payment' });
 }
 
 export function retrieveDistributionAllocations(distributionId: string): DistributionAllocation[] {
   return distributionAllocationsStorage.getByDistribution(distributionId);
 }
-
 export function retrievePartnerLedgerHistory(partnerId: string, projectId?: string): PartnerLedgerEntry[] {
   const rows = partnerLedgerEntriesStorage.getByPartner(partnerId);
   return projectId ? rows.filter((entry) => entry.project_id === projectId) : rows;
 }
-
 export function calculateCurrentPartnerLedgerBalance(partnerId: string, projectId?: string): number {
   return calculateCurrentPartnerLedgerSummary(partnerId, projectId).current_balance_egp;
 }
-
 export function calculateCurrentPartnerLedgerSummary(partnerId: string, projectId?: string): PartnerLedgerSummary {
   return calculatePartnerLedgerSummary(retrievePartnerLedgerHistory(partnerId, projectId));
 }
-
 export function retrievePartnerDistributions(partnerId: string): Distribution[] {
-  const allocationDistributionIds = new Set(
-    distributionAllocationsStorage.getByPartner(partnerId).map((allocation) => allocation.distribution_id),
-  );
-  return distributionsStorage.getAll().filter((distribution) => allocationDistributionIds.has(distribution.id));
+  const ids = new Set(distributionAllocationsStorage.getByPartner(partnerId).map(row => row.distribution_id));
+  return distributionsStorage.getAll().filter(row => ids.has(row.id));
 }
