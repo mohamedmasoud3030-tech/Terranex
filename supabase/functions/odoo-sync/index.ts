@@ -1,6 +1,15 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
-type EntityType = 'partner' | 'project' | 'sales_invoice' | 'purchase_invoice';
+type EntityType =
+  | 'partner'
+  | 'project'
+  | 'sales_invoice'
+  | 'purchase_invoice'
+  | 'bank_account'
+  | 'sales_payment'
+  | 'purchase_payment';
+type InvoiceEntityType = 'sales_invoice' | 'purchase_invoice';
+type PaymentEntityType = 'sales_payment' | 'purchase_payment';
 type Operation = 'upsert' | 'void';
 
 interface OutboxEvent {
@@ -15,6 +24,11 @@ interface OutboxEvent {
 interface MappingRow {
   odoo_model: string;
   odoo_record_id: number;
+}
+
+interface OdooAction {
+  res_id?: number;
+  domain?: unknown;
 }
 
 interface JsonRpcResponse<T> {
@@ -95,7 +109,12 @@ class OdooServerClient {
     return uid;
   }
 
-  async callKw<T>(model: string, method: string, args: unknown[] = [], kwargs: Record<string, unknown> = {}): Promise<T> {
+  async callKw<T>(
+    model: string,
+    method: string,
+    args: unknown[] = [],
+    kwargs: Record<string, unknown> = {},
+  ): Promise<T> {
     const uid = await this.login();
     return this.rpc<T>('object', 'execute_kw', [
       this.db,
@@ -108,8 +127,12 @@ class OdooServerClient {
     ]);
   }
 
-  async create(model: string, values: Record<string, unknown>): Promise<number> {
-    return this.callKw<number>(model, 'create', [values]);
+  async create(
+    model: string,
+    values: Record<string, unknown>,
+    context?: Record<string, unknown>,
+  ): Promise<number> {
+    return this.callKw<number>(model, 'create', [values], context ? { context } : {});
   }
 
   async write(model: string, id: number, values: Record<string, unknown>): Promise<void> {
@@ -143,10 +166,12 @@ async function getMapping(
   return data as MappingRow | null;
 }
 
+type MutableDependencyType = 'partner' | 'project' | 'bank_account';
+
 async function saveDependencyMapping(
   service: SupabaseClient,
   ownerId: string,
-  entityType: 'partner' | 'project',
+  entityType: MutableDependencyType,
   entityId: string,
   model: string,
   recordId: number,
@@ -160,9 +185,14 @@ async function saveDependencyMapping(
     last_synced_at: new Date().toISOString(),
   }, { onConflict: 'owner_id,entity_type,entity_id' });
   if (error) throw error;
-  const table = entityType === 'partner' ? 'partners' : 'projects';
+
+  const tableByType: Record<MutableDependencyType, string> = {
+    partner: 'partners',
+    project: 'projects',
+    bank_account: 'bank_accounts',
+  };
   const { error: updateError } = await service
-    .from(table)
+    .from(tableByType[entityType])
     .update({ odoo_res_id: recordId })
     .eq('owner_id', ownerId)
     .eq('id', entityId);
@@ -256,6 +286,44 @@ async function currencyId(odoo: OdooServerClient, code: string): Promise<number>
   return rows[0].id;
 }
 
+function journalCode(bankAccountId: string): string {
+  return `T${bankAccountId.replaceAll('-', '').slice(0, 4).toUpperCase()}`;
+}
+
+async function syncBankAccountRecord(
+  service: SupabaseClient,
+  odoo: OdooServerClient,
+  ownerId: string,
+  bankAccountId: string,
+): Promise<number> {
+  const { data, error } = await service
+    .from('bank_accounts')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .eq('id', bankAccountId)
+    .single();
+  if (error) throw error;
+
+  const values: Record<string, unknown> = {
+    name: String(data.name_ar || data.name_en || data.bank_name || data.id),
+    code: journalCode(bankAccountId),
+    type: data.account_type === 'cash' ? 'cash' : 'bank',
+    currency_id: await currencyId(odoo, String(data.currency || 'EGP')),
+    active: !data.is_archived,
+  };
+  const companyId = optionalInt('ODOO_COMPANY_ID');
+  if (companyId) values.company_id = companyId;
+
+  const mapping = await getMapping(service, ownerId, 'bank_account', bankAccountId);
+  if (mapping) {
+    await odoo.write('account.journal', mapping.odoo_record_id, values);
+    return mapping.odoo_record_id;
+  }
+  const recordId = await odoo.create('account.journal', values);
+  await saveDependencyMapping(service, ownerId, 'bank_account', bankAccountId, 'account.journal', recordId);
+  return recordId;
+}
+
 async function taxId(
   odoo: OdooServerClient,
   rate: number,
@@ -279,7 +347,7 @@ async function taxId(
 async function syncInvoiceRecord(
   service: SupabaseClient,
   odoo: OdooServerClient,
-  event: OutboxEvent,
+  event: OutboxEvent & { entity_type: InvoiceEntityType },
 ): Promise<{ model: string; recordId: number }> {
   const isSale = event.entity_type === 'sales_invoice';
   const table = isSale ? 'sales_invoices' : 'purchase_invoices';
@@ -366,6 +434,95 @@ async function syncInvoiceRecord(
   return { model: 'account.move', recordId };
 }
 
+function paymentIdFromAction(action: OdooAction | boolean): number | null {
+  if (typeof action !== 'object' || action === null) return null;
+  if (typeof action.res_id === 'number' && action.res_id > 0) return action.res_id;
+  if (!Array.isArray(action.domain)) return null;
+  for (const item of action.domain) {
+    if (!Array.isArray(item) || item[0] !== 'id' || item[1] !== 'in' || !Array.isArray(item[2])) continue;
+    const first = item[2][0];
+    if (typeof first === 'number' && first > 0) return first;
+  }
+  return null;
+}
+
+async function syncPaymentRecord(
+  service: SupabaseClient,
+  odoo: OdooServerClient,
+  event: OutboxEvent & { entity_type: PaymentEntityType },
+): Promise<{ model: string; recordId: number }> {
+  const existing = await getMapping(service, event.owner_id, event.entity_type, event.entity_id);
+  if (existing) return { model: 'account.payment', recordId: existing.odoo_record_id };
+
+  const isSale = event.entity_type === 'sales_payment';
+  const paymentTable = isSale ? 'invoice_payments' : 'purchase_invoice_payments';
+  const invoiceType: InvoiceEntityType = isSale ? 'sales_invoice' : 'purchase_invoice';
+  const { data: payment, error } = await service
+    .from(paymentTable)
+    .select('*')
+    .eq('owner_id', event.owner_id)
+    .eq('id', event.entity_id)
+    .single();
+  if (error) throw error;
+  if (isSale && payment.is_reversed) throw new Error('Reversed Terranex payments are not posted to Odoo');
+  if (!payment.bank_account_id) throw new Error('A bank or cash account is required before Odoo payment posting');
+
+  let invoiceMapping = await getMapping(service, event.owner_id, invoiceType, String(payment.invoice_id));
+  if (!invoiceMapping) {
+    const invoiceResult = await syncInvoiceRecord(service, odoo, {
+      ...event,
+      entity_type: invoiceType,
+      entity_id: String(payment.invoice_id),
+      operation: 'upsert',
+    });
+    invoiceMapping = { odoo_model: invoiceResult.model, odoo_record_id: invoiceResult.recordId };
+  }
+
+  const journalId = await syncBankAccountRecord(
+    service,
+    odoo,
+    event.owner_id,
+    String(payment.bank_account_id),
+  );
+  const paymentCurrencyId = await currencyId(odoo, String(payment.currency || 'EGP'));
+  const communication = `Terranex:${event.entity_id}`;
+  const context = {
+    active_model: 'account.move',
+    active_id: invoiceMapping.odoo_record_id,
+    active_ids: [invoiceMapping.odoo_record_id],
+    default_journal_id: journalId,
+  };
+
+  const wizardId = await odoo.create('account.payment.register', {
+    payment_date: payment.payment_date,
+    amount: Number(payment.amount),
+    currency_id: paymentCurrencyId,
+    journal_id: journalId,
+    communication,
+    group_payment: true,
+    payment_difference_handling: 'open',
+  }, context);
+
+  const action = await odoo.callKw<OdooAction | boolean>(
+    'account.payment.register',
+    'action_create_payments',
+    [[wizardId]],
+    { context },
+  );
+  let recordId = paymentIdFromAction(action);
+  if (!recordId) {
+    const rows = await odoo.searchRead<{ id: number }>(
+      'account.payment',
+      [['memo', '=', communication]],
+      ['id'],
+      1,
+    );
+    recordId = rows[0]?.id ?? null;
+  }
+  if (!recordId) throw new Error('Odoo created the payment but did not return a stable payment id');
+  return { model: 'account.payment', recordId };
+}
+
 async function processEvent(
   service: SupabaseClient,
   odoo: OdooServerClient,
@@ -380,7 +537,16 @@ async function processEvent(
       recordId: await syncProjectRecord(service, odoo, event.owner_id, event.entity_id),
     };
   }
-  return syncInvoiceRecord(service, odoo, event);
+  if (event.entity_type === 'bank_account') {
+    return {
+      model: 'account.journal',
+      recordId: await syncBankAccountRecord(service, odoo, event.owner_id, event.entity_id),
+    };
+  }
+  if (event.entity_type === 'sales_payment' || event.entity_type === 'purchase_payment') {
+    return syncPaymentRecord(service, odoo, event as OutboxEvent & { entity_type: PaymentEntityType });
+  }
+  return syncInvoiceRecord(service, odoo, event as OutboxEvent & { entity_type: InvoiceEntityType });
 }
 
 Deno.serve(async (request) => {
