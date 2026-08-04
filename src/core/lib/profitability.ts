@@ -153,7 +153,7 @@ export function computeProjectProfitability(
 
   const projectDistributions = (options.distributions ?? [])
     .filter((distribution) => distribution.project_id === project.id)
-    .filter((distribution) => distribution.status !== 'reversed')
+    .filter((distribution) => distribution.status !== 'draft' && distribution.status !== 'reversed')
     .filter((distribution) => inDateRange(distribution.distribution_date, period));
   const distributionIds = new Set(projectDistributions.map((distribution) => distribution.id));
   const distributionAllocations = (options.distributionAllocations ?? [])
