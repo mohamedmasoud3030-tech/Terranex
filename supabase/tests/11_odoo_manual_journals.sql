@@ -85,6 +85,12 @@ begin
      and entity_id in (v_entry, v_reversal) and status = 'pending';
   if v_count <> 2 then raise exception 'FAIL original/reversal outbox count=%', v_count; end if;
 
+  if (select available_at from odoo_sync_outbox
+       where owner_id = auth.uid() and entity_type = 'journal_entry' and entity_id = v_reversal)
+       <> 'infinity'::timestamptz then
+    raise exception 'FAIL reversal was not held until original mapping';
+  end if;
+
   -- Voiding a draft is not an accounting event.
   v_draft := create_journal_entry_atomic(
     '20000000-0000-4000-8000-000000000096',
@@ -145,7 +151,18 @@ begin
    where owner_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa93'
      and entity_type = 'journal_entry' and entity_id = v_reversal;
 
+  if (select available_at from odoo_sync_outbox where id = v_reversal_event)
+       <> 'infinity'::timestamptz then
+    raise exception 'FAIL reversal was available before original completion';
+  end if;
+
   perform complete_odoo_sync(v_original_event, 'account.move', 9301, '{"test":true}'::jsonb);
+
+  if (select available_at from odoo_sync_outbox where id = v_reversal_event)
+       = 'infinity'::timestamptz then
+    raise exception 'FAIL original mapping did not release reversal';
+  end if;
+
   perform complete_odoo_sync(v_reversal_event, 'account.move', 9302, '{"test":true}'::jsonb);
 
   if (select count(*) from journal_entry_lines
