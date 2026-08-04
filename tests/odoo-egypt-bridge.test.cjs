@@ -68,7 +68,7 @@ test('payments and bank accounts are queued transactionally and drained best-eff
   assert.match(migration, /after insert on invoice_payments/);
   assert.match(migration, /after insert on purchase_invoice_payments/);
   assert.match(migration, /after insert or update on bank_accounts/);
-  assert.match(migration, /Payment audit rows remain immutable/);
+  assert.match(migration, /Payment audit rows remain[\s\S]*immutable/);
   assert.match(sales, /pay_sales_invoice[\s\S]*requestOdooSync\(\)/);
   assert.match(purchases, /pay_purchase_invoice[\s\S]*requestOdooSync\(\)/);
   assert.match(banking, /createBankAccount[\s\S]*requestOdooSync\(\)/);
