@@ -11,7 +11,7 @@ This decision separates application correctness from external production control
 
 | Gate | Result | Evidence |
 |---|---:|---|
-| Git production revision | ✅ | `41b12db824356458216021eadeff483549717499` |
+| Git production revision | ✅ | `b8585f90176fa2d7862222e101659843396319d0` |
 | Vercel production deployment | ✅ | `READY`, target `production` |
 | Public application URL | ✅ | `https://terranex.vercel.app` returned HTTP 200 |
 | Runtime errors | ✅ | No Vercel runtime errors in the preceding 24 hours |
@@ -19,6 +19,8 @@ This decision separates application correctness from external production control
 | Supabase production schema | ✅ | Production project active with 45 applied migrations |
 | Runtime schema contract | ✅ | CI compares frontend relations, order columns, and RPC names to migrations |
 | Odoo server boundary | ✅ | `odoo-sync` and `odoo-investor-sync` Edge Functions are active |
+| Odoo disabled-owner gate | ✅ | Both workers return before claim/client creation when `odoo_enabled=false` |
+| Demo/test Odoo queue isolation | ✅ | 22 historical demo/test events moved to auditable `dead_letter`; zero `pending` remained |
 | Anonymous elevated RPC execution | ✅ | Zero anonymous-executable `SECURITY DEFINER` functions |
 | External trigger-function execution | ✅ | Zero trigger functions exposed to API roles |
 | Authenticated elevated RPC boundary | ✅ | Exact 25-function allowlist documented and enforced in PostgreSQL CI |
@@ -33,6 +35,14 @@ The following operations were executed with the real authenticated owner and rea
 - A balanced journal was created, posted, and reversed append-only; the original became `reversed`, the reversal remained `posted`, and Odoo events were queued.
 - A due distribution allocation was paid and then reversed append-only; the bank and partner-ledger reversal rows were created and the allocation returned to `due`.
 - Twenty-seven production read paths succeeded under the real account and RLS.
+
+## Odoo safety action completed
+
+The production demo owner and internal E2E owner had Odoo disabled but had accumulated 22 durable outbox events. On 2026-08-04 those rows were moved from `pending` to `dead_letter` with the reason:
+
+> Intentionally suppressed: demo/test owner with Odoo disabled; never sync to a production Odoo target.
+
+The rows were not deleted. Both claim workers exclude `dead_letter`, so these demo/test events cannot be synchronized after a later activation. The source contract in `tests/odoo-disabled-gate.test.cjs` also prevents either Edge Function from moving the disabled-owner check after the claim or Odoo client initialization.
 
 ## Manual blockers before live money
 
@@ -61,6 +71,8 @@ Acceptance evidence:
 ### 3. Verify the real Odoo target
 
 The bridge code and outbox lifecycle are implemented, but live accounting requires a real Odoo database and Egyptian chart configuration.
+
+Execute [`docs/operations/ODOO_ENABLEMENT_RUNBOOK.md`](../operations/ODOO_ENABLEMENT_RUNBOOK.md) against a clean real-company owner. Never enable Odoo on the demo or E2E owner.
 
 Acceptance evidence:
 
