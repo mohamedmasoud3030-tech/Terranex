@@ -7,7 +7,8 @@ type EntityType =
   | 'purchase_invoice'
   | 'bank_account'
   | 'sales_payment'
-  | 'purchase_payment';
+  | 'purchase_payment'
+  | 'journal_entry';
 type InvoiceEntityType = 'sales_invoice' | 'purchase_invoice';
 type PaymentEntityType = 'sales_payment' | 'purchase_payment';
 type Operation = 'upsert' | 'void';
@@ -60,6 +61,16 @@ function optionalInt(name: string): number | undefined {
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer`);
   return parsed;
+}
+
+function many2OneId(value: unknown): number | null {
+  if (typeof value === 'number' && value > 0) return value;
+  if (Array.isArray(value) && typeof value[0] === 'number' && value[0] > 0) return value[0];
+  return null;
+}
+
+function roundEgp(value: number): number {
+  return Number(value.toFixed(2));
 }
 
 class OdooServerClient {
@@ -523,6 +534,197 @@ async function syncPaymentRecord(
   return { model: 'account.payment', recordId };
 }
 
+async function miscJournalId(odoo: OdooServerClient): Promise<number> {
+  const configured = optionalInt('ODOO_MISC_JOURNAL_ID');
+  if (configured) return configured;
+  const domain: unknown[] = [['type', '=', 'general']];
+  const companyId = optionalInt('ODOO_COMPANY_ID');
+  if (companyId) domain.push(['company_id', '=', companyId]);
+  const rows = await odoo.searchRead<{ id: number }>('account.journal', domain, ['id'], 1);
+  if (!rows[0]?.id) throw new Error('No Odoo miscellaneous journal found; configure ODOO_MISC_JOURNAL_ID');
+  return rows[0].id;
+}
+
+async function accountIdForCode(odoo: OdooServerClient, code: string): Promise<number> {
+  const domain: unknown[] = [['code', '=', code]];
+  const companyId = optionalInt('ODOO_COMPANY_ID');
+  if (companyId) domain.push(['company_ids', 'in', [companyId]]);
+  const rows = await odoo.searchRead<{ id: number }>('account.account', domain, ['id'], 2);
+  if (!rows[0]?.id) throw new Error(`Odoo account code not found: ${code}`);
+  if (rows.length > 1) throw new Error(`Odoo account code is ambiguous across companies: ${code}`);
+  return rows[0].id;
+}
+
+async function bankJournalDefaultAccountId(
+  service: SupabaseClient,
+  odoo: OdooServerClient,
+  ownerId: string,
+  bankAccountId: string,
+): Promise<number> {
+  const journalId = await syncBankAccountRecord(service, odoo, ownerId, bankAccountId);
+  const rows = await odoo.searchRead<{ id: number; default_account_id: unknown }>(
+    'account.journal',
+    [['id', '=', journalId]],
+    ['id', 'default_account_id'],
+    1,
+  );
+  const accountId = many2OneId(rows[0]?.default_account_id);
+  if (!accountId) {
+    throw new Error(`Odoo bank journal ${journalId} has no default account configured`);
+  }
+  return accountId;
+}
+
+async function syncJournalEntryRecord(
+  service: SupabaseClient,
+  odoo: OdooServerClient,
+  ownerId: string,
+  entryId: string,
+): Promise<{ model: string; recordId: number }> {
+  const mapping = await getMapping(service, ownerId, 'journal_entry', entryId);
+  if (mapping) {
+    const states = await odoo.searchRead<{ id: number; state: string }>(
+      'account.move',
+      [['id', '=', mapping.odoo_record_id]],
+      ['id', 'state'],
+      1,
+    );
+    if (states[0]?.state === 'posted') {
+      return { model: 'account.move', recordId: mapping.odoo_record_id };
+    }
+    if (states[0]?.state && states[0].state !== 'draft') {
+      throw new Error(`Mapped Odoo journal move is not editable: ${states[0].state}`);
+    }
+  }
+
+  const { data: entry, error } = await service
+    .from('journal_entries')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .eq('id', entryId)
+    .single();
+  if (error) throw error;
+  if (!['posted', 'reversed'].includes(String(entry.status))) {
+    throw new Error('Only posted or historically reversed Terranex vouchers can be synchronized');
+  }
+
+  let originalMapping: MappingRow | null = null;
+  if (entry.reversal_of_entry_id) {
+    originalMapping = await getMapping(service, ownerId, 'journal_entry', String(entry.reversal_of_entry_id));
+    if (!originalMapping) {
+      const original = await syncJournalEntryRecord(service, odoo, ownerId, String(entry.reversal_of_entry_id));
+      originalMapping = { odoo_model: original.model, odoo_record_id: original.recordId };
+    }
+  }
+
+  const { data: lines, error: linesError } = await service
+    .from('journal_entry_lines')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .eq('entry_id', entryId)
+    .order('line_no');
+  if (linesError) throw linesError;
+  if (!lines || lines.length < 2) throw new Error('Manual journal must contain at least two lines');
+
+  const currencyCode = String(entry.currency || 'EGP');
+  const foreignCurrency = currencyCode !== 'EGP';
+  const foreignCurrencyId = foreignCurrency ? await currencyId(odoo, currencyCode) : null;
+  const fxRate = Number(entry.fx_rate_to_base ?? 1);
+  if (!Number.isFinite(fxRate) || fxRate <= 0) throw new Error('Manual journal FX rate must be positive');
+
+  const prepared: Array<Record<string, unknown>> = [];
+  for (const line of lines as Array<Record<string, unknown>>) {
+    const debit = Number(line.debit ?? 0);
+    const credit = Number(line.credit ?? 0);
+    let accountId: number;
+    if (line.bank_account_id) {
+      accountId = await bankJournalDefaultAccountId(
+        service,
+        odoo,
+        ownerId,
+        String(line.bank_account_id),
+      );
+    } else {
+      const code = String(line.account_code ?? '').trim();
+      if (!code) throw new Error(`Manual journal line ${line.line_no} requires an Odoo account code`);
+      accountId = await accountIdForCode(odoo, code);
+    }
+
+    const values: Record<string, unknown> = {
+      name: String(line.description_ar || line.description_en || entry.description_ar || entry.entry_number),
+      account_id: accountId,
+      debit: roundEgp(debit * fxRate),
+      credit: roundEgp(credit * fxRate),
+    };
+    if (line.partner_id) {
+      values.partner_id = await syncPartnerRecord(service, odoo, ownerId, String(line.partner_id));
+    }
+    if (line.project_id) {
+      const projectId = await syncProjectRecord(service, odoo, ownerId, String(line.project_id));
+      values.analytic_distribution = { [String(projectId)]: 100 };
+    }
+    if (foreignCurrency && foreignCurrencyId) {
+      values.currency_id = foreignCurrencyId;
+      values.amount_currency = Number((debit - credit).toFixed(3));
+    }
+    prepared.push(values);
+  }
+
+  const debitTotal = roundEgp(prepared.reduce((sum, line) => sum + Number(line.debit ?? 0), 0));
+  const creditTotal = roundEgp(prepared.reduce((sum, line) => sum + Number(line.credit ?? 0), 0));
+  const imbalance = roundEgp(debitTotal - creditTotal);
+  if (imbalance !== 0) {
+    if (Math.abs(imbalance) > 0.05) {
+      throw new Error(`Manual journal becomes unbalanced after EGP conversion: ${debitTotal} / ${creditTotal}`);
+    }
+    if (imbalance > 0) {
+      const line = [...prepared].reverse().find(item => Number(item.credit ?? 0) > 0);
+      if (!line) throw new Error('Cannot apply EGP rounding correction to credit side');
+      line.credit = roundEgp(Number(line.credit) + imbalance);
+    } else {
+      const line = [...prepared].reverse().find(item => Number(item.debit ?? 0) > 0);
+      if (!line) throw new Error('Cannot apply EGP rounding correction to debit side');
+      line.debit = roundEgp(Number(line.debit) + Math.abs(imbalance));
+    }
+  }
+
+  const lineCommands = prepared.map(values => [0, 0, values]);
+  const values: Record<string, unknown> = {
+    move_type: 'entry',
+    date: entry.entry_date,
+    journal_id: await miscJournalId(odoo),
+    ref: originalMapping
+      ? `Terranex reversal ${entry.entry_number} of Odoo move ${originalMapping.odoo_record_id}`
+      : `Terranex ${entry.entry_number}`,
+    narration: [entry.description_ar, entry.description_en, entry.notes].filter(Boolean).join('\n') || false,
+    line_ids: lineCommands,
+  };
+  const companyId = optionalInt('ODOO_COMPANY_ID');
+  if (companyId) values.company_id = companyId;
+
+  let recordId: number;
+  if (mapping) {
+    await odoo.write('account.move', mapping.odoo_record_id, {
+      ...values,
+      line_ids: [[5, 0, 0], ...lineCommands],
+    });
+    recordId = mapping.odoo_record_id;
+  } else {
+    recordId = await odoo.create('account.move', values);
+  }
+
+  const states = await odoo.searchRead<{ id: number; state: string }>(
+    'account.move',
+    [['id', '=', recordId]],
+    ['id', 'state'],
+    1,
+  );
+  if (states[0]?.state === 'draft') {
+    await odoo.callKw('account.move', 'action_post', [[recordId]]);
+  }
+  return { model: 'account.move', recordId };
+}
+
 async function processEvent(
   service: SupabaseClient,
   odoo: OdooServerClient,
@@ -545,6 +747,9 @@ async function processEvent(
   }
   if (event.entity_type === 'sales_payment' || event.entity_type === 'purchase_payment') {
     return syncPaymentRecord(service, odoo, event as OutboxEvent & { entity_type: PaymentEntityType });
+  }
+  if (event.entity_type === 'journal_entry') {
+    return syncJournalEntryRecord(service, odoo, event.owner_id, event.entity_id);
   }
   return syncInvoiceRecord(service, odoo, event as OutboxEvent & { entity_type: InvoiceEntityType });
 }
