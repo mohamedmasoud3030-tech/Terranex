@@ -1,5 +1,7 @@
 -- Roll back the Egypt-first Odoo manual journal bridge.
 
+drop trigger if exists trg_odoo_mapping_release_journal_reversals on odoo_entity_mappings;
+drop function if exists terranex_release_odoo_journal_reversals();
 drop trigger if exists trg_journal_entries_odoo_outbox on journal_entries;
 drop function if exists terranex_enqueue_odoo_manual_journal();
 
