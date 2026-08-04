@@ -219,8 +219,8 @@ export function CompanySettingsForm() {
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
             تستخدم المرحلة الحالية الحزمة المصرية <code>l10n_eg</code>. تتم مزامنة الشركاء والمشروعات
-            والفواتير الصادرة أو المعتمدة من خلال Supabase Edge Function، ولا يصل مفتاح Odoo إلى المتصفح.
-            ربط المدفوعات وETA الإلكتروني يأتي في المرحلة التالية ولا يُدّعى تشغيله الآن.
+            والفواتير الصادرة أو المعتمدة وحسابات البنك ومدفوعات العملاء والموردين من خلال Supabase Edge Function،
+            ولا يصل مفتاح Odoo إلى المتصفح. القيود التشغيلية والإرسال الإلكتروني الفعلي إلى ETA ما زالا خارج النطاق الحالي.
           </p>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={odooEnabled} onChange={e => setOdooEnabled(e.target.checked)} />

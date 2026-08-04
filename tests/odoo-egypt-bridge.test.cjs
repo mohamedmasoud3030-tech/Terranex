@@ -48,7 +48,8 @@ test('company settings are Egypt-first and describe the honest bridge scope', ()
   assert.match(source, /useState<CompanySettings\['country'\]>\('EG'\)/);
   assert.match(source, /useState<Currency>\('EGP'\)/);
   assert.match(source, /odoo_localization: 'l10n_eg'/);
-  assert.match(source, /ربط المدفوعات وETA الإلكتروني يأتي في المرحلة التالية/);
+  assert.match(source, /حسابات البنك ومدفوعات العملاء والموردين/);
+  assert.match(source, /القيود التشغيلية والإرسال الإلكتروني الفعلي إلى ETA ما زالا خارج النطاق الحالي/);
 });
 
 test('sales and purchase invoice posting drains the durable outbox', () => {
@@ -56,6 +57,36 @@ test('sales and purchase invoice posting drains the durable outbox', () => {
   const purchases = read('src/features/invoicing/purchaseStorage.ts');
   assert.match(sales, /issue_sales_invoice[\s\S]*requestOdooSync\(\)/);
   assert.match(purchases, /receive_purchase_invoice_with_stock[\s\S]*requestOdooSync\(\)/);
-  assert.match(sales, /Payment-to-Odoo posting is deliberately deferred/);
-  assert.match(purchases, /Payment-to-Odoo posting is deliberately deferred/);
+});
+
+test('payments and bank accounts are queued transactionally and drained best-effort', () => {
+  const migration = read('supabase/migrations/20260804000300_odoo_payments_banking.sql');
+  const sales = read('src/features/invoicing/storage.ts');
+  const purchases = read('src/features/invoicing/purchaseStorage.ts');
+  const banking = read('src/features/banking/storage.ts');
+
+  assert.match(migration, /'bank_account','sales_payment','purchase_payment'/);
+  assert.match(migration, /after insert on invoice_payments/);
+  assert.match(migration, /after insert on purchase_invoice_payments/);
+  assert.match(migration, /after insert or update on bank_accounts/);
+  assert.match(migration, /Payment audit rows remain[\s\S]*immutable/);
+  assert.match(sales, /pay_sales_invoice[\s\S]*requestOdooSync\(\)/);
+  assert.match(purchases, /pay_purchase_invoice[\s\S]*requestOdooSync\(\)/);
+  assert.match(banking, /createBankAccount[\s\S]*requestOdooSync\(\)/);
+  assert.match(banking, /updateBankAccount[\s\S]*requestOdooSync\(\)/);
+  assert.match(banking, /archiveBankAccount[\s\S]*requestOdooSync\(\)/);
+});
+
+test('Odoo worker uses payment register to post and reconcile against mapped invoices', () => {
+  const edge = read('supabase/functions/odoo-sync/index.ts');
+
+  assert.match(edge, /account\.payment\.register/);
+  assert.match(edge, /action_create_payments/);
+  assert.match(edge, /active_model: 'account\.move'/);
+  assert.match(edge, /default_journal_id: journalId/);
+  assert.match(edge, /payment_difference_handling: 'open'/);
+  assert.match(edge, /account\.journal/);
+  assert.match(edge, /account\.payment/);
+  assert.match(edge, /existing.*account\.payment/s);
+  assert.doesNotMatch(edge, /VITE_ODOO/);
 });
