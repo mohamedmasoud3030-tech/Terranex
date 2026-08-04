@@ -33,12 +33,11 @@ import type {
 } from '../../core/types/domain';
 import {
   buildOwnershipTimeline,
-  getDistributionAllocations,
-  getDistributionPaidAmount,
   getOwnershipRowsAsOf,
   partnerName,
   summarizeOwnership,
 } from '../ownership/model';
+import { DistributionLifecyclePanel } from '../ownership/DistributionLifecyclePanel';
 import type { PortfolioHandoff } from './contracts';
 
 interface ProjectWorkspaceViewProps {
@@ -388,34 +387,12 @@ export function ProjectWorkspaceView({
           <SnapshotCard label={label('موزع', 'Distributed')} value={`${formatEgp(profitability.distributed_profit_egp, true)} EGP`} icon={HandCoins} />
           <SnapshotCard label={label('غير مدفوع', 'Unpaid distributions')} value={`${formatEgp(profitability.unpaid_distribution_amounts_egp, true)} EGP`} icon={ReceiptText} />
         </div>
-        {projectDistributions.length > 0 && (
-          <Card className="mt-4">
-            <CardContent className="p-4">
-              <h4 className="font-extrabold">{label('توزيعات المشروع', 'Project distributions')}</h4>
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <caption className="sr-only">{label('قائمة توزيعات المشروع', 'Project distribution list')}</caption>
-                  <thead><tr className="border-b text-xs text-muted-foreground"><th className="p-2 text-start">{label('التاريخ', 'Date')}</th><th className="p-2 text-start">{label('ملكية كما في', 'Ownership as of')}</th><th className="p-2 text-end">{label('الإجمالي', 'Total')}</th><th className="p-2 text-end">{label('مدفوع', 'Paid')}</th><th className="p-2 text-start">{label('الحالة', 'Status')}</th></tr></thead>
-                  <tbody>
-                    {projectDistributions.slice(0, 8).map((distribution) => {
-                      const allocationTotal = getDistributionAllocations(distribution, distributionAllocations).reduce((sum, allocation) => sum + allocation.allocated_amount_egp, 0);
-                      const paid = getDistributionPaidAmount(distribution.id, projectLedgerEntries);
-                      return (
-                        <tr key={distribution.id} className="border-b last:border-b-0">
-                          <td className="p-2">{distribution.distribution_date}</td>
-                          <td className="p-2">{distribution.ownership_as_of_date}</td>
-                          <td className="p-2 text-end font-semibold">{formatEgp(allocationTotal || distribution.total_amount_egp)} EGP</td>
-                          <td className="p-2 text-end">{formatEgp(Math.max(0, paid))} EGP</td>
-                          <td className="p-2">{distribution.status}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <DistributionLifecyclePanel
+          distributions={projectDistributions}
+          allocations={distributionAllocations}
+          partners={partners}
+          locale={locale}
+        />
       </section>
 
       <section id={`project-${project.id}-documents`}>
