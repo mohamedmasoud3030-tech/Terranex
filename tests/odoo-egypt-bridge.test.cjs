@@ -96,16 +96,19 @@ test('only explicit posted manual vouchers enter the Odoo outbox', () => {
   const journal = read('src/features/finance/journalStorage.ts');
 
   assert.match(migration, /'journal_entry'/);
-  assert.match(migration, /new\.status = 'posted'/);
-  assert.match(migration, /old\.status is distinct from 'posted'/);
+  assert.match(migration, /new\.status <> 'posted'/);
+  assert.match(migration, /old\.status is not distinct from 'posted'/);
   assert.match(migration, /j\.status in \('posted','reversed'\)/);
   assert.match(migration, /Derived reporting[\s\S]*prevent duplicate accounting/);
+  assert.match(migration, /available_at = 'infinity'::timestamptz/);
+  assert.match(migration, /terranex_release_odoo_journal_reversals/);
   assert.match(journal, /post_journal_entry[\s\S]*requestOdooSync\(\)/);
   assert.match(journal, /void_journal_entry[\s\S]*requestOdooSync\(\)/);
 });
 
 test('manual journals resolve the Egyptian chart, FX, analytics and bank accounts before posting', () => {
   const edge = read('supabase/functions/odoo-sync/index.ts');
+  const envExample = read('.env.example');
 
   assert.match(edge, /ODOO_MISC_JOURNAL_ID/);
   assert.match(edge, /account\.account/);
@@ -117,4 +120,5 @@ test('manual journals resolve the Egyptian chart, FX, analytics and bank account
   assert.match(edge, /Manual journal becomes unbalanced after EGP conversion/);
   assert.match(edge, /syncJournalEntryRecord[\s\S]*action_post/);
   assert.match(edge, /reversal_of_entry_id[\s\S]*syncJournalEntryRecord/);
+  assert.match(envExample, /ODOO_MISC_JOURNAL_ID/);
 });
