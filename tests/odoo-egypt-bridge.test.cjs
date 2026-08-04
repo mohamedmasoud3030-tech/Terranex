@@ -28,18 +28,23 @@ test('invoice events are limited to issue, receipt and void lifecycle changes', 
   assert.match(source, /partial\/paid changes belong to the payment bridge/);
 });
 
-test('Odoo API credentials exist only in the Edge Function environment', () => {
+test('Odoo API credentials exist only in Edge Function environments', () => {
   const edge = read('supabase/functions/odoo-sync/index.ts');
+  const investor = read('supabase/functions/odoo-investor-sync/index.ts');
   const envExample = read('.env.example');
   const browserHooks = read('src/core/odoo/hooks.ts');
 
   assert.match(edge, /env\('ODOO_API_KEY'\)/);
+  assert.match(investor, /env\('ODOO_API_KEY'\)/);
   assert.match(edge, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(investor, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(edge, /auth\.getUser\(\)/);
-  assert.match(edge, /p_owner_id: userData\.user\.id/);
+  assert.match(investor, /auth\.getUser\(\)/);
   assert.doesNotMatch(edge, /VITE_ODOO/);
+  assert.doesNotMatch(investor, /VITE_ODOO/);
   assert.doesNotMatch(envExample, /VITE_ODOO_API_KEY/);
-  assert.match(browserHooks, /functions\.invoke\('odoo-sync'/);
+  assert.match(browserHooks, /invokeWorker\('odoo-sync'/);
+  assert.match(browserHooks, /invokeWorker\('odoo-investor-sync'/);
   assert.doesNotMatch(browserHooks, /createOdooClient|ODOO_API_KEY/);
 });
 
@@ -49,7 +54,7 @@ test('company settings are Egypt-first and describe the honest bridge scope', ()
   assert.match(source, /useState<Currency>\('EGP'\)/);
   assert.match(source, /odoo_localization: 'l10n_eg'/);
   assert.match(source, /حسابات البنك ومدفوعات العملاء والموردين/);
-  assert.match(source, /القيود التشغيلية والإرسال الإلكتروني الفعلي إلى ETA ما زالا خارج النطاق الحالي/);
+  assert.match(source, /الإرسال الإلكتروني الفعلي إلى ETA/);
 });
 
 test('sales and purchase invoice posting drains the durable outbox', () => {
@@ -121,4 +126,64 @@ test('manual journals resolve the Egyptian chart, FX, analytics and bank account
   assert.match(edge, /syncJournalEntryRecord[\s\S]*action_post/);
   assert.match(edge, /reversal_of_entry_id[\s\S]*syncJournalEntryRecord/);
   assert.match(envExample, /ODOO_MISC_JOURNAL_ID/);
+});
+
+test('investor lifecycle separates draft allocation, approval, bank payment and reversal', () => {
+  const migration = read('supabase/migrations/20260804000500_investor_capital_distribution_lifecycle.sql');
+  const service = read('src/features/ownership/service.ts');
+  const form = read('src/features/ownership/PartnerLedgerEntryForm.tsx');
+
+  assert.match(migration, /approve_distribution_atomic/);
+  assert.match(migration, /record_partner_capital_movement_atomic/);
+  assert.match(migration, /pay_distribution_allocation_atomic/);
+  assert.match(migration, /reverse_partner_ledger_entry_atomic/);
+  assert.match(migration, /'status','draft','ledger_entry_ids','\[\]'::jsonb/);
+  assert.match(migration, /cash and distribution ledger entries require an atomic lifecycle RPC/);
+  assert.match(migration, /reference_type,'partner_capital'/s);
+  assert.match(migration, /reference_type,'distribution_payment'/s);
+  assert.match(migration, /partner_ledger_reversal/);
+  assert.match(service, /approveProfitDistribution/);
+  assert.match(service, /payDistributionAllocation/);
+  assert.match(service, /record_partner_capital_movement_atomic/);
+  assert.match(service, /reverse_partner_ledger_entry_atomic/);
+  assert.doesNotMatch(form, /value: 'distribution_entitlement'/);
+  assert.doesNotMatch(form, /value: 'distribution_payment'/);
+  assert.match(form, /listBankAccounts/);
+  assert.match(form, /bank_account_id: isCapitalCash/);
+});
+
+test('investor events use a dedicated owner-scoped worker and causal ordering', () => {
+  const routing = read('supabase/migrations/20260804000600_odoo_investor_worker_boundary.sql');
+  const lifecycle = read('supabase/migrations/20260804000500_investor_capital_distribution_lifecycle.sql');
+  const hooks = read('src/core/odoo/hooks.ts');
+
+  assert.match(routing, /entity_type not in \('distribution','partner_ledger_entry'\)/);
+  assert.match(routing, /claim_odoo_investor_sync_batch/);
+  assert.match(routing, /entity_type in \('distribution','partner_ledger_entry'\)/);
+  assert.match(routing, /for update skip locked/);
+  assert.match(lifecycle, /available_at='infinity'::timestamptz/);
+  assert.match(lifecycle, /terranex_release_odoo_investor_dependents/);
+  assert.match(hooks, /operational dependencies first, then investor accounting/);
+  assert.match(hooks, /invokeWorker\('odoo-sync'[\s\S]*invokeWorker\('odoo-investor-sync'/);
+});
+
+test('investor worker posts explicit Egyptian control-account moves and fails closed', () => {
+  const edge = read('supabase/functions/odoo-investor-sync/index.ts');
+  const envExample = read('.env.example');
+
+  assert.match(edge, /ODOO_PARTNER_CAPITAL_ACCOUNT_CODE/);
+  assert.match(edge, /ODOO_RETAINED_EARNINGS_ACCOUNT_CODE/);
+  assert.match(edge, /ODOO_DISTRIBUTION_PAYABLE_ACCOUNT_CODE/);
+  assert.match(edge, /Odoo account code not found/);
+  assert.match(edge, /Odoo account code is ambiguous/);
+  assert.match(edge, /Terranex distribution:/);
+  assert.match(edge, /Terranex ledger:/);
+  assert.match(edge, /capital_contribution/);
+  assert.match(edge, /distribution_payment/);
+  assert.match(edge, /entry\.entry_type === 'reversal'/);
+  assert.match(edge, /action_post/);
+  assert.match(edge, /claim_odoo_investor_sync_batch/);
+  assert.match(envExample, /ODOO_PARTNER_CAPITAL_ACCOUNT_CODE/);
+  assert.match(envExample, /ODOO_RETAINED_EARNINGS_ACCOUNT_CODE/);
+  assert.match(envExample, /ODOO_DISTRIBUTION_PAYABLE_ACCOUNT_CODE/);
 });
