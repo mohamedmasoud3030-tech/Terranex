@@ -1,3 +1,4 @@
+import { requestOdooSync } from '../../core/odoo/hooks';
 import { requireClient } from '../../core/storage/supabaseClientRegistry';
 import type { Currency, JournalEntry, JournalEntryLine } from '../../core/types/domain';
 
@@ -73,6 +74,10 @@ export async function postJournalEntry(id: string, requestId?: string): Promise<
     p_entry_id: id,
   });
   if (error) throw new Error(`تعذر اعتماد السند: ${error.message}`);
+
+  // The posted voucher and its Odoo event are committed together. Draining is
+  // best-effort because the durable outbox owns retry and failure history.
+  void requestOdooSync();
 }
 
 export async function voidJournalEntry(id: string, reason?: string, requestId?: string): Promise<void> {
@@ -83,4 +88,8 @@ export async function voidJournalEntry(id: string, reason?: string, requestId?: 
     p_reason: reason ?? null,
   });
   if (error) throw new Error(`تعذر إلغاء أو عكس السند: ${error.message}`);
+
+  // A posted voucher is reversed by a separately posted voucher, which is
+  // queued transactionally. A draft void produces no accounting event.
+  void requestOdooSync();
 }
