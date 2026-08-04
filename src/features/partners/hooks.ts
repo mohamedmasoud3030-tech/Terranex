@@ -23,9 +23,10 @@ export function usePartners() {
     return partner;
   }, []);
   const updatePartner = useCallback(async (id: string, input: Partial<PartnerInput>) => {
-    const partner = partnersStore.update(id, input);
+    partnersStore.update(id, input);
     await partnersHydration.flush();
-    void syncPartnerToOdoo(partner);
+    const partner = partnersStore.getAll().find(item => item.id === id);
+    if (partner) void syncPartnerToOdoo(partner);
   }, []);
   const deletePartner = useCallback(async (id: string) => {
     await partnersStore.remove(id);
