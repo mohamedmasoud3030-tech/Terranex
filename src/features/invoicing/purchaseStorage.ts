@@ -1,3 +1,4 @@
+import { requestOdooSync } from '../../core/odoo/hooks';
 import { requireClient } from '../../core/storage/supabaseClientRegistry';
 import type { PurchaseInvoice, PurchaseInvoiceLine } from '../../core/types/domain';
 
@@ -76,6 +77,9 @@ export async function receivePurchaseInvoice(id: string, receiptDate = new Date(
     p_receipt_date: receiptDate,
   });
   if (error) throw new Error(`تعذر اعتماد فاتورة المشتريات: ${error.message}`);
+
+  // Receiving queued the vendor bill in the same database transaction.
+  void requestOdooSync();
 }
 
 export async function payPurchaseInvoice(
@@ -96,4 +100,5 @@ export async function payPurchaseInvoice(
     p_memo: memo ?? null,
   });
   if (error) throw new Error(`تعذر تسجيل الدفعة: ${error.message}`);
+  // Payment-to-Odoo posting is deliberately deferred to the next bridge slice.
 }

@@ -14,8 +14,9 @@
 #   7. ownership    — ownership domain: equity sum <= 100%, temporal, cross-tenant
 #   8. cash stack   — invoices, banking, inventory, RLS, replay, immutability
 #   9. AP/vouchers  — purchase payments, receipts, reversals, manual review
-#  10. round-trip   — forward -> rollback -> reapply, ending in a working schema
-#  11. idempotency  — re-application onto existing schema without drop or error
+#  10. Odoo bridge  — Egypt defaults, outbox, isolation, claim/complete lifecycle
+#  11. round-trip   — forward -> rollback -> reapply, ending in a working schema
+#  12. idempotency  — re-application onto existing schema without drop or error
 #
 # Usage:  scripts/db-test.sh
 # Env:    PGHOST PGPORT PGUSER PGPASSWORD (default: local socket cluster)
@@ -51,46 +52,44 @@ apply_forward() {
 }
 
 apply_rollback() {
-  # Reverse filename order: 0007 -> 0001.
   for f in $(ls -r "$ROLL"/*.down.sql); do
     psql_q -d "$DB" --single-transaction -f "$f" >/dev/null 2>&1
   done
 }
 
-# ── 1. replay from an empty database ────────────────────────────────────────
-note "1/11  REPLAY — applying all migrations to an empty database"
+note "1/12  REPLAY — applying all migrations to an empty database"
 recreate_db
 apply_forward
 echo "  migrations applied: $(ls "$MIG"/*.sql | wc -l)"
 
-# ── 2..5 behavioural suites ─────────────────────────────────────────────────
-note "2/11  SCHEMA CONTRACT"
+note "2/12  SCHEMA CONTRACT"
 psql_q -d "$DB" -f "$TESTS/01_schema_contract.sql" 2>&1 | strip
 
-note "3/11  RLS — TWO IDENTITIES"
+note "3/12  RLS — TWO IDENTITIES"
 psql_q -d "$DB" -f "$TESTS/02_rls_two_identities.sql" 2>&1 | strip
 
-note "4/11  DELETION GUARD RPCs"
+note "4/12  DELETION GUARD RPCs"
 psql_q -d "$DB" -f "$TESTS/03_deletion_guard_rpcs.sql" 2>&1 | strip
 
-note "5/11  BACKFILL SCENARIOS"
+note "5/12  BACKFILL SCENARIOS"
 psql_q -d "$DB" -f "$TESTS/04_backfill_scenarios.sql" 2>&1 | strip
 
-note "6/11  P1B FINANCIAL RPCs"
+note "6/12  P1B FINANCIAL RPCs"
 psql_q -d "$DB" -f "$TESTS/05_p1b_financial_rpcs.sql" 2>&1 | strip
 
-note "7/11  2B OWNERSHIP DOMAIN"
+note "7/12  2B OWNERSHIP DOMAIN"
 psql_q -d "$DB" -f "$TESTS/06_ownership_domain.sql" 2>&1 | strip
 
-note "8/11  CASH / INVOICING / INVENTORY SECURITY"
+note "8/12  CASH / INVOICING / INVENTORY SECURITY"
 psql_q -d "$DB" -f "$TESTS/07_invoices_banking_inventory_rls.sql" 2>&1 | strip
 
-note "9/11  PURCHASE INVOICES / MANUAL VOUCHERS SECURITY"
+note "9/12  PURCHASE INVOICES / MANUAL VOUCHERS SECURITY"
 psql_q -d "$DB" -f "$TESTS/08_purchase_voucher_security.sql" 2>&1 | strip
 
-# ── 9. forward -> rollback -> reapply ───────────────────────────────────────
-note "10/11  ROUND TRIP — forward -> rollback -> reapply"
+note "10/12  ODOO EGYPT ACCOUNTING BRIDGE"
+psql_q -d "$DB" -f "$TESTS/09_odoo_egypt_bridge.sql" 2>&1 | strip
 
+note "11/12  ROUND TRIP — forward -> rollback -> reapply"
 before=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemaname='public';")
 echo "  tables after forward : $before"
 
@@ -112,13 +111,10 @@ if [[ "$after_re" != "$before" ]]; then
 fi
 echo "  PASS: reapply reproduced the identical schema"
 
-# ── 10. idempotency gate — re-application on top of existing schema ─────────
-note "11/11  IDEMPOTENCY GATE — re-applying all migrations on top of existing schema"
+note "12/12  IDEMPOTENCY GATE — re-applying all migrations on top of existing schema"
 apply_forward
 echo "  PASS: re-applied all migrations on top of existing schema without error"
 
-# The reapplied schema must still satisfy every contract — a migration set that
-# only works once is not reproducible.
 psql_q -d "$DB" -f "$TESTS/01_schema_contract.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/02_rls_two_identities.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/03_deletion_guard_rpcs.sql" 2>&1 | strip | tail -1
@@ -126,5 +122,6 @@ psql_q -d "$DB" -f "$TESTS/05_p1b_financial_rpcs.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/06_ownership_domain.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/07_invoices_banking_inventory_rls.sql" 2>&1 | strip | tail -1
 psql_q -d "$DB" -f "$TESTS/08_purchase_voucher_security.sql" 2>&1 | strip | tail -1
+psql_q -d "$DB" -f "$TESTS/09_odoo_egypt_bridge.sql" 2>&1 | strip | tail -1
 
 printf '\n\033[1;32m=== ALL DATABASE SUITES PASSED ===\033[0m\n'

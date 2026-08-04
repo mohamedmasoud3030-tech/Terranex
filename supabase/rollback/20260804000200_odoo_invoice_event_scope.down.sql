@@ -1,0 +1,3 @@
+-- No standalone objects to remove.
+-- The prior migration owns terranex_enqueue_odoo_row() and drops it during
+-- the full reverse-order rollback after this compatibility override.

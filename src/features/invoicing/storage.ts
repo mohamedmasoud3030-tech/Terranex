@@ -1,3 +1,4 @@
+import { requestOdooSync } from '../../core/odoo/hooks';
 import { requireClient } from '../../core/storage/supabaseClientRegistry';
 import type { SalesInvoice, SalesInvoiceLine } from '../../core/types/domain';
 
@@ -66,6 +67,10 @@ export async function issueInvoice(id: string): Promise<void> {
     p_invoice_id: id,
   });
   if (error) throw new Error(`تعذر إصدار الفاتورة: ${error.message}`);
+
+  // The status transition queued the invoice transactionally. Draining is
+  // best-effort; the durable outbox keeps failures for retry.
+  void requestOdooSync();
 }
 
 export async function payInvoice(
@@ -86,4 +91,5 @@ export async function payInvoice(
     p_memo: memo ?? null,
   });
   if (error) throw new Error(`تعذر تسجيل الدفعة: ${error.message}`);
+  // Payment-to-Odoo posting is deliberately deferred to the next bridge slice.
 }

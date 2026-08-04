@@ -21,20 +21,17 @@ declare
     'sales_invoice_lines','sales_invoices',
     'settlement_allocations','settlements','stock_adjustments','transactions'
   ];
-  -- Lookup / singleton / audit / ledger tables exempted from the strict "4 policies + composite (id,owner)" check.
-  --   * currencies        – global lookup (public read, no owner)
-  --   * company_settings  – one row per owner (PK = owner_id, no id column)
-  --   * owner_sequences   – PK = (owner_id, sequence_key), no id column
-  --   * invoice_payments  – immutable audit; inserts via security-definer pay RPC, client gets SELECT only
+  -- Lookup / singleton / audit / integration tables exempted from the strict
+  -- "4 policies + composite (id,owner)" check.
   v_lookup constant text[] := array[
     'bank_transaction_review_operations','company_settings','currencies','invoice_payments',
-    'journal_operations','owner_sequences','purchase_invoice_operations','purchase_invoice_payments'
+    'journal_operations','odoo_entity_mappings','odoo_sync_outbox','owner_sequences',
+    'purchase_invoice_operations','purchase_invoice_payments'
   ];
   v_expected_all text[];
   v_actual   text[];
   v_table    text;
   v_count    int;
-  v_oid      uuid;
 begin
   v_expected_all := v_operational || v_lookup;
 
@@ -86,7 +83,7 @@ begin
       select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
       where n.nspname='public' and c.relname=v_table and c.relrowsecurity and c.relforcerowsecurity
     ) then
-      raise exception 'FAIL rls: %  does not have RLS enabled AND forced', v_table;
+      raise exception 'FAIL rls: % does not have RLS enabled AND forced', v_table;
     end if;
     select count(*) into v_count from pg_policies where schemaname='public' and tablename=v_table;
     if v_count <> 4 then
@@ -95,10 +92,22 @@ begin
   end loop;
   raise notice 'PASS rls: enabled + forced with 4 policies on all operational tables';
 
+  -- Integration support tables must still force RLS and expose only owner-scoped SELECT.
+  foreach v_table in array array['odoo_sync_outbox','odoo_entity_mappings'] loop
+    if not exists (
+      select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
+      where n.nspname='public' and c.relname=v_table and c.relrowsecurity and c.relforcerowsecurity
+    ) then
+      raise exception 'FAIL odoo rls: % does not force RLS', v_table;
+    end if;
+    select count(*) into v_count from pg_policies where schemaname='public' and tablename=v_table;
+    if v_count <> 1 then
+      raise exception 'FAIL odoo rls: % has % policies, expected owner-select only', v_table, v_count;
+    end if;
+  end loop;
+  raise notice 'PASS odoo rls: outbox and mappings are owner-readable, server-writable';
+
   -- ── the 5 guard RPCs exist with the exact signature the client calls ───────
-  -- Parameter NAMES matter: the client calls rpc(fn, { p_project_id: id }),
-  -- and PostgREST resolves named arguments. A renamed parameter breaks the call
-  -- even though the type signature is unchanged.
   foreach v_table in array array[
     'guard_project_deletion:p_project_id',
     'guard_partner_deletion:p_partner_id',
@@ -111,7 +120,7 @@ begin
       where n.nspname='public'
         and p.proname = split_part(v_table, ':', 1)
         and pg_get_function_identity_arguments(p.oid) = split_part(v_table, ':', 2) || ' uuid'
-        and p.proretset  -- set-returning: client does Array.isArray(data)
+        and p.proretset
     ) then
       raise exception 'FAIL rpc: public.%(% uuid) missing, misnamed, or not set-returning',
         split_part(v_table, ':', 1), split_part(v_table, ':', 2);
@@ -137,6 +146,18 @@ begin
   end loop;
   raise notice 'PASS rpc: all 6 P1B atomic RPCs present';
 
+  foreach v_table in array array[
+    'enqueue_odoo_sync','claim_odoo_sync_batch','complete_odoo_sync','fail_odoo_sync'
+  ] loop
+    if not exists (
+      select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.proname=v_table
+    ) then
+      raise exception 'FAIL odoo rpc: public.% missing', v_table;
+    end if;
+  end loop;
+  raise notice 'PASS odoo rpc: enqueue/claim/complete/fail boundary present';
+
   -- ── search_path pinned on every function we ship ───────────────────────────
   for v_table in
     select p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace
@@ -147,7 +168,8 @@ begin
         or p.proname in (
           'pay_sales_invoice','create_sales_invoice_atomic','next_owner_seq',
           'pay_purchase_invoice','receive_purchase_invoice_with_stock',
-          'post_journal_entry','void_journal_entry','set_bank_transaction_reviewed'
+          'post_journal_entry','void_journal_entry','set_bank_transaction_reviewed',
+          'enqueue_odoo_sync','claim_odoo_sync_batch','complete_odoo_sync','fail_odoo_sync'
         ))
   loop
     if not exists (

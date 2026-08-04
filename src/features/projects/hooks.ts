@@ -19,6 +19,8 @@ export function useProjects() {
   const updateProject = useCallback(async (id: string, input: Partial<ProjectInput>) => {
     projectsStore.update(id, input);
     await projectsHydration.flush();
+    const project = projectsStore.getAll().find(item => item.id === id);
+    if (project) void syncProjectToOdoo(project);
   }, []);
   const deleteProject = useCallback(async (id: string) => {
     await projectsStore.remove(id);
