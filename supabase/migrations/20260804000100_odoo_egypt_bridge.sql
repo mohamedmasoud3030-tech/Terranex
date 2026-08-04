@@ -265,10 +265,6 @@ end;
 $$;
 revoke all on function terranex_enqueue_odoo_row() from public, anon, authenticated;
 
-for_trigger_placeholder: do $$ begin end $$;
-
--- The placeholder label above is a harmless DO block label used only to keep
--- this migration easy to split in SQL review tools.
 drop trigger if exists trg_partners_odoo_outbox on partners;
 create trigger trg_partners_odoo_outbox
   after insert or update on partners
@@ -288,6 +284,20 @@ drop trigger if exists trg_purchase_invoices_odoo_outbox on purchase_invoices;
 create trigger trg_purchase_invoices_odoo_outbox
   after insert or update on purchase_invoices
   for each row execute function terranex_enqueue_odoo_row();
+
+-- Queue existing unsynced records once when this migration first lands.
+select terranex_queue_odoo_event(owner_id, 'partner', id, 'upsert', jsonb_build_object('backfill', true))
+  from partners where odoo_res_id is null;
+select terranex_queue_odoo_event(owner_id, 'project', id, 'upsert', jsonb_build_object('backfill', true))
+  from projects where odoo_res_id is null;
+select terranex_queue_odoo_event(owner_id, 'sales_invoice', id,
+         case when status = 'void' then 'void' else 'upsert' end,
+         jsonb_build_object('backfill', true, 'source_status', status))
+  from sales_invoices where odoo_res_id is null and status <> 'draft';
+select terranex_queue_odoo_event(owner_id, 'purchase_invoice', id,
+         case when status = 'void' then 'void' else 'upsert' end,
+         jsonb_build_object('backfill', true, 'source_status', status))
+  from purchase_invoices where odoo_res_id is null and status <> 'draft';
 
 -- ---------------------------------------------------------------------------
 -- 5) Server worker RPCs. Only service_role can claim/complete/fail events.
