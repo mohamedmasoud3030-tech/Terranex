@@ -99,22 +99,38 @@ security definer
 set search_path = public
 as $$
 begin
-  if new.status = 'posted'
-     and (tg_op = 'INSERT' or old.status is distinct from 'posted') then
-    perform terranex_queue_odoo_event(
-      new.owner_id,
-      'journal_entry',
-      new.id,
-      'upsert',
-      jsonb_build_object(
-        'source_table', 'journal_entries',
-        'entry_number', new.entry_number,
-        'entry_date', new.entry_date,
-        'currency', new.currency,
-        'reversal_of_entry_id', new.reversal_of_entry_id,
-        'source_updated_at', new.updated_at
-      )
-    );
+  if new.status = 'posted' then
+    if tg_op = 'INSERT' then
+      perform terranex_queue_odoo_event(
+        new.owner_id,
+        'journal_entry',
+        new.id,
+        'upsert',
+        jsonb_build_object(
+          'source_table', 'journal_entries',
+          'entry_number', new.entry_number,
+          'entry_date', new.entry_date,
+          'currency', new.currency,
+          'reversal_of_entry_id', new.reversal_of_entry_id,
+          'source_updated_at', new.updated_at
+        )
+      );
+    elsif old.status is distinct from 'posted' then
+      perform terranex_queue_odoo_event(
+        new.owner_id,
+        'journal_entry',
+        new.id,
+        'upsert',
+        jsonb_build_object(
+          'source_table', 'journal_entries',
+          'entry_number', new.entry_number,
+          'entry_date', new.entry_date,
+          'currency', new.currency,
+          'reversal_of_entry_id', new.reversal_of_entry_id,
+          'source_updated_at', new.updated_at
+        )
+      );
+    end if;
   end if;
   return new;
 end;
