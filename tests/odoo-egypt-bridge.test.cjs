@@ -48,7 +48,8 @@ test('company settings are Egypt-first and describe the honest bridge scope', ()
   assert.match(source, /useState<CompanySettings\['country'\]>\('EG'\)/);
   assert.match(source, /useState<Currency>\('EGP'\)/);
   assert.match(source, /odoo_localization: 'l10n_eg'/);
-  assert.match(source, /ربط المدفوعات وETA الإلكتروني يأتي في المرحلة التالية/);
+  assert.match(source, /حسابات البنك ومدفوعات العملاء والموردين/);
+  assert.match(source, /القيود التشغيلية والإرسال الإلكتروني الفعلي إلى ETA ما زالا خارج النطاق الحالي/);
 });
 
 test('sales and purchase invoice posting drains the durable outbox', () => {
