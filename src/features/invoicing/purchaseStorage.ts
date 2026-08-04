@@ -100,5 +100,8 @@ export async function payPurchaseInvoice(
     p_memo: memo ?? null,
   });
   if (error) throw new Error(`تعذر تسجيل الدفعة: ${error.message}`);
-  // Payment-to-Odoo posting is deliberately deferred to the next bridge slice.
+
+  // The immutable supplier-payment row and Odoo event were committed in the
+  // same RPC transaction. The durable outbox retains failed attempts.
+  void requestOdooSync();
 }
