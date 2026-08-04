@@ -110,7 +110,7 @@ export function CompanySettingsForm() {
         odoo_username: odooUsername.trim() || null,
         odoo_localization: 'l10n_eg',
         eta_branch_code: etaBranchCode.trim() || '0',
-        // ODOO_API_KEY is an Edge Function secret and is never written here.
+        // ODOO_API_KEY is a server-side secret and is never written here.
       };
       const { data, error } = await supabase.from('company_settings').select('owner_id').maybeSingle();
       if (error) throw error;
@@ -247,7 +247,7 @@ export function CompanySettingsForm() {
               <FormField className="md:col-span-2">
                 <FormLabel>مفتاح Odoo API</FormLabel>
                 <p className="text-xs text-muted-foreground">
-                  يُضبط باسم <code>ODOO_API_KEY</code> داخل أسرار Supabase Edge Functions فقط.
+                  يُضبط على الخادم باسم <code>ODOO_API_KEY</code> كـ server-side secret داخل أسرار Supabase Edge Functions فقط.
                   لا تضعه في Vite أو قاعدة البيانات أو GitHub.
                 </p>
               </FormField>
