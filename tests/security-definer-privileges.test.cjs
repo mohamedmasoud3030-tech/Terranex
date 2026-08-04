@@ -26,9 +26,19 @@ test('sales invoice SECURITY DEFINER RPCs are anonymous-deny and authenticated-a
   );
 });
 
-test('financial helper functions cannot be called by public API roles', () => {
+test('owner assertion is anonymous-deny but remains available to authenticated invoker RPCs', () => {
+  assert.match(
+    migration,
+    /revoke all on function public\.terranex_assert_owner\(uuid\)[\s\S]*?from public, anon;/,
+  );
+  assert.match(
+    migration,
+    /grant execute on function public\.terranex_assert_owner\(uuid\)[\s\S]*?to authenticated, service_role;/,
+  );
+});
+
+test('internal locking and audit helpers cannot be called by public API roles', () => {
   for (const helper of [
-    'terranex_assert_owner',
     'terranex_lock_financial_request',
     'terranex_audit_check_idempotent',
     'terranex_audit_log',
