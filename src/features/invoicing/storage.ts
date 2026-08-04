@@ -91,5 +91,8 @@ export async function payInvoice(
     p_memo: memo ?? null,
   });
   if (error) throw new Error(`تعذر تسجيل الدفعة: ${error.message}`);
-  // Payment-to-Odoo posting is deliberately deferred to the next bridge slice.
+
+  // The immutable payment row and its Odoo event were committed atomically.
+  // Draining is best-effort; retries remain durable in Postgres.
+  void requestOdooSync();
 }
