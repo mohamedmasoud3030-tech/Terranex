@@ -7,7 +7,7 @@
 --   3. Race condition prevention (advisory lock)
 --   4. Cross-tenant access prevention
 --   5. Ownership-as-of-date query
---   6. Distribution allocation sum matches total
+--   6. Distribution draft allocation, approval and entitlement lifecycle
 --   7. Append-only ledger enforcement
 -- =============================================================================
 \set ON_ERROR_STOP on
@@ -296,7 +296,7 @@ end;
 $test$;
 rollback;
 
--- ═══ TEST 5: distribution allocations sum = total ══════════════════════════
+-- ═══ TEST 5: distribution draft, approval and entitlements ══════════════════
 begin;
 set local role postgres;
 
@@ -323,7 +323,6 @@ declare
   v_result jsonb;
   v_distribution_id uuid;
   v_alloc_sum numeric;
-  v_alloc_egp_sum numeric;
   v_total numeric := 1000;
 begin
   -- Set up ownership: 60% + 40%
@@ -338,7 +337,7 @@ begin
     public.terranex_test_uuid_2b(51), '2026-01-01', 40, 'entry'::public.terranex_equity_change_type
   );
 
-  -- Create distribution of 1000 EGP
+  -- Create a draft distribution of 1000 EGP. It freezes allocations only.
   v_request := public.terranex_test_uuid_2b(502);
   select public.record_distribution_atomic(
     v_request,
@@ -352,7 +351,11 @@ begin
 
   v_distribution_id := (v_result->>'distribution_id')::uuid;
 
-  -- Verify allocations sum = total
+  if v_result->>'status' <> 'draft' then
+    raise exception 'FAIL distribution: new distribution must remain draft';
+  end if;
+
+  -- Draft allocations must reconcile to the header total.
   select sum(allocated_amount) into v_alloc_sum
   from public.distribution_allocations
   where distribution_id = v_distribution_id;
@@ -361,7 +364,7 @@ begin
     raise exception 'FAIL distribution: allocations sum % does not equal total %', v_alloc_sum, v_total;
   end if;
 
-  -- Verify individual allocations: 60% of 1000 = 600, 40% of 1000 = 400
+  -- Verify individual allocations: 60% of 1000 = 600, 40% of 1000 = 400.
   if not exists (
     select 1 from public.distribution_allocations
     where distribution_id = v_distribution_id
@@ -380,11 +383,31 @@ begin
     raise exception 'FAIL distribution: partner 2 allocation wrong';
   end if;
 
-  -- The hardened RPC must post partner profit entitlements in the same transaction.
+  -- Draft distributions must not create accounting entitlements.
+  if exists (
+    select 1 from public.partner_ledger_entries
+    where related_distribution_id = v_distribution_id
+      and entry_type = 'distribution_entitlement'
+  ) then
+    raise exception 'FAIL distribution: draft unexpectedly created entitlement ledger entries';
+  end if;
+
+  -- Approval posts the frozen partner entitlements atomically.
+  v_request := public.terranex_test_uuid_2b(503);
+  select public.approve_distribution_atomic(
+    v_request,
+    v_distribution_id,
+    'approved by lifecycle test'
+  ) into v_result;
+
+  if v_result->>'status' <> 'approved' then
+    raise exception 'FAIL distribution: approval did not return approved status';
+  end if;
+
   if (select count(*) from public.partner_ledger_entries
       where related_distribution_id = v_distribution_id
         and entry_type = 'distribution_entitlement') <> 2 then
-    raise exception 'FAIL distribution: expected 2 entitlement ledger entries';
+    raise exception 'FAIL distribution: expected 2 entitlement ledger entries after approval';
   end if;
 
   if (select abs(coalesce(sum(amount_egp), 0) - 1000) from public.partner_ledger_entries
@@ -421,7 +444,7 @@ begin
       null;
   end;
 
-  raise notice 'PASS distribution allocations sum = total and entitlement ledger immutable';
+  raise notice 'PASS distribution draft allocations, approval entitlements and immutability';
 end;
 $test$;
 rollback;
@@ -580,6 +603,7 @@ begin
   foreach v_fn in array array[
     'change_ownership_atomic',
     'record_distribution_atomic',
+    'approve_distribution_atomic',
     'record_partner_ledger_entry_atomic',
     'get_ownership_as_of'
   ] loop
@@ -599,6 +623,7 @@ begin
   foreach v_fn in array array[
     'change_ownership_atomic',
     'record_distribution_atomic',
+    'approve_distribution_atomic',
     'record_partner_ledger_entry_atomic'
   ] loop
     if not exists (
