@@ -14,6 +14,11 @@ declare
   v_status text;
   v_old_status text;
 begin
+  -- Legacy migration preflight inserts rows before owner_id backfill. Do not
+  -- enqueue an ownerless record; the later owner assignment update will queue
+  -- it transactionally once tenant identity is authoritative.
+  if new.owner_id is null then return new; end if;
+
   if tg_op = 'UPDATE'
      and (to_jsonb(new) - 'updated_at' - 'odoo_res_id')
          = (to_jsonb(old) - 'updated_at' - 'odoo_res_id') then
