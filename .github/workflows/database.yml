@@ -84,9 +84,25 @@ jobs:
         run: ./scripts/db-test.sh
 
       - name: Confirm no production credentials are referenced
+        shell: bash
         run: |
-          if grep -rInE 'supabase\.co|service_role_key|SUPABASE_SERVICE_ROLE' supabase/ scripts/db-test.sh; then
+          set -euo pipefail
+
+          # Schema assets and test runners must never know a production host or
+          # privileged key name. They run only against the ephemeral CI database.
+          if grep -rInE 'supabase\.co|service_role_key|SUPABASE_SERVICE_ROLE' \
+            supabase/migrations supabase/rollback supabase/tests scripts/db-test.sh; then
             echo "::error::Production Supabase reference found in schema assets"
             exit 1
           fi
-          echo "No production Supabase host or service-role key referenced."
+
+          # Edge Functions are the one legitimate server-side boundary that may
+          # read Supabase's injected service-role environment variable. Continue
+          # scanning them for hard-coded project hosts or JWT/key-shaped values.
+          if grep -rInE 'https://[a-z0-9]{15,}\.supabase\.co|eyJ[A-Za-z0-9_-]{40,}|sb_secret_[A-Za-z0-9_-]+' \
+            supabase/functions; then
+            echo "::error::Hard-coded production credential found in Edge Function source"
+            exit 1
+          fi
+
+          echo "No production Supabase host or credential value referenced."
