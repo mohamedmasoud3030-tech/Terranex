@@ -25,14 +25,13 @@ declare
   -- "4 policies + composite (id,owner)" check.
   v_lookup constant text[] := array[
     'bank_transaction_review_operations','company_settings','currencies','invoice_payments',
-    'journal_entry_line_accounts','journal_operations','odoo_entity_mappings','odoo_sync_outbox',
-    'owner_sequences','purchase_invoice_operations','purchase_invoice_payments'
+    'journal_operations','odoo_entity_mappings','odoo_sync_outbox','owner_sequences',
+    'purchase_invoice_operations','purchase_invoice_payments'
   ];
   v_expected_all text[];
   v_actual   text[];
   v_table    text;
   v_count    int;
-  v_oid      uuid;
 begin
   v_expected_all := v_operational || v_lookup;
 
@@ -84,7 +83,7 @@ begin
       select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
       where n.nspname='public' and c.relname=v_table and c.relrowsecurity and c.relforcerowsecurity
     ) then
-      raise exception 'FAIL rls: %  does not have RLS enabled AND forced', v_table;
+      raise exception 'FAIL rls: % does not have RLS enabled AND forced', v_table;
     end if;
     select count(*) into v_count from pg_policies where schemaname='public' and tablename=v_table;
     if v_count <> 4 then
