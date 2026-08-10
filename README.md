@@ -1,14 +1,18 @@
 # Terranex Greenfield
 
-Terranex is being rebuilt from first principles as an Arabic-first Investment Operations OS for private investment operators across real estate, agriculture, and livestock.
-
-This branch intentionally contains no legacy runtime, database schema, financial engine, tests, or product documentation. The eight documents in [`docs/greenfield`](docs/greenfield) are the only product baseline.
+Terranex is an Arabic-first Investment Operations OS for Egyptian and MENA private investment operators. It is being rebuilt as a clean Greenfield product; legacy code is frozen and non-authoritative.
 
 ## Current status
 
-- Delivery phase: Phase 0 — evidence and commercial validation.
-- Runtime: not scaffolded yet.
-- First sector: selected by the first committed design partner; real estate is the default only when commercial evidence is tied.
-- Production: the former deployment and database are legacy and are not part of this branch.
+- Phase: `GF-002 / S0` — executable product foundation.
+- Strategy: product-first; customer interviews are not a coding prerequisite.
+- Architecture: one Next.js modular monolith + one Supabase/PostgreSQL backend.
+- First market: Egypt; Arabic/RTL and EGP-ready configuration.
+- First sector: Real Estate.
+- Production: not deployed from this branch.
 
-See [`GREENFIELD_EXECUTION.md`](GREENFIELD_EXECUTION.md) for the live gate and [`docs/LEGACY_FREEZE.md`](docs/LEGACY_FREEZE.md) for the recoverable legacy snapshot.
+## Active implementation boundary
+
+The next batch builds a runnable application and the first complete slice: authentication, organization isolation, and a Real Estate project shell. Agreements, finance posting, approvals, documents, offline/PWA, integrations, Agriculture, and Livestock remain deferred.
+
+Read [`AGENTS.md`](AGENTS.md), [`GREENFIELD_EXECUTION.md`](GREENFIELD_EXECUTION.md), the eight files under [`docs/greenfield`](docs/greenfield), and the accepted decisions under [`docs/decisions`](docs/decisions) before implementation.
