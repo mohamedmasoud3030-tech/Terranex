@@ -77,18 +77,17 @@ Each slice includes schema, domain, application, UI, permissions, tests, telemet
 
 ## 5. Delivery phases
 
-### Phase 0 — Evidence and commercial validation (1–2 weeks)
+### Phase 0 — Product foundation and reference validation (complete)
 
 Outputs:
 
-- three qualified customer interviews and one committed design partner;
-- sanitized real spreadsheets, agreement, bank statement, invoices/receipts, and monthly partner report;
-- selected first sector and exact pilot project;
-- validated terminology and workflow map;
-- paid/purchase-intent pilot terms and success criteria;
-- legal boundary confirmation: private operational system, no public solicitation/custody.
+- approved Greenfield product, operating, domain, sector, finance, architecture, UX, and delivery baselines;
+- product-first execution decision and explicit separation of common core, sector packs, and company configuration;
+- first operating market set to Egypt and first sector-pack default set to real estate;
+- legal/product boundary confirmed as a private B2B operational system with no public solicitation or custody;
+- implementation assumptions marked for later professional, standards, and production validation.
 
-**Exit:** one buyer provides data, weekly access to users, and commercial commitment. No code beyond prototypes/setup if this is absent.
+**Exit:** the Greenfield baseline and product-first decision are approved and recorded. Customer interviews, a design partner, and customer documents are not prerequisites for Phase 1.
 
 ### Phase 1 — Architecture runway and UX prototype (1–2 weeks)
 
@@ -239,22 +238,24 @@ If onboarding requires code for every customer, pause sector expansion and produ
 
 ## 12. Build-start checklist
 
-Coding may start only after these eight greenfield documents are approved as the working baseline and Phase 0 identifies the first design partner/sector. Before the first production schema:
+Coding may start after these eight Greenfield documents and the product-first decision are approved as the working baseline. Customer interviews are not a build gate. Before the first production schema:
 
-- convert open discovery items into recorded decisions;
-- write ADRs for tenant model, accounting boundary, money representation, agreement versioning, posting/reversal, and offline scope;
+- convert material open assumptions into recorded decisions;
+- write ADRs for tenant model, accounting boundary, money representation, agreement versioning, posting/reversal, authorization, and offline scope;
 - produce the command/state/authorization matrix;
-- validate the first customer’s agreement and expected partner statement with an accountant/legal reviewer;
+- create executable acceptance fixtures for common J1–J8 flows, including correction, approval, multi-tenant, and money-integrity cases;
+- isolate Egypt-specific legal, tax, statutory accounting, and e-invoicing behavior behind configuration or integrations pending qualified professional review;
 - archive legacy Terranex product documents and freeze legacy code as non-authoritative reference.
 
 ## 13. Immediate next execution batch
 
-1. Recruit/interview three target companies using the ICP and jobs in Document 01.
-2. Secure one paid design partner and artifacts listed in Phase 0.
-3. Choose the first sector based on contracted demand, defaulting to real estate only if evidence is tied.
-4. Produce clickable Arabic prototype for J1–J8 and test it with the four roles.
-5. Finalize ADRs and physical schema from real artifacts.
-6. Build S0 → S7 without parallel feature branches that create competing domain/design systems.
+1. Establish the maintained Next.js/TypeScript repository, CI, environments, and verification baseline.
+2. Write the required architecture, accounting, authorization, and country-isolation ADRs.
+3. Define the common J1–J8 command/state/authorization contracts and executable acceptance fixtures.
+4. Produce the Arabic/RTL clickable prototype for the eight critical tasks using the common product model.
+5. Finalize the physical schema from approved contracts and standards-backed assumptions; keep Egypt-specific rules isolated.
+6. Build S0 → S7 sequentially, starting with the shared core and the real-estate sector pack, without competing domain/design systems.
+7. Onboard the first Egyptian company through configuration and bounded extensions; promote a variation into the shared core only when it is demonstrably common.
 
 This is the boundary between **product design** and **software construction**. The legacy codebase is not refactored into this model; reusable technical pieces may be evaluated later against these contracts.
 
