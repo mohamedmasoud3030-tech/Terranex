@@ -8,10 +8,10 @@
 Do not build equal depth for all three sectors before revenue. Build:
 
 1. the shared investment/finance/control core;
-2. one production-ready sector pack selected by the first paying design partner;
+2. one production-ready Real Estate sector pack;
 3. thin schema/workflow spikes for the other sectors only to prove the core boundary.
 
-Recommended commercial default: start with **real-estate acquisition/development/disposal** because investment agreements, partner capital, property costs, approvals, and distributions expose the core product value with less daily biological/offline complexity. If the first committed buyer is agricultural or livestock, switch the sector pack without changing the core.
+Start with **real-estate acquisition/development/disposal** because it exposes the investment core with less biological/offline complexity. Change the first sector only through an explicit product decision; do not prebuild the other sectors.
 
 ## 2. MVP promise
 
@@ -236,14 +236,7 @@ If onboarding requires code for every customer, pause sector expansion and produ
 
 ## 12. Build-start checklist
 
-Coding may start after these eight Greenfield documents and the product-first decision are approved as the working baseline. Customer interviews are not a build gate. Before the first production schema:
-
-- convert material open assumptions into recorded decisions;
-- write ADRs for tenant model, accounting boundary, money representation, agreement versioning, posting/reversal, authorization, and offline scope;
-- produce the command/state/authorization matrix;
-- create executable acceptance fixtures for common J1–J8 flows, including correction, approval, multi-tenant, and money-integrity cases;
-- isolate Egypt-specific legal, tax, statutory accounting, and e-invoicing behavior behind configuration or integrations pending qualified professional review;
-- archive legacy Terranex product documents and freeze legacy code as non-authoritative reference.
+Coding is authorized. Resolve only the decisions required by the active slice. Do not create a complete ADR catalogue, universal domain framework, all-sector schema, offline engine, or integration infrastructure in advance.
 
 ## 13. Immediate next execution batch
 
