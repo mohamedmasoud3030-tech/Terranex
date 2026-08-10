@@ -52,6 +52,8 @@ flowchart TD
 
 ## 3. Aggregate map
 
+This is a conceptual ownership map, not an implementation backlog. Create an aggregate/table only when the active vertical slice uses it. GF-002 implements only the minimum Organization, Membership, Investment Project, and Audit records required for authenticated project isolation.
+
 ### Organization aggregate
 
 - `Organization`
@@ -196,7 +198,7 @@ Events use past tense and are immutable facts. Examples:
 - `DistributionPaid`
 - `PostedEventReversed`
 
-Every event carries event ID, organization, aggregate ID/version, actor, occurred/recorded time, command idempotency key, correlation/causation IDs, and minimal non-secret payload. Integration events are emitted through an outbox after commit.
+Every event carries event ID, organization, aggregate ID/version, actor, occurred/recorded time, command idempotency key, correlation/causation IDs, and minimal non-secret payload. Integration events are introduced only when a real external consumer exists. At that point, durable delivery may use a transactional outbox after a recorded decision; internal domain behavior remains in-process.
 
 ## 7. Commands vs facts vs projections
 
@@ -227,9 +229,9 @@ The UI never writes projections directly. Balances, dashboards, profitability, i
 - deleting a participant with historical postings;
 - status updates that bypass command validation and audit.
 
-## 10. Open discovery items
+## 10. Deferred product assumptions
 
-These require real design-partner documents before physical schema design:
+These do not block the shared core or GF-002 physical schema. Resolve each through an explicit later decision, typed configuration, or a bounded extension when its workflow is implemented:
 
 1. common legal structures and whether project/SPV/contract boundaries differ;
 2. ownership vs profit-sharing variations and non-cash contribution valuation;
