@@ -16,16 +16,18 @@
 
 `GF-002 / S0 — Executable Foundation and Project Shell`
 
-Build one runnable Next.js application and one complete vertical slice:
+Implementation is complete on `greenfield/gf-002-s0`, built directly from the current Greenfield foundation. Merge remains gated by GitHub CI and real PostgreSQL replay/two-tenant isolation verification.
 
-1. Arabic-first responsive shell with authentication entry.
+Delivered:
+
+1. Arabic-first responsive Next.js App Router shell with authentication entry.
 2. Organization creation/current-organization resolution.
 3. Real Estate investment project shell: create, list, and open.
 4. Supabase migration with organizations, memberships, projects, minimal audit events, default-deny RLS, and cross-tenant integrity.
 5. Server-authoritative validation and commands.
-6. Truthful loading, empty, error, forbidden, and mobile/RTL states.
-7. Targeted unit/database/integration tests, including two-tenant isolation.
-8. Minimal CI for format/lint, typecheck, tests, and build.
+6. Truthful loading, empty, error, not-found, and mobile/RTL states.
+7. Targeted unit/database tests, including real PostgreSQL two-tenant isolation harness.
+8. Greenfield CI for lint, tests, production build, typecheck, and PostgreSQL replay/isolation.
 
 ## Explicitly deferred
 
