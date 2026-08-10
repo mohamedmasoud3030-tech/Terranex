@@ -31,7 +31,7 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 - Do not refactor, port, or recreate legacy business logic by default.
 - Do not copy legacy entities, migrations, workflows, routes, financial rules, tests, or product documentation into Greenfield.
 - A generic technical fragment may be reused only after a written assessment proves it matches the Greenfield contracts and introduces no hidden domain assumption.
-- Do not build equal depth for three sectors. The first paid design partner selects the first sector pack; real estate is only the tie-break default.
+- Do not build equal depth for three sectors. Real Estate is the first sector pack unless Mohamed explicitly changes the product decision.
 - Terranex is a private operational system in v1, not crowdfunding, custody, a public marketplace, or a statutory general ledger.
 
 ## Current delivery gate
