@@ -23,6 +23,7 @@ Read these files completely before changing the product:
 10. `GREENFIELD_EXECUTION.md`
 11. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
 12. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
+13. `docs/DB_DEVELOPMENT.md`
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
@@ -63,6 +64,16 @@ The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminol
 - The browser never supplies authoritative balances, entitlements, or approval outcomes.
 - No secrets, real credentials, personal data, or unsanitized customer artifacts enter Git.
 - Do not access or modify production data, Supabase, Vercel, banking, or external accounting systems without explicit authorization.
+
+## Database development access
+
+- `npm run db:test` / `bash ./scripts/db-test.sh` is the canonical local database gate.
+- The runner must use local `psql` when available and automatically fall back to disposable PostgreSQL 16 via Docker when `psql` is unavailable.
+- Every ordered migration under `supabase/migrations/*.sql` and every verification suite under `supabase/tests/*.sql` is discovered automatically.
+- Missing `psql` alone is never a valid reason to skip database verification.
+- If neither `psql` nor Docker is available, report the database gate as unresolved and rely on the repository CI database job before merge; never mark it simulated or passed.
+- Use `npm run db:shell` / `bash ./scripts/db-shell.sh` for an interactive local database shell.
+- Never commit Supabase database passwords, service-role keys, personal access tokens, or shared-environment connection strings. Shared/demo/production migrations require explicit authorization and environment-supplied secrets.
 
 ## UX rules
 
