@@ -1,123 +1,14 @@
-# Terranex
+# Terranex Greenfield
 
-نظام تشغيل استثماري لإدارة أصول ومشاريع الشركة عبر القطاعات العقارية والزراعية والحيوانية.
+Terranex is being rebuilt from first principles as an Arabic-first Investment Operations OS for private investment operators across real estate, agriculture, and livestock.
 
-## الهدف
+This branch intentionally contains no legacy runtime, database schema, financial engine, tests, or product documentation. The eight documents in [`docs/greenfield`](docs/greenfield) are the only product baseline.
 
-تحويل بيانات الشركة التشغيلية والمالية إلى نظام واحد يعرف:
+## Current status
 
-- الأصول والمشاريع والشركاء.
-- المصروفات والإيرادات.
-- الأرباح والخسائر.
-- الذمم المدينة والدائنة: من له فلوس؟ ومن عليه فلوس؟
-- المستندات والقرارات والسجل التشغيلي.
-- الملكية المؤرخة للمشاريع، دفتر الشريك، وتوزيعات الأرباح المجمدة عبر RPCs ذرية.
+- Delivery phase: Phase 0 — evidence and commercial validation.
+- Runtime: not scaffolded yet.
+- First sector: selected by the first committed design partner; real estate is the default only when commercial evidence is tied.
+- Production: the former deployment and database are legacy and are not part of this branch.
 
-## نطاق البداية
-
-هذه المرحلة تؤسس طبقة العمل داخل الريبو:
-
-- `AGENTS.md` لتوجيه الوكلاء البرمجيين.
-- `.ai/agents/` لتعريف أدوار الوكلاء.
-- `.ai/skills/` لتعريف المهارات القابلة لإعادة الاستخدام.
-- `docs/` لتوثيق الخطة، الأهداف، النموذج النطاقي، وخارطة الطريق.
-
-## القطاعات الأساسية
-
-1. الاستثمار العقاري: أراضي، أصول، شراء، تطوير، بيع، تكاليف، أرباح.
-2. الاستثمار الزراعي: مزارع، محاصيل، مواسم، إنتاج، مصاريف، مبيعات، ربحية الموسم.
-3. الاستثمار الحيواني: قطعان، أعلاف، علاج، تحصينات، ولادات، نفوق، بيع، ربحية القطيع.
-
-## مبدأ المنتج
-
-لا نبني مجرد واجهات لعرض البيانات؛ نبني عقل الشركة الرقمي الذي يجيب بدقة على سؤال الربحية والالتزامات لكل مشروع وقطاع وشريك.
-
----
-
-## 🚦 حالة الإطلاق — 25 يوليو 2026
-
-> **الحالة: NO-GO.** البوابات الخمس خضراء، لكن الإطلاق محجوب ببنود مذكورة أدناه.
-
-### طبقة التخزين والمصادقة — الحالة الفعلية
-
-- **التخزين:** Supabase (Postgres) عبر `createSupabaseStore` — **مستخدم حالياً** في كل مخازن الميزات
-  (projects, partners, assets, documents, transactions, obligations, settlements,
-  settlement_allocations, operational_events, stock_adjustments).
-- **Auth:** Supabase Auth — **مستخدم حالياً** (`src/core/auth/AuthProvider.tsx`, `supabaseClient.ts` بجلسة مُستمرة).
-- **localStorage:** لم يعد مخزن بيانات. يقتصر استخدامه على تفضيلات الواجهة (locale, theme, exchange rates)،
-  وملفات IndexedDB للمستندات، وترحيلات البيانات القديمة قبل الانتقال إلى Supabase.
-
-### بوابات الجودة — مقاسة على الفرع الحالي
-
-```
-npm ci          ✅
-npm run typecheck   ✅ 0 errors
-npm run lint        ✅ pass
-npm run test        ✅ 226 / 226 pass
-npm run build       ✅ success
-```
-
-كل ملف اختبار يمر أيضاً في عملية Node مستقلة (لا اعتماد على ترتيب التشغيل أو state مشترك).
-
-### لماذا الإطلاق ما زال NO-GO
-
-| البند | الحالة |
-|---|---|
-| Supabase migrations مُدارة بالإصدار | ✅ **مُنجز (P1A)** — 7 migrations تحت `supabase/migrations/` مع rollback لكل واحدة |
-| RLS policies + `guard_*_deletion` RPC | ✅ **مكتوبة ومُختبَرة (P1A)** — 44 سياسة + 5 دوال، مُثبتة على Postgres حقيقي |
-| **نشر المخطط على مشروع Supabase الفعلي** | ❌ لم يُطبَّق بعد — الـ migrations موجودة في الريبو فقط |
-| كتابات مالية ذرية (تسوية + توزيعات + التزام) | ✅ RPCs ذرية للتسويات والمعاملات والملكية والتوزيعات داخل الريبو؛ لم تُنشر إنتاجياً |
-| نسخ احتياطي/استرجاع من Supabase | ❌ النسخ الحالي يقرأ localStorage فقط — نطاق مرحلة لاحقة |
-
-**P1A أنجز إعادة إنتاج البنية، لا نشرها.** المخطط الآن قابل لإعادة الإنشاء والمراجعة
-والاختبار، لكنه لم يُطبَّق على أي بيئة إنتاج. الإطلاق ما زال **NO-GO**.
-
-### طبقة قاعدة البيانات — P1A
-
-```
-supabase/migrations/   مخطط مُدار بالإصدار — الجداول الأساسية + RPCs المالية + ملكية المشاريع والتوزيعات
-supabase/rollback/     تراجع مقابل لكل migration مع توثيق ما لا يمكن عكسه
-supabase/tests/        shim + مجموعات اختبار على Postgres حقيقي
-scripts/db-test.sh     replay من قاعدة فارغة + forward→rollback→reapply
-```
-
-نموذج الملكية: كل الجداول الـ11 تحمل `owner_id uuid NOT NULL DEFAULT auth.uid()`،
-والعلاقات المالية تستخدم composite FKs تحمل الـtenant داخل المفتاح — بلا trigger
-وبلا join داخل RLS.
-
----
-
-## 📋 تدقيق 28 يونيو 2026 — أرشيف تاريخي
-
-> ⚠️ ما يلي **لقطة تاريخية** من تدقيق 28 يونيو 2026، **قبل** الانتقال من localStorage إلى Supabase.
-> أرقامه (61/61 اختبار، تقييم 7.3/10، «Production-Ready داخلياً») **لم تعد تصف الحالة الحالية**.
-> اعتمد على قسم «حالة الإطلاق» أعلاه.
-
-**التقارير الكاملة:**
-- [`docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md`](docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md) — التعريف الموحد الكنسي للمشروع
-- [`docs/audit/CONFLICTS_ANALYSIS_AR.md`](docs/audit/CONFLICTS_ANALYSIS_AR.md) — 14 تعارض حرج + 9 فجوات
-- [`docs/audit/CODE_REVIEW_REPORT_AR.md`](docs/audit/CODE_REVIEW_REPORT_AR.md) — مراجعة كود شاملة — تقييم **7.3/10**
-- [`docs/audit/RECOMMENDATIONS_AND_ROADMAP_AR.md`](docs/audit/RECOMMENDATIONS_AND_ROADMAP_AR.md) — خارطة طريق مصححة 12 أسبوع
-
-**أهم النتائج:**
-- المحرك المالي (profitability + settlement allocation) **بمستوى ERP احترافي**
-- **3 فجوات P0** تحتاج سد فوري: OMR currency، OperationalEvent UI، ErrorBoundary
-- i18n system موجود لكن **0% استخدام** — يحتاج قرار: Arabic-only أو تفعيل كامل
-- 3 dependencies ميتة: `recharts`, `@tanstack/react-table`, `react-hook-form` — ~200KB dead weight
-
-> **توصية التدقيق آنذاك** كانت «Production-Ready داخلياً بعد سد P0 gaps».
-> **هذه التوصية متجاوَزة.** الانتقال إلى Supabase أدخل فجوات جديدة (migrations، RLS/RPC،
-> ذرّية الكتابات المالية، النسخ الاحتياطي) والحالة الحالية **NO-GO** — راجع الجدول أعلاه.
-
----
-
-## الوثائق الكنسية (مُحدّثة أغسطس 2026)
-
-1. **[UNIFIED_PROJECT_DEFINITION_AR.md](docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md)** — التعريف الموحد — ابدأ هنا
-2. **[Terranex-Architecture-English.md](docs/Terranex-Architecture-English.md)** — المعمارية الشاملة لملكية المشاريع والشركاء
-3. **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** — دليل التنفيذ الـ runtime — المصدر الكنسي التقني
-4. **[AGENTS.md](AGENTS.md)** — سياسة الريبو للوكلاء
-5. **[docs/architecture-decisions.md](docs/architecture-decisions.md)** — ADR‑001 … ADR‑010
-5. **[docs/plans/terranex-native-engine-extraction-plan.md](docs/plans/terranex-native-engine-extraction-plan.md)** — يصف Settlement Allocation Engine الفعلي بدقة
-
-> ⚠️ **تحذير:** وثائق `docs/domain-model.md` تحتوي معلومات قديمة متضاربة — استخدم التعريف الموحد أعلاه.
+See [`GREENFIELD_EXECUTION.md`](GREENFIELD_EXECUTION.md) for the live gate and [`docs/LEGACY_FREEZE.md`](docs/LEGACY_FREEZE.md) for the recoverable legacy snapshot.
