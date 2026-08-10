@@ -21,6 +21,7 @@ Read these files completely before changing the product:
 8. `docs/greenfield/07_UX_INFORMATION_ARCHITECTURE.md`
 9. `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`
 10. `GREENFIELD_EXECUTION.md`
+11. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
@@ -34,18 +35,18 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 
 ## Current delivery gate
 
-Current phase: **Phase 0 — evidence and commercial validation**.
+Current phase: **Phase 1 — architecture runway and executable product foundation**.
 
-Before material domain/schema implementation, the repository must contain evidence of:
+Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
-- three qualified customer interviews;
-- one committed design partner and selected pilot project;
-- sanitized real operating and financial artifacts;
-- validated terminology and workflow map;
-- pilot commercial intent and success criteria;
-- confirmed legal/product boundary.
+Before material financial/domain implementation:
 
-Allowed before that exit gate: repository setup, CI setup, non-domain technical spikes, discovery artifacts, and prototypes that do not establish unvalidated business logic.
+- record ADRs for tenancy, accounting boundary, money representation, agreement versioning, posting/reversal, authorization, and offline scope;
+- trace material workflows and accounting behavior to an approved Greenfield decision, authoritative standard, or documented product assumption;
+- create executable acceptance fixtures for the common J1–J8 workflows, including normal, correction, approval, multi-currency, and multi-tenant cases;
+- keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated behind country configuration or integrations until professionally validated.
+
+The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core. Real estate remains the first sector-pack default unless Mohamed explicitly changes it.
 
 ## Target architecture
 
