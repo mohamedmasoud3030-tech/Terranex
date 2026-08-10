@@ -22,6 +22,7 @@ Read these files completely before changing the product:
 9. `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`
 10. `GREENFIELD_EXECUTION.md`
 11. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
+12. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
@@ -39,24 +40,19 @@ Current phase: **Phase 1 — architecture runway and executable product foundati
 
 Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
-Before material financial/domain implementation:
-
-- record ADRs for tenancy, accounting boundary, money representation, agreement versioning, posting/reversal, authorization, and offline scope;
-- trace material workflows and accounting behavior to an approved Greenfield decision, authoritative standard, or documented product assumption;
-- create executable acceptance fixtures for the common J1–J8 workflows, including normal, correction, approval, multi-currency, and multi-tenant cases;
-- keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated behind country configuration or integrations until professionally validated.
+Implementation is authorized now. Record decisions just in time for the active slice; do not create an architecture-document phase before working software. A slice may introduce only the schema, rules, UI, and tests it actually uses. Keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated until professionally validated.
 
 The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core. Real estate remains the first sector-pack default unless Mohamed explicitly changes it.
 
 ## Target architecture
 
-- TypeScript modular monolith.
-- Maintained Next.js App Router release and Arabic-first responsive PWA.
-- PostgreSQL through Supabase, Supabase Auth, private Storage, and default-deny RLS.
-- Server-side transactional commands for material writes.
-- Immutable financial facts, balanced postings, reversals instead of destructive edits, idempotency, maker-checker controls, audit, and transactional outbox.
-- Offline drafts only; never offline financial posting or approval.
-- Package/import direction: UI → application → domain; infrastructure implements ports; sector packages never depend on each other.
+- One deployable Next.js App Router application at the repository root; no monorepo and no internal package workspace.
+- One Supabase project with one PostgreSQL database, Supabase Auth, private Storage, and default-deny RLS.
+- Feature folders under `src/features`; genuinely shared code under `src/shared` only after two real consumers exist.
+- Server Actions or Route Handlers for application commands; transactional SQL/RPC only when a write must be atomic in the database.
+- No microservices, CQRS framework, event sourcing, generic repository, plugin/rules engine, transactional outbox, offline sync, PWA machinery, queues, or external integrations until an implemented workflow proves the need.
+- Company differences use small typed configuration or explicit bounded extensions; never tenant-specific forks.
+- Build one complete vertical slice at a time. The conceptual domain catalog is not a request to scaffold unused entities.
 
 ## Financial and security rules
 
@@ -78,8 +74,10 @@ The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminol
 ## Change discipline
 
 - Work in one bounded vertical slice at a time.
+- Search before creating. There must be one canonical implementation for money, authorization, project identity, status, formatting, and UI primitives.
+- Do not add an abstraction for a single implementation or a shared module for a single consumer.
 - Record material architecture, accounting, authorization, and scope choices as ADRs.
-- Do not add a large dependency or external provider without documenting why the existing stack cannot satisfy the requirement.
+- Do not add a dependency or provider unless the current slice uses it and the platform/runtime cannot satisfy the need simply.
 - Never edit an applied migration; add an ordered forward migration with recovery and verification notes.
 - Preserve unrelated work and inspect the complete diff before committing.
 - Do not deploy production or merge to `main` unless Mohamed explicitly requests it.

@@ -2,40 +2,55 @@
 
 **Updated:** 2026-08-10
 **Working branch:** `greenfield/foundation`
-**Strategy:** Product-first; Egypt is the first operating market
+**Strategy:** Product-first, Egypt-first, vertical slices
 
 ## Completed foundation
 
-- The former Terranex product is frozen on `legacy/pre-greenfield-20260810`.
-- Legacy runtime, migrations, tests, integrations, CI, agent instructions, and non-Greenfield documents are removed from the Greenfield working tree.
-- The eight Greenfield documents remain the product baseline, updated only through explicit recorded decisions.
-- Agent policy prevents accidental inheritance of legacy business logic.
-- Product-first execution is recorded in `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`.
-- `main` is unchanged and remains a temporary safety point until a future explicitly approved replacement.
+- Legacy product frozen at `legacy/pre-greenfield-20260810`; it is not a source for Greenfield behavior.
+- Eight Greenfield product documents approved as the conceptual baseline.
+- Product-first Egypt launch recorded in `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`.
+- Simple modular-monolith delivery recorded in `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`.
+- Customer interviews and a design partner are not build prerequisites.
 
-## Active phase
+## Active batch
 
-Phase 0 foundation is complete. **Phase 1 — architecture runway and executable product foundation is authorized.**
+`GF-002 / S0 — Executable Foundation and Project Shell`
 
-Customer interviews, a committed design partner, or customer documents are not build prerequisites. Terranex will implement the common Investment Operations Core and the first sector pack from the approved Greenfield model, established industry patterns, authoritative standards, and executable acceptance scenarios.
+Build one runnable Next.js application and one complete vertical slice:
 
-## Launch assumptions
+1. Arabic-first responsive shell with authentication entry.
+2. Organization creation/current-organization resolution.
+3. Real Estate investment project shell: create, list, and open.
+4. Supabase migration with organizations, memberships, projects, minimal audit events, default-deny RLS, and cross-tenant integrity.
+5. Server-authoritative validation and commands.
+6. Truthful loading, empty, error, forbidden, and mobile/RTL states.
+7. Targeted unit/database/integration tests, including two-tenant isolation.
+8. Minimal CI for format/lint, typecheck, tests, and build.
 
-- First operating market: Egypt.
-- Primary language and layout: Arabic/RTL, with English/LTR support.
-- Launch currency/configuration: EGP-ready; the shared core remains multi-currency.
-- First sector-pack default: real estate, unless Mohamed explicitly changes it.
-- Company differences are handled through configuration, policies, templates, and bounded extensions—not tenant-specific forks or hardcoded customer logic.
-- Egypt-specific legal, tax, statutory accounting, and e-invoicing behavior stays isolated until reviewed by qualified Egyptian professionals before production reliance.
+## Explicitly deferred
 
-## Next bounded batch
+- agreements, participants, capital calls, postings, ledger, payments, allocation, and distributions;
+- approvals engine, documents/storage, notifications, outbox/queues, integrations, and country tax/e-invoicing;
+- PWA installation, service worker, IndexedDB, offline drafts, and sync/conflict handling;
+- Agriculture and Livestock runtime modules;
+- generic repositories, CQRS/event-sourcing frameworks, plugin/rules engines, package workspaces, and speculative shared layers.
 
-Execute GF-002: establish the maintained Next.js/TypeScript repository and CI foundation, write the required architecture/accounting ADRs, define the common command/state/authorization contracts, and add executable acceptance fixtures for J1–J8 before implementing material financial posting.
+## Exit gate
+
+GF-002 is complete only when a fresh checkout can install, validate environment inputs, replay migrations, run the targeted gates, build successfully, and demonstrate that:
+
+- an authenticated organization member can create and open a Real Estate project;
+- a second organization cannot read or mutate that project through UI, server command, or database policy;
+- the implementation contains no legacy code, duplicate source of truth, unused architecture scaffolding, or secrets.
+
+## Next after GF-002
+
+GF-003 will implement the smallest Terms & Funding slice required for project agreement activation and contribution recording. Its exact scope is decided from the verified GF-002 codebase, not pre-scaffolded now.
 
 ## Decision rules
 
-- Approved Greenfield decisions and authoritative standards outrank legacy behavior.
-- Common behavior belongs in the shared core; sector behavior belongs in its bounded context; company variation belongs in configuration or explicit extensions.
-- Synthetic fixtures are allowed for tests and must be clearly labeled; fabricated customer evidence is forbidden.
-- Customer feedback may improve or extend the product after onboarding, but it does not retroactively make one company’s workflow the universal model.
-- No production deployment or production financial use occurs until the relevant security, accounting, data-migration, and Egypt-specific compliance gates pass.
+- One canonical implementation per concept.
+- Search and extend before creating.
+- A shared abstraction requires two real consumers.
+- Every batch finishes one user workflow across all affected layers.
+- No production deployment or production data changes without explicit authorization.
