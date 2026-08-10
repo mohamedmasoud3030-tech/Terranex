@@ -35,7 +35,7 @@ If a feature does not help deliver or prove that promise for a contracted design
 - simple result allocation and distribution approval/payment;
 - approvals, tasks, exceptions, audit trail;
 - project dashboard, capital statement, project performance pack;
-- Arabic/RTL, responsive web/PWA, offline sector-event drafts;
+- Arabic/RTL responsive web; PWA installation and offline sector-event drafts are added only when the sector-capture slice proves the need;
 - CSV import/export with controlled opening-balance workflow.
 
 ### First sector pack — real-estate default
@@ -64,7 +64,7 @@ Build working slices, not disconnected layers:
 
 | Slice | User-visible outcome | Proof |
 |---|---|---|
-| S0 Foundation | Secure organization and project shell | Two-tenant isolation, roles, audit |
+| S0 Foundation | Working Arabic app: authenticate, create organization, create/list/open Real Estate project shell | Two-tenant isolation, RLS, minimal audit |
 | S1 Terms & funding | Activate agreement, call and receive capital | Capital rollforward and immutable version |
 | S2 Cost & cash | Record obligation, approve/pay, reconcile bank | Balanced posting and evidence trail |
 | S3 Sector operation | Capture one complete sector lifecycle path | Quantity/state rollforward + cost drilldown |
@@ -89,18 +89,16 @@ Outputs:
 
 **Exit:** the Greenfield baseline and product-first decision are approved and recorded. Customer interviews, a design partner, and customer documents are not prerequisites for Phase 1.
 
-### Phase 1 — Architecture runway and UX prototype (1–2 weeks)
+### Phase 1 — Executable foundation and first vertical slice
 
 Outputs:
 
-- repository/CI, environments, migrations, tenant/auth/RLS baseline;
-- accounting policy/semantic accounts and posting-rule ADR;
-- domain command/API contracts;
-- clickable Arabic prototype for the eight critical tasks;
-- import mapping and data migration rehearsal plan;
-- threat model and authorization matrix.
+- one maintained Next.js application with minimal CI and validated environment contract;
+- Supabase migration, Auth integration, default-deny RLS, and two-tenant tests;
+- working Arabic/RTL organization and Real Estate project-shell flow;
+- only the just-in-time decisions, commands, audit, and UI primitives used by that flow.
 
-**Exit:** finance, operator, manager, and investor can complete prototype tasks; technical spikes prove transaction/RLS/offline assumptions.
+**Exit:** a fresh checkout installs, replays migrations, passes targeted gates, builds, and proves an authenticated member can create/open a project while another organization cannot access it.
 
 ### Phase 2 — Core vertical slices (4–6 weeks)
 
@@ -161,7 +159,7 @@ A feature is done only when:
 - material commands are atomic/idempotent and auditable;
 - reversal/correction and closed-period behavior exist where relevant;
 - Arabic/RTL and mobile states are verified;
-- loading/error/empty/offline/conflict states are honest;
+- loading/error/empty states are honest; offline/conflict states are required only after offline behavior exists;
 - accessibility checks pass for the workflow;
 - telemetry/runbook/support notes exist;
 - no seeded/fake production data masks missing behavior;
@@ -249,13 +247,14 @@ Coding may start after these eight Greenfield documents and the product-first de
 
 ## 13. Immediate next execution batch
 
-1. Establish the maintained Next.js/TypeScript repository, CI, environments, and verification baseline.
-2. Write the required architecture, accounting, authorization, and country-isolation ADRs.
-3. Define the common J1–J8 command/state/authorization contracts and executable acceptance fixtures.
-4. Produce the Arabic/RTL clickable prototype for the eight critical tasks using the common product model.
-5. Finalize the physical schema from approved contracts and standards-backed assumptions; keep Egypt-specific rules isolated.
-6. Build S0 → S7 sequentially, starting with the shared core and the real-estate sector pack, without competing domain/design systems.
-7. Onboard the first Egyptian company through configuration and bounded extensions; promote a variation into the shared core only when it is demonstrably common.
+Execute `GF-002 / S0` as working software:
+
+1. Scaffold one root Next.js/TypeScript application with the minimum maintained dependencies and CI.
+2. Implement Supabase Auth session handling and validated environment configuration.
+3. Add one migration for organizations, memberships, investment projects, and minimal audit events with constraints and default-deny RLS.
+4. Implement the Arabic/RTL flow to create/resolve an organization and create, list, and open a Real Estate project shell.
+5. Verify two-tenant isolation, validation, responsive states, typecheck, targeted tests, migration replay, and build.
+6. Do not scaffold later J1–J8 entities, finance, approvals, documents, offline/PWA, integrations, other sectors, or generic architecture.
 
 This is the boundary between **product design** and **software construction**. The legacy codebase is not refactored into this model; reusable technical pieces may be evaluated later against these contracts.
 
