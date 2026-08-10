@@ -1,175 +1,101 @@
-# Terranex — Agent Policy
+# Terranex Greenfield — Agent Policy
 
-**آخر تحديث:** 2026-08-04  
-**الحالة:** كنسي — يسبق جميع الوثائق الأخرى
+**Effective:** 2026-08-10
+**Status:** Canonical for `greenfield/foundation` and all descendant Greenfield branches
 
----
+## Mission
 
-## قراءة إلزامية قبل أي تعديل
+Build Terranex as a greenfield Investment Operations OS for private investment operators in real estate, agriculture, and livestock. The shared investment, finance, control, and audit core is built once; sector behavior remains inside explicit bounded contexts.
 
-اقرأ بالترتيب:
+## Canonical sources
 
-1. **هذا الملف** — السياسة والحالة الحالية.
-2. [`IMPLEMENTATION_GUIDE.md`](IMPLEMENTATION_GUIDE.md) — خريطة الـruntime الفعلية.
-3. [`docs/release/LAUNCH_READINESS_2026-08-04.md`](docs/release/LAUNCH_READINESS_2026-08-04.md) — قرار جاهزية الإطلاق وأدلته.
-4. [`docs/security/AUTHENTICATED_SECURITY_DEFINER_ALLOWLIST.md`](docs/security/AUTHENTICATED_SECURITY_DEFINER_ALLOWLIST.md) — حدود RPC المرتفعة المسموح بها.
-5. [`docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md`](docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md) — تعريف المشروع الموحد.
-6. [`docs/decisions/README.md`](docs/decisions/README.md) — القرارات المعمارية النافذة.
+Read these files completely before changing the product:
 
----
+1. `AGENTS.md`
+2. `docs/greenfield/01_PRODUCT_CHARTER_AND_MARKET.md`
+3. `docs/greenfield/02_OPERATING_MODEL_AND_JOURNEYS.md`
+4. `docs/greenfield/03_DOMAIN_MODEL.md`
+5. `docs/greenfield/04_SECTOR_MODELS.md`
+6. `docs/greenfield/05_FINANCE_AND_ACCOUNTING.md`
+7. `docs/greenfield/06_SYSTEM_ARCHITECTURE_AND_SECURITY.md`
+8. `docs/greenfield/07_UX_INFORMATION_ARCHITECTURE.md`
+9. `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`
+10. `GREENFIELD_EXECUTION.md`
+11. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
+12. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
 
-## حدود المشروع
+No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
-- Terranex مشروع مستقل تمامًا عن Malik أو LENA أو أي تطبيق آخر.
-- مصر هي سوق الإطلاق الأول، والعملة الأساسية لأول تشغيل هي EGP.
-- Terranex يملك التشغيل والمشروعات والمستثمرين والملكية ورأس المال والتوزيعات.
-- Odoo يملك الدفتر المحاسبي الرسمي والتوطين المصري والإقفال والتقارير القانونية.
-- لا يوجد دفتران رسميان متنافسان؛ جداول Terranex المالية subledgers تشغيلية قابلة للتدقيق.
+## Non-negotiable boundary
 
----
+- Do not refactor, port, or recreate legacy business logic by default.
+- Do not copy legacy entities, migrations, workflows, routes, financial rules, tests, or product documentation into Greenfield.
+- A generic technical fragment may be reused only after a written assessment proves it matches the Greenfield contracts and introduces no hidden domain assumption.
+- Do not build equal depth for three sectors. Real Estate is the first sector pack unless Mohamed explicitly changes the product decision.
+- Terranex is a private operational system in v1, not crowdfunding, custody, a public marketplace, or a statutory general ledger.
 
-## المصادر الكنسية — الأولوية
+## Current delivery gate
 
-| الأولوية | المصدر | يغطي |
-|---:|---|---|
-| 1 | `src/core/types/domain.ts` | نموذج البيانات الفعلي |
-| 2 | `supabase/migrations/` + `supabase/tests/` | مخطط الإنتاج، RLS، RPCs، والعقود المثبتة |
-| 3 | `IMPLEMENTATION_GUIDE.md` | runtime والتخزين والتدفقات |
-| 4 | `docs/release/LAUNCH_READINESS_2026-08-04.md` | حالة الإطلاق الحالية |
-| 5 | `docs/security/AUTHENTICATED_SECURITY_DEFINER_ALLOWLIST.md` | حدود الصلاحيات المرتفعة |
-| 6 | `docs/audit/UNIFIED_PROJECT_DEFINITION_AR.md` | التعريف الوظيفي الموحد |
-| 7 | `docs/decisions/README.md` + `docs/architecture-decisions.md` | القرارات المعمارية |
+Current phase: **Phase 1 — architecture runway and executable product foundation**.
 
-إذا تعارضت وثيقة قديمة مع الكود أو migrations أو تقرير الإطلاق الحالي، فالكود والمخطط الفعلي يسبقانها.
+Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
----
+Implementation is authorized now. Record decisions just in time for the active slice; do not create an architecture-document phase before working software. A slice may introduce only the schema, rules, UI, and tests it actually uses. Keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated until professionally validated.
 
-## North Star
+The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core. Real estate remains the first sector-pack default unless Mohamed explicitly changes it.
 
-1. ماذا نملك أو نشغّل؟ ← Projects + Assets + Partners + Inventory + Events.
-2. كم كلّف كل مشروع وكم كسب؟ ← Transactions + Sales/Purchase Invoices + Obligations.
-3. هل ربح أم خسر؟ ← Profitability Engine + Journals + Odoo accounting bridge.
-4. من له فلوس ومن عليه فلوس؟ ← Settlements + Bank Accounts + Partner Ledger + Distributions.
+## Target architecture
 
----
+- One deployable Next.js App Router application at the repository root; no monorepo and no internal package workspace.
+- One Supabase project with one PostgreSQL database, Supabase Auth, private Storage, and default-deny RLS.
+- Feature folders under `src/features`; genuinely shared code under `src/shared` only after two real consumers exist.
+- Server Actions or Route Handlers for application commands; transactional SQL/RPC only when a write must be atomic in the database.
+- No microservices, CQRS framework, event sourcing, generic repository, plugin/rules engine, transactional outbox, offline sync, PWA machinery, queues, or external integrations until an implemented workflow proves the need.
+- Company differences use small typed configuration or explicit bounded extensions; never tenant-specific forks.
+- Build one complete vertical slice at a time. The conceptual domain catalog is not a request to scaffold unused entities.
 
-## الحالة الفعلية — 4 أغسطس 2026
+## Financial and security rules
 
-### الكود والنشر
+- Never use floating point for money.
+- Every tenant-owned record carries `organization_id`; cross-tenant references require database-enforced integrity.
+- Material commands are atomic, idempotent, version-aware, authorized, and auditable.
+- Posted facts are append-only; corrections use reversal/repost with a complete chain.
+- The browser never supplies authoritative balances, entitlements, or approval outcomes.
+- No secrets, real credentials, personal data, or unsanitized customer artifacts enter Git.
+- Do not access or modify production data, Supabase, Vercel, banking, or external accounting systems without explicit authorization.
 
-- `main`: `41b12db824356458216021eadeff483549717499` قبل PR جاهزية الإطلاق الحالي.
-- Typecheck: ناجح.
-- Lint: ناجح.
-- Node tests: 282/282 على `main`، ويضيف PR جاهزية الإطلاق اختبارات قائمة السماح.
-- Build: ناجح.
-- Vercel Production: `READY`.
-- `https://terranex.vercel.app`: HTTP 200.
-- Vercel runtime errors خلال آخر 24 ساعة: صفر وقت آخر تحقق.
+## UX rules
 
-### قاعدة البيانات والتكامل
+- Arabic/RTL is the primary experience; English/LTR remains supported.
+- Mobile-first density, WCAG 2.2 AA, keyboard support, and honest loading/error/empty/offline/conflict states are required.
+- Keep navigation shallow and project-centered; do not introduce nested page-within-page or tab sprawl.
+- Do not imply that a draft, pending approval, unreconciled amount, or failed sync is final.
 
-- Supabase Postgres وSupabase Auth هما runtime الإنتاجي الفعلي.
-- مخطط الإنتاج منشور؛ 45 migration مطبقة وقت آخر تحقق.
-- المخطط القابل لإعادة البناء يحتوي نطاق التشغيل والمالية والبنوك والفواتير والمخزون والقيود والملكية والتوزيعات وOdoo outbox.
-- RLS مفعل ومُجبر على الجداول التشغيلية مع عزل مالك مركب.
-- anonymous-executable `SECURITY DEFINER`: صفر.
-- externally executable trigger functions: صفر.
-- حدود `authenticated SECURITY DEFINER` ثابتة في قائمة سماح من 25 RPC ومختبرة على PostgreSQL حقيقي.
-- Edge Functions النشطة: `odoo-sync` و`odoo-investor-sync`.
+## Change discipline
 
-### قرار الإطلاق
+- Work in one bounded vertical slice at a time.
+- Search before creating. There must be one canonical implementation for money, authorization, project identity, status, formatting, and UI primitives.
+- Do not add an abstraction for a single implementation or a shared module for a single consumer.
+- Record material architecture, accounting, authorization, and scope choices as ADRs.
+- Do not add a dependency or provider unless the current slice uses it and the platform/runtime cannot satisfy the need simply.
+- Never edit an applied migration; add an ordered forward migration with recovery and verification notes.
+- Preserve unrelated work and inspect the complete diff before committing.
+- Do not deploy production or merge to `main` unless Mohamed explicitly requests it.
+- Open a pull request for completed branch work and include scope, decisions, verification, risks, and the next gate.
 
-- **عرض الديمو وجولة العميل: GO.**
-- **تشغيل أموال حقيقية: CONDITIONAL NO-GO** حتى إغلاق الأدلة اليدوية الثلاثة:
-  1. تفعيل Supabase leaked-password protection.
-  2. إثبات backup/restore أو PITR باختبار استرجاع.
-  3. التحقق من Odoo الحقيقي والتوطين المصري وأكواد الحسابات والدورات المحاسبية.
+## Verification expectations
 
-لا يجوز وصف التطبيق بأنه Live-money GO قبل توثيق هذه الأدلة في تقرير إطلاق مؤرخ جديد.
+Use the smallest truthful gate for the current phase. Once runtime code exists, every completed slice must cover its affected layers and ultimately support:
 
----
+- typecheck, lint, unit/integration/contract/E2E, and build;
+- migration replay and upgrade paths;
+- two-tenant RLS and investor self-scope;
+- atomicity, concurrency, idempotency, reversal, and period-lock behavior;
+- Arabic/RTL, responsive, accessibility, and failure-state verification;
+- secret/dependency/static security checks.
 
-## قواعد قاعدة البيانات والأمان
+Do not claim a gate passed unless it was run against the reported commit and environment.
 
-- لا تعدّل migration مدمجة؛ أضف migration تالية idempotent وrollback مناسبًا.
-- كل كتابة مالية مادية يجب أن تمر عبر RPC ذرّي بخاصية idempotency وأثر تدقيقي.
-- العكس append-only؛ لا تمسح التاريخ المالي لتصحيح خطأ.
-- `PUBLIC` و`anon` ممنوعان من تنفيذ أي `SECURITY DEFINER`.
-- أي RPC مرتفع جديد يتطلب تحديث قائمة السماح واختبارات anonymous-deny وowner isolation.
-- trigger functions والـlocking/audit helpers ليست PostgREST endpoints.
-- أسرار Odoo لا تدخل Vite أو Git أو جداول المتصفح؛ تبقى في Supabase Edge Function secrets.
-- لا ترسل بيانات الديمو إلى Odoo حقيقي.
+## Definition of complete
 
----
-
-## قواعد تجربة المستخدم والبيانات
-
-- العربية وRTL هما المسار الأول، مع دعم الإنجليزية.
-- لا تُنشئ fixtures تلقائيًا لكل مستخدم إنتاجي.
-- حساب الديمو المخصص قد يحتوي بيانات موسومة بوضوح «ديمو / DEMO».
-- لا تدّعِ أن bank-statement reconciliation أو Odoo reverse sync أو ETA مكتملة ما لم توجد دورة تنفيذ واختبارات فعلية.
-- أي شاشة تعتمد على Supabase يجب أن تعرض loading/error/empty states بصدق، ولا تحوّل خطأ تحميل إلى «لا توجد بيانات».
-
----
-
-## ما يجوز تغييره بدون موافقة مسبقة
-
-- إصلاح bug مثبت أو production drift.
-- إضافة regression test أو release/security gate.
-- تحديث توثيق يزيل معلومات قديمة.
-- إضافة i18n key بدون تغيير منطق النطاق.
-- hardening غير مدمّر يحافظ على التدفقات الحالية.
-
-## ما يحتاج قرار مالك صريح
-
-- تغيير نموذج الملكية أو تعريف الربحية.
-- حذف feature أو تغيير routing scheme جذريًا.
-- إضافة dependency كبيرة أو مزود خارجي جديد.
-- تغيير الفصل بين Terranex وOdoo كمصادر حقيقة.
-- فتح صلاحيات RPC جديدة أو تخفيف RLS.
-
----
-
-## بوابات التحقق الإلزامية
-
-قبل الدمج:
-
-```bash
-npm ci
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-```
-
-وعند لمس قاعدة البيانات:
-
-```bash
-scripts/db-test.sh
-```
-
-اختبار PostgreSQL يجب أن يثبت replay، schema contract، RLS لهويتين، RPC atomicity، الملكية، البنوك والفواتير والمخزون، Odoo، investor lifecycle، قائمة السماح، rollback/reapply، وidempotent replay.
-
----
-
-## بنية المجلدات
-
-```text
-src/                 runtime والواجهات والخدمات
-tests/               اختبارات Node وUI/source contracts
-supabase/migrations/ مخطط قاعدة البيانات المُدار بالإصدار
-supabase/rollback/   rollback مطابق
-supabase/tests/      اختبارات PostgreSQL الحقيقية
-supabase/functions/  Odoo Edge Functions server-side
-docs/release/        قرارات وأدلة الإطلاق
-docs/security/       عقود الصلاحيات والأمان
-docs/audit/          تقارير التدقيق
-docs/decisions/      ADRs
-docs/_archive/       وثائق قديمة لا تُستخدم مرجعًا
-```
-
----
-
-## قاعدة عدم التضليل
-
-لا تستخدم تقريرًا قديمًا لإعلان حالة حالية. كل claim عن النشر أو الأمان أو عدد الاختبارات أو جاهزية الإطلاق يجب أن يكون مرتبطًا بـSHA وبيئة وتاريخ تحقق واضحين.
+A task is complete only when the requested outcome is implemented, relevant evidence is committed, targeted verification passes, the diff contains no legacy leakage or secrets, and the PR clearly states what remains outside scope.

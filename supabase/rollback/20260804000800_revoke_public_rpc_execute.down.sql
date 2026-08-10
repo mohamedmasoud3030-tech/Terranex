@@ -1,4 +1,0 @@
--- Security privilege hardening is intentionally not reversed in isolation.
--- Earlier rollback files drop the affected routines during a full rollback,
--- while restoring PUBLIC execution here would reopen an externally reachable
--- SECURITY DEFINER surface between rollback steps.
