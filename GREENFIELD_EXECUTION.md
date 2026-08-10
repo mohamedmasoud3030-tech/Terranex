@@ -1,7 +1,7 @@
 # Greenfield Execution Status
 
 **Updated:** 2026-08-10
-**Working branch:** `greenfield/foundation`
+**Working branch:** `arena/019fed07-terranex` (GF-003 implementation; targets `greenfield/foundation`)
 **Strategy:** Product-first, Egypt-first, vertical slices
 
 ## Completed foundation
@@ -12,49 +12,60 @@
 - Simple modular-monolith delivery recorded in `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`.
 - Customer interviews and a design partner are not build prerequisites.
 
-## Completed batch
+## Completed batches
 
-`GF-002 / S0 — Executable Foundation and Project Shell`
+### GF-002 / S0 — Executable Foundation and Project Shell
 
-Status: **COMPLETE**.
+Status: **COMPLETE** (merged through PR #84 into `greenfield/foundation` at `29e14e4`).
 
-Merged through PR #84 into `greenfield/foundation` at `29e14e4daa85789a32eb1f2f1d6786a642c4c942` after the Greenfield CI gate passed in full.
+Delivered the Arabic-first Next.js shell, organization creation/membership, Real Estate project shell, default-deny RLS, append-only audit events, and server-authoritative commands.
 
-Verified evidence:
+### GF-003 / S1 — Terms & Funding
 
-1. Fresh dependency install succeeded.
-2. Lint passed.
-3. Focused validation and authorization tests passed.
-4. Production Next.js build passed.
-5. TypeScript typecheck passed.
-6. PostgreSQL 16 migration replay passed against an empty database.
-7. Real two-tenant RLS isolation passed: tenant A can create/read its project while tenant B cannot read it or create within tenant A/B outside its membership boundary.
-8. No legacy application implementation was reintroduced into the Greenfield slice.
+Status: **IMPLEMENTED AND VERIFIED ON BRANCH** (pending PR review; not merged).
+
+Outcome delivered: **activate agreement → call capital → receive contribution → show exact capital position/history.**
+
+Verified evidence (run on the reported commit):
+
+1. Fresh migration replay from an empty database: S0 then S1 migrations apply in order.
+2. Upgrade from the GF-002 schema: S1 migration applies on top of S0 without editing the prior migration.
+3. PostgreSQL behavioral gate passes: two-organization isolation and cross-tenant participant/project rejection.
+4. Agreement activation immutability and single-active-version rejection pass.
+5. Capital calls reject non-active versions, invalid participants, and amounts exceeding commitments.
+6. Contribution commands are idempotent (same key returns the same contribution and creates one economic effect), reject over-payment, and use row locking to prevent concurrent over-pay.
+7. Exact integer minor-unit money and derived project/partner rollforwards assert to the exact pound.
+8. Append-only triggers protect activated versions, commitment terms, contributions, and call lines.
+9. Arabic/RTL workflow states for terms, funding status, calls, contributions, and history are rendered truthfully.
+10. `npm run lint`, `npm run test`, `npm run build`, and `npm run typecheck` all pass.
+11. Greenfield database gate passes against an embedded PostgreSQL 18-compatible runtime locally; CI uses the PostgreSQL 16 service defined in `.github/workflows/greenfield-ci.yml`.
 
 Delivered:
 
-- Arabic-first responsive Next.js App Router shell with authentication entry.
-- Organization creation/current-organization resolution.
-- Real Estate investment project shell: create, list, and open.
-- Supabase migration with organizations, memberships, projects, minimal append-only audit events, default-deny RLS, and cross-tenant integrity.
-- Server-authoritative validation and commands.
-- Truthful loading, empty, error, not-found, and mobile/RTL states.
-- Deterministic npm dependency lock and Greenfield CI using `npm ci`.
+- Tenant-scoped parties and `INVESTOR` project participants.
+- One agreement per project with append-only `agreement_versions`; only one version may be active.
+- Version-scoped `commitment_terms` in integer minor units.
+- Issued capital calls with immutable lines and a commitment ceiling.
+- Append-only contributions with exact governing version/call/participant and an organization-scoped idempotency key.
+- Derived `project_capital_position` and `partner_capital_position` views; no editable balance columns.
+- Arabic-first `/projects/[projectId]/terms` and `/projects/[projectId]/funding` pages.
+- ADR `docs/decisions/0003_S1_TERMS_AND_FUNDING.md`.
+
+Schema/domain decisions: see ADR 0003. Key choices: one agreement envelope per project; S1 introduces only `INVESTOR`; no ownership/equity percentage is derived from cash; single-currency contributions; no approvals engine, GL, documents, or distributions.
 
 ## Explicitly deferred
 
-- participant/agreement/funding lifecycle beyond the next active slice;
-- postings, ledger, payments, allocation, and distributions beyond the next active slice;
-- generic approvals engine, documents/storage, notifications, outbox/queues, integrations, and country tax/e-invoicing;
-- PWA installation, service worker, IndexedDB, offline drafts, and sync/conflict handling;
+- Postings/subledger, receipts/payments beyond the S1 contribution fact, bank reconciliation, and period close;
+- ownership/allocation terms, result allocation, distributions, and investor self-service;
+- agreement amendment beyond append-only version superseding, notices/signatures, and document storage;
+- generic approvals engine, notifications, outbox/queues, integrations, and country tax/e-invoicing;
+- PWA/offline infrastructure;
 - Agriculture and Livestock runtime modules;
-- generic repositories, CQRS/event-sourcing frameworks, plugin/rules engines, package workspaces, and speculative shared layers.
+- generic repositories, CQRS/event-sourcing, plugin/rules engines, package workspaces, and speculative shared layers.
 
 ## Next active batch
 
-`GF-003 — Terms & Funding`
-
-Implement the smallest production-grade Real Estate vertical slice required to define project participation/funding terms, activate the governing agreement safely, and record a contribution against that active agreement. Decide exact tables, states, commands, and UI from the verified GF-002 codebase plus the Greenfield product/domain/finance contracts. Do not pre-scaffold later finance, approval, document, distribution, or non-Real-Estate systems.
+`GF-004 / S2 — Cost & cash` (to be defined in `GREENFIELD_EXECUTION.md` after GF-003 merges).
 
 ## Decision rules
 
