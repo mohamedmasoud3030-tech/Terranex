@@ -1,0 +1,1 @@
+drop function if exists public.create_investment_project(uuid,text,text,text); drop function if exists public.create_organization(text); drop function if exists public.is_active_member(uuid); drop table if exists public.audit_events; drop table if exists public.investment_projects; drop table if exists public.memberships; drop table if exists public.organizations;

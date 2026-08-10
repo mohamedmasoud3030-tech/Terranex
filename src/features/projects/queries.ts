@@ -1,0 +1,3 @@
+import { createClient } from '@/shared/supabase/server';
+export async function getProjects(organizationId: string) { const s = await createClient(); const { data, error } = await s.from('investment_projects').select('id,name,internal_reference,description,lifecycle_state,reporting_currency,created_at').eq('organization_id', organizationId).order('created_at', { ascending: false }); if (error) throw error; return data; }
+export async function getProject(id: string) { const s = await createClient(); const { data, error } = await s.from('investment_projects').select('id,name,internal_reference,description,lifecycle_state,reporting_currency,organization_id').eq('id', id).maybeSingle(); if (error) throw error; return data; }
