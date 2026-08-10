@@ -212,7 +212,7 @@ Closing stores control results and locks through a database-enforced rule. Reope
 
 ## 14. External accounting and tax integration
 
-The integration contract includes batch ID/version, lines, account mapping, dimensions, currency, source refs, document refs, and checksum. Export status is pending/sent/accepted/rejected/reversed. Retries are idempotent through the outbox.
+When an external accounting adapter is actually implemented, its contract includes batch ID/version, lines, account mapping, dimensions, currency, source refs, document refs, and checksum. Export status is pending/sent/accepted/rejected/reversed. Durable outbox delivery is added in that integration slice, not scaffolded in advance.
 
 Egypt’s ETA exposes e-invoicing/e-receipt APIs for taxpayer ERP/POS systems. Integration is a later adapter with pre-production certification, signing, document-version mapping, throttling, cancellation/rejection flows, and secure server-side credentials; browser code never holds tax-system secrets.
 
