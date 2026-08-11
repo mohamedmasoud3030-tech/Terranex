@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getParties } from '@/features/funding/queries';
-import { getCurrentMembership, getObligationPositions } from '@/features/finance/queries';
+import { getCashAccountPositions, getCurrentMembership, getObligationPositions } from '@/features/finance/queries';
 import { createClient } from '@/shared/supabase/server';
 import { formatMinorUnits } from '@/shared/money';
 import {
@@ -10,11 +10,19 @@ import {
   getPhases,getPropertyWorkspaces,getRealEstateProfile,getSectorEvents,getTimeline,getValuations,
 } from '@/features/real-estate/queries';
 import {
+  getPropertyDispositions,getRealizedResultDrilldown,getRealizedResults,getSaleCollections,
+  getUnreconciledPositiveStatementLines,
+} from '@/features/revenue/queries';
+import {
   AcquisitionForm,ApprovalButton,ASSET_STATE,AssetForm,BudgetForm,CATEGORY,
   ControlForm,CostClassificationForm,MilestoneForm,MilestoneTransitionForm,
   ParcelForm,PhaseForm,PhaseTransitionForm,ProfileForm,PropertyTransitionForm,
   SectorEventForm,STEP_STATE,ValuationForm,
 } from './forms';
+import {
+  ApproveDispositionForm,CollectionForm,ControlTransferForm,DispositionForm,
+  RecognizeSaleForm,ReconcileCollectionForm,SellingCostForm,
+} from './revenue-forms';
 
 export const dynamic='force-dynamic';
 
@@ -22,6 +30,8 @@ const CONTROL_LABEL:Record<string,string>={ACQUISITION_CHECK:'فحص استحو�
 const EVENT_LABEL:Record<string,string>={SITE_VISIT:'زيارة موقع',DEVELOPMENT_PROGRESS:'تقدم تطوير',CONTROL_OBSERVATION:'ملاحظة رقابية',MILESTONE_NOTE:'ملاحظة علامة',OTHER:'واقعة أخرى'};
 const STRATEGY:Record<string,string>={ACQUIRE_HOLD:'استحواذ واحتفاظ',DEVELOP_SELL:'تطوير ثم بيع',LAND_TRADE:'تجارة أراضٍ'};
 const PAYMENT:Record<string,string>={NOT_LINKED:'غير مربوط بالتزام',OBLIGATION_DRAFT:'التزام مسودة',UNPAID:'غير مدفوع',PARTIALLY_PAID:'مدفوع جزئيًا',PAID:'مدفوع',OBLIGATION_REVERSED:'التزام معكوس'};
+const DISPOSITION_STATUS:Record<string,string>={DRAFT:'مسودة اتفاق',APPROVED:'اتفاق معتمد',CONTROL_TRANSFERRED:'انتقلت السيطرة'};
+const FACT_LABEL:Record<string,string>={SALE_RECOGNITION:'قيد الاعتراف بالبيع',CARRYING_COST_DERECOGNITION:'قيد إلغاء التكلفة الدفترية',CARRYING_COST_SOURCE:'مصدر التكلفة الدفترية',COLLECTION:'قيد التحصيل',SELLING_COST:'تكلفة بيع مرحلة'};
 function date(value:string|null|undefined){return value?new Date(value).toLocaleDateString('ar-EG'):'—';}
 function dateTime(value:string){return new Date(value).toLocaleString('ar-EG');}
 function areaUnit(value:string){return {FEDDAN:'فدان',M2:'م²',HECTARE:'هكتار'}[value]??value;}
@@ -34,22 +44,26 @@ export default async function OperationsPage({params}:{params:Promise<{projectId
   const {data:{user}}=await supabase.auth.getUser();
   if(!user) return <section className="card"><h1>لا يمكن الوصول</h1><p className="error">انتهت جلسة الدخول. سجّل الدخول ثم أعد فتح المشروع.</p><Link className="button" href="/login">تسجيل الدخول</Link></section>;
 
-  const [membership,profile,assets,parcels,controls,phases,milestones,budgets,valuations,events,costs,drilldown,timeline,parties,obligations]=await Promise.all([
-    getCurrentMembership(organizationId),getRealEstateProfile(projectId),getPropertyWorkspaces(projectId),getParcels(projectId),getControls(projectId),getPhases(projectId),getMilestones(projectId),getBudgets(projectId),getValuations(projectId),getSectorEvents(projectId),getCostControls(projectId),getCostDrilldown(projectId),getTimeline(projectId),getParties(organizationId),getObligationPositions(projectId),
+  const [membership,profile,assets,parcels,controls,phases,milestones,budgets,valuations,events,costs,drilldown,timeline,parties,obligations,dispositions,collections,results,resultDrilldown,cashAccounts,statementLines]=await Promise.all([
+    getCurrentMembership(organizationId),getRealEstateProfile(projectId),getPropertyWorkspaces(projectId),getParcels(projectId),getControls(projectId),getPhases(projectId),getMilestones(projectId),getBudgets(projectId),getValuations(projectId),getSectorEvents(projectId),getCostControls(projectId),getCostDrilldown(projectId),getTimeline(projectId),getParties(organizationId),getObligationPositions(projectId),getPropertyDispositions(projectId),getSaleCollections(projectId),getRealizedResults(projectId),getRealizedResultDrilldown(projectId),getCashAccountPositions(projectId),getUnreconciledPositiveStatementLines(projectId),
   ]);
   if(!membership) return <section className="card"><h1>غير مصرح</h1><p className="error">عضويتك الحالية لا تسمح بقراءة عمليات هذا المشروع.</p></section>;
   const isOwner=membership.role==='OWNER';
   const assetName=new Map(assets.map(a=>[a.property_asset_id,a.name]));
   const parcelName=new Map(parcels.map(p=>[p.id,p.identifier]));
   const phaseName=new Map(phases.map(p=>[p.phase_id,p.name]));
+  const partyName=new Map(parties.map(p=>[p.id,p.legal_name]));
+  const cashName=new Map(cashAccounts.map(a=>[a.cash_account_id,a.name]));
   const classified=new Set(drilldown.map(d=>d.obligation_id));
   const unclassified=obligations.filter(o=>!classified.has(o.obligation_id)&&!o.is_reversed);
+  const disposedAssetIds=new Set(dispositions.map(d=>d.property_asset_id));
+  const dispositionCandidates=assets.filter(a=>!disposedAssetIds.has(a.property_asset_id)&&['HELD','DEVELOPING'].includes(a.operational_state));
   const total=(field:'budget_minor_units'|'committed_minor_units'|'actual_minor_units'|'variance_minor_units')=>costs.reduce((sum,row)=>sum+BigInt(row[field]),0n);
 
   return <section className="stack">
     <header className="project-context card">
       <div><Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link><h1>العمليات العقارية</h1><p className="muted">{project.name} · {project.reporting_currency} · {profile?STRATEGY[profile.strategy]: 'لم يُنشأ الملف العقاري'}</p></div>
-      <nav className="context-nav" aria-label="تنقل المشروع"><a href="#assets">الأصول والسيطرة</a><a href="#development">التطوير</a><a href="#cost-control">ضبط التكلفة</a><a href="#valuation">التقييم</a><a href="#timeline">السجل</a></nav>
+      <nav className="context-nav" aria-label="تنقل المشروع"><a href="#assets">الأصول والسيطرة</a><a href="#development">التطوير</a><a href="#cost-control">ضبط التكلفة</a><a href="#disposition">التصرف</a><a href="#sale-collection">البيع والتحصيل</a><a href="#realized-result">النتيجة المحققة</a><a href="#valuation">التقييم</a><a href="#timeline">السجل</a></nav>
     </header>
 
     {!profile&&<section className="card stack"><div><h2>ابدأ ملف العمليات العقارية</h2><p className="muted">حدّد استراتيجية المشروع فقط؛ السند والحيازة وحالة الأصل تُثبت لاحقًا كحقائق مستقلة.</p></div><ProfileForm {...{organizationId,projectId}}/></section>}
@@ -84,6 +98,41 @@ export default async function OperationsPage({params}:{params:Promise<{projectId
         <section className="card stack"><h3>نسخ الميزانية</h3>{budgets.length===0?<p className="muted">لا توجد ميزانية مقترحة أو معتمدة.</p>:<div className="table-wrap"><table><thead><tr><th>الأصل</th><th>النسخة</th><th>الأساس</th><th>الإجمالي</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>{budgets.map(b=><tr key={b.budget_version_id}><td>{assetName.get(b.property_asset_id)}</td><td>{b.version_no}</td><td>{b.basis_notes}</td><td>{formatMinorUnits(b.total_minor_units,b.currency)}</td><td><span className="status">{b.status==='APPROVED'?'معتمدة':'مقترحة'}</span></td><td>{b.status==='PROPOSED'&&isOwner?<ApprovalButton kind="budget" organizationId={organizationId} projectId={projectId} subjectId={b.budget_version_id}/>:b.approved_at?dateTime(b.approved_at):'بانتظار المالك'}</td></tr>)}</tbody></table></div>}</section>
         <section id="cost-breakdown" className="card stack scroll-target"><h3>تفصيل التكلفة حسب الأصل والقطعة والمرحلة والفئة</h3>{costs.length===0?<div className="empty"><p className="muted">لا توجد ميزانية معتمدة أو تكاليف S2 مصنفة بعد.</p></div>:<div className="table-wrap"><table><thead><tr><th>البُعد</th><th>الفئة</th><th>الميزانية</th><th>الملتزم</th><th>الفعلي</th><th>الانحراف</th></tr></thead><tbody>{costs.map((c,index)=><tr key={`${c.property_asset_id}-${c.parcel_id}-${c.phase_id}-${c.cost_category}-${index}`}><td>{assetName.get(c.property_asset_id)}{c.parcel_id?` · ${parcelName.get(c.parcel_id)}`:''}{c.phase_id?` · ${phaseName.get(c.phase_id)}`:''}</td><td>{CATEGORY[c.cost_category]??c.cost_category}</td><td>{formatMinorUnits(c.budget_minor_units,c.currency)}</td><td>{formatMinorUnits(c.committed_minor_units,c.currency)}</td><td>{formatMinorUnits(c.actual_minor_units,c.currency)}</td><td>{formatMinorUnits(c.variance_minor_units,c.currency)}</td></tr>)}</tbody></table></div>}
           <h4>السجلات المالية الأصلية</h4>{drilldown.length===0?<p className="muted">لا توجد التزامات مالية مصنفة للتفصيل.</p>:drilldown.map(d=><details key={d.property_cost_item_id}><summary>{d.description} — فعلي {formatMinorUnits(d.actual_minor_units,d.currency)}</summary><dl className="facts"><div><dt>التزام S2</dt><dd><Link href={`/projects/${projectId}/costs#${d.obligation_id}`}>{d.obligation_id}</Link></dd></div><div><dt>القيد المنشور الأصلي</dt><dd>{d.originating_batch_id||'لم يُرحّل'}</dd></div><div><dt>الفئة / القرار</dt><dd>{CATEGORY[d.cost_category]} · {d.policy_reference}</dd></div><div><dt>الملتزم المفتوح</dt><dd>{formatMinorUnits(d.committed_minor_units,d.currency)}</dd></div></dl></details>)}</section>
+      </section>
+
+      <section id="disposition" className="stack scroll-target">
+        <div className="section-heading"><div><h2>التصرف في الأصل كاملًا</h2><p className="muted">الاتفاق، الاعتماد، انتقال السيطرة، والاعتراف المالي حالات مستقلة. التحصيل ليس حالة بيع.</p></div><span className="status">Whole-property MVP</span></div>
+        {dispositionCandidates.length>0?<details className="card" open={dispositions.length===0}><summary>إنشاء مسودة اتفاق تصرف</summary><DispositionForm {...{organizationId,projectId,currency:project.reporting_currency,assets:dispositionCandidates,parties}}/></details>:dispositions.length===0&&<div className="card empty"><p className="muted">لا يوجد أصل محتفظ به أو قيد التطوير متاح للتصرف. لا يدعم هذا الإصدار بيع جزء من أصل.</p></div>}
+        {dispositions.map(d=>{const asset=assets.find(a=>a.property_asset_id===d.property_asset_id);return <article className="card stack" key={d.disposition_id}>
+          <div className="topline"><div><h3>{assetName.get(d.property_asset_id)} — {d.agreement_reference}</h3><p className="muted">المشتري: {partyName.get(d.buyer_party_id)||d.buyer_party_id} · اتفاق {date(d.agreement_date)} · دليل {d.agreement_evidence_reference}</p></div><span className="status">{DISPOSITION_STATUS[d.status]}</span></div>
+          <dl className="facts"><div><dt>المقابل المتفق عليه</dt><dd>{formatMinorUnits(d.agreed_proceeds_minor_units,d.currency)}</dd></div><div><dt>انتقال متوقع</dt><dd>{date(d.expected_control_transfer_date)}</dd></div><div><dt>انتقال فعلي</dt><dd>{date(d.control_transfer_date)}</dd></div><div><dt>حالة الأصل</dt><dd>{ASSET_STATE[asset?.operational_state??'']??asset?.operational_state??'—'}</dd></div></dl>
+          {d.status==='DRAFT'&&(isOwner?<ApproveDispositionForm organizationId={organizationId} projectId={projectId} dispositionId={d.disposition_id}/>:<p className="muted">مسودة للقراءة فقط؛ يعتمدها مالك المنظمة.</p>)}
+          {d.status==='APPROVED'&&(isOwner?(asset?.operational_state==='EXITING'?<ControlTransferForm organizationId={organizationId} projectId={projectId} dispositionId={d.disposition_id}/>:<p className="muted">أكد انتقال حالة الأصل إلى «قيد التخارج» من بطاقة الأصل أولًا. تغيير الحالة لا ينشئ قيدًا.</p>):<p className="muted">انتقال السيطرة إجراء مادي متاح لمالك المنظمة فقط.</p>)}
+          {d.status==='CONTROL_TRANSFERRED'&&!d.recognition_id&&(isOwner?<RecognizeSaleForm organizationId={organizationId} projectId={projectId} dispositionId={d.disposition_id}/>:<p className="muted">الاعتراف المالي إجراء مادي متاح لمالك المنظمة فقط.</p>)}
+          {d.recognition_id&&<p className="muted">تم الاعتراف في {date(d.recognition_date)} · قيد <code>{d.recognition_batch_id}</code></p>}
+        </article>;})}
+      </section>
+
+      <section id="sale-collection" className="stack scroll-target">
+        <div className="section-heading"><div><h2>البيع والتحصيل</h2><p className="muted">الإيراد ينشأ عند الاعتراف بعد انتقال السيطرة. النقد ينشأ من تحصيل مستقل ويمكن أن يكون جزئيًا أو متعددًا.</p></div></div>
+        {dispositions.every(d=>!d.recognition_id)?<div className="card empty"><p className="muted">لا يوجد بيع معترف به بعد؛ لذلك لا توجد ذمم أو تحصيلات.</p></div>:dispositions.filter(d=>d.recognition_id).map(d=><article className="card stack" key={`sale-${d.disposition_id}`}>
+          <div className="topline"><h3>{assetName.get(d.property_asset_id)}</h3><span className="status">معترف به</span></div>
+          <div className="metric-grid"><a className="metric" href="#result-drilldown"><span>الإيراد المعترف به</span><strong>{formatMinorUnits(d.recognized_revenue_minor_units??'0',d.currency)}</strong><small>قيد الاستحقاق</small></a><a className="metric" href="#collection-history"><span>المحصل نقدًا</span><strong>{formatMinorUnits(d.collected_minor_units,d.currency)}</strong><small>وقائع تحصيل منفصلة</small></a><a className="metric" href="#collection-history"><span>الذمم المتبقية</span><strong>{formatMinorUnits(d.outstanding_receivable_minor_units,d.currency)}</strong><small>الإيراد − التحصيل</small></a></div>
+          {BigInt(d.outstanding_receivable_minor_units)>0n&&(isOwner?<details><summary>تسجيل تحصيل</summary><CollectionForm {...{organizationId,projectId,disposition:d,cashAccounts}}/></details>:<p className="muted">التحصيل المادي للقراءة فقط؛ يؤكده مالك المنظمة.</p>)}
+          {BigInt(d.outstanding_receivable_minor_units)===0n&&<p className="status">تمت تسوية الذمم بالكامل</p>}
+        </article>)}
+        <section id="collection-history" className="card stack scroll-target"><h3>سجل التحصيل والمطابقة</h3>{collections.length===0?<p className="muted">لا توجد تحصيلات مرحلة.</p>:<div className="table-wrap"><table><thead><tr><th>الأصل</th><th>التاريخ</th><th>الحساب</th><th>المبلغ</th><th>الدليل</th><th>المطابقة</th></tr></thead><tbody>{collections.map(c=><tr key={c.collection_id}><td>{assetName.get(dispositions.find(d=>d.disposition_id===c.disposition_id)?.property_asset_id??'')}</td><td>{date(c.collection_date)}</td><td>{cashName.get(c.cash_account_id)||c.cash_account_id}</td><td>{formatMinorUnits(c.amount_minor_units,c.currency)}</td><td>{c.evidence_reference}<br/><small><code>{c.journal_batch_id}</code></small></td><td>{isOwner?<ReconcileCollectionForm {...{organizationId,projectId,collection:c,statementLines}}/>:c.is_reconciled?<span className="status">مطابق بنكيًا</span>:<span className="muted">غير مطابق</span>}</td></tr>)}</tbody></table></div>}</section>
+        <details className="card"><summary>إسناد تكلفة بيع مرحلة من S2</summary>{isOwner?<SellingCostForm {...{organizationId,projectId,assets,parcels,phases,obligations:unclassified}}/>:<p className="muted">إسناد التكاليف المرحلة إجراء مادي متاح لمالك المنظمة فقط.</p>}</details>
+      </section>
+
+      <section id="realized-result" className="stack scroll-target">
+        <div className="section-heading"><div><h2>النتيجة المحققة</h2><p className="muted">الإيراد − التكلفة الدفترية الملغاة − تكاليف البيع المرحلة. التقييم الإداري والنقد معروضان منفصلين ولا يدخلان هذه المعادلة.</p></div></div>
+        {results.length===0?<div className="card empty"><p className="muted">تظهر النتيجة فقط بعد قيد اعتراف مكتمل ومتوازن. المسودات وانتقال الحالة دون ترحيل مستبعدة.</p></div>:results.map(r=><article className="card stack" key={r.recognition_id}>
+          <div className="topline"><div><h3>{assetName.get(r.property_asset_id)}</h3><p className="muted">كما في {date(r.recognition_date)} · المشتري {partyName.get(r.buyer_party_id)||r.buyer_party_id}</p></div><span className="status">نتيجة محققة</span></div>
+          <div className="metric-grid"><a className="metric" href="#result-drilldown"><span>الإيراد</span><strong>{formatMinorUnits(r.recognized_revenue_minor_units,r.currency)}</strong><small>Dr ذمم / Cr إيراد</small></a><a className="metric" href="#result-drilldown"><span>التكلفة الدفترية الملغاة</span><strong>{formatMinorUnits(r.carrying_cost_derecognized_minor_units,r.currency)}</strong><small>من WIP المنشور فقط</small></a><a className="metric" href="#result-drilldown"><span>تكاليف البيع</span><strong>{formatMinorUnits(r.selling_costs_minor_units,r.currency)}</strong><small>مصروفات S2 المرحلة</small></a><a className="metric result-highlight" href="#result-drilldown"><span>النتيجة المحققة</span><strong>{formatMinorUnits(r.realized_result_minor_units,r.currency)}</strong><small>افتح مصادرها</small></a></div>
+          <dl className="facts"><div><dt>النقد المحصل (ليس إيرادًا)</dt><dd>{formatMinorUnits(r.collected_cash_minor_units,r.currency)}</dd></div><div><dt>الذمم المتبقية</dt><dd>{formatMinorUnits(r.outstanding_receivable_minor_units,r.currency)}</dd></div><div><dt>آخر تقييم إداري (ليس نتيجة)</dt><dd>{r.latest_management_valuation_minor_units?formatMinorUnits(r.latest_management_valuation_minor_units,r.currency):'لا يوجد تقييم معتمد'}</dd></div><div><dt>مصدر / تاريخ التقييم</dt><dd>{r.latest_management_valuation_source?`${r.latest_management_valuation_source} · ${date(r.latest_management_valuation_date)}`:'—'}</dd></div></dl>
+        </article>)}
+        <section id="result-drilldown" className="card stack scroll-target"><h3>التفصيل إلى القيد والدليل والمصدر</h3>{resultDrilldown.length===0?<p className="muted">لا توجد قيود نتيجة قابلة للتفصيل بعد.</p>:<div className="table-wrap"><table><thead><tr><th>الحقيقة</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>القيد / المصدر</th><th>الدليل</th></tr></thead><tbody>{resultDrilldown.map(row=><tr key={`${row.fact_type}-${row.journal_line_id}`}><td>{FACT_LABEL[row.fact_type]??row.fact_type}<br/><small>{date(row.transaction_date)}</small></td><td>{row.account_role}</td><td>{formatMinorUnits(row.debit_minor_units,row.currency)}</td><td>{formatMinorUnits(row.credit_minor_units,row.currency)}</td><td><code>{row.journal_batch_id}</code><br/><small>مصدر: {row.source_entity_id}</small></td><td>{row.evidence_reference}</td></tr>)}</tbody></table></div>}</section>
       </section>
 
       <section id="valuation" className="stack scroll-target"><div className="section-heading"><div><h2>التقييم الإداري</h2><p className="muted">منفصل صراحة عن النقد والإيراد والنتيجة المحققة وأي معالجة IAS/IFRS.</p></div></div><details className="card" open={valuations.length===0}><summary>اقتراح تقييم إداري</summary><ValuationForm {...{organizationId,projectId,currency:project.reporting_currency,assets}}/></details><section className="card stack">{valuations.length===0?<p className="muted">لا توجد تقييمات. لا يُعرض رقم افتراضي.</p>:<div className="table-wrap"><table><thead><tr><th>الأصل / التاريخ</th><th>المصدر والطريقة</th><th>التقييم الإداري</th><th>الافتراضات</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>{valuations.map(v=><tr key={v.valuation_id}><td>{assetName.get(v.property_asset_id)}<br/>{date(v.effective_date)}</td><td>{v.valuer_source}<br/><span className="muted">{v.method}</span></td><td><strong>{formatMinorUnits(v.amount_minor_units,v.currency)}</strong><br/><span className="muted">ليس ربحًا محققًا</span></td><td>{v.assumptions_notes}<br/><small>{v.evidence_reference}</small></td><td><span className="status">{v.status==='APPROVED'?'معتمد':'مقترح'}</span></td><td>{v.status==='PROPOSED'&&isOwner?<ApprovalButton kind="valuation" organizationId={organizationId} projectId={projectId} subjectId={v.valuation_id}/>:v.reviewed_at?dateTime(v.reviewed_at):'بانتظار المالك'}</td></tr>)}</tbody></table></div>}</section></section>

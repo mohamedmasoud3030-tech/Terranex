@@ -42,7 +42,7 @@ sed 's/create role authenticated nologin; create role anon nologin;//' \
 # the pre-upgrade assertion, in normal lexical migration order.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    202608110004*.sql) continue ;;
+    202608110004*.sql|202608110005*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done

@@ -139,6 +139,41 @@ Verified on PostgreSQL 16 and the application CI gate:
 - direct authenticated browser DML denial and material command idempotency — PASS
 - real two-session property-lifecycle race: exactly one command consumed the same predecessor state — PASS
 
+### GF-006 / S4 — Revenue & Realized Result
+
+Status: **COMPLETE — VERIFIED FOR INTEGRATION**.
+
+Delivered:
+
+1. Whole-property-only disposition with one database-unique disposition per property, exact proceeds/currency, buyer Party, agreement and evidence references, dates, audit, and payload-bound idempotency.
+2. Explicit `DRAFT → APPROVED → CONTROL_TRANSFERRED` disposition lifecycle. Agreement, control transfer, recognition, receivable, and collection remain separate facts; no `PAID = SOLD` state exists.
+3. Minimal S3 property lifecycle extension `HELD → EXITING → DISPOSED`. Each transition remains an explicit history command and has no implicit journal effect.
+4. One atomic S2 journal batch for sale recognition: Dr Customer Receivable / Cr Real Estate Sale Revenue and Dr Real Estate Cost of Sale / Cr the existing authoritative Development WIP account.
+5. Carrying cost derived only from active posted S2 `COST_OBLIGATION` WIP lines classified to the property through S3 dimensions and `CAPITALIZABLE_WIP` policy. Budget, commitment, payment, acquisition consideration, and management valuation are excluded; missing authoritative carrying cost fails recognition.
+6. Immutable carrying-cost provenance from the recognized amount to S3 property classification, S2 obligation, journal batch, and journal line.
+7. Independent partial/multiple collection posting through existing S2 project cash accounts: Dr Bank Cash / Cr Customer Receivable, with recognition-row locking and a database ceiling that prevents over-collection.
+8. Collection reconciliation to existing positive S2 bank-statement lines, with one cross-payment/collection statement-line allocation boundary safe under concurrency.
+9. Posted S2 selling expenses classified to the existing S3 property cost dimension as `SELLING`, kept separate from carrying cost and included in realized result only after posting.
+10. Realized-result read models for revenue, carrying cost derecognized, selling costs, realized result, collected cash, outstanding receivable, and latest approved management valuation as a separate labelled measure, plus source/evidence drilldown.
+11. Existing active-member prepare / OWNER material-action authorization, default-deny RLS, SELECT-only browser tables, locked-search-path RPC writes, append-only audit facts, and no new roles/workflow engine.
+12. Arabic/RTL responsive sections inside the existing Real Estate Operations workspace for Disposition, Sale & Collection, and Realized Result, including empty, loading, error, read-only, permission, and drilldown states.
+13. Canonical decision: `docs/decisions/0006_S4_REVENUE_AND_REALIZED_RESULT.md`.
+
+Verified by Greenfield CI on PostgreSQL 16 and the application gate:
+
+- `npm ci`, lint, unit/contract tests (59), production build, and typecheck — PASS
+- fresh migration replay S0 → S1 → S2 → S3 → S4 — PASS
+- forward upgrade from the exact merged S3 schema with S2/S3 objects preserved — PASS
+- two-organization RLS and same-tenant cross-project/property integrity — PASS
+- balanced revenue/carrying-cost recognition and balanced partial/multiple collection — PASS
+- revenue ≠ cash, valuation ≠ realized result, and draft/unposted facts excluded — PASS
+- payload-bound recognition/collection retries and one-effect duplicate handling — PASS
+- real two-session recognition race: exactly one sale recognition and one batch — PASS
+- real two-session collection race: exactly one 70% collection and no ceiling breach — PASS
+- sold property cannot receive a second disposition or recognition — PASS
+- S1/S2/S3 SQL and concurrency regressions remain green — PASS
+- SonarCloud Quality Gate — PASS
+
 ## Explicitly deferred
 
 - agreement amendment/supersession and funding carry-forward rules;
@@ -150,14 +185,16 @@ Verified on PostgreSQL 16 and the application CI gate:
 - period close/reopen, allocation and distributions;
 - private file storage/versioned documents and a generic document-management platform; metadata-only S3 evidence references remain implemented;
 - notifications, outbox/queues, integrations, and country tax/e-invoicing;
-- Real Estate sale recognition, customer collection, disposition realized result, property derecognition, leasing/property management, and full construction ERP/procurement/BOQ/contractor/change-order scope;
+- partial-property disposition and S5 proceeds/cost allocation; investor allocations/distributions and payouts;
+- S6 sale/collection correction, reversal orchestration, and period close/reopen;
+- leasing/property management and full construction ERP/procurement/BOQ/contractor/change-order scope;
 - PWA/offline sync;
 - Agriculture and Livestock runtime modules;
 - generic repositories, CQRS/event-sourcing frameworks, plugin/rules engines, package workspaces, and speculative shared layers.
 
 ## Next active batch
 
-`GF-006 / S4 — Revenue & Result` (per the delivery roadmap) or the next material vertical slice chosen by Mohamed. GF-005 closed the pre-disposal Real Estate operating path and cost drilldown; S4 may add sale recognition, collection, carrying-cost derecognition, and realized project result without treating management valuation or cash receipt as revenue/result.
+`GF-007 / S5 — Allocation & Distribution` (per the delivery roadmap) or the next material vertical slice chosen by Mohamed. GF-006 closed the whole-property disposition-to-realized-result path; S5 may allocate realized results under approved terms without treating allocation as cash distribution or reopening S4 sale accounting.
 
 ## Decision rules
 
