@@ -37,9 +37,13 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-S3_MIGRATION="$ROOT/supabase/migrations/20260811000400_s3_real_estate_operations.sql"
+# Keep this fixture at the exact pre-S3 (merged S2) boundary. All migrations in
+# the 202608110004xx family belong to GF-005/S3 and must be applied only after
+# the pre-upgrade assertion, in normal lexical migration order.
 for file in "$ROOT"/supabase/migrations/*.sql; do
-  [[ "$file" == "$S3_MIGRATION" ]] && continue
+  case "$(basename "$file")" in
+    202608110004*.sql) continue ;;
+  esac
   psql_db "$UPGRADE_DB" < "$file"
 done
 
@@ -49,10 +53,18 @@ if [[ "$BEFORE" != 'true' ]]; then
   exit 1
 fi
 
-psql_db "$UPGRADE_DB" < "$S3_MIGRATION"
-AFTER="$(psql_cmd "$UPGRADE_DB" "select (to_regclass('public.cost_obligations') is not null and to_regclass('public.journal_batches') is not null and to_regclass('public.property_assets') is not null and to_regclass('public.property_cost_items') is not null)::text")"
+s3_migrations=("$ROOT"/supabase/migrations/202608110004*.sql)
+if [[ ! -e "${s3_migrations[0]}" ]]; then
+  echo 'ERROR: no S3 migrations found for forward-upgrade verification.' >&2
+  exit 1
+fi
+for file in "${s3_migrations[@]}"; do
+  psql_db "$UPGRADE_DB" < "$file"
+done
+
+AFTER="$(psql_cmd "$UPGRADE_DB" "select (to_regclass('public.cost_obligations') is not null and to_regclass('public.journal_batches') is not null and to_regclass('public.property_assets') is not null and to_regclass('public.property_cost_items') is not null and to_regprocedure('public.s3_has_current_effective_control(uuid,text)') is not null)::text")"
 if [[ "$AFTER" != 'true' ]]; then
-  echo 'ERROR: S3 forward upgrade did not preserve S2 and add S3.' >&2
+  echo 'ERROR: full S3 forward upgrade did not preserve S2 and add all S3 hardening.' >&2
   exit 1
 fi
 
