@@ -142,6 +142,15 @@ select 1/case when (select operational_state='COMPLETED' and completed_at is not
 select s3_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.create_development_phase('10000000-0000-4000-8000-000000000001',%L,null,'مرحلة مشروع آخر',1,current_date,current_date+1,'s3-phase-other-001')$$,:'s3_other_asset'));
 select id as s3_other_phase from public.development_phases where idempotency_key='s3-phase-other-001' \gset
+select s3_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_development_milestone('10000000-0000-4000-8000-000000000001',%L,'علامة مشروع آخر',1,current_date,'s3-milestone-other')$$,:'s3_other_phase'));
+select id as s3_other_milestone from public.development_milestones where idempotency_key='s3-milestone-other' \gset
+select 1/case when s3_expect_raise('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_development_phase('10000000-0000-4000-8000-000000000001',%L,%L,'قطعة من أصل آخر',2,current_date,current_date+1,'s3-phase-wrong-parcel')$$,:'s3_other_asset',:'s3_parcel'),'23503') then 1 else 0 end as s3_parcel_from_wrong_property_rejected;
+select 1/case when s2_owner_expect_raise(format(
+  $$insert into public.parcels(organization_id,project_id,property_asset_id,identifier,area_quantity,area_unit,created_by,idempotency_key,request_hash) values('10000000-0000-4000-8000-000000000001',%L::uuid,%L::uuid,'wrong-project',1,'M2','00000000-0000-4000-8000-000000000001','s3-direct-wrong-project',repeat('a',64))$$,:'s3_project2',:'s3_asset'),'23503') then 1 else 0 end as s3_parcel_cross_project_rejected;
+select 1/case when s3_expect_raise('00000000-0000-4000-8000-000000000003',format(
+  $$select public.confirm_real_estate_event('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,%L,'MILESTONE_NOTE',now(),null,null,'00000000-0000-4000-8000-000000000003',null,'علامة من مرحلة أخرى',null,'s3-event-wrong-mile')$$,:'s3_project',:'s3_asset',:'s3_parcel',:'s3_phase',:'s3_other_milestone'),'23503') then 1 else 0 end as s3_milestone_from_wrong_phase_rejected;
 select 1/case when s3_expect_raise('00000000-0000-4000-8000-000000000001',format(
   $$select public.classify_property_cost('10000000-0000-4000-8000-000000000001',%L,%L,null,null,'CONSTRUCTION','قرار رسملة WIP','s3-cross-project-cost')$$,:'s3_wip_obligation',:'s3_other_asset'),'P0001') then 1 else 0 end as s3_same_tenant_cross_project_cost_rejected;
 select 1/case when s3_expect_raise('00000000-0000-4000-8000-000000000001',format(
