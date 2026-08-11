@@ -1122,7 +1122,8 @@ select l.id as line_id,l.organization_id,l.project_id,l.cash_account_id,l.import
   l.currency,l.description,l.fingerprint,l.created_at,
   (pm.id is not null or cm.id is not null) as is_reconciled,
   coalesce(pm.id,cm.id) as match_id,pm.payment_id as matched_payment_id,
-  cm.collection_id as matched_collection_id,coalesce(pm.matched_at,cm.matched_at) as matched_at
+  coalesce(pm.matched_at,cm.matched_at) as matched_at,
+  cm.collection_id as matched_collection_id
 from public.bank_statement_lines l
 left join public.reconciliation_matches pm on pm.statement_line_id=l.id and pm.voided_at is null
 left join public.property_sale_collection_reconciliations cm on cm.statement_line_id=l.id;
