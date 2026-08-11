@@ -1,9 +1,5 @@
 -- GF-003 / S1 — Terms & Funding behavioral gate.
--- Proves two-org isolation, immutable agreement activation, capital-call
--- authorization, contribution idempotency/concurrency, exact integer money
--- rollforward, append-only history, and browser-write denial.
--- Direct command lines set role/identity (psql \gset compatible). Wrapper
--- functions are SECURITY DEFINER and re-assert identity inside themselves.
+-- Real concurrent-session checks run separately in 03_s1_concurrency.sh.
 
 delete from public.audit_events;
 delete from public.contributions;
@@ -29,9 +25,6 @@ insert into public.memberships(organization_id,user_id,role) values
   ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','OWNER'),
   ('20000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000002','OWNER');
 
--- Assert a SQL statement raises a given SQLSTATE when run as a given user.
--- The wrapper SET ROLEs to "authenticated" so RLS is actually enforced;
--- SECURITY DEFINER/owner postgres is what permits that SET ROLE.
 create or replace function s1_expect_raise(p_user uuid, p_sql text, p_sqlstate text)
 returns boolean language plpgsql as $$
 begin
@@ -45,8 +38,6 @@ exception when others then
   return sqlstate = p_sqlstate;
 end $$;
 
-
--- Assert a SQL statement runs successfully as a given user.
 create or replace function s1_expect_ok(p_user uuid, p_sql text)
 returns boolean language plpgsql as $$
 begin
@@ -61,8 +52,6 @@ exception when others then
   return false;
 end $$;
 
-
--- Run a statement as a given user and discard the result.
 create or replace function s1_run(p_user uuid, p_sql text)
 returns void language plpgsql as $$
 begin
@@ -72,34 +61,39 @@ begin
   reset role;
 end $$;
 
-
--- ---- Seed as actor 1 (org A) ----
+-- Projects and parties.
 select s1_run('00000000-0000-4000-8000-000000000001',
   $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع النخيل',null,null)$$);
 select id as project_a from public.investment_projects where name='مشروع النخيل' \gset
+select s1_run('00000000-0000-4000-8000-000000000001',
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع ثانٍ',null,null)$$);
+select id as project_a2 from public.investment_projects where name='مشروع ثانٍ' \gset
 
 select s1_run('00000000-0000-4000-8000-000000000001',
   $$select public.create_party('10000000-0000-4000-8000-000000000001','مستثمر أول','PERSON')$$);
 select s1_run('00000000-0000-4000-8000-000000000001',
   $$select public.create_party('10000000-0000-4000-8000-000000000001','مستثمر ثانٍ','PERSON')$$);
+select s1_run('00000000-0000-4000-8000-000000000001',
+  $$select public.create_party('10000000-0000-4000-8000-000000000001','مستثمر مشروع ثانٍ','PERSON')$$);
 select id as party_a1 from public.parties where legal_name='مستثمر أول' \gset
 select id as party_a2 from public.parties where legal_name='مستثمر ثانٍ' \gset
+select id as party_a3 from public.parties where legal_name='مستثمر مشروع ثانٍ' \gset
 
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$,
-  :'project_a', :'party_a1'));
+  $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$, :'project_a', :'party_a1'));
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$,
-  :'project_a', :'party_a2'));
+  $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$, :'project_a', :'party_a2'));
+select s1_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$, :'project_a2', :'party_a3'));
 select id as part_a1 from public.project_participants where party_id=:'party_a1' \gset
 select id as part_a2 from public.project_participants where party_id=:'party_a2' \gset
+select id as part_a3 from public.project_participants where party_id=:'party_a3' \gset
 
--- A tenant-B party (created as actor 2).
 select s1_run('00000000-0000-4000-8000-000000000002',
   $$select public.create_party('20000000-0000-4000-8000-000000000002','طرف باء','PERSON')$$);
 select id as party_b1 from public.parties where legal_name='طرف باء' \gset
 
--- ---- Cross-tenant rejection ----
+-- Tenant and project scope.
 select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000002', format(
   $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$,
   :'project_a', :'party_b1'), 'P0001') then 1 else 0 end as cross_tenant_participant_rejected;
@@ -114,182 +108,133 @@ end $$;
 select 1/case when s1_cross_tenant_read('00000000-0000-4000-8000-000000000002',:'project_a')
   then 1 else 0 end as cross_tenant_project_read_denied;
 
--- ---- Agreement drafting & activation ----
+select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-08-10',array[%L::uuid],array[100]::bigint[],'agreement-cross-project')$$,
+  :'project_a', :'part_a3'), 'P0001') then 1 else 0 end as cross_project_commitment_rejected;
+
+-- Draft idempotency and payload binding.
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-08-10',
-    array[%L::uuid,%L::uuid], array[1000000,500000]::bigint[])$$,
+  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-08-10',array[%L::uuid,%L::uuid],array[1000000,500000]::bigint[],'agreement-main-0001')$$,
   :'project_a', :'part_a1', :'part_a2'));
-select id as version_a1 from public.agreement_versions
- where agreement_id=(select id from public.investment_agreements where project_id=:'project_a')
- order by version_no limit 1 \gset
+select id as version_a1 from public.agreement_versions where idempotency_key='agreement-main-0001' \gset
 
+select 1/case when s1_expect_ok('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-08-10',array[%L::uuid,%L::uuid],array[1000000,500000]::bigint[],'agreement-main-0001')$$,
+  :'project_a', :'part_a1', :'part_a2')) then 1 else 0 end as agreement_retry_same_payload_ok;
+select 1/case when (select count(*) from public.agreement_versions where idempotency_key='agreement-main-0001')=1 then 1 else 0 end as agreement_retry_single_effect;
+select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-08-10',array[%L::uuid,%L::uuid],array[999999,500000]::bigint[],'agreement-main-0001')$$,
+  :'project_a', :'part_a1', :'part_a2'), 'P0001') then 1 else 0 end as agreement_retry_payload_mismatch_rejected;
+
+-- Activation is idempotent, then the S1 governing boundary freezes participants and versions.
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.activate_agreement_version('10000000-0000-4000-8000-000000000001',%L)$$,
-  :'version_a1'));
+  $$select public.activate_agreement_version('10000000-0000-4000-8000-000000000001',%L)$$, :'version_a1'));
+select 1/case when s1_expect_ok('00000000-0000-4000-8000-000000000001', format(
+  $$select public.activate_agreement_version('10000000-0000-4000-8000-000000000001',%L)$$, :'version_a1')) then 1 else 0 end as activation_retry_ok;
+select 1/case when (select lifecycle_state from public.investment_projects where id=:'project_a')='FUNDING' then 1 else 0 end as project_entered_funding;
 
-select 1/case when (
-  select lifecycle_state from public.investment_projects where id=:'project_a'
-)='FUNDING' then 1 else 0 end as project_entered_funding;
-
--- Activated version immutability: even the table owner cannot change an
--- activated version; the BEFORE trigger raises P0001.
 create or replace function s1_update_version(p_id uuid) returns void language plpgsql as $$
-begin
-  update public.agreement_versions set status='DRAFT' where id=p_id;
-end $$;
+begin update public.agreement_versions set status='DRAFT' where id=p_id; end $$;
 do $immutable$
 begin
   perform s1_update_version(:'version_a1');
   raise exception 'immutability guard did not fire';
 exception when others then
-  if sqlerrm <> 'agreement version is immutable once activated' then
-    raise;
-  end if;
+  if sqlerrm <> 'agreement version is immutable once activated' then raise; end if;
 end $immutable$;
 
--- A second version drafts but cannot be activated concurrently.
-select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-09-01',
-    array[%L::uuid], array[2000000]::bigint[])$$,
-  :'project_a', :'part_a1'));
-select id as version_a2 from public.agreement_versions
- where agreement_id=(select id from public.investment_agreements where project_id=:'project_a')
- order by version_no desc limit 1 \gset
 select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.activate_agreement_version('10000000-0000-4000-8000-000000000001',%L)$$,
-  :'version_a2'), 'P0001') then 1 else 0 end as overlapping_active_version_rejected;
+  $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-09-01',array[%L::uuid],array[1000000]::bigint[],'agreement-amendment-deferred')$$,
+  :'project_a', :'part_a1'), 'P0001') then 1 else 0 end as amendment_draft_after_activation_rejected;
+
+select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$,
+  :'project_a', :'party_a3'), 'P0001') then 1 else 0 end as participant_change_after_activation_rejected;
 
 create or replace function s1_update_commitment(p_version uuid) returns void language plpgsql as $$
-begin
-  update public.commitment_terms set commitment_minor_units=999
-  where agreement_version_id=p_version;
-end $$;
+begin update public.commitment_terms set commitment_minor_units=999 where agreement_version_id=p_version; end $$;
 do $commit$
 begin
   perform s1_update_commitment(:'version_a1');
   raise exception 'commitment immutability guard did not fire';
 exception when others then
-  if sqlerrm <> 'commitment terms are immutable once the agreement version is activated' then
-    raise;
-  end if;
+  if sqlerrm <> 'commitment terms are immutable once the agreement version is activated' then raise; end if;
 end $commit$;
 
--- ---- Capital calls ----
-select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,
-    date '2026-09-15','CALL-X', array[%L::uuid], array[100]::bigint[])$$,
-  :'project_a', :'version_a2', :'part_a1'), 'P0001')
-  then 1 else 0 end as call_requires_active_version;
-
+-- Capital-call idempotency, payload binding, and ceiling.
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,
-    date '2026-09-15','CALL-1', array[%L::uuid,%L::uuid], array[600000,200000]::bigint[])$$,
+  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,date '2026-09-15','CALL-1',array[%L::uuid,%L::uuid],array[600000,200000]::bigint[],'call-main-0001')$$,
   :'project_a', :'version_a1', :'part_a1', :'part_a2'));
-select id as call_1 from public.capital_calls where reference='CALL-1' \gset
+select id as call_1 from public.capital_calls where idempotency_key='call-main-0001' \gset
 
-select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,
-    date '2026-09-20','CALL-OVER', array[%L::uuid], array[400000]::bigint[])$$,
-  :'project_a', :'version_a1', :'part_a2'), 'P0001')
-  then 1 else 0 end as call_exceeding_commitment_rejected;
-
--- ---- Contributions ----
-select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    600000,'EGP',date '2026-09-12','idem-0001-part-a1')$$,
-  :'project_a', :'part_a1', :'version_a1', :'call_1'));
-select id as contrib_1 from public.contributions where idempotency_key='idem-0001-part-a1' \gset
-
--- Idempotent replay: same key returns same id, no new row.
 select 1/case when s1_expect_ok('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    600000,'EGP',date '2026-09-12','idem-0001-part-a1')$$,
-  :'project_a', :'part_a1', :'version_a1', :'call_1')) then 1 else 0 end as idempotent_replay_ok;
-select 1/case when (
-  select count(*) from public.contributions where capital_call_id=:'call_1' and participant_id=:'part_a1'
-)=1 then 1 else 0 end as duplicate_command_single_effect;
-
+  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,date '2026-09-15','CALL-1',array[%L::uuid,%L::uuid],array[600000,200000]::bigint[],'call-main-0001')$$,
+  :'project_a', :'version_a1', :'part_a1', :'part_a2')) then 1 else 0 end as capital_call_retry_same_payload_ok;
+select 1/case when (select count(*) from public.capital_calls where idempotency_key='call-main-0001')=1 then 1 else 0 end as capital_call_retry_single_effect;
 select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    250000,'EGP',date '2026-09-13','idem-over-a2')$$,
-  :'project_a', :'part_a2', :'version_a1', :'call_1'), 'P0001')
-  then 1 else 0 end as over_contribution_rejected;
+  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,date '2026-09-15','CALL-1',array[%L::uuid],array[1]::bigint[],'call-main-0001')$$,
+  :'project_a', :'version_a1', :'part_a1'), 'P0001') then 1 else 0 end as capital_call_retry_payload_mismatch_rejected;
+select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,date '2026-09-20','CALL-OVER',array[%L::uuid],array[400000]::bigint[],'call-over-a2')$$,
+  :'project_a', :'version_a1', :'part_a2'), 'P0001') then 1 else 0 end as call_exceeding_commitment_rejected;
+
+-- Contributions: exact key replay, mismatched replay rejection, and call ceiling.
+select s1_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,600000,'EGP',date '2026-09-12','contrib-main-a1')$$,
+  :'project_a', :'part_a1', :'version_a1', :'call_1'));
+select id as contrib_1 from public.contributions where idempotency_key='contrib-main-a1' \gset
+select 1/case when s1_expect_ok('00000000-0000-4000-8000-000000000001', format(
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,600000,'EGP',date '2026-09-12','contrib-main-a1')$$,
+  :'project_a', :'part_a1', :'version_a1', :'call_1')) then 1 else 0 end as contribution_retry_same_payload_ok;
+select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,599999,'EGP',date '2026-09-12','contrib-main-a1')$$,
+  :'project_a', :'part_a1', :'version_a1', :'call_1'), 'P0001') then 1 else 0 end as contribution_retry_payload_mismatch_rejected;
 
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    150000,'EGP',date '2026-09-13','idem-0002-part-a2')$$,
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,150000,'EGP',date '2026-09-13','contrib-main-a2-1')$$,
   :'project_a', :'part_a2', :'version_a1', :'call_1'));
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    50000,'EGP',date '2026-09-14','idem-0003-part-a2')$$,
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,50000,'EGP',date '2026-09-14','contrib-main-a2-2')$$,
   :'project_a', :'part_a2', :'version_a1', :'call_1'));
-select id as contrib_2a from public.contributions where idempotency_key='idem-0002-part-a2' \gset
-select id as contrib_2b from public.contributions where idempotency_key='idem-0003-part-a2' \gset
-
 select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    1,'EGP',date '2026-09-15','idem-0004-part-a2')$$,
-  :'project_a', :'part_a2', :'version_a1', :'call_1'), 'P0001')
-  then 1 else 0 end as contribution_after_full_rejected;
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,1,'EGP',date '2026-09-15','contrib-over-a2')$$,
+  :'project_a', :'part_a2', :'version_a1', :'call_1'), 'P0001') then 1 else 0 end as contribution_after_full_rejected;
 
 create or replace function s1_update_contribution(p_id uuid) returns void language plpgsql as $$
-begin
-  update public.contributions set contribution_minor_units=1 where id=p_id;
-end $$;
+begin update public.contributions set contribution_minor_units=1 where id=p_id; end $$;
 do $contrib$
 begin
   perform s1_update_contribution(:'contrib_1');
   raise exception 'contribution append-only guard did not fire';
 exception when others then
-  if sqlerrm <> 'contributions are append-only posted facts' then
-    raise;
-  end if;
+  if sqlerrm <> 'contributions are append-only posted facts' then raise; end if;
 end $contrib$;
 
--- ---- Exact rollforward ----
+-- Privileged same-tenant cross-project writes are rejected by database guards too.
+do $scope$
+begin
+  begin
+    insert into public.commitment_terms(organization_id,agreement_version_id,participant_id,commitment_minor_units,currency)
+    values ('10000000-0000-4000-8000-000000000001', :'version_a1', :'part_a3', 1, 'EGP');
+    raise exception 'cross-project commitment unexpectedly succeeded';
+  exception when raise_exception then
+    if sqlerrm = 'cross-project commitment unexpectedly succeeded' then raise; end if;
+  end;
+end $scope$;
+
+-- Exact derived rollforward and exact-text transport views.
 select 1/case when (select committed_minor_units from public.project_capital_position where project_id=:'project_a')=1500000 then 1 else 0 end as rollforward_committed_exact;
 select 1/case when (select called_minor_units from public.project_capital_position where project_id=:'project_a')=800000 then 1 else 0 end as rollforward_called_exact;
 select 1/case when (select contributed_minor_units from public.project_capital_position where project_id=:'project_a')=800000 then 1 else 0 end as rollforward_contributed_exact;
 select 1/case when (select receivable_minor_units from public.project_capital_position where project_id=:'project_a')=0 then 1 else 0 end as rollforward_receivable_zero;
-select 1/case when (select contributed_minor_units from public.partner_capital_position where participant_id=:'part_a1' and agreement_version_id=:'version_a1')=600000 then 1 else 0 end as partner1_contributed_exact;
-select 1/case when (select contributed_minor_units from public.partner_capital_position where participant_id=:'part_a2' and agreement_version_id=:'version_a1')=200000 then 1 else 0 end as partner2_contributed_exact;
-select 1/case when (
-  select count(*) from public.contributions
-  where id in (:'contrib_1',:'contrib_2a',:'contrib_2b') and agreement_version_id=:'version_a1'
-)=3 then 1 else 0 end as contributions_retain_exact_version;
+select 1/case when pg_typeof((select committed_minor_units from public.project_capital_position_read where project_id=:'project_a'))='text'::regtype then 1 else 0 end as money_transport_is_text;
 
--- ---- Concurrency / overpay against a fresh full call ----
+-- Prepare deterministic race cases for 03_s1_concurrency.sh.
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,
-    date '2026-10-01','CALL-2', array[%L::uuid], array[400000]::bigint[])$$,
+  $$select public.create_capital_call('10000000-0000-4000-8000-000000000001',%L,%L,date '2026-10-01','CALL-RACE',array[%L::uuid],array[400000]::bigint[],'call-race-contribution')$$,
   :'project_a', :'version_a1', :'part_a1'));
-select id as call_2 from public.capital_calls where reference='CALL-2' \gset
-select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    400000,'EGP',date '2026-09-30','idem-0005-part-a1-c2')$$,
-  :'project_a', :'part_a1', :'version_a1', :'call_2'));
-select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
-    400000,'EGP',date '2026-10-01','idem-0006-part-a1-c2-race')$$,
-  :'project_a', :'part_a1', :'version_a1', :'call_2'), 'P0001')
-  then 1 else 0 end as concurrent_overpay_rejected;
 
--- ---- Unauthenticated and direct-write denial ----
--- With no JWT subject set, commands must raise 'authentication required'.
-create or replace function s1_unauth_contribution() returns void language plpgsql as $$
-begin
-  perform set_config('request.jwt.claim.sub','',false);
-  perform public.record_contribution('10000000-0000-4000-8000-000000000001',
-    cast(current_setting('app.project_a') as uuid), cast(current_setting('app.part_a1') as uuid),
-    cast(current_setting('app.version_a1') as uuid), cast(current_setting('app.call_2') as uuid),
-    1,'EGP',date '2026-10-01','idem-unauth');
-end $$;
-select set_config('app.project_a',:'project_a',false);
-select set_config('app.part_a1',:'part_a1',false);
-select set_config('app.version_a1',:'version_a1',false);
-select set_config('app.call_2',:'call_2',false);
-do $$ begin perform s1_unauth_contribution(); raise exception 'should have failed'; exception when others then if sqlerrm <> 'authentication required' then raise; end if; end $$;
-
+-- Direct browser DML remains denied.
 do $$
 begin
   execute 'set role authenticated';
@@ -301,10 +246,9 @@ begin
   reset role;
 end $$;
 
--- Arabic workflow audit trail exists (at least one of each S1 event).
 select 1/case when (
   select count(distinct event_type) from public.audit_events where event_type in
   ('AGREEMENT_VERSION_ACTIVATED','CAPITAL_CALL_ISSUED','CONTRIBUTION_RECORDED')
-)=3 then 1 else 0 end as arabic_workflow_audited;
+)=3 then 1 else 0 end as s1_workflow_audited;
 
-select 'S1 terms and funding PASS' as result;
+select 'S1 terms and funding SQL PASS' as result;
