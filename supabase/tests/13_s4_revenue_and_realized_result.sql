@@ -259,8 +259,21 @@ select s4_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.approve_property_disposition('10000000-0000-4000-8000-000000000001',%L,'s4-no-cost-approve')$$,:'s4_no_cost_disposition'));
 select s4_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.transition_property_asset('10000000-0000-4000-8000-000000000001',%L,'HELD','EXITING','اختبار فشل التكلفة الدفترية','DISP-NOCOST','s4-no-cost-exiting')$$,:'s4_no_cost_asset'));
+-- A classified but unposted draft is not carrying cost. Once control transfers,
+-- the shared disposition-row lock also prevents that draft from racing into the
+-- recognition snapshot through late WIP authorization.
+select s4_run('00000000-0000-4000-8000-000000000003',format(
+  $$select public.create_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,'WIP غير مرحل قبل التخارج',900,'EGP',current_date,'CAPITALIZABLE_WIP','s4-no-cost-draft-wip')$$,
+  :'s4_project',:'s4_supplier'));
+select id as s4_no_cost_draft_wip from public.cost_obligations where idempotency_key='s4-no-cost-draft-wip' \gset
+select s4_run('00000000-0000-4000-8000-000000000003',format(
+  $$select public.classify_property_cost('10000000-0000-4000-8000-000000000001',%L,%L,null,null,'OTHER','تصنيف WIP غير مرحل','s4-no-cost-draft-class')$$,
+  :'s4_no_cost_draft_wip',:'s4_no_cost_asset'));
 select s4_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.confirm_property_control_transfer('10000000-0000-4000-8000-000000000001',%L,current_date,'دليل انتقال بلا تكلفة','s4-no-cost-transfer')$$,:'s4_no_cost_disposition'));
+select 1/case when s4_expect_raise('00000000-0000-4000-8000-000000000001',format(
+  $$select public.authorize_cost_obligation('10000000-0000-4000-8000-000000000001',%L,'s4-no-cost-late-wip')$$,
+  :'s4_no_cost_draft_wip'),'P0001') then 1 else 0 end as s4_late_wip_after_control_transfer_rejected;
 select 1/case when s4_expect_raise('00000000-0000-4000-8000-000000000001',format(
   $$select public.recognize_property_sale('10000000-0000-4000-8000-000000000001',%L,current_date,'s4-no-cost-recognize')$$,
   :'s4_no_cost_disposition'),'P0001') then 1 else 0 end as s4_missing_authoritative_carrying_cost_fails;

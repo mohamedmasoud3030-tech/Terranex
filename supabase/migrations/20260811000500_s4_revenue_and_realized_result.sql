@@ -358,7 +358,7 @@ for each row execute function public.s4_guard_one_active_source_posting();
 -- recognized disposition/collection or its carrying source in a half-state.
 create or replace function public.s4_guard_deferred_reversal() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
-declare v_target record;
+declare v_target record; v_disposition_status text;
 begin
   if new.source_type<>'REVERSAL' then return new; end if;
   select * into v_target from public.journal_batches
@@ -367,12 +367,18 @@ begin
   if v_target.source_type in ('PROPERTY_SALE_RECOGNITION','PROPERTY_SALE_COLLECTION') then
     raise exception 'S4 sale and collection correction is deferred to the controlled correction slice';
   end if;
-  if v_target.source_type='COST_OBLIGATION' and exists (
-    select 1 from public.property_cost_items pci
-    join public.property_sale_recognitions r on r.property_asset_id=pci.property_asset_id
+  if v_target.source_type='COST_OBLIGATION' then
+    -- The disposition row is the pre-existing serialization boundary shared
+    -- with control transfer. Once transfer commits, no carrying source can be
+    -- reversed while recognition is deriving its snapshot.
+    select d.status into v_disposition_status
+    from public.property_cost_items pci
+    join public.property_dispositions d on d.property_asset_id=pci.property_asset_id
     where pci.cost_obligation_id=v_target.source_id
-  ) then
-    raise exception 'recognized property carrying-cost sources cannot be reversed';
+    for update of d;
+    if v_disposition_status='CONTROL_TRANSFERRED' then
+      raise exception 'control-transferred property carrying-cost sources cannot be reversed';
+    end if;
   end if;
   return new;
 end $$;
@@ -385,10 +391,15 @@ for each row execute function public.s4_guard_deferred_reversal();
 -- PROJECT_EXPENSE facts.
 create or replace function public.s4_guard_no_post_sale_cost_mapping() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
+declare v_disposition_status text;
 begin
-  if new.cost_category<>'SELLING'
-     and exists(select 1 from public.property_sale_recognitions r where r.property_asset_id=new.property_asset_id) then
-    raise exception 'cannot add carrying-cost classifications after sale recognition';
+  if new.cost_category='SELLING' then return new; end if;
+  select d.status into v_disposition_status
+  from public.property_dispositions d
+  where d.property_asset_id=new.property_asset_id
+  for update;
+  if v_disposition_status='CONTROL_TRANSFERRED' then
+    raise exception 'cannot add carrying-cost classifications after control transfer';
   end if;
   return new;
 end $$;
@@ -398,15 +409,22 @@ for each row execute function public.s4_guard_no_post_sale_cost_mapping();
 
 create or replace function public.s4_guard_no_post_sale_wip() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
+declare v_disposition_status text;
 begin
-  if new.obligation_id is not null
-     and exists(select 1 from public.semantic_accounts sa where sa.id=new.account_id and sa.role='DEVELOPMENT_WIP')
-     and exists(
-       select 1 from public.property_cost_items pci
-       join public.property_sale_recognitions r on r.property_asset_id=pci.property_asset_id
-       where pci.cost_obligation_id=new.obligation_id
-     ) then
-    raise exception 'cannot post carrying cost after property sale recognition';
+  if new.obligation_id is null
+     or not exists(select 1 from public.semantic_accounts sa where sa.id=new.account_id and sa.role='DEVELOPMENT_WIP') then
+    return new;
+  end if;
+  -- Lock the same disposition row updated by control transfer. If posting wins,
+  -- transfer waits and recognition includes it; if transfer wins, posting sees
+  -- CONTROL_TRANSFERRED and fails. No WIP can race into the carrying snapshot.
+  select d.status into v_disposition_status
+  from public.property_cost_items pci
+  join public.property_dispositions d on d.property_asset_id=pci.property_asset_id
+  where pci.cost_obligation_id=new.obligation_id
+  for update of d;
+  if v_disposition_status='CONTROL_TRANSFERRED' then
+    raise exception 'cannot post carrying cost after property control transfer';
   end if;
   return new;
 end $$;

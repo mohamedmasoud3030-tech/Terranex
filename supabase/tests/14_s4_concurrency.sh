@@ -54,20 +54,49 @@ OBLIGATION="$(psql_value "select id from public.cost_obligations where idempoten
 psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.classify_property_cost('$ORG','$OBLIGATION','$ASSET',null,null,'ACQUISITION','سياسة WIP لسباق الاعتراف','s4-race-wip-classify');
 select public.authorize_cost_obligation('$ORG','$OBLIGATION','s4-race-wip-authorize');
+select public.create_cost_obligation('$ORG','$PROJECT','$SUPPLIER','WIP متزامن مع انتقال السيطرة',200,'EGP',current_date,'CAPITALIZABLE_WIP','s4-race-late-wip');"
+LATE_WIP="$(psql_value "select id from public.cost_obligations where idempotency_key='s4-race-late-wip'")"
+psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
+select public.classify_property_cost('$ORG','$LATE_WIP','$ASSET',null,null,'OTHER','سياسة WIP متزامن','s4-race-late-wip-class');
 select public.create_property_disposition('$ORG','$PROJECT','$ASSET','$BUYER','S4-RACE-DISP','اتفاق سباق الاعتراف',1000,'EGP',current_date-1,current_date,'s4-race-disposition');"
 DISPOSITION="$(psql_value "select id from public.property_dispositions where idempotency_key='s4-race-disposition'")"
 psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.approve_property_disposition('$ORG','$DISPOSITION','s4-race-disposition-approve');
-select public.transition_property_asset('$ORG','$ASSET','HELD','EXITING','بدء تخارج سباق الاعتراف','S4-RACE-DISP','s4-race-exiting');
+select public.transition_property_asset('$ORG','$ASSET','HELD','EXITING','بدء تخارج سباق الاعتراف','S4-RACE-DISP','s4-race-exiting');"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+# Control transfer and a final WIP authorization share the disposition-row
+# serialization boundary. The late cost either commits before transfer and is
+# included, or loses after transfer and rolls back; it can never enter after the
+# recognition snapshot.
+TRANSFER_SQL="set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.confirm_property_control_transfer('$ORG','$DISPOSITION',current_date,'محضر انتقال سباق الاعتراف','s4-race-transfer');"
+LATE_WIP_SQL="set request.jwt.claim.sub='$OWNER'; set role authenticated;
+select public.authorize_cost_obligation('$ORG','$LATE_WIP','s4-race-late-wip-authorize');"
+set +e
+run_session "$TRANSFER_SQL" "$tmpdir/transfer.log" & pid_transfer=$!
+run_session "$LATE_WIP_SQL" "$tmpdir/late-wip.log" & pid_wip=$!
+wait "$pid_transfer"; status_transfer=$?
+wait "$pid_wip"; status_wip=$?
+set -e
+if [[ "$status_transfer" -ne 0 ]]; then
+  echo "ERROR: control transfer lost its carrying-freeze race; transfer=$status_transfer wip=$status_wip" >&2
+  cat "$tmpdir/transfer.log" "$tmpdir/late-wip.log" >&2
+  exit 1
+fi
+ACTIVE_WIP="$(psql_value "select coalesce(sum(jl.debit_minor_units-jl.credit_minor_units),0) from public.property_cost_items pci join public.journal_lines jl on jl.obligation_id=pci.cost_obligation_id join public.semantic_accounts sa on sa.id=jl.account_id and sa.role='DEVELOPMENT_WIP' where pci.property_asset_id='$ASSET'")"
+if [[ "$ACTIVE_WIP" != '1000' && "$ACTIVE_WIP" != '1200' ]]; then
+  echo "ERROR: control-transfer/WIP race left invalid active WIP=$ACTIVE_WIP" >&2
+  exit 1
+fi
 
 SQL_A="set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.recognize_property_sale('$ORG','$DISPOSITION',current_date,'s4-race-recognition-a');"
 SQL_B="set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.recognize_property_sale('$ORG','$DISPOSITION',current_date,'s4-race-recognition-b');"
 
-tmpdir="$(mktemp -d)"
-trap 'rm -rf "$tmpdir"' EXIT
 set +e
 run_session "$SQL_A" "$tmpdir/recognition-a.log" & pid_a=$!
 run_session "$SQL_B" "$tmpdir/recognition-b.log" & pid_b=$!
@@ -86,6 +115,11 @@ if [[ "$REC_COUNT" != '1' || "$BATCH_COUNT" != '1' ]]; then
   exit 1
 fi
 RECOGNITION="$(psql_value "select id from public.property_sale_recognitions where disposition_id='$DISPOSITION'")"
+RECOGNIZED_CARRYING="$(psql_value "select carrying_cost_minor_units from public.property_sale_recognitions where id='$RECOGNITION'")"
+if [[ "$RECOGNIZED_CARRYING" != "$ACTIVE_WIP" ]]; then
+  echo "ERROR: recognized carrying=$RECOGNIZED_CARRYING does not match serialized active WIP=$ACTIVE_WIP" >&2
+  exit 1
+fi
 
 # Two 70% collections race against the same receivable. The recognition-row
 # lock and database trigger must permit exactly one and preserve the ceiling.

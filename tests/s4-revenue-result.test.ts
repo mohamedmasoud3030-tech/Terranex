@@ -82,9 +82,11 @@ describe('S4 database contract',()=>{
     expect(fn).toContain('v_wip');
   });
 
-  it('serializes recognition and collection ceilings in the database',()=>{
+  it('serializes recognition, the carrying-cost freeze, and collection ceilings in the database',()=>{
     expect(migration).toContain("':s4-sale-recognize:'");
     expect(migration).toContain('where id=p_disposition_id and organization_id=p_organization_id for update');
+    expect(migration).toContain('for update of d');
+    expect(migration).toContain("v_disposition_status='CONTROL_TRANSFERRED'");
     expect(migration).toContain('property_sale_collection_scope_and_ceiling');
     expect(migration).toContain('where id=new.recognition_id and organization_id=new.organization_id for update');
     expect(migration).toContain('collection exceeds outstanding receivable');
