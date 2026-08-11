@@ -60,7 +60,7 @@ export default async function ProjectShell({
           </Link>
           <Link className="card" href={`/projects/${projectId}/operations`}>
             <strong>العمليات العقارية</strong>
-            <p className="muted">الأصول والقطع والاستحواذ والسيطرة والتطوير والتقييم وضبط التكلفة</p>
+            <p className="muted">الأصول والسيطرة والتطوير والتكلفة والتصرف والبيع والتحصيل والنتيجة المحققة</p>
           </Link>
           <Link className="card" href={`/projects/${projectId}/costs`}>
             <strong>التكاليف والالتزامات</strong>
