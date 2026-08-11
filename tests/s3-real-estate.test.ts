@@ -3,6 +3,8 @@ import { describe,expect,it } from 'vitest';
 import { acquisitionSchema,budgetSchema,parcelSchema,sectorEventSchema,transitionSchema,valuationSchema } from '../src/features/real-estate/schema';
 
 const migration=readFileSync('supabase/migrations/20260811000400_s3_real_estate_operations.sql','utf8');
+const integrityHardening=readFileSync('supabase/migrations/20260811000410_s3_integrity_hardening.sql','utf8');
+const controlPrecedence=readFileSync('supabase/migrations/20260811000420_s3_control_precedence_hardening.sql','utf8');
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const base={organizationId:id(1),projectId:id(2),idempotencyKey:'s3-test-key-0001'};
 
@@ -42,13 +44,21 @@ describe('S3 database contract',()=>{
     expect(migration).not.toContain('sector_object_type');
     expect(migration).not.toContain('sector_object_id');
   });
-  it('enforces lifecycle and held evidence at the database boundary',()=>{
+  it('enforces lifecycle and current whole-asset evidence at the database boundary',()=>{
     expect(migration).toContain('property_transition_guard');
     expect(migration).toContain("v_current = 'ACQUIRING' and new.new_state = 'HELD'");
-    expect(migration).toContain("record_type = 'TITLE'");
-    expect(migration).toContain("record_type = 'POSSESSION'");
+    expect(migration).toContain("s3_has_current_effective_control(new.property_asset_id,'TITLE')");
+    expect(migration).toContain("s3_has_current_effective_control(new.property_asset_id,'POSSESSION')");
     expect(migration).toContain('for update');
     expect(migration).toContain('unique (property_asset_id, previous_history_id)');
+    expect(controlPrecedence).toContain('left join lateral');
+    expect(controlPrecedence).toContain("c.status is distinct from 'PASSED'");
+  });
+  it('keeps lifecycle orchestration canonical while forward migrations refine policy',()=>{
+    const chain=`${migration}\n${integrityHardening}\n${controlPrecedence}`;
+    expect(chain.match(/create or replace function public\.s3_validate_property_transition\(\)/g)).toHaveLength(1);
+    expect(integrityHardening).toContain('refined evidence policy helper');
+    expect(controlPrecedence).toContain('refined evidence policy helper');
   });
   it('extends S2 through dimension links and derived views without a second ledger',()=>{
     const costTable=migration.split('create table public.property_cost_items (')[1].split(');')[0];

@@ -542,6 +542,24 @@ returns text language sql stable set search_path=pg_catalog,public as $$
   where h.milestone_id = p_milestone_id order by h.changed_at desc, h.id desc limit 1
 $$;
 
+-- Baseline control policy used by the stable lifecycle orchestrator. Later
+-- forward migrations refine how whole-asset/current evidence is resolved by
+-- replacing this policy helper without duplicating lifecycle behavior.
+create or replace function public.s3_has_current_effective_control(
+  p_property_asset_id uuid,
+  p_record_type text
+) returns boolean language sql stable set search_path=pg_catalog,public as $$
+  select exists (
+    select 1 from public.property_control_records c
+    where c.property_asset_id=p_property_asset_id
+      and c.record_type=p_record_type
+      and c.status='PASSED'
+      and c.effective_date is not null
+      and c.effective_date<=current_date
+      and (c.expiry_date is null or c.expiry_date>=current_date)
+  )
+$$;
+
 create or replace function public.s3_validate_history_predecessor(
   p_current_history uuid, p_current_state text, p_previous_history uuid,
   p_previous_state text, p_new_state text, p_initial_state text
@@ -568,9 +586,11 @@ begin
   select h.id,h.new_state into v_current_history,v_current
   from public.property_asset_state_history h where h.property_asset_id=new.property_asset_id
   order by h.changed_at desc,h.id desc limit 1;
+
   if public.s3_validate_history_predecessor(
     v_current_history,v_current,new.previous_history_id,new.previous_state,new.new_state,'CANDIDATE'
   ) then return new; end if;
+
   if not ((v_current = 'CANDIDATE' and new.new_state = 'DUE_DILIGENCE')
        or (v_current = 'DUE_DILIGENCE' and new.new_state = 'ACQUIRING')
        or (v_current = 'ACQUIRING' and new.new_state = 'HELD')
@@ -578,44 +598,51 @@ begin
        or (v_current = 'DEVELOPING' and new.new_state = 'HELD')) then
     raise exception 'invalid property lifecycle transition: % -> %', v_current, new.new_state;
   end if;
+
   if v_current = 'DUE_DILIGENCE' and new.new_state = 'ACQUIRING' then
-    if not exists (select 1 from public.property_acquisitions a where a.property_asset_id = new.property_asset_id) then
+    if not exists (
+      select 1 from public.property_acquisitions a
+      where a.property_asset_id = new.property_asset_id
+    ) then
       raise exception 'acquiring requires a recorded acquisition contract';
     end if;
-    if not exists (
-      select 1 from public.property_control_records c
-      where c.property_asset_id = new.property_asset_id
-        and c.record_type = 'ACQUISITION_CHECK' and c.status = 'PASSED'
-        and (c.expiry_date is null or c.expiry_date >= current_date)
-    ) then raise exception 'acquiring requires a passed acquisition due-diligence check'; end if;
+    if not public.s3_has_current_effective_control(new.property_asset_id,'ACQUISITION_CHECK') then
+      raise exception 'acquiring requires current effective passed acquisition due-diligence coverage';
+    end if;
   end if;
+
   if v_current = 'ACQUIRING' and new.new_state = 'HELD' then
-    if not exists (select 1 from public.property_acquisitions a where a.property_asset_id = new.property_asset_id) then
+    if not exists (
+      select 1 from public.property_acquisitions a
+      where a.property_asset_id = new.property_asset_id
+    ) then
       raise exception 'held requires a recorded acquisition contract';
     end if;
-    if not exists (
-      select 1 from public.property_control_records c
-      where c.property_asset_id = new.property_asset_id
-        and c.record_type = 'TITLE' and c.status = 'PASSED'
-        and c.effective_date is not null and c.effective_date <= current_date
-        and (c.expiry_date is null or c.expiry_date >= current_date)
-    ) then raise exception 'held requires effective passed title evidence'; end if;
-    if not exists (
-      select 1 from public.property_control_records c
-      where c.property_asset_id = new.property_asset_id
-        and c.record_type = 'POSSESSION' and c.status = 'PASSED'
-        and c.effective_date is not null and c.effective_date <= current_date
-        and (c.expiry_date is null or c.expiry_date >= current_date)
-    ) then raise exception 'held requires effective passed possession evidence'; end if;
+    if not public.s3_has_current_effective_control(new.property_asset_id,'TITLE') then
+      raise exception 'held requires current effective passed title coverage';
+    end if;
+    if not public.s3_has_current_effective_control(new.property_asset_id,'POSSESSION') then
+      raise exception 'held requires current effective passed possession coverage';
+    end if;
   end if;
+
   if v_current = 'HELD' and new.new_state = 'DEVELOPING' then
+    if not public.s3_has_current_effective_control(new.property_asset_id,'TITLE')
+       or not public.s3_has_current_effective_control(new.property_asset_id,'POSSESSION') then
+      raise exception 'development requires current effective title and possession coverage';
+    end if;
     if not exists (
       select 1 from public.development_phases p
       where p.property_asset_id = new.property_asset_id
         and public.s3_current_phase_state(p.id) = 'ACTIVE'
     ) then raise exception 'developing requires an active development phase'; end if;
   end if;
+
   if v_current = 'DEVELOPING' and new.new_state = 'HELD' then
+    if not public.s3_has_current_effective_control(new.property_asset_id,'TITLE')
+       or not public.s3_has_current_effective_control(new.property_asset_id,'POSSESSION') then
+      raise exception 'returning to held requires current effective title and possession coverage';
+    end if;
     if exists (
       select 1 from public.development_phases p
       where p.property_asset_id = new.property_asset_id
@@ -627,6 +654,7 @@ begin
         and public.s3_current_phase_state(p.id) = 'COMPLETED'
     ) then raise exception 'returning to held requires a completed development phase'; end if;
   end if;
+
   return new;
 end $$;
 create trigger property_transition_guard before insert on public.property_asset_state_history
@@ -1358,39 +1386,31 @@ grant select on public.property_asset_workspace_read,public.parcels_read,
 revoke all on function public.s3_current_property_state(uuid),public.s3_current_phase_state(uuid),public.s3_current_milestone_state(uuid),
   public.s3_validate_history_predecessor(uuid,text,uuid,text,text,text) from public,anon,authenticated;
 
--- Commands are the only authenticated write path.
-revoke all on function public.create_real_estate_profile(uuid,uuid,text,text,text),
-  public.create_property_asset(uuid,uuid,text,text,text),
-  public.create_parcel(uuid,uuid,text,text,text,numeric,text,text),
-  public.record_property_acquisition(uuid,uuid,uuid,text,bigint,bigint,text,date,uuid,text,text),
-  public.record_property_control(uuid,uuid,uuid,text,text,text,date,date,text,uuid,text,text,text),
-  public.transition_property_asset(uuid,uuid,text,text,text,text,text),
-  public.create_development_phase(uuid,uuid,uuid,text,integer,date,date,text),
-  public.transition_development_phase(uuid,uuid,text,text,text,text),
-  public.create_development_milestone(uuid,uuid,text,integer,date,text),
-  public.transition_development_milestone(uuid,uuid,text,text,text,text),
-  public.propose_property_budget(uuid,uuid,text,text,uuid[],uuid[],text[],bigint[],text),
-  public.approve_property_budget(uuid,uuid,text),
-  public.classify_property_cost(uuid,uuid,uuid,uuid,uuid,text,text,text),
-  public.propose_property_valuation(uuid,uuid,date,text,text,bigint,text,text,text,text,text),
-  public.approve_property_valuation(uuid,uuid,text),
-  public.confirm_real_estate_event(uuid,uuid,uuid,uuid,uuid,uuid,text,timestamptz,numeric,text,uuid,text,text,text,text)
-from public,anon;
-
-grant execute on function public.create_real_estate_profile(uuid,uuid,text,text,text),
-  public.create_property_asset(uuid,uuid,text,text,text),
-  public.create_parcel(uuid,uuid,text,text,text,numeric,text,text),
-  public.record_property_acquisition(uuid,uuid,uuid,text,bigint,bigint,text,date,uuid,text,text),
-  public.record_property_control(uuid,uuid,uuid,text,text,text,date,date,text,uuid,text,text,text),
-  public.transition_property_asset(uuid,uuid,text,text,text,text,text),
-  public.create_development_phase(uuid,uuid,uuid,text,integer,date,date,text),
-  public.transition_development_phase(uuid,uuid,text,text,text,text),
-  public.create_development_milestone(uuid,uuid,text,integer,date,text),
-  public.transition_development_milestone(uuid,uuid,text,text,text,text),
-  public.propose_property_budget(uuid,uuid,text,text,uuid[],uuid[],text[],bigint[],text),
-  public.approve_property_budget(uuid,uuid,text),
-  public.classify_property_cost(uuid,uuid,uuid,uuid,uuid,text,text,text),
-  public.propose_property_valuation(uuid,uuid,date,text,text,bigint,text,text,text,text,text),
-  public.approve_property_valuation(uuid,uuid,text),
-  public.confirm_real_estate_event(uuid,uuid,uuid,uuid,uuid,uuid,text,timestamptz,numeric,text,uuid,text,text,text,text)
-to authenticated;
+-- Commands are the only authenticated write path. Keep one explicit command
+-- registry so revoke/grant scopes cannot drift apart as the bounded slice grows.
+do $$
+declare
+  v_command regprocedure;
+begin
+  foreach v_command in array array[
+    'public.create_real_estate_profile(uuid,uuid,text,text,text)'::regprocedure,
+    'public.create_property_asset(uuid,uuid,text,text,text)'::regprocedure,
+    'public.create_parcel(uuid,uuid,text,text,text,numeric,text,text)'::regprocedure,
+    'public.record_property_acquisition(uuid,uuid,uuid,text,bigint,bigint,text,date,uuid,text,text)'::regprocedure,
+    'public.record_property_control(uuid,uuid,uuid,text,text,text,date,date,text,uuid,text,text,text)'::regprocedure,
+    'public.transition_property_asset(uuid,uuid,text,text,text,text,text)'::regprocedure,
+    'public.create_development_phase(uuid,uuid,uuid,text,integer,date,date,text)'::regprocedure,
+    'public.transition_development_phase(uuid,uuid,text,text,text,text)'::regprocedure,
+    'public.create_development_milestone(uuid,uuid,text,integer,date,text)'::regprocedure,
+    'public.transition_development_milestone(uuid,uuid,text,text,text,text)'::regprocedure,
+    'public.propose_property_budget(uuid,uuid,text,text,uuid[],uuid[],text[],bigint[],text)'::regprocedure,
+    'public.approve_property_budget(uuid,uuid,text)'::regprocedure,
+    'public.classify_property_cost(uuid,uuid,uuid,uuid,uuid,text,text,text)'::regprocedure,
+    'public.propose_property_valuation(uuid,uuid,date,text,text,bigint,text,text,text,text,text)'::regprocedure,
+    'public.approve_property_valuation(uuid,uuid,text)'::regprocedure,
+    'public.confirm_real_estate_event(uuid,uuid,uuid,uuid,uuid,uuid,text,timestamptz,numeric,text,uuid,text,text,text,text)'::regprocedure
+  ] loop
+    execute format('revoke all on function %s from public, anon',v_command);
+    execute format('grant execute on function %s to authenticated',v_command);
+  end loop;
+end $$;
