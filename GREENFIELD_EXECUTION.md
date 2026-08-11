@@ -103,6 +103,42 @@ Verified on PostgreSQL 16 and the application CI gate:
 - exact inverse reversals, double-reversal rejection, dependency-order rules, contribution repost after linked reversal — PASS
 - exact integer/decimal money round-trips and values beyond JavaScript safe integer — PASS
 
+### GF-005 / S3 — Real Estate Sector Operation
+
+Status: **COMPLETE — VERIFIED FOR INTEGRATION**.
+
+Delivered:
+
+1. One immutable Real Estate project profile (strategy and optional jurisdiction), multiple economic property assets per project, and cadastral parcels with exact decimal quantity plus an explicit area unit.
+2. Command-driven property lifecycle and immutable predecessor-linked history for `CANDIDATE → DUE_DILIGENCE → ACQUIRING → HELD → DEVELOPING → HELD`; every transition records actor, time, reason, and material evidence, and concurrent commands cannot consume the same prior state twice.
+3. Acquisition as an operational/legal fact reusing the S1 Party and exact shared money implementations. An optional consideration obligation must match the existing S2 project, seller, amount, and currency; acquisition itself creates neither payment nor journal economics.
+4. Typed acquisition-check, title, possession, permit, and inspection facts with responsible actor, dates/result, evidence reference, and immutable confirmation. `HELD` requires a recorded contract plus separate effective passed title and possession evidence; payment is displayed independently and cannot imply control.
+5. Property/optional-parcel development phases and phase-owned milestones with planned dates, derived actual dates, bounded planned/active/completed/cancelled transitions, actor/time/reason history, and no task-management or construction-ERP framework.
+6. Confirmed Real Estate events with occurred/recorded time, normalized project/property/parcel/phase/milestone hierarchy, responsible member, notes/location/evidence, and optional quantity that is valid only with an explicit unit.
+7. Numbered immutable proposed/approved property budget versions, OWNER-only approval, and preserved prior approved versions rather than mutable budget balances.
+8. `PropertyCostItem` as a normalized operational dimension on one authoritative S2 obligation, with property/optional parcel/phase/category and policy reference but no amount or balance column. Composite database references reject cross-tenant, cross-project, and wrong property/parcel/phase combinations.
+9. Exact cost control derived from existing S2 facts: latest approved budget; committed as the outstanding amount on active authorized obligations; actual/cost-to-date as debit-minus-credit on posted Project Expense / Development WIP journal lines including reversals; variance as budget minus actual. Every amount drills to the S2 obligation and originating batch.
+10. Proposed/approved management valuation with date, source, method, exact amount, assumptions, confidence, reviewer, and evidence, explicitly isolated from cash, revenue, realized result, journal posting, and automatic accounting classification.
+11. Existing MEMBER prepare / OWNER material-confirm authorization, default-deny RLS, SELECT-only browser tables, authenticated locked-search-path RPC writes, payload-bound idempotency, immutable confirmed facts, and append-only audit history; no generic roles or approval engine.
+12. Arabic/RTL project Operations workspace covering current state, assets/parcels, acquisition/control, phases/milestones, valuation, cost control/drilldown, and operational timeline, with responsive 360px reflow and truthful loading, empty, error, and forbidden handling.
+13. Metadata-only evidence references were sufficient for this slice; no private Storage/DMS or offline/PWA machinery was scaffolded.
+14. Canonical decision: `docs/decisions/0005_S3_REAL_ESTATE_OPERATIONS.md`.
+
+Verified on PostgreSQL 16 and the application CI gate:
+
+- `npm ci`, lint, focused/unit contract tests (47), production build, and typecheck — PASS
+- fresh migration replay S0 → S1 → S2 → S3 — PASS
+- forward upgrade from the exact merged S2 schema with S2 objects preserved — PASS
+- two-organization RLS isolation and same-tenant cross-project rejection — PASS
+- wrong property/parcel/phase/milestone hierarchy and finance-dimension rejection — PASS
+- invalid lifecycle rejection, valid complete lifecycle/history, and effective title + possession gate for `HELD` — PASS
+- acquisition/title/possession/payment independence and acquisition-without-journal/payment — PASS
+- immutable/versioned exact budget history and OWNER approval boundary — PASS
+- committed and actual reproduction from S2 obligations/payments/journal facts plus originating-batch drilldown — PASS
+- management valuation approval with no cash/revenue/result/journal effect — PASS
+- direct authenticated browser DML denial and material command idempotency — PASS
+- real two-session property-lifecycle race: exactly one command consumed the same predecessor state — PASS
+
 ## Explicitly deferred
 
 - agreement amendment/supersession and funding carry-forward rules;
@@ -112,14 +148,16 @@ Verified on PostgreSQL 16 and the application CI gate:
 - statutory/general ledger, chart-of-accounts editor, external accounting adapters, bank APIs/open banking;
 - fuzzy, split, or many-to-many reconciliation; multi-currency/FX;
 - period close/reopen, allocation and distributions;
-- documents/storage platform, notifications, outbox/queues, integrations, and country tax/e-invoicing;
+- private file storage/versioned documents and a generic document-management platform; metadata-only S3 evidence references remain implemented;
+- notifications, outbox/queues, integrations, and country tax/e-invoicing;
+- Real Estate sale recognition, customer collection, disposition realized result, property derecognition, leasing/property management, and full construction ERP/procurement/BOQ/contractor/change-order scope;
 - PWA/offline sync;
 - Agriculture and Livestock runtime modules;
 - generic repositories, CQRS/event-sourcing frameworks, plugin/rules engines, package workspaces, and speculative shared layers.
 
 ## Next active batch
 
-`GF-005 / S3 — Sector Operation` (per the delivery roadmap) or the next material vertical slice chosen by Mohamed. GF-004 closed the Cost & Cash slice end-to-end; the next slice should not restart or duplicate its ledger, money, or authorization primitives.
+`GF-006 / S4 — Revenue & Result` (per the delivery roadmap) or the next material vertical slice chosen by Mohamed. GF-005 closed the pre-disposal Real Estate operating path and cost drilldown; S4 may add sale recognition, collection, carrying-cost derecognition, and realized project result without treating management valuation or cash receipt as revenue/result.
 
 ## Decision rules
 
