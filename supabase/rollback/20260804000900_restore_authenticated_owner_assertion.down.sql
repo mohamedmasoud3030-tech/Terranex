@@ -1,3 +1,0 @@
--- The authenticated owner assertion grant is required by SECURITY INVOKER
--- RPCs. Do not revoke it during an isolated rollback; earlier rollback files
--- remove the dependent routines during a complete rollback.

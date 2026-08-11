@@ -8,10 +8,10 @@
 Do not build equal depth for all three sectors before revenue. Build:
 
 1. the shared investment/finance/control core;
-2. one production-ready sector pack selected by the first paying design partner;
+2. one production-ready Real Estate sector pack;
 3. thin schema/workflow spikes for the other sectors only to prove the core boundary.
 
-Recommended commercial default: start with **real-estate acquisition/development/disposal** because investment agreements, partner capital, property costs, approvals, and distributions expose the core product value with less daily biological/offline complexity. If the first committed buyer is agricultural or livestock, switch the sector pack without changing the core.
+Start with **real-estate acquisition/development/disposal** because it exposes the investment core with less biological/offline complexity. Change the first sector only through an explicit product decision; do not prebuild the other sectors.
 
 ## 2. MVP promise
 
@@ -35,7 +35,7 @@ If a feature does not help deliver or prove that promise for a contracted design
 - simple result allocation and distribution approval/payment;
 - approvals, tasks, exceptions, audit trail;
 - project dashboard, capital statement, project performance pack;
-- Arabic/RTL, responsive web/PWA, offline sector-event drafts;
+- Arabic/RTL responsive web; PWA installation and offline sector-event drafts are added only when the sector-capture slice proves the need;
 - CSV import/export with controlled opening-balance workflow.
 
 ### First sector pack — real-estate default
@@ -64,7 +64,7 @@ Build working slices, not disconnected layers:
 
 | Slice | User-visible outcome | Proof |
 |---|---|---|
-| S0 Foundation | Secure organization and project shell | Two-tenant isolation, roles, audit |
+| S0 Foundation | Working Arabic app: authenticate, create organization, create/list/open Real Estate project shell | Two-tenant isolation, RLS, minimal audit |
 | S1 Terms & funding | Activate agreement, call and receive capital | Capital rollforward and immutable version |
 | S2 Cost & cash | Record obligation, approve/pay, reconcile bank | Balanced posting and evidence trail |
 | S3 Sector operation | Capture one complete sector lifecycle path | Quantity/state rollforward + cost drilldown |
@@ -77,31 +77,28 @@ Each slice includes schema, domain, application, UI, permissions, tests, telemet
 
 ## 5. Delivery phases
 
-### Phase 0 — Evidence and commercial validation (1–2 weeks)
+### Phase 0 — Product foundation and reference validation (complete)
 
 Outputs:
 
-- three qualified customer interviews and one committed design partner;
-- sanitized real spreadsheets, agreement, bank statement, invoices/receipts, and monthly partner report;
-- selected first sector and exact pilot project;
-- validated terminology and workflow map;
-- paid/purchase-intent pilot terms and success criteria;
-- legal boundary confirmation: private operational system, no public solicitation/custody.
+- approved Greenfield product, operating, domain, sector, finance, architecture, UX, and delivery baselines;
+- product-first execution decision and explicit separation of common core, sector packs, and company configuration;
+- first operating market set to Egypt and first sector-pack default set to real estate;
+- legal/product boundary confirmed as a private B2B operational system with no public solicitation or custody;
+- implementation assumptions marked for later professional, standards, and production validation.
 
-**Exit:** one buyer provides data, weekly access to users, and commercial commitment. No code beyond prototypes/setup if this is absent.
+**Exit:** the Greenfield baseline and product-first decision are approved and recorded. Customer interviews, a design partner, and customer documents are not prerequisites for Phase 1.
 
-### Phase 1 — Architecture runway and UX prototype (1–2 weeks)
+### Phase 1 — Executable foundation and first vertical slice
 
 Outputs:
 
-- repository/CI, environments, migrations, tenant/auth/RLS baseline;
-- accounting policy/semantic accounts and posting-rule ADR;
-- domain command/API contracts;
-- clickable Arabic prototype for the eight critical tasks;
-- import mapping and data migration rehearsal plan;
-- threat model and authorization matrix.
+- one maintained Next.js application with minimal CI and validated environment contract;
+- Supabase migration, Auth integration, default-deny RLS, and two-tenant tests;
+- working Arabic/RTL organization and Real Estate project-shell flow;
+- only the just-in-time decisions, commands, audit, and UI primitives used by that flow.
 
-**Exit:** finance, operator, manager, and investor can complete prototype tasks; technical spikes prove transaction/RLS/offline assumptions.
+**Exit:** a fresh checkout installs, replays migrations, passes targeted gates, builds, and proves an authenticated member can create/open a project while another organization cannot access it.
 
 ### Phase 2 — Core vertical slices (4–6 weeks)
 
@@ -162,7 +159,7 @@ A feature is done only when:
 - material commands are atomic/idempotent and auditable;
 - reversal/correction and closed-period behavior exist where relevant;
 - Arabic/RTL and mobile states are verified;
-- loading/error/empty/offline/conflict states are honest;
+- loading/error/empty states are honest; offline/conflict states are required only after offline behavior exists;
 - accessibility checks pass for the workflow;
 - telemetry/runbook/support notes exist;
 - no seeded/fake production data masks missing behavior;
@@ -239,22 +236,18 @@ If onboarding requires code for every customer, pause sector expansion and produ
 
 ## 12. Build-start checklist
 
-Coding may start only after these eight greenfield documents are approved as the working baseline and Phase 0 identifies the first design partner/sector. Before the first production schema:
-
-- convert open discovery items into recorded decisions;
-- write ADRs for tenant model, accounting boundary, money representation, agreement versioning, posting/reversal, and offline scope;
-- produce the command/state/authorization matrix;
-- validate the first customer’s agreement and expected partner statement with an accountant/legal reviewer;
-- archive legacy Terranex product documents and freeze legacy code as non-authoritative reference.
+Coding is authorized. Resolve only the decisions required by the active slice. Do not create a complete ADR catalogue, universal domain framework, all-sector schema, offline engine, or integration infrastructure in advance.
 
 ## 13. Immediate next execution batch
 
-1. Recruit/interview three target companies using the ICP and jobs in Document 01.
-2. Secure one paid design partner and artifacts listed in Phase 0.
-3. Choose the first sector based on contracted demand, defaulting to real estate only if evidence is tied.
-4. Produce clickable Arabic prototype for J1–J8 and test it with the four roles.
-5. Finalize ADRs and physical schema from real artifacts.
-6. Build S0 → S7 without parallel feature branches that create competing domain/design systems.
+Execute `GF-002 / S0` as working software:
+
+1. Scaffold one root Next.js/TypeScript application with the minimum maintained dependencies and CI.
+2. Implement Supabase Auth session handling and validated environment configuration.
+3. Add one migration for organizations, memberships, investment projects, and minimal audit events with constraints and default-deny RLS.
+4. Implement the Arabic/RTL flow to create/resolve an organization and create, list, and open a Real Estate project shell.
+5. Verify two-tenant isolation, validation, responsive states, typecheck, targeted tests, migration replay, and build.
+6. Do not scaffold later J1–J8 entities, finance, approvals, documents, offline/PWA, integrations, other sectors, or generic architecture.
 
 This is the boundary between **product design** and **software construction**. The legacy codebase is not refactored into this model; reusable technical pieces may be evaluated later against these contracts.
 

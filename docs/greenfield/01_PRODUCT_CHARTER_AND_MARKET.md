@@ -171,7 +171,7 @@ Pricing numbers are a commercial experiment, not a product requirement. The firs
 
 ## 11. Kill criteria and sequencing
 
-Stop or narrow the product if three design-partner companies will not provide real spreadsheets/documents, cannot name a recurring partner-reporting pain, or will not pay for a controlled pilot. Do not build all three sector depths simultaneously: the platform core plus one commercially committed sector ships first; other sector packs remain schema/workflow-ready.
+Build the common Investment Operations Core and one production-ready sector pack before expanding breadth. The first operating market is Egypt, and real estate is the default first sector pack unless Mohamed explicitly changes it. Validate common behavior against established industry patterns, authoritative standards, public/reference artifacts, and executable end-to-end scenarios; do not wait for customer interviews to begin implementation. When the first Egyptian company onboards, represent its differences through configuration, versioned policies, templates, or bounded extensions—not a tenant-specific fork. Stop or narrow any feature that cannot be justified as common product behavior or isolated cleanly from company-specific practice.
 
 ## 12. Foundational decisions
 

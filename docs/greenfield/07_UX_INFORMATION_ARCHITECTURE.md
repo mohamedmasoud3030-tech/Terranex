@@ -191,7 +191,7 @@ A separate clearly labeled sandbox/demo organization may contain guided sample d
 
 ## 13. UX validation
 
-Before build, test clickable low-fidelity flows with at least:
+Validate each workflow during its delivery slice and before production release. Do not block the first code scaffold on an eight-flow prototype. For material workflows, include:
 
 - one owner/manager;
 - one finance/accounting user;

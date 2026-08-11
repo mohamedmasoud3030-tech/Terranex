@@ -1,147 +1,83 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Terranex — database test runner
-# =============================================================================
-# Proves the Supabase schema against a REAL Postgres. The FakeSupabase client is
-# not involved: it has no RLS engine and cannot prove database behaviour.
-#
-#   1. replay       — every migration applied in order to an empty database
-#   2. contract     — schema/RLS/RPC/grants match the inventory taken from src/
-#   3. rls          — two real identities: isolation + spoofing + composite FKs
-#   4. rpc          — guard_*_deletion blocking behaviour and exact Arabic text
-#   5. backfill     — owner_id assignment, and refusal when ownership is ambiguous
-#   6. p1b-rpcs     — financial atomicity RPCs + idempotency + audit logging
-#   7. ownership    — ownership domain: equity sum <= 100%, temporal, cross-tenant
-#   8. cash stack   — invoices, banking, inventory, RLS, replay, immutability
-#   9. AP/vouchers  — purchase payments, receipts, reversals, manual review
-#  10. Odoo bridge  — Egypt defaults, outbox, isolation, claim/complete lifecycle
-#  11. Odoo cash    — bank journals, customer/supplier payment queue and mappings
-#  12. Odoo journal — explicit manual vouchers and reversal mappings
-#  13. investor     — capital, distribution approval/payment/reversal lifecycle
-#  14. RPC allowlist— exact authenticated SECURITY DEFINER boundary
-#  15. round-trip   — forward -> rollback -> reapply, ending in a working schema
-#  16. idempotency  — re-application onto existing schema without drop or error
-#
-# Usage:  scripts/db-test.sh
-# Env:    PGHOST PGPORT PGUSER PGPASSWORD (default: local socket cluster)
-# =============================================================================
 set -euo pipefail
 
-PGHOST="${PGHOST:-/tmp}"
-PGPORT="${PGPORT:-5433}"
-PGUSER="${PGUSER:-postgres}"
-DB="${TERRANEX_TEST_DB:-terranex_test}"
-export PGHOST PGPORT PGUSER
-if [[ -n "${PGPASSWORD:-}" ]]; then export PGPASSWORD; fi
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MIG="$ROOT/supabase/migrations"
-ROLL="$ROOT/supabase/rollback"
-TESTS="$ROOT/supabase/tests"
+DB="${TERRANEX_TEST_DB:-terranex_test}"
+PGUSER="${PGUSER:-postgres}"
+PGPASSWORD="${PGPASSWORD:-postgres}"
+export PGPASSWORD PGUSER
 
-psql_q() { local args=("$@"); psql -v ON_ERROR_STOP=1 -q "${args[@]}"; }
-note()   { local msg="$1"; printf '\n\033[1m== %s\033[0m\n' "$msg"; }
-strip()  { sed 's/^psql:[^ ]*: NOTICE:  //'; }
-
-recreate_db() {
-  psql_q -d postgres -c "drop database if exists $DB;" >/dev/null
-  psql_q -d postgres -c "create database $DB;"        >/dev/null
-  psql_q -d "$DB" -f "$TESTS/00_supabase_shim.sql"    >/dev/null 2>&1
+container_name=""
+cleanup() {
+  if [[ -n "$container_name" ]]; then
+    docker rm -f "$container_name" >/dev/null 2>&1 || true
+  fi
 }
+trap cleanup EXIT
 
-apply_forward() {
-  for f in "$MIG"/*.sql; do
-    psql_q -d "$DB" --single-transaction -f "$f"
+if command -v psql >/dev/null 2>&1; then
+  : "${PGHOST:=127.0.0.1}"
+  : "${PGPORT:=5432}"
+  export PGHOST PGPORT
+  psql_exec() { psql -v ON_ERROR_STOP=1 "$@"; }
+  psql_stdin() { local db="$1"; psql -v ON_ERROR_STOP=1 -d "$db"; }
+elif command -v docker >/dev/null 2>&1; then
+  container_name="terranex-db-test-$RANDOM-$$"
+  docker run -d --rm \
+    --name "$container_name" \
+    -e POSTGRES_USER="$PGUSER" \
+    -e POSTGRES_PASSWORD="$PGPASSWORD" \
+    -e POSTGRES_DB=postgres \
+    postgres:16-alpine >/dev/null
+
+  for _ in $(seq 1 60); do
+    if docker exec "$container_name" pg_isready -U "$PGUSER" -d postgres >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
   done
+  docker exec "$container_name" pg_isready -U "$PGUSER" -d postgres >/dev/null
+
+  psql_exec() { docker exec -i "$container_name" psql -v ON_ERROR_STOP=1 -U "$PGUSER" "$@"; }
+  psql_stdin() { local db="$1"; docker exec -i "$container_name" psql -v ON_ERROR_STOP=1 -U "$PGUSER" -d "$db"; }
+else
+  echo "ERROR: Database verification cannot run: neither 'psql' nor 'docker' is available." >&2
+  echo "Install PostgreSQL client or Docker. Database tests are a required gate and must not be skipped." >&2
+  exit 2
+fi
+
+run_file() {
+  local db="$1"
+  local file="$2"
+  echo "==> $file"
+  psql_stdin "$db" < "$file"
 }
 
-apply_rollback() {
-  for f in $(ls -r "$ROLL"/*.down.sql); do
-    psql_q -d "$DB" --single-transaction -f "$f" >/dev/null 2>&1
-  done
-}
+psql_exec -d postgres -c "drop database if exists \"$DB\";"
+psql_exec -d postgres -c "create database \"$DB\";"
 
-note "1/16  REPLAY — applying all migrations to an empty database"
-recreate_db
-apply_forward
-echo "  migrations applied: $(ls "$MIG"/*.sql | wc -l)"
+run_file "$DB" "$ROOT/supabase/tests/00_supabase_shim.sql"
 
-note "2/16  SCHEMA CONTRACT"
-psql_q -d "$DB" -f "$TESTS/01_schema_contract.sql" 2>&1 | strip
-
-note "3/16  RLS — TWO IDENTITIES"
-psql_q -d "$DB" -f "$TESTS/02_rls_two_identities.sql" 2>&1 | strip
-
-note "4/16  DELETION GUARD RPCs"
-psql_q -d "$DB" -f "$TESTS/03_deletion_guard_rpcs.sql" 2>&1 | strip
-
-note "5/16  BACKFILL SCENARIOS"
-psql_q -d "$DB" -f "$TESTS/04_backfill_scenarios.sql" 2>&1 | strip
-
-note "6/16  P1B FINANCIAL RPCs"
-psql_q -d "$DB" -f "$TESTS/05_p1b_financial_rpcs.sql" 2>&1 | strip
-
-note "7/16  2B OWNERSHIP DOMAIN"
-psql_q -d "$DB" -f "$TESTS/06_ownership_domain.sql" 2>&1 | strip
-
-note "8/16  CASH / INVOICING / INVENTORY SECURITY"
-psql_q -d "$DB" -f "$TESTS/07_invoices_banking_inventory_rls.sql" 2>&1 | strip
-
-note "9/16  PURCHASE INVOICES / MANUAL VOUCHERS SECURITY"
-psql_q -d "$DB" -f "$TESTS/08_purchase_voucher_security.sql" 2>&1 | strip
-
-note "10/16  ODOO EGYPT ACCOUNTING BRIDGE"
-psql_q -d "$DB" -f "$TESTS/09_odoo_egypt_bridge.sql" 2>&1 | strip
-
-note "11/16  ODOO PAYMENTS / BANKING BRIDGE"
-psql_q -d "$DB" -f "$TESTS/10_odoo_payments_banking.sql" 2>&1 | strip
-
-note "12/16  ODOO MANUAL JOURNALS BRIDGE"
-psql_q -d "$DB" -f "$TESTS/11_odoo_manual_journals.sql" 2>&1 | strip
-
-note "13/16  INVESTOR CAPITAL / DISTRIBUTION LIFECYCLE"
-psql_q -d "$DB" -f "$TESTS/12_investor_capital_distribution_lifecycle.sql" 2>&1 | strip
-
-note "14/16  AUTHENTICATED SECURITY DEFINER ALLOWLIST"
-psql_q -d "$DB" -f "$TESTS/13_authenticated_security_definer_allowlist.sql" 2>&1 | strip
-
-note "15/16  ROUND TRIP — forward -> rollback -> reapply"
-before=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemaname='public';")
-echo "  tables after forward : $before"
-
-apply_rollback
-after_rb=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemaname='public';")
-types_rb=$(psql -tAq -d "$DB" -c "select count(*) from pg_type t join pg_namespace n on n.oid=t.typnamespace where n.nspname='public' and t.typtype='e';")
-funcs_rb=$(psql -tAq -d "$DB" -c "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and (p.proname like 'guard\\_%' or p.proname like 'terranex\\_%');")
-echo "  after rollback       : tables=$after_rb enums=$types_rb guard_fns=$funcs_rb"
-if [[ "$after_rb" != "0" || "$types_rb" != "0" || "$funcs_rb" != "0" ]]; then
-  echo "  FAIL: rollback left objects behind"; exit 1
+shopt -s nullglob
+migrations=("$ROOT"/supabase/migrations/*.sql)
+if (( ${#migrations[@]} == 0 )); then
+  echo "ERROR: no migrations found." >&2
+  exit 3
 fi
-echo "  PASS: rollback removed every object"
+for file in "${migrations[@]}"; do
+  run_file "$DB" "$file"
+done
 
-apply_forward
-after_re=$(psql -tAq -d "$DB" -c "select count(*) from pg_tables where schemaname='public';")
-echo "  tables after reapply : $after_re"
-if [[ "$after_re" != "$before" ]]; then
-  echo "  FAIL: reapply produced $after_re tables, expected $before"; exit 1
-fi
-echo "  PASS: reapply reproduced the identical schema"
+sql_tests=("$ROOT"/supabase/tests/*.sql)
+for file in "${sql_tests[@]}"; do
+  [[ "$(basename "$file")" == "00_supabase_shim.sql" ]] && continue
+  run_file "$DB" "$file"
+done
 
-note "16/16  IDEMPOTENCY GATE — re-applying all migrations on top of existing schema"
-apply_forward
-echo "  PASS: re-applied all migrations on top of existing schema without error"
+shell_tests=("$ROOT"/supabase/tests/*.sh)
+for file in "${shell_tests[@]}"; do
+  echo "==> $file"
+  TERRANEX_TEST_DB="$DB" TERRANEX_DB_CONTAINER="$container_name" bash "$file"
+done
 
-psql_q -d "$DB" -f "$TESTS/01_schema_contract.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/02_rls_two_identities.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/03_deletion_guard_rpcs.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/05_p1b_financial_rpcs.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/06_ownership_domain.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/07_invoices_banking_inventory_rls.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/08_purchase_voucher_security.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/09_odoo_egypt_bridge.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/10_odoo_payments_banking.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/11_odoo_manual_journals.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/12_investor_capital_distribution_lifecycle.sql" 2>&1 | strip | tail -1
-psql_q -d "$DB" -f "$TESTS/13_authenticated_security_definer_allowlist.sql" 2>&1 | strip | tail -1
-
-printf '\n\033[1;32m=== ALL DATABASE SUITES PASSED ===\033[0m\n'
+echo "Database migration replay and all SQL/concurrency verification suites passed."
