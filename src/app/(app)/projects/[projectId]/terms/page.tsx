@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getOrganizations } from '@/features/organizations/queries';
 import {
   getActiveVersion,
   getCommitments,
@@ -23,9 +22,7 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
   const { projectId } = await params;
   const project = await getProject(projectId);
   if (!project) notFound();
-  const orgs = await getOrganizations();
-  const organizationId = orgs[0]?.id;
-  if (!organizationId) notFound();
+  const organizationId = project.organization_id;
 
   const [parties, participants, activeVersion, versions] = await Promise.all([
     getParties(organizationId),
@@ -62,7 +59,6 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
             ))}
           </ul>
         )}
-
         {!activeVersion && (
           <>
             <details className="stack">
@@ -72,11 +68,7 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
             {eligibleParties.length > 0 && (
               <details className="stack" open={participants.length === 0}>
                 <summary>إضافة طرف كمستثمر في المشروع</summary>
-                <AddParticipantForm
-                  organizationId={organizationId}
-                  projectId={projectId}
-                  parties={eligibleParties}
-                />
+                <AddParticipantForm organizationId={organizationId} projectId={projectId} parties={eligibleParties} />
               </details>
             )}
           </>
