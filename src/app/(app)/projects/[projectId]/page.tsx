@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getActiveVersion, getProjectCapitalPosition } from '@/features/funding/queries';
-import { formatMinorUnits } from '@/features/funding/money';
+import { formatMinorUnits } from '@/shared/money';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +57,14 @@ export default async function ProjectShell({
                 ? `مستلم ${formatMinorUnits(position?.contributed_minor_units ?? 0, project.reporting_currency)}`
                 : 'فعّل الاتفاقية أولًا'}
             </p>
+          </Link>
+          <Link className="card" href={`/projects/${projectId}/costs`}>
+            <strong>التكاليف والالتزامات</strong>
+            <p className="muted">سجّل الالتزامات واعتمدها وادفعها</p>
+          </Link>
+          <Link className="card" href={`/projects/${projectId}/cash`}>
+            <strong>النقدية والبنك</strong>
+            <p className="muted">الحسابات، كشوف البنك، والمطابقة</p>
           </Link>
         </nav>
       </section>
