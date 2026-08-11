@@ -131,7 +131,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                 {obligations.map((obligation) => {
                   const state = stateLabel(obligation);
                   return (
-                    <tr key={obligation.obligation_id}>
+                    <tr key={obligation.obligation_id} id={obligation.obligation_id}>
                       <td>{partyName.get(obligation.party_id) ?? '—'}</td>
                       <td>{obligation.description}</td>
                       <td>{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
