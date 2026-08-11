@@ -61,6 +61,17 @@ begin
   reset role;
 end $$;
 
+-- Executes as the database owner so trigger-level immutability/scope guards are
+-- tested independently of authenticated privilege denial.
+create or replace function s1_owner_expect_raise(p_sql text, p_sqlstate text)
+returns boolean language plpgsql as $$
+begin
+  execute p_sql;
+  return false;
+exception when others then
+  return sqlstate = p_sqlstate;
+end $$;
+
 -- Projects and parties.
 select s1_run('00000000-0000-4000-8000-000000000001',
   $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع النخيل',null,null)$$);
@@ -133,15 +144,9 @@ select 1/case when s1_expect_ok('00000000-0000-4000-8000-000000000001', format(
   $$select public.activate_agreement_version('10000000-0000-4000-8000-000000000001',%L)$$, :'version_a1')) then 1 else 0 end as activation_retry_ok;
 select 1/case when (select lifecycle_state from public.investment_projects where id=:'project_a')='FUNDING' then 1 else 0 end as project_entered_funding;
 
-create or replace function s1_update_version(p_id uuid) returns void language plpgsql as $$
-begin update public.agreement_versions set status='DRAFT' where id=p_id; end $$;
-do $immutable$
-begin
-  perform s1_update_version(:'version_a1');
-  raise exception 'immutability guard did not fire';
-exception when others then
-  if sqlerrm <> 'agreement version is immutable once activated' then raise; end if;
-end $immutable$;
+select 1/case when s1_owner_expect_raise(format(
+  $$update public.agreement_versions set status='DRAFT' where id=%L::uuid$$, :'version_a1'), 'P0001')
+  then 1 else 0 end as activated_version_immutable;
 
 select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_agreement_draft('10000000-0000-4000-8000-000000000001',%L,date '2026-09-01',array[%L::uuid],array[1000000]::bigint[],'agreement-amendment-deferred')$$,
@@ -151,15 +156,9 @@ select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', forma
   $$select public.add_project_participant('10000000-0000-4000-8000-000000000001',%L,%L)$$,
   :'project_a', :'party_a3'), 'P0001') then 1 else 0 end as participant_change_after_activation_rejected;
 
-create or replace function s1_update_commitment(p_version uuid) returns void language plpgsql as $$
-begin update public.commitment_terms set commitment_minor_units=999 where agreement_version_id=p_version; end $$;
-do $commit$
-begin
-  perform s1_update_commitment(:'version_a1');
-  raise exception 'commitment immutability guard did not fire';
-exception when others then
-  if sqlerrm <> 'commitment terms are immutable once the agreement version is activated' then raise; end if;
-end $commit$;
+select 1/case when s1_owner_expect_raise(format(
+  $$update public.commitment_terms set commitment_minor_units=999 where agreement_version_id=%L::uuid$$,
+  :'version_a1'), 'P0001') then 1 else 0 end as activated_commitments_immutable;
 
 -- Capital-call idempotency, payload binding, and ceiling.
 select s1_run('00000000-0000-4000-8000-000000000001', format(
@@ -200,27 +199,14 @@ select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', forma
   $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,1,'EGP',date '2026-09-15','contrib-over-a2')$$,
   :'project_a', :'part_a2', :'version_a1', :'call_1'), 'P0001') then 1 else 0 end as contribution_after_full_rejected;
 
-create or replace function s1_update_contribution(p_id uuid) returns void language plpgsql as $$
-begin update public.contributions set contribution_minor_units=1 where id=p_id; end $$;
-do $contrib$
-begin
-  perform s1_update_contribution(:'contrib_1');
-  raise exception 'contribution append-only guard did not fire';
-exception when others then
-  if sqlerrm <> 'contributions are append-only posted facts' then raise; end if;
-end $contrib$;
+select 1/case when s1_owner_expect_raise(format(
+  $$update public.contributions set contribution_minor_units=1 where id=%L::uuid$$,
+  :'contrib_1'), 'P0001') then 1 else 0 end as contribution_append_only;
 
 -- Privileged same-tenant cross-project writes are rejected by database guards too.
-do $scope$
-begin
-  begin
-    insert into public.commitment_terms(organization_id,agreement_version_id,participant_id,commitment_minor_units,currency)
-    values ('10000000-0000-4000-8000-000000000001', :'version_a1', :'part_a3', 1, 'EGP');
-    raise exception 'cross-project commitment unexpectedly succeeded';
-  exception when raise_exception then
-    if sqlerrm = 'cross-project commitment unexpectedly succeeded' then raise; end if;
-  end;
-end $scope$;
+select 1/case when s1_owner_expect_raise(format(
+  $$insert into public.commitment_terms(organization_id,agreement_version_id,participant_id,commitment_minor_units,currency) values ('10000000-0000-4000-8000-000000000001',%L::uuid,%L::uuid,1,'EGP')$$,
+  :'version_a1', :'part_a3'), 'P0001') then 1 else 0 end as privileged_cross_project_commitment_rejected;
 
 -- Exact derived rollforward and exact-text transport views.
 select 1/case when (select committed_minor_units from public.project_capital_position where project_id=:'project_a')=1500000 then 1 else 0 end as rollforward_committed_exact;
