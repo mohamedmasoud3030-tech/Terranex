@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DB="${TERRANEX_TEST_DB:-terranex_test}"
 PGUSER="${PGUSER:-postgres}"
 PGPASSWORD="${PGPASSWORD:-postgres}"
-export PGPASSWORD
+export PGPASSWORD PGUSER
 
 container_name=""
 cleanup() {
@@ -18,7 +18,7 @@ trap cleanup EXIT
 if command -v psql >/dev/null 2>&1; then
   : "${PGHOST:=127.0.0.1}"
   : "${PGPORT:=5432}"
-  export PGHOST PGPORT PGUSER
+  export PGHOST PGPORT
   psql_exec() { psql -v ON_ERROR_STOP=1 "$@"; }
   psql_stdin() { local db="$1"; psql -v ON_ERROR_STOP=1 -d "$db"; }
 elif command -v docker >/dev/null 2>&1; then
@@ -68,10 +68,16 @@ for file in "${migrations[@]}"; do
   run_file "$DB" "$file"
 done
 
-tests=("$ROOT"/supabase/tests/*.sql)
-for file in "${tests[@]}"; do
+sql_tests=("$ROOT"/supabase/tests/*.sql)
+for file in "${sql_tests[@]}"; do
   [[ "$(basename "$file")" == "00_supabase_shim.sql" ]] && continue
   run_file "$DB" "$file"
 done
 
-echo "Database migration replay and all SQL verification suites passed."
+shell_tests=("$ROOT"/supabase/tests/*.sh)
+for file in "${shell_tests[@]}"; do
+  echo "==> $file"
+  TERRANEX_TEST_DB="$DB" TERRANEX_DB_CONTAINER="$container_name" bash "$file"
+done
+
+echo "Database migration replay and all SQL/concurrency verification suites passed."

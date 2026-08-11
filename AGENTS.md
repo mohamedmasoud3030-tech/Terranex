@@ -84,6 +84,10 @@ The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminol
 
 ## Change discipline
 
+- Before starting any implementation branch, run `git fetch origin` and create the branch from the exact current `origin/greenfield/foundation`; never trust a stale session/workspace branch as the base.
+- Before opening or updating a Greenfield implementation PR, verify `git rev-list --left-right --count origin/greenfield/foundation...HEAD`; the branch must be **0 behind** its target. If it is behind, repair the lineage before delivery rather than opening a divergent PR.
+- Inspect the target comparison before delivery. A narrow vertical slice must not unexpectedly delete/reintroduce legacy files or show unrelated repository-wide churn.
+- Do not replace the canonical database runner with an embedded/alternate PostgreSQL implementation. Extend `scripts/db-test.sh` and `supabase/tests` only when the active slice needs new verification.
 - Work in one bounded vertical slice at a time.
 - Search before creating. There must be one canonical implementation for money, authorization, project identity, status, formatting, and UI primitives.
 - Do not add an abstraction for a single implementation or a shared module for a single consumer.
