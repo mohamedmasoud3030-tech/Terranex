@@ -1,9 +1,12 @@
 import { z } from 'zod';
+import { isValidMajorMoney } from './money';
 
-const minorUnits = z
-  .number({ error: 'أدخل رقمًا صحيحًا' })
-  .int('المبلغ يجب أن يكون عددًا صحيحًا بالوحدات الصغرى')
-  .positive('المبلغ يجب أن يكون أكبر من صفر');
+const moneyAmount = z
+  .string({ error: 'أدخل مبلغًا صحيحًا' })
+  .trim()
+  .refine((value) => isValidMajorMoney(value, 'EGP'), 'أدخل مبلغًا موجبًا بحد أقصى خانتين عشريتين');
+
+const idempotencyKey = z.string().trim().min(8, 'مفتاح إعادة المحاولة قصير جدًا').max(120);
 
 export const partySchema = z.object({
   organizationId: z.string().uuid(),
@@ -21,11 +24,12 @@ export const agreementDraftSchema = z.object({
   organizationId: z.string().uuid(),
   projectId: z.string().uuid(),
   effectiveDate: z.string().min(1, 'تاريخ السريان مطلوب'),
+  idempotencyKey,
   participants: z
     .array(
       z.object({
         participantId: z.string().uuid(),
-        commitmentMinorUnits: minorUnits,
+        commitmentAmount: moneyAmount,
       }),
     )
     .min(1, 'أضف مشاركًا واحدًا على الأقل'),
@@ -42,11 +46,12 @@ export const capitalCallSchema = z.object({
   agreementVersionId: z.string().uuid(),
   dueDate: z.string().min(1, 'تاريخ الاستحقاق مطلوب'),
   reference: z.string().trim().max(80).optional().or(z.literal('')),
+  idempotencyKey,
   lines: z
     .array(
       z.object({
         participantId: z.string().uuid(),
-        amountMinorUnits: minorUnits,
+        amount: moneyAmount,
       }),
     )
     .min(1, 'أضف بند طلب واحد على الأقل'),
@@ -58,10 +63,10 @@ export const contributionSchema = z.object({
   participantId: z.string().uuid(),
   agreementVersionId: z.string().uuid(),
   capitalCallId: z.string().uuid(),
-  contributionMinorUnits: minorUnits,
+  amount: moneyAmount,
   currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
   occurredOn: z.string().min(1, 'تاريخ الاستلام مطلوب'),
-  idempotencyKey: z.string().min(8, 'مفتاح إعادة المحاولة قصير جدًا').max(120),
+  idempotencyKey,
 });
 
 export type PartyInput = z.infer<typeof partySchema>;
