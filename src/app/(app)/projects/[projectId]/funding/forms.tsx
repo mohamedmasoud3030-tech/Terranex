@@ -1,12 +1,13 @@
 'use client';
 
-import { useActionState, useMemo } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import type {
   CapitalCall,
   CapitalCallLine,
   CommitmentTerm,
   Participant,
 } from '@/features/funding/queries';
+import { formatMinorUnits } from '@/features/funding/money';
 import { createCapitalCall, recordContribution } from '@/features/funding/actions';
 
 export function CapitalCallForm({
@@ -25,15 +26,18 @@ export function CapitalCallForm({
   commitments: CommitmentTerm[];
 }) {
   const [state, action, pending] = useActionState(createCapitalCall, { error: undefined });
+  const idempotencyKey = useMemo(() => `call-${crypto.randomUUID()}`, []);
   const commitmentByParticipant = useMemo(
-    () => new Map(commitments.map((c) => [c.participant_id, c.commitment_minor_units])),
+    () => new Map(commitments.map((commitment) => [commitment.participant_id, commitment])),
     [commitments],
   );
+
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="agreementVersionId" value={versionId} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <label>
         المرجع <span className="muted">(اختياري)</span>
         <input name="reference" maxLength={80} placeholder="CALL-1" />
@@ -42,29 +46,36 @@ export function CapitalCallForm({
         تاريخ الاستحقاق
         <input type="date" name="dueDate" required />
       </label>
-      <table>
-        <thead>
-          <tr>
-            <th>المستثمر</th>
-            <th>المبلغ المطلوب</th>
-            <th>الالتزام</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participants.map((p) => (
-            <tr key={p.id}>
-              <td>{p.parties.legal_name}</td>
-              <td>
-                <input type="number" name="amountMinorUnits" min={1} step={1} required />
-                <input type="hidden" name="participantId" value={p.id} />
-              </td>
-              <td>
-                {commitmentByParticipant.get(p.id)?.toLocaleString('ar-EG') ?? '—'} {currency}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <p className="muted">أدخل المبلغ المطلوب في {currency}. اترك المستثمر فارغًا إذا لم يشمله هذا الطلب.</p>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>المستثمر</th><th>المبلغ المطلوب ({currency})</th><th>الالتزام</th></tr>
+          </thead>
+          <tbody>
+            {participants.map((participant) => {
+              const commitment = commitmentByParticipant.get(participant.id);
+              if (!commitment) return null;
+              return (
+                <tr key={participant.id}>
+                  <td>{participant.parties.legal_name}</td>
+                  <td>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      name="amount"
+                      placeholder="5000.00"
+                      aria-label={`المبلغ المطلوب من ${participant.parties.legal_name}`}
+                    />
+                    <input type="hidden" name="participantId" value={participant.id} />
+                  </td>
+                  <td>{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       {state.error && <p className="error" role="alert">{state.error}</p>}
       <button disabled={pending}>{pending ? 'جارٍ الإصدار…' : 'إصدار الطلب'}</button>
     </form>
@@ -78,6 +89,7 @@ export function ContributionForm({
   currency,
   calls,
   lines,
+  participants,
 }: {
   organizationId: string;
   projectId: string;
@@ -85,65 +97,59 @@ export function ContributionForm({
   currency: string;
   calls: CapitalCall[];
   lines: CapitalCallLine[];
+  participants: Participant[];
 }) {
   const [state, action, pending] = useActionState(recordContribution, { error: undefined });
-  const defaultIdempotencyKey = useMemo(
-    () => `contrib-${crypto.randomUUID()}`,
-    [],
-  );
-  const issuedCalls = calls.filter((c) => c.status === 'ISSUED');
+  const [selectedCallId, setSelectedCallId] = useState('');
+  const idempotencyKey = useMemo(() => `contrib-${crypto.randomUUID()}`, []);
+  const issuedCalls = calls.filter((call) => call.status === 'ISSUED');
+  const eligibleLines = lines.filter((line) => line.capital_call_id === selectedCallId);
+  const participantName = new Map(participants.map((participant) => [participant.id, participant.parties.legal_name]));
+
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="agreementVersionId" value={versionId} />
       <input type="hidden" name="currency" value={currency} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <label>
         الطلب
-        <select name="capitalCallId" required defaultValue="">
-          <option value="" disabled>
-            اختر الطلب
-          </option>
-          {issuedCalls.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.reference || c.id.slice(0, 8)} — استحقاق {c.due_date}
+        <select
+          name="capitalCallId"
+          required
+          value={selectedCallId}
+          onChange={(event) => setSelectedCallId(event.target.value)}
+        >
+          <option value="" disabled>اختر الطلب</option>
+          {issuedCalls.map((call) => (
+            <option key={call.id} value={call.id}>
+              {call.reference || call.id.slice(0, 8)} — استحقاق {call.due_date}
             </option>
           ))}
         </select>
       </label>
       <label>
         المستثمر
-        <select name="participantId" required defaultValue="">
-          <option value="" disabled>
-            اختر المستثمر
-          </option>
-          {lines.map((l) => (
-            <option key={l.id} value={l.participant_id}>
-              {l.participant_id.slice(0, 8)} — {l.amount_minor_units.toLocaleString('ar-EG')} {l.currency}
+        <select name="participantId" required defaultValue="" key={selectedCallId || 'none'} disabled={!selectedCallId}>
+          <option value="" disabled>اختر المستثمر</option>
+          {eligibleLines.map((line) => (
+            <option key={line.id} value={line.participant_id}>
+              {participantName.get(line.participant_id) ?? line.participant_id.slice(0, 8)} — طلب {formatMinorUnits(line.amount_minor_units, line.currency)}
             </option>
           ))}
         </select>
       </label>
       <label>
-        المبلغ المستلم بالوحدات الصغرى
-        <input type="number" name="contributionMinorUnits" min={1} step={1} required />
+        المبلغ المستلم ({currency})
+        <input type="text" inputMode="decimal" name="amount" placeholder="5000.00" required />
       </label>
       <label>
         تاريخ الاستلام
         <input type="date" name="occurredOn" required />
       </label>
-      <label>
-        مفتاح إعادة المحاولة <span className="muted">(ثابت لمنع التكرار)</span>
-        <input
-          name="idempotencyKey"
-          required
-          minLength={8}
-          maxLength={120}
-          defaultValue={defaultIdempotencyKey}
-        />
-      </label>
       {state.error && <p className="error" role="alert">{state.error}</p>}
-      <button disabled={pending || issuedCalls.length === 0}>
+      <button disabled={pending || issuedCalls.length === 0 || !selectedCallId}>
         {pending ? 'جارٍ التسجيل…' : 'تسجيل المساهمة'}
       </button>
     </form>
