@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getActiveVersion, getProjectCapitalPosition } from '@/features/funding/queries';
-import { formatMinorUnits } from '@/features/funding/money';
+import { formatMinorUnits } from '@/shared/money';
 
 export const dynamic = 'force-dynamic';
 

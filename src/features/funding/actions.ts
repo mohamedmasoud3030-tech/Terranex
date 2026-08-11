@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/shared/supabase/server';
 import type { ActionState } from '@/features/auth/actions';
-import { parseMajorUnitsToMinor } from './money';
+import { parseMajorUnitsToMinor } from '@/shared/money';
 import {
   activateVersionSchema,
   agreementDraftSchema,
