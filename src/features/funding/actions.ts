@@ -3,16 +3,39 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/shared/supabase/server';
 import type { ActionState } from '@/features/auth/actions';
+import { parseMajorUnitsToMinor } from './money';
 import {
   activateVersionSchema,
   agreementDraftSchema,
   capitalCallSchema,
   contributionSchema,
+  participantSchema,
   partySchema,
 } from './schema';
 
 function fail(message: string): ActionState {
   return { error: message };
+}
+
+function refreshProject(projectId?: string) {
+  revalidatePath('/');
+  if (!projectId) return;
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/terms`);
+  revalidatePath(`/projects/${projectId}/funding`);
+}
+
+function domainError(message: string | undefined, fallback: string): ActionState {
+  if (message?.includes('idempotency key payload mismatch')) {
+    return fail('تعذر إعادة المحاولة لأن مفتاح العملية استُخدم سابقًا لبيانات مختلفة. حدّث الصفحة وحاول من جديد.');
+  }
+  if (message?.includes('capital call exceeds participant commitment')) {
+    return fail('المبلغ المطلوب يتجاوز الالتزام المتاح لهذا المستثمر.');
+  }
+  if (message?.includes('agreement amendment activation is deferred')) {
+    return fail('تعديل اتفاقية مفعّلة غير متاح في هذه المرحلة. النسخة الحالية تظل هي الحاكمة.');
+  }
+  return fail(fallback);
 }
 
 export async function createParty(_: ActionState, form: FormData): Promise<ActionState> {
@@ -29,21 +52,25 @@ export async function createParty(_: ActionState, form: FormData): Promise<Actio
     p_party_type: parsed.data.partyType,
   });
   if (error) return fail('تعذر إنشاء الطرف. تحقق من الصلاحيات وحاول مجددًا.');
-  revalidatePath('/');
+  refreshProject(String(form.get('projectId') || ''));
   return {};
 }
 
 export async function addParticipant(_: ActionState, form: FormData): Promise<ActionState> {
-  const parsed = z_safeParticipant(form);
-  if (!parsed.ok) return fail(parsed.error);
+  const parsed = participantSchema.safeParse({
+    organizationId: form.get('organizationId'),
+    projectId: form.get('projectId'),
+    partyId: form.get('partyId'),
+  });
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'معرّفات غير صحيحة');
   const supabase = await createClient();
   const { error } = await supabase.rpc('add_project_participant', {
-    p_organization_id: parsed.value.organizationId,
-    p_project_id: parsed.value.projectId,
-    p_party_id: parsed.value.partyId,
+    p_organization_id: parsed.data.organizationId,
+    p_project_id: parsed.data.projectId,
+    p_party_id: parsed.data.partyId,
   });
-  if (error) return fail('تعذر إضافة المشارك. قد يكون الطرف من منظمة أخرى.');
-  revalidatePath('/');
+  if (error) return fail('تعذر إضافة المشارك. قد يكون الطرف من منظمة أخرى أو مضافًا بالفعل.');
+  refreshProject(parsed.data.projectId);
   return {};
 }
 
@@ -51,30 +78,36 @@ export async function createAgreementDraft(_: ActionState, form: FormData): Prom
   const organizationId = String(form.get('organizationId') || '');
   const projectId = String(form.get('projectId') || '');
   const effectiveDate = String(form.get('effectiveDate') || '');
+  const idempotencyKey = String(form.get('idempotencyKey') || '');
   const participantIds = form.getAll('participantId').map(String);
-  const commitments = form.getAll('commitmentMinorUnits').map(Number);
+  const commitmentAmounts = form.getAll('commitmentAmount').map(String);
 
   const parsed = agreementDraftSchema.safeParse({
     organizationId,
     projectId,
     effectiveDate,
+    idempotencyKey,
     participants: participantIds.map((participantId, i) => ({
       participantId,
-      commitmentMinorUnits: commitments[i],
+      commitmentAmount: commitmentAmounts[i] ?? '',
     })),
   });
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات الاتفاقية غير صحيحة');
 
+  const commitments = parsed.data.participants.map((participant) =>
+    parseMajorUnitsToMinor(participant.commitmentAmount, 'EGP'),
+  );
   const supabase = await createClient();
   const { error } = await supabase.rpc('create_agreement_draft', {
     p_organization_id: parsed.data.organizationId,
     p_project_id: parsed.data.projectId,
     p_effective_date: parsed.data.effectiveDate,
-    p_participant_ids: parsed.data.participants.map((p) => p.participantId),
-    p_commitments: parsed.data.participants.map((p) => p.commitmentMinorUnits),
+    p_participant_ids: parsed.data.participants.map((participant) => participant.participantId),
+    p_commitments: commitments,
+    p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return fail('تعذر حفظ مسودة الاتفاقية. راجع الالتزامات والمشاركين.');
-  revalidatePath('/');
+  if (error) return domainError(error.message, 'تعذر حفظ مسودة الاتفاقية. راجع الالتزامات والمشاركين.');
+  refreshProject(parsed.data.projectId);
   return {};
 }
 
@@ -89,8 +122,8 @@ export async function activateAgreementVersion(_: ActionState, form: FormData): 
     p_organization_id: parsed.data.organizationId,
     p_version_id: parsed.data.versionId,
   });
-  if (error) return fail('تعذر تفعيل الاتفاقية. لا يمكن تفعيل نسخة غير مسودة أو توجد نسخة مفعلة.');
-  revalidatePath('/');
+  if (error) return domainError(error.message, 'تعذر تفعيل الاتفاقية. لا يمكن تفعيل نسخة غير مسودة أو توجد نسخة حاكمة بالفعل.');
+  refreshProject(String(form.get('projectId') || ''));
   return {};
 }
 
@@ -100,8 +133,9 @@ export async function createCapitalCall(_: ActionState, form: FormData): Promise
   const agreementVersionId = String(form.get('agreementVersionId') || '');
   const dueDate = String(form.get('dueDate') || '');
   const reference = String(form.get('reference') || '');
+  const idempotencyKey = String(form.get('idempotencyKey') || '');
   const participantIds = form.getAll('participantId').map(String);
-  const amounts = form.getAll('amountMinorUnits').map(Number);
+  const amounts = form.getAll('amount').map(String);
 
   const parsed = capitalCallSchema.safeParse({
     organizationId,
@@ -109,10 +143,12 @@ export async function createCapitalCall(_: ActionState, form: FormData): Promise
     agreementVersionId,
     dueDate,
     reference,
-    lines: participantIds.map((participantId, i) => ({ participantId, amountMinorUnits: amounts[i] })),
+    idempotencyKey,
+    lines: participantIds.map((participantId, i) => ({ participantId, amount: amounts[i] ?? '' })),
   });
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات طلب رأس المال غير صحيحة');
 
+  const minorAmounts = parsed.data.lines.map((line) => parseMajorUnitsToMinor(line.amount, 'EGP'));
   const supabase = await createClient();
   const { error } = await supabase.rpc('create_capital_call', {
     p_organization_id: parsed.data.organizationId,
@@ -120,11 +156,12 @@ export async function createCapitalCall(_: ActionState, form: FormData): Promise
     p_agreement_version_id: parsed.data.agreementVersionId,
     p_due_date: parsed.data.dueDate,
     p_reference: parsed.data.reference || null,
-    p_participant_ids: parsed.data.lines.map((l) => l.participantId),
-    p_amounts: parsed.data.lines.map((l) => l.amountMinorUnits),
+    p_participant_ids: parsed.data.lines.map((line) => line.participantId),
+    p_amounts: minorAmounts,
+    p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return fail('تعذر إصدار طلب رأس المال. قد يتجاوز الالتزام.');
-  revalidatePath('/');
+  if (error) return domainError(error.message, 'تعذر إصدار طلب رأس المال. تحقق من الالتزامات وحاول مجددًا.');
+  refreshProject(parsed.data.projectId);
   return {};
 }
 
@@ -135,12 +172,14 @@ export async function recordContribution(_: ActionState, form: FormData): Promis
     participantId: form.get('participantId'),
     agreementVersionId: form.get('agreementVersionId'),
     capitalCallId: form.get('capitalCallId'),
-    contributionMinorUnits: Number(form.get('contributionMinorUnits')),
+    amount: form.get('amount'),
     currency: form.get('currency'),
     occurredOn: form.get('occurredOn'),
     idempotencyKey: form.get('idempotencyKey'),
   });
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات المساهمة غير صحيحة');
+
+  const minorAmount = parseMajorUnitsToMinor(parsed.data.amount, parsed.data.currency);
   const supabase = await createClient();
   const { error } = await supabase.rpc('record_contribution', {
     p_organization_id: parsed.data.organizationId,
@@ -148,26 +187,12 @@ export async function recordContribution(_: ActionState, form: FormData): Promis
     p_participant_id: parsed.data.participantId,
     p_agreement_version_id: parsed.data.agreementVersionId,
     p_capital_call_id: parsed.data.capitalCallId,
-    p_amount_minor_units: parsed.data.contributionMinorUnits,
+    p_amount_minor_units: minorAmount,
     p_currency: parsed.data.currency,
     p_occurred_on: parsed.data.occurredOn,
     p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return fail('تعذر تسجيل المساهمة. تحقق من المبلغ والطلب وعدم التكرار.');
-  revalidatePath('/');
+  if (error) return domainError(error.message, 'تعذر تسجيل المساهمة. تحقق من المبلغ والطلب وحاول مجددًا.');
+  refreshProject(parsed.data.projectId);
   return {};
-}
-
-// Small local validator reused by the participant action (avoids an extra export).
-function z_safeParticipant(form: FormData) {
-  const organizationId = String(form.get('organizationId') || '');
-  const projectId = String(form.get('projectId') || '');
-  const partyId = String(form.get('partyId') || '');
-  const ok =
-    /^[0-9a-f]{8}-[0-9a-f-]{27}[0-9a-f]$/i.test(organizationId) &&
-    /^[0-9a-f]{8}-[0-9a-f-]{27}[0-9a-f]$/i.test(projectId) &&
-    /^[0-9a-f]{8}-[0-9a-f-]{27}[0-9a-f]$/i.test(partyId);
-  return ok
-    ? { ok: true as const, value: { organizationId, projectId, partyId } }
-    : { ok: false as const, error: 'معرّفات غير صحيحة' };
 }
