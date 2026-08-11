@@ -58,6 +58,14 @@ export default async function ProjectShell({
                 : 'فعّل الاتفاقية أولًا'}
             </p>
           </Link>
+          <Link className="card" href={`/projects/${projectId}/costs`}>
+            <strong>التكاليف والالتزامات</strong>
+            <p className="muted">سجّل الالتزامات واعتمدها وادفعها</p>
+          </Link>
+          <Link className="card" href={`/projects/${projectId}/cash`}>
+            <strong>النقدية والبنك</strong>
+            <p className="muted">الحسابات، كشوف البنك، والمطابقة</p>
+          </Link>
         </nav>
       </section>
     </section>

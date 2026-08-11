@@ -83,7 +83,8 @@ export function parseSignedMajorUnitsToMinor(value: string, currency: string): s
     : BigInt((match[2] ?? '').padEnd(decimals, '0'));
   const scale = 10n ** BigInt(decimals);
   const minor = sign * (whole * scale + fraction);
-  if (minor < -INT64_MAX || minor > INT64_MAX) throw new Error('money amount out of range');
+  // Signed values may use the full PostgreSQL bigint range, including INT64_MIN.
+  if (minor < -INT64_MAX - 1n || minor > INT64_MAX) throw new Error('money amount out of range');
   return minor.toString();
 }
 
