@@ -52,16 +52,7 @@ export const paymentSchema = z.object({
 
 const bankCsvLine = z.object({
   transactionDate: z.string().min(1, 'التاريخ مطلوب في كل سطر'),
-  amount: z.string().trim().refine(
-    (value) => {
-      try {
-        return isValidSignedMoney(value, 'EGP') && parseSignedMajorUnitsToMinor(value, 'EGP') !== '0';
-      } catch {
-        return false;
-      }
-    },
-    'أدخل مبلغًا صحيحًا غير صفري بعلامة (+/-) في كل سطر',
-  ),
+  amount: z.string().trim().min(1, 'المبلغ مطلوب في كل سطر'),
   currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة في السطر'),
   description: z.string().trim().min(1, 'الوصف مطلوب في كل سطر').max(500),
   providerReference: z.string().trim().max(80).optional().or(z.literal('')),
@@ -72,6 +63,34 @@ export const bankImportSchema = z.object({
   cashAccountId: z.string().uuid(),
   idempotencyKey,
   lines: z.array(bankCsvLine).min(1, 'أدخل سطر كشف حساب واحدًا على الأقل'),
+}).superRefine((data, ctx) => {
+  const firstCurrency = data.lines[0]?.currency;
+  data.lines.forEach((line, index) => {
+    if (firstCurrency && line.currency !== firstCurrency) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['lines', index, 'currency'],
+        message: 'كل سطور كشف الحساب يجب أن تكون بنفس العملة؛ لا يتم تحويل العملات ضمن الاستيراد.',
+      });
+    }
+
+    try {
+      if (!isValidSignedMoney(line.amount, line.currency)
+          || parseSignedMajorUnitsToMinor(line.amount, line.currency) === '0') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['lines', index, 'amount'],
+          message: 'أدخل مبلغًا صحيحًا غير صفري بعلامة (+/-) في كل سطر',
+        });
+      }
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['lines', index, 'amount'],
+        message: 'أدخل مبلغًا صحيحًا غير صفري بعلامة (+/-) في كل سطر',
+      });
+    }
+  });
 });
 
 export const reconcileSchema = z.object({
