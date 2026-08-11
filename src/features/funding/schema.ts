@@ -40,6 +40,15 @@ export const activateVersionSchema = z.object({
   versionId: z.string().uuid(),
 });
 
+const rawCapitalCallLine = z.object({
+  participantId: z.string().uuid(),
+  amount: z.string().trim(),
+});
+const capitalCallLine = z.object({
+  participantId: z.string().uuid(),
+  amount: moneyAmount,
+});
+
 export const capitalCallSchema = z.object({
   organizationId: z.string().uuid(),
   projectId: z.string().uuid(),
@@ -48,13 +57,9 @@ export const capitalCallSchema = z.object({
   reference: z.string().trim().max(80).optional().or(z.literal('')),
   idempotencyKey,
   lines: z
-    .array(
-      z.object({
-        participantId: z.string().uuid(),
-        amount: moneyAmount,
-      }),
-    )
-    .min(1, 'أضف بند طلب واحد على الأقل'),
+    .array(rawCapitalCallLine)
+    .transform((lines) => lines.filter((line) => line.amount !== ''))
+    .pipe(z.array(capitalCallLine).min(1, 'أدخل مبلغًا لمستثمر واحد على الأقل')),
 });
 
 export const contributionSchema = z.object({
