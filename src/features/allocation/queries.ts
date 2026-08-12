@@ -79,7 +79,8 @@ export type Distribution = {
   approval_journal_batch_id: string | null;
   paid_minor_units: string;
   outstanding_minor_units: string;
-  settlement_status: 'PREPARED' | 'APPROVED' | 'PARTIALLY_PAID' | 'PAID';
+  is_approval_reversed: boolean;
+  settlement_status: 'PREPARED' | 'APPROVED' | 'PARTIALLY_PAID' | 'PAID' | 'REVERSED';
 };
 
 export type DistributionCapacity = {
@@ -143,7 +144,7 @@ export async function getAllocationLines(runIds: string[]): Promise<AllocationLi
 
 export const getDistributions = (projectId: string) => many<Distribution>(
   's5_distributions_read',
-  'distribution_id,organization_id,project_id,allocation_run_id,participant_party_id,legal_name,requested_amount_minor_units,approved_amount_minor_units,currency,evidence_reference,status,prepared_by,prepared_at,approved_by,approved_at,approval_posting_date,approval_journal_batch_id,paid_minor_units,outstanding_minor_units,settlement_status',
+  'distribution_id,organization_id,project_id,allocation_run_id,participant_party_id,legal_name,requested_amount_minor_units,approved_amount_minor_units,currency,evidence_reference,status,prepared_by,prepared_at,approved_by,approved_at,approval_posting_date,approval_journal_batch_id,paid_minor_units,outstanding_minor_units,is_approval_reversed,settlement_status',
   projectId,
   'prepared_at',
 );
