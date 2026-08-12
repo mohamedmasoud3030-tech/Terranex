@@ -88,7 +88,7 @@ Canonical decision: `docs/decisions/0008_S5_ALLOCATION_AND_DISTRIBUTION.md`.
 
 ### GF-009 / S7 — Pilot Hardening
 
-Status: **TECHNICALLY COMPLETE — PENDING REVIEW**. Delivered on branch `arena/019ff750-terranex`; PR open against `greenfield/foundation`, not merged.
+Status: **COMPLETE — VERIFIED AND MERGED**. Delivered through PR #101 into `greenfield/foundation`.
 
 Delivered and verified:
 
