@@ -34,7 +34,11 @@ function d(value: string | null | undefined) {
 
 function statusAr(value: string) {
   const map: Record<string, string> = {
-    PREPARED: 'مُحضّر', APPROVED: 'معتمد', PARTIALLY_PAID: 'مدفوع جزئيًا', PAID: 'مدفوع',
+    PREPARED: 'مُحضّر',
+    APPROVED: 'معتمد',
+    PARTIALLY_PAID: 'مدفوع جزئيًا',
+    PAID: 'مدفوع',
+    REVERSED: 'معكوس',
   };
   return map[value] ?? value;
 }
@@ -65,16 +69,13 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
 
   const isOwner = membership.role === 'OWNER';
   const commitments = activeVersion ? await getCommitments(activeVersion.id) : [];
-  const commitmentByParticipant = new Map(commitments.map((row) => [row.participant_id, row]));
-  const ruleParticipants = participants.flatMap((participant) => {
-    const commitment = commitmentByParticipant.get(participant.id);
-    return commitment ? [{
+  const eligibleParticipantIds = new Set(commitments.map((row) => row.participant_id));
+  const ruleParticipants = participants
+    .filter((participant) => eligibleParticipantIds.has(participant.id))
+    .map((participant) => ({
       partyId: participant.party_id,
       legalName: participant.parties.legal_name,
-      commitmentMinorUnits: commitment.commitment_minor_units,
-    }] : [];
-  });
-  const commonDenominator = ruleParticipants.reduce((total, row) => total + BigInt(row.commitmentMinorUnits), 0n).toString();
+    }));
   const activeRuleSet = activeVersion ? ruleSets.find((row) => row.governing_version_id === activeVersion.id) ?? null : null;
   const approvedSnapshots = snapshots.filter((snapshot) => snapshot.close_status === 'APPROVED');
   const runLines = await getAllocationLines(runs.map((run) => run.allocation_run_id));
@@ -104,19 +105,24 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
       </header>
 
       <section id="rules" className="card stack scroll-target">
-        <div><h2>قواعد التخصيص الحاكمة</h2><p className="muted">القواعد ترتبط بنسخة الاتفاقية الحاكمة وتُثبت مرة واحدة. تغيير الاقتصاديات يتطلب نسخة اتفاقية جديدة، لا تعديل التاريخ.</p></div>
+        <div>
+          <h2>أساس وقواعد التخصيص الحاكمة</h2>
+          <p className="muted">الالتزام والمساهمة لا يحددان الملكية أو حصة الربح. الأوزان هنا أساس اقتصادي مستقل، مثبت بمرجع مستند ومربوط بنسخة الاتفاقية الحاكمة.</p>
+        </div>
         {!activeVersion && <p className="error">لا توجد نسخة اتفاقية ACTIVE. فعّل النسخة الحاكمة من الشروط والتمويل أولًا.</p>}
         {activeVersion && activeRuleSet && (
           <div className="summary-grid">
             <article><span className="muted">نسخة الاتفاقية</span><strong>v{activeVersion.version_no}</strong></article>
             <article><span className="muted">السياسة</span><strong>{activeRuleSet.policy === 'PRO_RATA' ? 'Pro Rata' : 'حصص ثابتة'}</strong></article>
+            <article><span className="muted">مرجع الأساس</span><strong>{activeRuleSet.basis_evidence_reference}</strong></article>
+            <article><span className="muted">النطاق الفعّال</span><strong>{d(activeRuleSet.effective_from)} — {activeRuleSet.effective_to ? d(activeRuleSet.effective_to) : 'مفتوح'}</strong></article>
             <article><span className="muted">المستثمرون</span><strong>{activeRuleSet.participant_count}</strong></article>
             <article><span className="muted">بصمة القاعدة</span><code>{activeRuleSet.content_hash.slice(0, 12)}…</code></article>
           </div>
         )}
         {activeVersion && !activeRuleSet && (
           <ConfigureRulesForm organizationId={organizationId} projectId={projectId} governingVersionId={activeVersion.id}
-            participants={ruleParticipants} commonDenominator={commonDenominator} currency={project.reporting_currency} disabled={!isOwner} />
+            participants={ruleParticipants} disabled={!isOwner} />
         )}
         {!isOwner && <p className="muted">تثبيت القواعد والاعتمادات المالية متاح لمالك المنظمة فقط.</p>}
       </section>
@@ -131,7 +137,7 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
               <div className="split"><div><strong>لقطة الفترة {snapshot.period_id.slice(0, 8)}…</strong><p className="muted">التقطت {dt(snapshot.captured_at)} · hash {snapshot.content_hash.slice(0, 12)}…</p></div>
                 {!existing && <PrepareAllocationForm organizationId={organizationId} projectId={projectId} snapshotId={snapshot.snapshot_id} governingVersionId={activeVersion.id} disabled={!isOwner} />}
               </div>
-              {existing && <p>الحالة: <strong>{statusAr(existing.status)}</strong> · المصدر {formatMinorUnits(existing.source_amount_minor_units, existing.reporting_currency)}</p>}
+              {existing && <p>الحالة: <strong>{existing.is_reversed ? 'معكوس' : statusAr(existing.status)}</strong> · المصدر {formatMinorUnits(existing.source_amount_minor_units, existing.reporting_currency)}</p>}
             </article>
           );
         })}
@@ -140,13 +146,13 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
           const lines = linesByRun.get(run.allocation_run_id) ?? [];
           return (
             <article className="subcard stack" key={run.allocation_run_id}>
-              <div className="split"><div><h3>{statusAr(run.status)} · {formatMinorUnits(run.source_amount_minor_units, run.reporting_currency)}</h3><p className="muted">Snapshot {run.snapshot_content_hash.slice(0, 12)}… · {run.algorithm_version} · أُعد {dt(run.prepared_at)}</p></div>
+              <div className="split"><div><h3>{run.is_reversed ? 'معكوس' : statusAr(run.status)} · {formatMinorUnits(run.source_amount_minor_units, run.reporting_currency)}</h3><p className="muted">Snapshot {run.snapshot_content_hash.slice(0, 12)}… · {run.algorithm_version} · أُعد {dt(run.prepared_at)}</p></div>
                 {run.status === 'PREPARED' && <ApproveAllocationForm organizationId={organizationId} projectId={projectId} allocationRunId={run.allocation_run_id} postingDate={postingDate} disabled={!isOwner || !openPeriod} />}
               </div>
               <div className="table-wrap"><table><thead><tr><th>المستثمر</th><th>الوزن</th><th>الحصة</th><th>التقريب</th></tr></thead><tbody>
                 {lines.map((line) => <tr key={line.allocation_line_id}><td>{line.legal_name}</td><td>{line.weight_numerator}/{line.weight_denominator}</td><td>{formatMinorUnits(line.allocated_minor_units, line.currency)}</td><td>{line.rounding_award_minor_units ? '+1 minor unit' : '—'}</td></tr>)}
               </tbody></table></div>
-              {run.status === 'APPROVED' && lines.filter((line) => BigInt(line.allocated_minor_units) > 0n).map((line) => (
+              {run.status === 'APPROVED' && !run.is_reversed && lines.filter((line) => BigInt(line.allocated_minor_units) > 0n).map((line) => (
                 <PrepareDistributionForm key={`dist-${line.allocation_line_id}`} organizationId={organizationId} projectId={projectId} allocationRunId={run.allocation_run_id} participantPartyId={line.participant_party_id} currency={line.currency} legalName={line.legal_name} disabled={!isOwner} />
               ))}
             </article>
@@ -170,8 +176,8 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
         {distributions.map((distribution) => (
           <article className="subcard stack" key={distribution.distribution_id}>
             <div className="split"><div><h3>{distribution.legal_name} · {formatMinorUnits(distribution.requested_amount_minor_units, distribution.currency)}</h3><p className="muted">{statusAr(distribution.settlement_status)} · دليل: {distribution.evidence_reference}</p></div><strong>متبقي {formatMinorUnits(distribution.outstanding_minor_units, distribution.currency)}</strong></div>
-            {distribution.status === 'PREPARED' && <ApproveDistributionForm organizationId={organizationId} projectId={projectId} distributionId={distribution.distribution_id} postingDate={postingDate} disabled={!isOwner || !openPeriod} />}
-            {distribution.status === 'APPROVED' && BigInt(distribution.outstanding_minor_units) > 0n && <PayDistributionForm organizationId={organizationId} projectId={projectId} distributionId={distribution.distribution_id} currency={distribution.currency} outstandingMajorHint="0.00" postingDate={postingDate} cashAccounts={cashAccounts} disabled={!isOwner || !openPeriod} />}
+            {distribution.status === 'PREPARED' && !distribution.is_approval_reversed && <ApproveDistributionForm organizationId={organizationId} projectId={projectId} distributionId={distribution.distribution_id} postingDate={postingDate} disabled={!isOwner || !openPeriod} />}
+            {distribution.status === 'APPROVED' && !distribution.is_approval_reversed && BigInt(distribution.outstanding_minor_units) > 0n && <PayDistributionForm organizationId={organizationId} projectId={projectId} distributionId={distribution.distribution_id} currency={distribution.currency} outstandingMajorHint="0.00" postingDate={postingDate} cashAccounts={cashAccounts} disabled={!isOwner || !openPeriod} />}
             <p className="muted">اعتمد: {d(distribution.approval_posting_date)} · مدفوع: {formatMinorUnits(distribution.paid_minor_units, distribution.currency)}</p>
           </article>
         ))}
