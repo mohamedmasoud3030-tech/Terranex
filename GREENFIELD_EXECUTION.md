@@ -1,6 +1,6 @@
 # Greenfield Execution Status
 
-**Updated:** 2026-08-12  
+**Updated:** 2026-08-13  
 **Working branch:** `greenfield/foundation`  
 **Strategy:** Product-first, Egypt-first, thin vertical slices
 
@@ -78,9 +78,36 @@ Delivered and verified:
 
 Canonical decision: `docs/decisions/0007_S6_PERIOD_CLOSE_AND_CORRECTION.md`.
 
+### GF-008 / S5 — Allocation & Distribution
+
+Status: **COMPLETE — VERIFIED AND MERGED**.
+
+Proof: immutable allocation basis frozen to one activated governing agreement version with an evidence reference; allocation prepared only from an approved immutable S6 close snapshot, with the source amount derived in-database as of the snapshot capture timestamp; deterministic largest-remainder allocation that totals exactly to the source; database-enforced maker/checker on allocation and distribution approval; separate allocation, approved payable, and paid-cash facts; conservative recorded-liability distributable-cash rule; exact partner-capital rollforward; reversal dependency ordering; a real two-session distribution-payment race; forward upgrade from the merged S6 boundary.
+
+Canonical decision: `docs/decisions/0008_S5_ALLOCATION_AND_DISTRIBUTION.md`.
+
+### GF-009 / S7 — Pilot Hardening
+
+Status: **TECHNICALLY COMPLETE — PENDING REVIEW**. Delivered on branch `arena/019ff750-terranex`; PR open against `greenfield/foundation`, not merged.
+
+Delivered and verified:
+
+1. Controlled opening import with a governed `DRAFT → VALIDATED → READY_FOR_APPROVAL → APPROVED → POSTED` lifecycle, file checksum, schema version, deterministic normalization, twelve explicit row-rejection reasons, exact control totals, rejected-row atomicity, database-enforced maker/checker, immutable approved snapshot hash, and a locked six-code Real-Estate mapping registry.
+2. No destructive overwrite of an opening position: at most one active posted opening per project, and a reversal guard that refuses while later un-reversed postings depend on it.
+3. Nine reconciliation checkpoints comparing externally supplied control totals against in-database derived balances, with exact integer variance, explicit zero-variance, mandatory owned exceptions on any non-zero variance, and immutable maker/checker sign-off.
+4. Deterministic end-to-end technical rehearsal across S0 → S1 → S7 → S2 → S3 → S4 → S6 → S5 → S7 on fixtures only, proving balances and provenance survive the full cycle.
+5. Executable PostgreSQL 16 backup/restore rehearsal with seventeen integrity fingerprints reproduced exactly, plus proof that forced RLS, immutability triggers, and posted-fact tamper refusal all survive a restore. **Rehearsal only; no production restore has been performed.**
+6. Access revocation that takes effect immediately for open sessions, a last-active-owner guard, and re-assertion that S5 self-approval remains impossible.
+7. Durable UAT evidence that the system can never self-accept, and an acceptance report that derives technical readiness from recorded facts while reporting the human gate separately.
+8. Arabic/RTL pilot workspace inside the existing project shell, with distinct loading, empty, filtered-empty, validation-error, server-error, forbidden, conflict and completed states.
+9. Ten operator runbooks in `docs/runbooks/`, none of which permit destructive SQL on posted financial facts.
+
+Not claimed: the controlled paid pilot itself, a real customer opening import, four weekly reconciliations on real data, and buyer UAT. Those are human events requiring real customer evidence; `human_uat_status` remains `NOT_STARTED`/`PENDING` until a real authorised approver accepts a real executed task.
+
+Canonical decision: `docs/decisions/0009_S7_PILOT_HARDENING.md`.
+
 ## Explicitly deferred
 
-- S5 allocation, distribution approval/payment, partner capital statement and investor statement;
 - agreement amendment/supersession and funding carry-forward beyond the implemented governing version;
 - advanced waterfall economics: preferred return, hurdle tiers, GP catch-up, carry, clawback, tax/withholding and cross-project netting;
 - statutory/general ledger, chart-of-accounts editor, external accounting adapters, bank APIs/open banking, VAT/tax/e-invoicing;
@@ -94,15 +121,19 @@ Canonical decision: `docs/decisions/0007_S6_PERIOD_CLOSE_AND_CORRECTION.md`.
 
 ## Next active batch
 
-`GF-008 / S5 — Allocation & Distribution`.
+Operating the controlled paid Real Estate pilot with a real customer.
 
-S5 must consume the **approved immutable S6 close snapshot** as its financial input. It must not recompute a live S1–S4 result and must keep allocation, distribution liability, and cash payment as separate facts.
+This is an execution activity, not a build batch. The software gates for it are met by GF-009 / S7; what remains cannot be produced by writing code:
 
-Expected user-visible path:
+1. A signed pilot engagement with one Real Estate customer.
+2. A real opening balance import from that customer's own trial balance, approved under maker/checker by their people.
+3. Four weekly reconciliation cycles on real data, each with external control totals, exact variances, owned exceptions where they arise, and immutable sign-off.
+4. Buyer UAT executed and accepted by the customer's authorised approver against the registered UAT tasks.
+5. Operator runbooks exercised in a real support situation, with the escalation owner placeholders filled in for the engagement.
 
-`Approved Close Snapshot → Allocation Run → OWNER Approval → Partner Capital Update → Distribution Approval/Payable → Distribution Payment → Investor Statement`
+None of these may be recorded in the product before they actually occur. Until then the acceptance report truthfully reports the human gate as not started or pending.
 
-Advanced waterfalls remain deferred. S5 v1 implements only the approved simple allocation policies in the finance baseline.
+The next build batch is not selected until pilot operation produces evidence of what the customer actually needs next.
 
 ## Decision rules
 

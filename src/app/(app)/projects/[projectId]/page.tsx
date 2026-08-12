@@ -78,6 +78,10 @@ export default async function ProjectShell({
             <strong>المستثمرون والتخصيص والتوزيعات</strong>
             <p className="muted">قواعد حاكمة، تخصيص نتيجة مغلقة، مستحقات توزيع، دفع، وكشف رأس المال</p>
           </Link>
+          <Link className="card" href={`/projects/${projectId}/pilot`}>
+            <strong>تجهيز التشغيل التجريبي</strong>
+            <p className="muted">الاستيراد الافتتاحي، مجاميع الرقابة، فروق المطابقة، اختبار القبول، والوصول</p>
+          </Link>
         </nav>
       </section>
     </section>
