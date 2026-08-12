@@ -8,6 +8,9 @@ export type AllocationRuleSet = {
   policy: 'PRO_RATA' | 'FIXED_SHARES';
   common_denominator: string;
   content_hash: string;
+  basis_evidence_reference: string;
+  effective_from: string;
+  effective_to: string | null;
   created_by: string;
   created_at: string;
   participant_count: number;
@@ -119,7 +122,7 @@ async function many<T>(view: string, columns: string, projectId: string, orderCo
 
 export const getAllocationRuleSets = (projectId: string) => many<AllocationRuleSet>(
   's5_rule_sets_read',
-  'rule_set_id,organization_id,project_id,governing_version_id,policy,common_denominator,content_hash,created_by,created_at,participant_count',
+  'rule_set_id,organization_id,project_id,governing_version_id,policy,common_denominator,content_hash,basis_evidence_reference,effective_from,effective_to,created_by,created_at,participant_count',
   projectId,
   'created_at',
 );
