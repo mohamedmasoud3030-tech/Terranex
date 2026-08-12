@@ -32,17 +32,15 @@ cleanup() {
 trap cleanup EXIT
 cleanup
 psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
-# Roles are cluster-global and were already created by the canonical fresh
-# replay in the primary test database. Recreate only the per-database Auth shim.
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Keep this fixture at the exact pre-S3 (merged S2) boundary. All migrations in
-# the 202608110004xx family belong to GF-005/S3 and must be applied only after
-# the pre-upgrade assertion, in normal lexical migration order.
+# Exact pre-S3 boundary: replay only migration families older than S3. Later
+# stages must never leak into this historical forward-upgrade fixture as new
+# migrations are added to the repository.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    202608110004*.sql|202608110005*.sql) continue ;;
+    202608110004*.sql|202608110005*.sql|202608110006*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done
