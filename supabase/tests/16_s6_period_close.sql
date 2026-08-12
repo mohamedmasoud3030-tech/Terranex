@@ -120,32 +120,10 @@ select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000001', forma
   )$sql$,
   :'s6_project', :'s6_period1'), '42501') then 1 else 0 end as s6_direct_run_dml_denied;
 
-select s6_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s6_approve_close_run('10000000-0000-4000-8000-000000000001', %L, 's6-approve-1')$$,
-  :'s6_run1'));
-select 1/case when (select status = 'APPROVED' from public.close_runs where id = :'s6_run1') then 1 else 0 end as s6_run_approved;
-select 1/case when (select status = 'CLOSED' from public.accounting_periods where id = :'s6_period1') then 1 else 0 end as s6_period_closed;
-select id as s6_snapshot1 from public.close_run_snapshots where close_run_id = :'s6_run1' \gset
-select 1/case when (select char_length(content_hash) = 64 from public.close_run_snapshots where id = :'s6_snapshot1') then 1 else 0 end as s6_snapshot_hashed;
-select 1/case when (select content_hash from public.close_run_snapshots where id = :'s6_snapshot1') =
-  (select content_hash from public.close_run_snapshots where id = :'s6_snapshot1') then 1 else 0 end as s6_snapshot_hash_stable;
-select 1/case when s6_expect_raise_admin(format(
-  $sql$update public.close_run_snapshots set totals = '{"x":"y"}'::jsonb where id = %L$sql$,
-  :'s6_snapshot1'), 'P0001', null) then 1 else 0 end as s6_snapshot_immutable;
-
-select 1/case when s6_expect_raise_admin(format(
-  $sql$insert into public.journal_batches(
-    organization_id, project_id, source_type, source_id, transaction_date,
-    idempotency_key, request_hash, posted_by
-  ) values (
-    '10000000-0000-4000-8000-000000000001', %L, 'COST_OBLIGATION',
-    gen_random_uuid(), current_date,
-    's6-closed-posting-' || substr(md5(random()::text), 1, 12),
-    repeat('b', 64), '00000000-0000-4000-8000-000000000001'
-  )$sql$,
-  :'s6_project'), 'P0001', '%no open accounting period%') then 1 else 0 end as s6_closed_period_lock_rejects;
-
--- Hard accounting integrity remains owned by S2.
+-- Hard accounting integrity remains owned by S2. Use project2 here because
+-- it has not entered S6 period management yet, so the assertion reaches the
+-- authoritative S2 balanced-batch trigger instead of being intercepted by a
+-- closed-period guard.
 select 1/case when s6_expect_raise_admin(format(
   $outer$do $inner$
   declare
@@ -170,7 +148,32 @@ select 1/case when s6_expect_raise_admin(format(
       100, 0, 'EGP', current_date
     );
   end $inner$$outer$,
-  :'s6_project'), 'P0001', '%unbalanced%') then 1 else 0 end as s6_unbalanced_batch_hard_failure;
+  :'s6_project2'), 'P0001', '%unbalanced%') then 1 else 0 end as s6_unbalanced_batch_hard_failure;
+
+select s6_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.s6_approve_close_run('10000000-0000-4000-8000-000000000001', %L, 's6-approve-1')$$,
+  :'s6_run1'));
+select 1/case when (select status = 'APPROVED' from public.close_runs where id = :'s6_run1') then 1 else 0 end as s6_run_approved;
+select 1/case when (select status = 'CLOSED' from public.accounting_periods where id = :'s6_period1') then 1 else 0 end as s6_period_closed;
+select id as s6_snapshot1 from public.close_run_snapshots where close_run_id = :'s6_run1' \gset
+select 1/case when (select char_length(content_hash) = 64 from public.close_run_snapshots where id = :'s6_snapshot1') then 1 else 0 end as s6_snapshot_hashed;
+select 1/case when (select content_hash from public.close_run_snapshots where id = :'s6_snapshot1') =
+  (select content_hash from public.close_run_snapshots where id = :'s6_snapshot1') then 1 else 0 end as s6_snapshot_hash_stable;
+select 1/case when s6_expect_raise_admin(format(
+  $sql$update public.close_run_snapshots set totals = '{"x":"y"}'::jsonb where id = %L$sql$,
+  :'s6_snapshot1'), 'P0001', null) then 1 else 0 end as s6_snapshot_immutable;
+
+select 1/case when s6_expect_raise_admin(format(
+  $sql$insert into public.journal_batches(
+    organization_id, project_id, source_type, source_id, transaction_date,
+    idempotency_key, request_hash, posted_by
+  ) values (
+    '10000000-0000-4000-8000-000000000001', %L, 'COST_OBLIGATION',
+    gen_random_uuid(), current_date,
+    's6-closed-posting-' || substr(md5(random()::text), 1, 12),
+    repeat('b', 64), '00000000-0000-4000-8000-000000000001'
+  )$sql$,
+  :'s6_project'), 'P0001', '%no open accounting period%') then 1 else 0 end as s6_closed_period_lock_rejects;
 
 select 1/case when (select result = 'NOT_APPLICABLE' from public.close_run_gates
   where close_run_id = :'s6_run1' and gate_code = 'SUSPENSE_CONTROL_ACCOUNTS')
