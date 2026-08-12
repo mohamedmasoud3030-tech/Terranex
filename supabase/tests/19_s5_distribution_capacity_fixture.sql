@@ -1,9 +1,21 @@
--- S5 test-only capacity fixture.
+-- S5 test-only capacity and segregation-of-duties fixture.
 -- Earlier S2/S4 scenarios are intentionally free to consume project cash and
 -- leave supplier payables. S5 payment verification needs a positive capacity
--- without changing the already frozen S6 allocation source. Seed only the
--- shortfall, after the snapshot, through a balanced canonical journal batch in
--- the currently OPEN period. This file is test data, never a production path.
+-- without changing the already frozen S6 allocation source. The fixture also
+-- adds a second OWNER so maker/checker separation is exercised with two users
+-- who both have approval authority. This file is test data, never a production path.
+
+insert into auth.users(id) values ('00000000-0000-4000-8000-000000000003')
+on conflict (id) do nothing;
+insert into public.memberships(organization_id,user_id,role,status)
+values (
+  '10000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000003',
+  'OWNER',
+  'ACTIVE'
+)
+on conflict (organization_id,user_id) do update
+set role='OWNER',status='ACTIVE';
 
 do $$
 declare
