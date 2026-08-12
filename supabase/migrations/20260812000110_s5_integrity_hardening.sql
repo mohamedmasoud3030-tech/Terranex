@@ -78,3 +78,71 @@ begin
   return v_id;
 end $$;
 revoke all on function public.s5_require_open_posting_date(uuid,uuid,date) from public,anon,authenticated;
+
+-- A policy named PRO_RATA is not allowed to carry arbitrary weights. At the
+-- deferred rule-set boundary, prove every supplied ratio is exactly equal to
+-- the governing agreement's commitment ratio using integer cross-products.
+create or replace function public.s5_validate_rule_set_complete() returns trigger
+language plpgsql set search_path=pg_catalog,public as $$
+declare
+  v_set record; v_expected bigint; v_actual bigint; v_sum numeric; v_total_commitment numeric;
+begin
+  select * into v_set from public.s5_allocation_rule_sets where id=new.id;
+  select count(*) into v_expected
+  from public.commitment_terms ct
+  join public.project_participants pp on pp.id=ct.participant_id
+  where ct.organization_id=v_set.organization_id
+    and ct.agreement_version_id=v_set.governing_version_id
+    and pp.project_id=v_set.project_id and pp.role='INVESTOR';
+  select count(*),coalesce(sum(weight_numerator::numeric),0)
+    into v_actual,v_sum
+  from public.s5_allocation_rules where rule_set_id=v_set.id;
+  if v_expected=0 or v_actual<>v_expected then
+    raise exception 'allocation rules must cover every investor in the governing version exactly once';
+  end if;
+  if v_sum<>v_set.common_denominator::numeric then
+    raise exception 'allocation weights must resolve exactly to 100 percent';
+  end if;
+  if exists (
+    select 1
+    from public.commitment_terms ct
+    join public.project_participants pp on pp.id=ct.participant_id
+    where ct.organization_id=v_set.organization_id
+      and ct.agreement_version_id=v_set.governing_version_id
+      and pp.project_id=v_set.project_id and pp.role='INVESTOR'
+      and not exists (
+        select 1 from public.s5_allocation_rules r
+        where r.rule_set_id=v_set.id and r.participant_party_id=pp.party_id
+      )
+  ) then
+    raise exception 'allocation rules omit an eligible investor';
+  end if;
+
+  if v_set.policy='PRO_RATA' then
+    select coalesce(sum(ct.commitment_minor_units::numeric),0) into v_total_commitment
+    from public.commitment_terms ct
+    join public.project_participants pp on pp.id=ct.participant_id
+    where ct.organization_id=v_set.organization_id
+      and ct.agreement_version_id=v_set.governing_version_id
+      and pp.project_id=v_set.project_id and pp.role='INVESTOR';
+    if v_total_commitment<=0 then
+      raise exception 'PRO_RATA requires positive governing commitments';
+    end if;
+    if exists (
+      select 1
+      from public.s5_allocation_rules r
+      join public.project_participants pp
+        on pp.organization_id=r.organization_id and pp.project_id=r.project_id
+       and pp.party_id=r.participant_party_id and pp.role='INVESTOR'
+      join public.commitment_terms ct
+        on ct.organization_id=r.organization_id and ct.participant_id=pp.id
+       and ct.agreement_version_id=r.governing_version_id
+      where r.rule_set_id=v_set.id
+        and r.weight_numerator::numeric*v_total_commitment
+            <> ct.commitment_minor_units::numeric*v_set.common_denominator::numeric
+    ) then
+      raise exception 'PRO_RATA weights must exactly match governing commitment ratios';
+    end if;
+  end if;
+  return null;
+end $$;
