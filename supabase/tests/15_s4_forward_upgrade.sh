@@ -35,11 +35,11 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Exact merged S3 boundary: replay S0-S3 only, assert the S3 operational and S2
-# financial primitives, then apply the complete 202608110005xx family.
+# Exact merged S3 boundary: replay S0-S3 only. Later S6 migrations must never
+# leak into this historical fixture merely because they were added later.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    202608110005*.sql) continue ;;
+    202608110005*.sql|202608110006*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done
