@@ -261,12 +261,15 @@ select 1/case when (select count(*) from public.close_runs where period_id = :'s
 
 select 1/case when (select count(*) from public.close_run_snapshots where id = :'s6_snapshot1') = 1 then 1 else 0 end as s6_old_snapshot_preserved;
 
--- S4 sale correction integration.
-select id as s6_recognition_batch from public.property_sale_recognitions r
-  join public.property_dispositions d on d.id = r.disposition_id
-  where d.idempotency_key = 's4-disposition-main-001' \gset
-select id as s6_recognition_id from public.property_sale_recognitions
-  where journal_batch_id = :'s6_recognition_batch' \gset
+-- S4 sale correction integration. Keep the recognition fact ID separate from
+-- its posted journal batch ID; the correction command targets the batch.
+select r.journal_batch_id as s6_recognition_batch
+from public.property_sale_recognitions r
+join public.property_dispositions d on d.id = r.disposition_id
+where d.idempotency_key = 's4-disposition-main-001' \gset
+select r.id as s6_recognition_id
+from public.property_sale_recognitions r
+where r.journal_batch_id = :'s6_recognition_batch' \gset
 select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_reopen_period('10000000-0000-4000-8000-000000000001', %L, %L, 'reopen to correct s4 sale recognition', 'reopen-evidence-s4')$$,
   :'s6_project', :'s6_period1'));
