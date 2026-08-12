@@ -1220,6 +1220,7 @@ declare
   v_exc record;
   v_hash text;
   v_existing record;
+  v_fail_count int;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
@@ -1251,6 +1252,24 @@ begin
   update public.close_run_gates
   set result = 'APPROVED_EXCEPTION', exception_id = p_exception_id
   where close_run_id = v_exc.close_run_id and gate_code = v_exc.gate_code;
+  -- Recompute the composite CLOSE_REPORT_AND_EXCEPTIONS gate so the run
+  -- becomes approvable as soon as every concrete FAIL has a documented
+  -- APPROVED exception. The composite PASSes when no FAIL remains; any
+  -- FAIL still present (including an unapproved exception) keeps the
+  -- composite at FAIL.
+  update public.close_run_gates g
+  set result = case when v_fail_count = 0 then 'PASS' else 'FAIL' end,
+      detail = case when v_fail_count = 0
+        then 'close report and exceptions are consistent with the other gate results'
+        else format('%s gate(s) still failed; review remaining exceptions before approval', v_fail_count) end,
+      evidence = jsonb_build_object('failing_gates', v_fail_count)
+  from (
+    select close_run_id, count(*) as v_fail_count
+    from public.close_run_gates
+    where close_run_id = v_exc.close_run_id and result = 'FAIL'
+  ) s
+  where g.close_run_id = s.close_run_id
+    and g.gate_code = 'CLOSE_REPORT_AND_EXCEPTIONS';
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
   values (p_organization_id, v_actor, 'CLOSE_RUN_EXCEPTION_APPROVED', 'close_run_exception', p_exception_id,
     jsonb_build_object('close_run_id', v_exc.close_run_id, 'gate_code', v_exc.gate_code));
