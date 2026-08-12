@@ -40,10 +40,10 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Replay S0..S4 only; the S6 family is excluded.
+# Replay S0..S4 only; the S6 family and every later stage are excluded.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    202608110006*.sql) continue ;;
+    202608110006*.sql|20260812*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done
