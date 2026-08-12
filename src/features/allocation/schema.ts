@@ -10,6 +10,7 @@ export const configureRulesSchema = z.object({
   governingVersionId: uuid,
   policy: z.enum(['PRO_RATA', 'FIXED_SHARES']),
   commonDenominator: positiveIntegerText,
+  basisEvidenceReference: z.string().trim().min(3, 'مرجع مستند أساس التخصيص مطلوب').max(200),
   idempotencyKey,
 });
 
