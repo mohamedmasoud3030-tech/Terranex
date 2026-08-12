@@ -7,7 +7,7 @@ import type {
   CommitmentTerm,
   Participant,
 } from '@/features/funding/queries';
-import { formatMinorUnits } from '@/features/funding/money';
+import { formatMinorUnits } from '@/shared/money';
 import { createCapitalCall, recordContribution } from '@/features/funding/actions';
 
 export function CapitalCallForm({

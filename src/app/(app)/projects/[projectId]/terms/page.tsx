@@ -8,7 +8,7 @@ import {
   getParties,
   getVersions,
 } from '@/features/funding/queries';
-import { formatMinorUnits } from '@/features/funding/money';
+import { formatMinorUnits } from '@/shared/money';
 import {
   ActivateVersionButton,
   AgreementDraftForm,

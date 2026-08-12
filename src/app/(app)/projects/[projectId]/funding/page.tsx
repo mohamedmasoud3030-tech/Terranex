@@ -11,7 +11,7 @@ import {
   getPartnerCapitalPositions,
   getProjectCapitalPosition,
 } from '@/features/funding/queries';
-import { formatMinorUnits } from '@/features/funding/money';
+import { formatMinorUnits } from '@/shared/money';
 import { CapitalCallForm, ContributionForm } from './forms';
 
 export const dynamic = 'force-dynamic';

@@ -8,7 +8,7 @@ import {
 import {
   formatMinorUnits,
   parseMajorUnitsToMinor,
-} from '../src/features/funding/money';
+} from '../src/shared/money';
 
 const migration = readFileSync('supabase/migrations/20260810000200_s1_terms_and_funding.sql', 'utf8');
 const hardening = readFileSync('supabase/migrations/20260811000100_s1_hardening.sql', 'utf8');

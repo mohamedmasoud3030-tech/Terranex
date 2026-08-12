@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidMajorMoney } from './money';
+import { isValidMajorMoney } from '@/shared/money';
 
 const moneyAmount = z
   .string({ error: 'أدخل مبلغًا صحيحًا' })
