@@ -18,16 +18,22 @@ S5 v1 allocates `REALIZED_RESULT` only. The amount is derived inside PostgreSQL 
 
 The application never sends the amount. Later S6 reversal/correction postings therefore cannot silently rewrite the economic input captured by an already prepared allocation.
 
-## Governing rules
+## Governing allocation basis
 
-Each governing agreement version can have one immutable S5 rule set. Changed economics require a new agreement version and a new rule set; historical rows are not edited.
+S1 deliberately established that **commitment, contribution, ownership, and ledger balances are different concepts**. Therefore S5 never infers profit/loss entitlement from committed or contributed cash.
 
-Supported S5 v1 policies are:
+An S5 rule set is an independent, immutable allocation basis linked to one activated governing agreement version. It stores:
 
-- `PRO_RATA` — database-enforced to equal the exact commitment ratios in the governing agreement by integer cross-product checks.
-- `FIXED_SHARES` — owner-specified positive integer weights whose numerators sum exactly to the common denominator.
+- every eligible investor exactly once,
+- positive integer numerator/denominator weights,
+- policy (`PRO_RATA` or `FIXED_SHARES`),
+- an evidence reference identifying the governing schedule/document from which the weights were transcribed,
+- an effective-from date and optional effective-to date,
+- a content hash and full audit provenance.
 
-Every eligible investor in the governing version must appear exactly once. Rule rows use integer numerator/denominator values only.
+`PRO_RATA` means pro-rata by the independently documented ownership units/percentage basis supplied in the frozen rule set. `FIXED_SHARES` means explicit fixed participant shares. In both policies the numerators must sum exactly to the common denominator. Commitment terms are used only to identify the governing version's eligible investor population; commitment amounts are not weights.
+
+The current S1 slice does not implement a general amendment/supersession command workflow. GF-008 therefore does not guess historical ownership changes. A source period must sit wholly inside the frozen rule basis's effective range; otherwise preparation is rejected. A later governed amendment stage may segment one reporting period across multiple effective agreement/rule versions, but that behavior is not silently invented here.
 
 ## Deterministic allocation
 
@@ -40,7 +46,7 @@ Money remains PostgreSQL `bigint` minor units. Allocation uses exact rational ar
 5. break equal remainders by stable participant UUID ordering,
 6. reapply the source sign for profit or loss.
 
-The database rejects a run unless allocation lines sum exactly to the source amount.
+The database re-computes the canonical allocation at approval. Approval is rejected if any stored participant, weight, floor, remainder, rounding award, sign, currency, or allocated amount differs from the expected deterministic result. A correct total with incorrect investor shares is therefore not approvable.
 
 ## Journal semantics
 
@@ -67,7 +73,7 @@ An allocation is not a payment. A distribution request is not an approved payabl
 
 ## Distribution capacity and concurrency
 
-A distribution can only be prepared from an approved positive allocation for that investor. Approval recomputes authoritative capacity after a project-scoped transaction lock. Payment locks the distribution, recomputes outstanding payable and cash-account balance, and rejects overpayment.
+A distribution can only be prepared from an active approved positive allocation for that investor. Approval recomputes authoritative capacity after a project-scoped transaction lock. Payment locks the distribution, recomputes outstanding payable and cash-account balance, and rejects overpayment.
 
 S5 v1 exposes a conservative recorded-liability cash bridge:
 
@@ -83,6 +89,16 @@ The investor statement is derived from active, non-reversed canonical journal fa
 
 Paid distributions are displayed separately from approved distributions so cash settlement never changes the meaning of the capital rollforward.
 
+## Reversal and correction order
+
+S5 remains append-only and uses the shared journal reversal/correction path. Dependency order is enforced at database level:
+
+- an allocation journal cannot be reversed while an active approved distribution depends on it;
+- a distribution-approval journal cannot be reversed while an active payment depends on it;
+- payment rows must reference their exact canonical S5 payment journal, active approved payable, participant, currency, project, and cash account.
+
+Downstream effects are reversed first. Read models are reversal-aware and never present a reversed payable as an outstanding liability.
+
 ## Security and immutability
 
 All S5 tables are RLS-enabled and forced RLS. Authenticated browser access is read-only. Material commands are `SECURITY DEFINER` with a locked `search_path`, organization membership checks, owner approval where required, deterministic idempotency, advisory/row locking, append-only facts, and audit events.
@@ -95,7 +111,7 @@ The canonical gate includes:
 
 - PostgreSQL 16 full migration replay,
 - S0–S6 regression suites,
-- exact S5 allocation/journal/idempotency/RLS/rollforward verification,
+- exact S5 allocation-basis provenance, deterministic largest-remainder lines, journals, idempotency, RLS, reversal dependencies, and rollforward verification,
 - a real two-session distribution-payment concurrency race,
 - S5 forward upgrade from the merged S6 boundary,
 - application lint, tests, production build, and typecheck,
