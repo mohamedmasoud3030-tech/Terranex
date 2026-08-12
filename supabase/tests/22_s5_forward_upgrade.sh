@@ -72,12 +72,13 @@ AFTER="$(psql_cmd "$UPGRADE_DB" "select (
   and to_regclass('public.s5_allocation_lines') is not null
   and to_regclass('public.s5_distributions') is not null
   and to_regclass('public.s5_distribution_payments') is not null
-  and to_regprocedure('public.s5_configure_allocation_rules(uuid,uuid,uuid,text,uuid[],bigint[],bigint,text)') is not null
+  and to_regprocedure('public.s5_configure_allocation_rules(uuid,uuid,uuid,text,uuid[],bigint[],bigint,text,text)') is not null
   and to_regprocedure('public.s5_prepare_allocation(uuid,uuid,uuid,uuid,text,text)') is not null
   and to_regprocedure('public.s5_approve_allocation(uuid,uuid,date,text)') is not null
   and to_regprocedure('public.s5_prepare_distribution(uuid,uuid,uuid,uuid,bigint,text,text)') is not null
   and to_regprocedure('public.s5_approve_distribution(uuid,uuid,date,text)') is not null
   and to_regprocedure('public.s5_pay_distribution(uuid,uuid,uuid,bigint,date,text,text)') is not null
+  and to_regprocedure('public.s5_allocation_lines_are_canonical(uuid)') is not null
   and to_regclass('public.close_run_snapshots') is not null
   and to_regclass('public.property_sale_recognitions') is not null
   and to_regprocedure('public.s6_approve_close_run(uuid,uuid,text)') is not null
