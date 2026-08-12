@@ -100,10 +100,12 @@ select s5_run('00000000-0000-4000-8000-000000000001',format(
   :'s5_org',:'s5_project',:'s5_snapshot',:'s5_version'));
 select 1/case when (select count(*) from public.s5_allocation_runs where id=:'s5_run_id')=1 and (select count(*) from public.s5_allocation_lines where run_id=:'s5_run_id')=:'s5_denominator'::bigint then 1 else 0 end as s5_prepare_retry_single_effect;
 
--- Closed-source provenance does not authorize a posting into a closed date.
+-- A closed source is provenance only: posting still requires an OPEN period.
+-- Use an ancient date guaranteed not to be covered by any test fixture period;
+-- the original closed dates may legitimately be covered by an S6 reopen.
 select 1/case when s5_expect_raise('00000000-0000-4000-8000-000000000001',format(
-  $$select public.s5_approve_allocation(%L,%L,(select start_date from public.accounting_periods where id=%L),'s5-allocation-approve-closed')$$,
-  :'s5_org',:'s5_run_id',:'s5_source_period'),'P0001','%OPEN accounting period%') then 1 else 0 end as s5_closed_period_posting_rejected;
+  $$select public.s5_approve_allocation(%L,%L,date '1900-01-01','s5-allocation-approve-no-open')$$,
+  :'s5_org',:'s5_run_id'),'P0001','%OPEN accounting period%') then 1 else 0 end as s5_no_open_period_posting_rejected;
 
 select id as s5_open_period,start_date as s5_posting_date
 from public.accounting_periods
@@ -120,19 +122,11 @@ select 1/case when (
 ) then 1 else 0 end as s5_allocation_journal_balanced;
 select 1/case when (select count(*) from public.journal_batches where id=:'s5_allocation_batch' and source_type='S5_ALLOCATION')=1 then 1 else 0 end as s5_allocation_uses_canonical_ledger;
 
--- Cross-tenant browser reads are denied by RLS.
-select 1/case when s5_expect_raise('00000000-0000-4000-8000-000000000002',format(
+-- Cross-tenant browser reads are denied by RLS; a leak makes the inner
+-- assertion divide by zero and fails the test transaction.
+select s5_run('00000000-0000-4000-8000-000000000002',format(
   $$select 1/case when (select count(*) from public.s5_allocation_runs_read where project_id=%L)=0 then 1 else 0 end$$,
-  :'s5_project'),'22012',null)=false then 1 else 1 end as s5_cross_tenant_probe_executed;
-do $$
-declare v_count bigint;
-begin
-  perform set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',true);
-  perform set_config('role','authenticated',false);
-  select count(*) into v_count from public.s5_allocation_runs_read where project_id=:'s5_project';
-  reset role;
-  if v_count<>0 then raise exception 'S5 cross-tenant allocation read leaked rows'; end if;
-end $$;
+  :'s5_project'));
 
 -- Choose an investor with positive capital and a project cash account with cash.
 select l.participant_party_id as s5_party
