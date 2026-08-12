@@ -51,11 +51,12 @@ begin
   reset role;
 end $$;
 
--- Resolve the prior S4 fixture. The S4 sale recognition on s4_asset is
--- still ACTIVE and is the canonical target for the S4 correction test.
+-- Resolve the prior S2/S4 fixtures.
 select id as s6_project from public.investment_projects where name = 'مشروع النخيل' \gset
 select id as s6_project2 from public.investment_projects where name = 'مشروع ثانٍ' \gset
 select id as s6_asset from public.property_assets where idempotency_key = 's3-asset-main-0001' \gset
+select id as s6_project2_cash from public.project_cash_accounts
+  where project_id = :'s6_project2' and name = 'حساب مشروع ثانٍ' \gset
 
 -- Open an S6 period covering the S4 fixture dates.
 do $$
@@ -79,16 +80,13 @@ select id as s6_period1 from public.accounting_periods
   where project_id = :'s6_project' and status = 'OPEN' \gset
 select 1/case when (select status = 'OPEN' from public.accounting_periods where id = :'s6_period1') then 1 else 0 end as s6_period_opened;
 
--- Non-overlap invariant: a second open period overlapping the first is
--- rejected at the database.
 select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_create_accounting_period('10000000-0000-4000-8000-000000000001', %L,
     (select start_date from public.accounting_periods where id = %L) + 1,
     (select end_date from public.accounting_periods where id = %L) + 5)$$,
   :'s6_project', :'s6_period1', :'s6_period1'), 'P0001') then 1 else 0 end as s6_overlap_period_rejected;
 
--- Database-enforced period lock: the test must prove the intended trigger
--- rejected the posting, not merely that some unrelated exception occurred.
+-- Prove the intended period-lock trigger rejected the posting.
 select 1/case when s6_expect_raise_admin(format(
   $sql$insert into public.journal_batches(
     organization_id, project_id, source_type, source_id, transaction_date,
@@ -101,15 +99,18 @@ select 1/case when s6_expect_raise_admin(format(
   )$sql$,
   :'s6_project'), 'P0001', '%no open accounting period%') then 1 else 0 end as s6_lock_rejects_old_posting;
 
--- Prepare a close run.
+-- First close run: the period does not contain the deliberately unreconciled
+-- future-dated S2 fixtures, so the bank gate must truthfully PASS.
 select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_prepare_close_run('10000000-0000-4000-8000-000000000001', %L, %L, 'first close')$$,
   :'s6_project', :'s6_period1'));
 select id as s6_run1 from public.close_runs where period_id = :'s6_period1' and version = 1 \gset
 select 1/case when (select status = 'PREPARED' from public.close_runs where id = :'s6_run1') then 1 else 0 end as s6_run_prepared;
 select 1/case when (select count(*) from public.close_run_gates where close_run_id = :'s6_run1') = 10 then 1 else 0 end as s6_ten_gates_present;
+select 1/case when (select result = 'PASS' from public.close_run_gates
+  where close_run_id = :'s6_run1' and gate_code = 'BANK_RECONCILIATION_COVERAGE')
+  then 1 else 0 end as s6_run1_bank_gate_truthful_pass;
 
--- Direct close-run mutation by an authenticated member is denied by RLS.
 select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000001', format(
   $sql$insert into public.close_runs(
     organization_id, project_id, period_id, version, status, source_cutoff_date, generated_by
@@ -119,19 +120,6 @@ select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000001', forma
   )$sql$,
   :'s6_project', :'s6_period1'), '42501') then 1 else 0 end as s6_direct_run_dml_denied;
 
--- Unreconciled S2 fixtures remain a truthful FAIL and are handled through
--- the documented approved-exception workflow.
-select s6_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s6_request_close_run_exception('10000000-0000-4000-8000-000000000001', %L,
-    'BANK_RECONCILIATION_COVERAGE', 'سطر بنكي قديم لم يصل', 'BANK-OLD-RUN1', 'material: not material')$$,
-  :'s6_run1'));
-select 1/case when s6_expect_ok('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s6_approve_close_run_exception('10000000-0000-4000-8000-000000000001', %L, 's6-approve-exc-run1')$$,
-  (select id from public.close_run_exceptions where close_run_id = :'s6_run1' and gate_code = 'BANK_RECONCILIATION_COVERAGE'))) then 1 else 0 end as s6_run1_exception_approved;
-select 1/case when (select result = 'APPROVED_EXCEPTION' from public.close_run_gates
-  where close_run_id = :'s6_run1' and gate_code = 'BANK_RECONCILIATION_COVERAGE') then 1 else 0 end as s6_run1_bank_gate_promoted;
-
--- Approve closes the period and produces an immutable snapshot.
 select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_approve_close_run('10000000-0000-4000-8000-000000000001', %L, 's6-approve-1')$$,
   :'s6_run1'));
@@ -145,7 +133,6 @@ select 1/case when s6_expect_raise_admin(format(
   $sql$update public.close_run_snapshots set totals = '{"x":"y"}'::jsonb where id = %L$sql$,
   :'s6_snapshot1'), 'P0001', null) then 1 else 0 end as s6_snapshot_immutable;
 
--- Closed period rejects all normal postings with the period-lock error.
 select 1/case when s6_expect_raise_admin(format(
   $sql$insert into public.journal_batches(
     organization_id, project_id, source_type, source_id, transaction_date,
@@ -158,8 +145,7 @@ select 1/case when s6_expect_raise_admin(format(
   )$sql$,
   :'s6_project'), 'P0001', '%no open accounting period%') then 1 else 0 end as s6_closed_period_lock_rejects;
 
--- Hard accounting integrity remains owned by S2. This dynamic PL/pgSQL body
--- is formatted before execution, so no psql variable exists inside it.
+-- Hard accounting integrity remains owned by S2.
 select 1/case when s6_expect_raise_admin(format(
   $outer$do $inner$
   declare
@@ -190,7 +176,6 @@ select 1/case when (select result = 'NOT_APPLICABLE' from public.close_run_gates
   where close_run_id = :'s6_run1' and gate_code = 'SUSPENSE_CONTROL_ACCOUNTS')
   then 1 else 0 end as s6_suspense_gate_not_applicable;
 
--- Cross-tenant read remains hidden. The assertion itself executes as tenant B.
 select 1/case when s6_expect_ok('00000000-0000-4000-8000-000000000002', format(
   $sql$select 1 / case when (
     select count(*) from public.accounting_periods_read where project_id = %L
@@ -201,7 +186,17 @@ select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000002', forma
   $$select public.s6_create_accounting_period('10000000-0000-4000-8000-000000000002', %L, current_date, current_date+1)$$,
   :'s6_project2'), 'P0001') then 1 else 0 end as s6_cross_tenant_period_create_rejected;
 
--- Approved-exception path on a fresh project/currency fixture.
+-- Create an explicit unreconciled bank-line fixture inside period2. This makes
+-- BANK_RECONCILIATION_COVERAGE truthfully FAIL before exercising the approved
+-- exception workflow; the product gate itself is never weakened or fabricated.
+select s6_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.import_bank_statement_lines(
+    '10000000-0000-4000-8000-000000000001', %L,
+    array[current_date], array['-1'], array['EGP'],
+    array['S6 close exception fixture'], array['S6-CLOSE-GAP-001'],
+    's6-close-gap-import-001')$$,
+  :'s6_project2_cash'));
+
 select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_create_accounting_period('10000000-0000-4000-8000-000000000001', %L, current_date-2, current_date+1)$$,
   :'s6_project2'));
@@ -211,9 +206,12 @@ select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_prepare_close_run('10000000-0000-4000-8000-000000000001', %L, %L, 'second close to test exceptions')$$,
   :'s6_project2', :'s6_period2'));
 select id as s6_run2 from public.close_runs where period_id = :'s6_period2' and version = 1 \gset
+select 1/case when (select result = 'FAIL' from public.close_run_gates
+  where close_run_id = :'s6_run2' and gate_code = 'BANK_RECONCILIATION_COVERAGE')
+  then 1 else 0 end as s6_bank_gate_truthful_fail;
 select 1/case when s6_expect_ok('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_request_close_run_exception('10000000-0000-4000-8000-000000000001', %L,
-    'BANK_RECONCILIATION_COVERAGE', 'سطر بنكي قديم لم يصل', 'BANK-OLD-001', 'material: not material')$$,
+    'BANK_RECONCILIATION_COVERAGE', 'سطر بنكي غير متصالح ضمن فترة الإغلاق', 'S6-CLOSE-GAP-001', 'material: immaterial test fixture')$$,
   :'s6_run2')) then 1 else 0 end as s6_exception_request_ok;
 select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000002', format(
   $$select public.s6_approve_close_run_exception('10000000-0000-4000-8000-000000000001', %L, 's6-approve-exc-1')$$,
@@ -232,7 +230,6 @@ select s6_run('00000000-0000-4000-8000-000000000001', format(
 select 1/case when (select status = 'APPROVED' from public.close_runs where id = :'s6_run2') then 1 else 0 end as s6_run2_approved;
 select 1/case when (select status = 'CLOSED' from public.accounting_periods where id = :'s6_period2') then 1 else 0 end as s6_period2_closed;
 
--- Reopen creates a new authoritative version and keeps the prior close immutable.
 select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_reopen_period('10000000-0000-4000-8000-000000000001', %L, %L, 'reopen to correct a late WIP classification', 'reopen-evidence-001')$$,
   :'s6_project2', :'s6_period2'));
@@ -246,7 +243,7 @@ select 1/case when s6_expect_raise_admin(format(
   :'s6_period2'), 'P0001', null) then 1 else 0 end as s6_closed_period_immutable;
 
 -- Same-period duplicate prepare is rejected. Real two-session races are
--- covered separately by 17_s6_close_concurrency.sh.
+-- covered by 17_s6_close_concurrency.sh.
 select s6_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s6_prepare_close_run('10000000-0000-4000-8000-000000000001', %L, %L, 'duplicate prepare')$$,
   :'s6_project2', :'s6_period2_new'));
