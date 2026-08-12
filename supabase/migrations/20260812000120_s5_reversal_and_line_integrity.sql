@@ -4,16 +4,11 @@
 -- the correct order and an allocation may only be approved when every stored
 -- line exactly matches the canonical largest-remainder calculation.
 
--- ---------------------------------------------------------------------------
--- 1. Every material allocation line must belong to the frozen rule set and
---    carry exactly the frozen weight/currency. This protects privileged/direct
---    writers as well as the production RPC.
--- ---------------------------------------------------------------------------
+-- Every allocation line must belong to the frozen rule set and carry its exact
+-- weight/currency, including privileged/direct writes.
 create or replace function public.s5_guard_allocation_line_scope() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
-declare
-  v_run record;
-  v_rule record;
+declare v_run record; v_rule record;
 begin
   select * into v_run
   from public.s5_allocation_runs
@@ -40,9 +35,7 @@ create trigger s5_allocation_lines_scope_guard
 before insert on public.s5_allocation_lines
 for each row execute function public.s5_guard_allocation_line_scope();
 
--- Recompute the exact expected result from immutable run+rule inputs. Approval
--- is impossible if one participant, floor, remainder, residual award, sign, or
--- currency differs from the canonical calculation.
+-- Recompute the exact expected largest-remainder result from immutable inputs.
 create or replace function public.s5_allocation_lines_are_canonical(p_run_id uuid)
 returns boolean language sql stable security definer set search_path=pg_catalog,public as $$
 with run as (
@@ -85,43 +78,26 @@ select not exists(select 1 from mismatch)
 $$;
 revoke all on function public.s5_allocation_lines_are_canonical(uuid) from public,anon,authenticated;
 
--- Preserve the immutable PREPARED -> APPROVED lifecycle from the foundation,
--- and add the exact line proof at the transition boundary.
-create or replace function public.s5_guard_run_transition() returns trigger
+-- Layer the canonical-line proof beside the base PREPARED -> APPROVED immutable
+-- transition guard instead of copying that lifecycle guard into another migration.
+create or replace function public.s5_guard_run_canonical_lines() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
 begin
-  if old.status<>'PREPARED' or new.status<>'APPROVED'
-     or new.id<>old.id or new.organization_id<>old.organization_id or new.project_id<>old.project_id
-     or new.source_period_id<>old.source_period_id or new.close_run_id<>old.close_run_id
-     or new.close_snapshot_id<>old.close_snapshot_id or new.snapshot_content_hash<>old.snapshot_content_hash
-     or new.snapshot_captured_at<>old.snapshot_captured_at or new.governing_version_id<>old.governing_version_id
-     or new.rule_set_id<>old.rule_set_id or new.policy<>old.policy or new.algorithm_version<>old.algorithm_version
-     or new.reporting_currency<>old.reporting_currency or new.source_category<>old.source_category
-     or new.source_amount_minor_units<>old.source_amount_minor_units or new.content_hash<>old.content_hash
-     or new.prepared_by<>old.prepared_by or new.prepared_at<>old.prepared_at
-     or new.idempotency_key<>old.idempotency_key or new.request_hash<>old.request_hash
-     or new.prior_run_id is distinct from old.prior_run_id
-     or new.approved_by is null or new.approved_at is null or new.posting_date is null
-     or new.journal_batch_id is null or new.approval_idempotency_key is null
-     or new.approval_request_hash is null then
-    raise exception 'allocation run economics are immutable; only PREPARED to APPROVED is allowed';
-  end if;
-  if not public.s5_allocation_lines_are_canonical(old.id) then
+  if old.status='PREPARED' and new.status='APPROVED'
+     and not public.s5_allocation_lines_are_canonical(old.id) then
     raise exception 'allocation lines do not match the canonical largest-remainder calculation';
   end if;
   return new;
 end $$;
+drop trigger if exists s5_allocation_runs_canonical_guard on public.s5_allocation_runs;
+create trigger s5_allocation_runs_canonical_guard
+before update on public.s5_allocation_runs
+for each row execute function public.s5_guard_run_canonical_lines();
 
--- ---------------------------------------------------------------------------
--- 2. Distribution facts always depend on an active approved allocation.
---    An allocation journal that has been reversed cannot be used to create or
---    approve a new distribution, even by a privileged direct writer.
--- ---------------------------------------------------------------------------
+-- Distribution facts always depend on an active approved allocation.
 create or replace function public.s5_guard_distribution_active_allocation() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
-declare
-  v_run record;
-  v_line bigint;
+declare v_run record; v_line bigint;
 begin
   select * into v_run
   from public.s5_allocation_runs
@@ -148,20 +124,13 @@ create trigger s5_distributions_active_allocation_guard
 before insert or update on public.s5_distributions
 for each row execute function public.s5_guard_distribution_active_allocation();
 
--- ---------------------------------------------------------------------------
--- 3. Payment rows are subordinate to an active distribution-approval journal.
---    The trigger serializes on distribution id and enforces outstanding amount,
---    dimensions, cash-account scope, and journal linkage independently from the
---    command RPC.
--- ---------------------------------------------------------------------------
+-- Payment rows are subordinate to an active distribution-approval journal.
 create or replace function public.s5_guard_distribution_payment_integrity() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
-declare
-  v_dist record;
-  v_batch record;
-  v_paid numeric;
+declare v_dist record; v_batch record; v_paid numeric;
 begin
-  perform pg_advisory_xact_lock(hashtextextended(new.organization_id::text||':s5-distribution-payment-integrity:'||new.distribution_id::text,0));
+  perform pg_advisory_xact_lock(hashtextextended(
+    new.organization_id::text||':s5-distribution-payment-integrity:'||new.distribution_id::text,0));
 
   select * into v_dist
   from public.s5_distributions
@@ -205,15 +174,10 @@ create trigger s5_distribution_payments_integrity_guard
 before insert on public.s5_distribution_payments
 for each row execute function public.s5_guard_distribution_payment_integrity();
 
--- ---------------------------------------------------------------------------
--- 4. Shared reversal command/correction framework dependency order for S5.
---    Allocation cannot be reversed under an active approved distribution; a
---    distribution payable cannot be reversed under an active payment.
--- ---------------------------------------------------------------------------
+-- Shared reversal dependency order: downstream S5 effects must be reversed first.
 create or replace function public.s5_guard_reversal_dependencies() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
-declare
-  v_original record;
+declare v_original record;
 begin
   if new.source_type<>'REVERSAL' or new.reversal_of_batch_id is null then return new; end if;
   select * into v_original
@@ -247,12 +211,10 @@ create trigger journal_batches_s5_reversal_dependency_guard
 before insert on public.journal_batches
 for each row execute function public.s5_guard_reversal_dependencies();
 
--- ---------------------------------------------------------------------------
--- 5. Reversal-aware distribution read model. A reversed approval has no active
---    payable and therefore reports zero outstanding rather than pretending a
---    liability still exists merely because the immutable header says APPROVED.
--- ---------------------------------------------------------------------------
-create or replace view public.s5_distributions_read with (security_invoker=on) as
+-- Reversal-aware distribution read model. The preceding migration drops the
+-- earlier view explicitly because PostgreSQL cannot insert a view column via
+-- CREATE OR REPLACE while preserving the old column order.
+create view public.s5_distributions_read with (security_invoker=on) as
 select d.id as distribution_id,d.organization_id,d.project_id,d.allocation_run_id,d.participant_party_id,
   p.legal_name,d.requested_amount_minor_units::text,d.approved_amount_minor_units::text,d.currency,
   d.evidence_reference,d.status,d.prepared_by,d.prepared_at,d.approved_by,d.approved_at,
@@ -270,7 +232,8 @@ select d.id as distribution_id,d.organization_id,d.project_id,d.allocation_run_i
   end as settlement_status
 from public.s5_distributions d
 join public.parties p on p.id=d.participant_party_id and p.organization_id=d.organization_id
-left join public.journal_batches approval_reversal on approval_reversal.reversal_of_batch_id=d.approval_journal_batch_id
+left join public.journal_batches approval_reversal
+  on approval_reversal.reversal_of_batch_id=d.approval_journal_batch_id
 left join lateral (
   select coalesce(sum(dp.amount_minor_units::numeric),0) as paid
   from public.s5_distribution_payments dp
