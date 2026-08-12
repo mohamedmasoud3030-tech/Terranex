@@ -20,11 +20,29 @@ const cashAccountId = '00000000-0000-4000-8000-000000000008';
 const idempotencyKey = 's5-test-idempotency';
 
 describe('S5 command schemas', () => {
-  it('accepts an exact integer rule-set header and rejects fractional weights', () => {
+  it('accepts an evidence-backed integer allocation basis and rejects fractional weights', () => {
     expect(configureRulesSchema.safeParse({
-      organizationId, projectId, governingVersionId, policy: 'PRO_RATA', commonDenominator: '1000', idempotencyKey,
+      organizationId,
+      projectId,
+      governingVersionId,
+      policy: 'PRO_RATA',
+      commonDenominator: '1000',
+      basisEvidenceReference: 'AGREEMENT-SCHEDULE-A',
+      idempotencyKey,
     }).success).toBe(true);
     expect(participantRuleSchema.safeParse({ partyId: participantPartyId, weightNumerator: '12.5' }).success).toBe(false);
+  });
+
+  it('requires allocation-basis evidence independently from funding amounts', () => {
+    expect(configureRulesSchema.safeParse({
+      organizationId,
+      projectId,
+      governingVersionId,
+      policy: 'FIXED_SHARES',
+      commonDenominator: '1000',
+      basisEvidenceReference: '',
+      idempotencyKey,
+    }).success).toBe(false);
   });
 
   it('rejects zero and negative allocation weights', () => {
