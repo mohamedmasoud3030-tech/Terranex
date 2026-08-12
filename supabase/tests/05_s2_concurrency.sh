@@ -67,6 +67,24 @@ for value in "$PROJECT" "$ACCOUNT" "$OBL_RACE" "$PAY_RACE" "$LINE_RECON" "$CONTR
   fi
 done
 
+# S2 can be run standalone or as part of the full forward S0-S6 replay. Once
+# S6 period management exists, a payment must use an OPEN accounting date.
+# Keep the historical fixture date for standalone S2; otherwise pick the
+# current authoritative OPEN period's end date so this suite still reaches
+# the original S2 locking invariant rather than being intercepted by S6.
+HAS_S6="$(psql_value "select case when to_regclass('public.accounting_periods') is null then '0' else '1' end")"
+PAYMENT_DATE='2026-09-05'
+if [[ "$HAS_S6" == '1' ]]; then
+  OPEN_PAYMENT_DATE="$(psql_value "select end_date::text from public.accounting_periods
+    where organization_id='$ORG' and project_id='$PROJECT' and status='OPEN'
+    order by version desc limit 1")"
+  if [[ -z "$OPEN_PAYMENT_DATE" ]]; then
+    echo 'ERROR: S6 is installed but the S2 concurrency project has no OPEN accounting period.' >&2
+    exit 1
+  fi
+  PAYMENT_DATE="$OPEN_PAYMENT_DATE"
+fi
+
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
@@ -85,9 +103,9 @@ for each row execute function public.s2_test_delay_payment_insert();
 "
 
 SQL_PAY_A="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$OBL_RACE','$ACCOUNT',600000,date '2026-09-05','s2-race-pay-session-a');"
+select public.pay_cost_obligation('$ORG','$OBL_RACE','$ACCOUNT',600000,date '$PAYMENT_DATE','s2-race-pay-session-a');"
 SQL_PAY_B="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$OBL_RACE','$ACCOUNT',600000,date '2026-09-05','s2-race-pay-session-b');"
+select public.pay_cost_obligation('$ORG','$OBL_RACE','$ACCOUNT',600000,date '$PAYMENT_DATE','s2-race-pay-session-b');"
 
 set +e
 run_session "$SQL_PAY_A" "$tmpdir/pay-a.log" & pid_a=$!

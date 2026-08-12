@@ -37,6 +37,9 @@ SUPPLIER="$(psql_value "select id from public.parties where legal_name='مورد
 CASH="$(psql_value "select id from public.project_cash_accounts where name='حساب بنك المشروع' limit 1")"
 
 # Prepare a complete, authoritative sale fixture through the public commands.
+# The WIP authorization posts a financial batch. Use current_date so the full
+# S0-S6 replay reaches the intended S4 concurrency invariant through the real
+# OPEN-period guard; standalone S4 semantics are unchanged.
 psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.create_property_asset('$ORG','$PROJECT','أصل سباق الاعتراف','S4-RACE','s4-race-sale-asset');"
 ASSET="$(psql_value "select id from public.property_assets where idempotency_key='s4-race-sale-asset'")"
@@ -49,7 +52,7 @@ select public.transition_property_asset('$ORG','$ASSET','DUE_DILIGENCE','ACQUIRI
 select public.record_property_control('$ORG','$ASSET',null,'TITLE','سند سباق','PASSED',current_date-2,null,'ساري','$OWNER','S4-RACE-TITLE',null,'s4-race-title');
 select public.record_property_control('$ORG','$ASSET',null,'POSSESSION','حيازة سباق','PASSED',current_date-2,null,'سارية','$OWNER','S4-RACE-POS',null,'s4-race-possession');
 select public.transition_property_asset('$ORG','$ASSET','ACQUIRING','HELD','السيطرة مكتملة','S4-RACE-TITLE-POS','s4-race-held');
-select public.create_cost_obligation('$ORG','$PROJECT','$SUPPLIER','تكلفة دفترية لسباق الاعتراف',1000,'EGP',current_date-1,'CAPITALIZABLE_WIP','s4-race-wip-obligation');"
+select public.create_cost_obligation('$ORG','$PROJECT','$SUPPLIER','تكلفة دفترية لسباق الاعتراف',1000,'EGP',current_date,'CAPITALIZABLE_WIP','s4-race-wip-obligation');"
 OBLIGATION="$(psql_value "select id from public.cost_obligations where idempotency_key='s4-race-wip-obligation'")"
 psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
 select public.classify_property_cost('$ORG','$OBLIGATION','$ASSET',null,null,'ACQUISITION','سياسة WIP لسباق الاعتراف','s4-race-wip-classify');

@@ -70,6 +70,10 @@ export default async function ProjectShell({
             <strong>النقدية والبنك</strong>
             <p className="muted">الحسابات، كشوف البنك، والمطابقة</p>
           </Link>
+          <Link className="card" href={`/projects/${projectId}/close`}>
+            <strong>الإغلاق المالي والتصحيح</strong>
+            <p className="muted">فترات محاسبية، بوابات الإغلاق، لقطات مجمدة، تصحيح مرتبط</p>
+          </Link>
         </nav>
       </section>
     </section>
