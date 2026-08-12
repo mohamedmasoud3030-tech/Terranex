@@ -74,6 +74,10 @@ export default async function ProjectShell({
             <strong>الإغلاق المالي والتصحيح</strong>
             <p className="muted">فترات محاسبية، بوابات الإغلاق، لقطات مجمدة، تصحيح مرتبط</p>
           </Link>
+          <Link className="card" href={`/projects/${projectId}/investors`}>
+            <strong>المستثمرون والتخصيص والتوزيعات</strong>
+            <p className="muted">قواعد حاكمة، تخصيص نتيجة مغلقة، مستحقات توزيع، دفع، وكشف رأس المال</p>
+          </Link>
         </nav>
       </section>
     </section>
