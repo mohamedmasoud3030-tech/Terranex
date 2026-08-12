@@ -50,8 +50,9 @@ order by s.captured_at asc limit 1 \gset
 select public.s5_realized_result_as_of_snapshot(:'s5_org',:'s5_project',:'s5_snapshot') as s5_source_amount \gset
 select 1/case when :'s5_source_amount'::bigint>0 then 1 else 0 end as s5_positive_fixture_result;
 
--- Equal fixed shares provide a deterministic residual when the source is not
--- divisible by investor count. The production algorithm itself is generic.
+-- Equal fixed shares are an independent allocation basis. Commitment terms are
+-- used here only to identify the governing version's eligible investor set;
+-- they are never used as allocation weights.
 select array_agg(pp.party_id order by pp.party_id::text)::text as s5_parties,
        array_agg(1::bigint order by pp.party_id::text)::text as s5_weights,
        count(*)::bigint as s5_denominator
@@ -62,7 +63,7 @@ where ct.organization_id=:'s5_org' and ct.agreement_version_id=:'s5_version'
 select 1/case when :'s5_denominator'::bigint>0 then 1 else 0 end as s5_investors_present;
 
 select s5_run('00000000-0000-4000-8000-000000000001',format(
-  $$select public.s5_configure_allocation_rules(%L,%L,%L,'FIXED_SHARES',%L::uuid[],%L::bigint[],%s,'s5-rules-fixed-001')$$,
+  $$select public.s5_configure_allocation_rules(%L,%L,%L,'FIXED_SHARES',%L::uuid[],%L::bigint[],%s,'S5-RULE-BASIS-EVIDENCE-001','s5-rules-fixed-001')$$,
   :'s5_org',:'s5_project',:'s5_version',:'s5_parties',:'s5_weights',:'s5_denominator'));
 select id as s5_rule_set from public.s5_allocation_rule_sets
 where organization_id=:'s5_org' and idempotency_key='s5-rules-fixed-001' \gset
@@ -71,10 +72,16 @@ select 1/case when (
   from public.s5_allocation_rules where rule_set_id=:'s5_rule_set'
   group by weight_denominator
 ) then 1 else 0 end as s5_rule_set_complete;
+select 1/case when (
+  select basis_evidence_reference='S5-RULE-BASIS-EVIDENCE-001'
+    and effective_from is not null
+    and char_length(content_hash)=64
+  from public.s5_allocation_rule_sets where id=:'s5_rule_set'
+) then 1 else 0 end as s5_rule_basis_provenance_frozen;
 
 -- Same retry key + same payload is one material effect.
 select s5_run('00000000-0000-4000-8000-000000000001',format(
-  $$select public.s5_configure_allocation_rules(%L,%L,%L,'FIXED_SHARES',%L::uuid[],%L::bigint[],%s,'s5-rules-fixed-001')$$,
+  $$select public.s5_configure_allocation_rules(%L,%L,%L,'FIXED_SHARES',%L::uuid[],%L::bigint[],%s,'S5-RULE-BASIS-EVIDENCE-001','s5-rules-fixed-001')$$,
   :'s5_org',:'s5_project',:'s5_version',:'s5_parties',:'s5_weights',:'s5_denominator'));
 select 1/case when (select count(*) from public.s5_allocation_rule_sets where organization_id=:'s5_org' and idempotency_key='s5-rules-fixed-001')=1 then 1 else 0 end as s5_rules_retry_single_effect;
 
@@ -93,6 +100,7 @@ select 1/case when (select source_amount_minor_units=:'s5_source_amount'::bigint
 select 1/case when (select sum(allocated_minor_units)=:'s5_source_amount'::bigint from public.s5_allocation_lines where run_id=:'s5_run_id') then 1 else 0 end as s5_rounding_preserves_total;
 select 1/case when (select count(*)=:'s5_denominator'::bigint from public.s5_allocation_lines where run_id=:'s5_run_id') then 1 else 0 end as s5_allocation_line_count;
 select 1/case when (select sum(rounding_award_minor_units)=(abs(:'s5_source_amount'::bigint)%:'s5_denominator'::bigint) from public.s5_allocation_lines where run_id=:'s5_run_id') then 1 else 0 end as s5_largest_remainder_awards_exact;
+select 1/case when public.s5_allocation_lines_are_canonical(:'s5_run_id') then 1 else 0 end as s5_allocation_lines_canonical;
 
 -- Re-running prepare is idempotent and cannot create duplicate lines.
 select s5_run('00000000-0000-4000-8000-000000000001',format(
@@ -101,8 +109,6 @@ select s5_run('00000000-0000-4000-8000-000000000001',format(
 select 1/case when (select count(*) from public.s5_allocation_runs where id=:'s5_run_id')=1 and (select count(*) from public.s5_allocation_lines where run_id=:'s5_run_id')=:'s5_denominator'::bigint then 1 else 0 end as s5_prepare_retry_single_effect;
 
 -- A closed source is provenance only: posting still requires an OPEN period.
--- Use an ancient date guaranteed not to be covered by any test fixture period;
--- the original closed dates may legitimately be covered by an S6 reopen.
 select 1/case when s5_expect_raise('00000000-0000-4000-8000-000000000001',format(
   $$select public.s5_approve_allocation(%L,%L,date '1900-01-01','s5-allocation-approve-no-open')$$,
   :'s5_org',:'s5_run_id'),'P0001','%OPEN accounting period%') then 1 else 0 end as s5_no_open_period_posting_rejected;
