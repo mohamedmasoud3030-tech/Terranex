@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# GF-008 / S5 — real two-session payment race. The prior S6 concurrency suite
+# intentionally closes the current project period, so this suite reopens it
+# through the production S6 command before exercising S5. Test ordering must
+# never weaken the product invariant that S5 payments require an OPEN period.
+
 DB="${TERRANEX_TEST_DB:-terranex_test}"
 PGUSER="${PGUSER:-postgres}"
 PGPASSWORD="${PGPASSWORD:-postgres}"
@@ -34,17 +39,51 @@ run_session() {
 ORG='10000000-0000-4000-8000-000000000001'
 USER_ID='00000000-0000-4000-8000-000000000001'
 DIST="$(psql_value "select id from public.s5_distributions where organization_id='$ORG' and idempotency_key='s5-concurrency-dist-prepare' limit 1")"
+if [[ -z "$DIST" ]]; then
+  echo 'ERROR: S5 concurrency distribution fixture is missing.' >&2
+  exit 1
+fi
+
 PROJECT="$(psql_value "select project_id from public.s5_distributions where id='$DIST'")"
 CURRENCY="$(psql_value "select currency from public.s5_distributions where id='$DIST'")"
-CASH="$(psql_value "select ca.id from public.project_cash_accounts ca where ca.organization_id='$ORG' and ca.project_id='$PROJECT' and ca.currency='$CURRENCY' and public.s5_cash_account_balance_internal(ca.organization_id,ca.project_id,ca.id,ca.currency)>0 order by ca.id limit 1")"
-PAY_DATE="$(psql_value "select start_date from public.accounting_periods where organization_id='$ORG' and project_id='$PROJECT' and status='OPEN' order by version desc limit 1")"
+if [[ -z "$PROJECT" || -z "$CURRENCY" ]]; then
+  echo "ERROR: S5 concurrency distribution scope is incomplete: project=${PROJECT:-missing} currency=${CURRENCY:-missing}" >&2
+  exit 1
+fi
 
-for value in "$DIST" "$PROJECT" "$CASH" "$PAY_DATE"; do
-  if [[ -z "$value" ]]; then
-    echo 'ERROR: S5 concurrency fixture is incomplete.' >&2
+# 17_s6_close_concurrency.sh closes the only OPEN period on purpose. Reopen the
+# latest authoritative period via the same owner-only S6 workflow used by the
+# application. If another OPEN period already exists, leave it untouched.
+OPEN_PERIOD="$(psql_value "select id from public.accounting_periods where organization_id='$ORG' and project_id='$PROJECT' and reporting_currency='$CURRENCY' and status='OPEN' order by version desc limit 1")"
+if [[ -z "$OPEN_PERIOD" ]]; then
+  CLOSED_PERIOD="$(psql_value "select id from public.accounting_periods where organization_id='$ORG' and project_id='$PROJECT' and reporting_currency='$CURRENCY' and status='CLOSED' order by version desc limit 1")"
+  if [[ -z "$CLOSED_PERIOD" ]]; then
+    echo 'ERROR: no authoritative S6 period exists for the S5 concurrency fixture.' >&2
     exit 1
   fi
-done
+  psql_sql "set request.jwt.claim.sub='$USER_ID'; set role authenticated;
+  select public.s6_reopen_period('$ORG','$PROJECT','$CLOSED_PERIOD',
+    'reopen for S5 distribution payment concurrency verification',
+    'S5-CONCURRENCY-REOPEN-EVIDENCE');"
+  OPEN_PERIOD="$(psql_value "select id from public.accounting_periods where organization_id='$ORG' and project_id='$PROJECT' and reporting_currency='$CURRENCY' and status='OPEN' order by version desc limit 1")"
+fi
+if [[ -z "$OPEN_PERIOD" ]]; then
+  echo 'ERROR: S5 concurrency could not establish an OPEN accounting period through S6.' >&2
+  exit 1
+fi
+
+PAY_DATE="$(psql_value "select start_date from public.accounting_periods where id='$OPEN_PERIOD'")"
+CASH="$(psql_value "select ca.id from public.project_cash_accounts ca where ca.organization_id='$ORG' and ca.project_id='$PROJECT' and ca.currency='$CURRENCY' and public.s5_cash_account_balance_internal(ca.organization_id,ca.project_id,ca.id,ca.currency)>0 order by ca.id limit 1")"
+if [[ -z "$CASH" || -z "$PAY_DATE" ]]; then
+  echo "ERROR: S5 concurrency payment fixture incomplete after S6 reopen: cash=${CASH:-missing} payment_date=${PAY_DATE:-missing}" >&2
+  exit 1
+fi
+
+OUTSTANDING_BEFORE="$(psql_value "select outstanding_minor_units from public.s5_distributions_read where distribution_id='$DIST'")"
+if [[ "$OUTSTANDING_BEFORE" != '1' ]]; then
+  echo "ERROR: S5 concurrency fixture must start with exactly 1 outstanding minor unit; got ${OUTSTANDING_BEFORE:-missing}." >&2
+  exit 1
+fi
 
 SQL_A="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
 select public.s5_pay_distribution('$ORG','$DIST','$CASH',1,'$PAY_DATE','S5-CONCURRENCY-PAY-A','s5-concurrency-pay-key-a');"
