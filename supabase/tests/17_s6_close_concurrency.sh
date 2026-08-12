@@ -92,6 +92,50 @@ fi
 
 RUN_ID="$(psql_value "select id from public.close_runs where period_id='$PERIOD_ID' and status='PREPARED' limit 1")"
 
+# The full replay intentionally leaves one unreconciled bank-line concurrency
+# fixture (TXN-RACE-FP) inside this OPEN period. That must remain a truthful
+# close failure. Prove it is the only concrete failure, then exercise the real
+# approved-exception workflow before racing approval. Never fabricate PASS.
+FAIL_CODES="$(psql_value "select coalesce(string_agg(gate_code, ',' order by gate_code), '')
+  from public.close_run_gates
+  where close_run_id='$RUN_ID'
+    and gate_code <> 'CLOSE_REPORT_AND_EXCEPTIONS'
+    and result='FAIL'")"
+if [[ "$FAIL_CODES" != 'BANK_RECONCILIATION_COVERAGE' ]]; then
+  echo "ERROR: unexpected concrete close-gate failures before concurrency approval: ${FAIL_CODES:-none}" >&2
+  psql_sql "select gate_code, result, detail from public.close_run_gates where close_run_id='$RUN_ID' order by gate_code;" >&2
+  exit 1
+fi
+
+psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
+select public.s6_request_close_run_exception(
+  '$ORG', '$RUN_ID', 'BANK_RECONCILIATION_COVERAGE',
+  'Unreconciled bank line created by the prior fingerprint concurrency fixture remains outstanding',
+  'TXN-RACE-FP',
+  'material: controlled concurrency fixture reviewed for close'
+);"
+EXCEPTION_ID="$(psql_value "select id from public.close_run_exceptions
+  where close_run_id='$RUN_ID' and gate_code='BANK_RECONCILIATION_COVERAGE'
+  order by requested_at desc limit 1")"
+if [[ -z "$EXCEPTION_ID" ]]; then
+  echo 'ERROR: bank reconciliation close exception was not created' >&2
+  exit 1
+fi
+psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
+select public.s6_approve_close_run_exception('$ORG','$EXCEPTION_ID','s6-conc-bank-exc-approve');"
+
+REMAINING_FAILS="$(psql_value "select count(*) from public.close_run_gates
+  where close_run_id='$RUN_ID' and result='FAIL'")"
+COMPOSITE_RESULT="$(psql_value "select result from public.close_run_gates
+  where close_run_id='$RUN_ID' and gate_code='CLOSE_REPORT_AND_EXCEPTIONS'")"
+BANK_RESULT="$(psql_value "select result from public.close_run_gates
+  where close_run_id='$RUN_ID' and gate_code='BANK_RECONCILIATION_COVERAGE'")"
+if [[ "$REMAINING_FAILS" != '0' || "$COMPOSITE_RESULT" != 'PASS' || "$BANK_RESULT" != 'APPROVED_EXCEPTION' ]]; then
+  echo "ERROR: exception workflow did not make the prepared close approvable: fails=$REMAINING_FAILS composite=$COMPOSITE_RESULT bank=$BANK_RESULT" >&2
+  psql_sql "select gate_code, result, detail from public.close_run_gates where close_run_id='$RUN_ID' order by gate_code;" >&2
+  exit 1
+fi
+
 # Two concurrent approve calls using the same idempotency key. The command
 # must serialize the side effect; a retry may either replay successfully or be
 # rejected after observing the already-approved run, but there must be exactly
@@ -137,6 +181,11 @@ status_post=$?
 set -e
 if [[ "$status_post" -eq 0 ]]; then
   echo "ERROR: posting into a CLOSED period unexpectedly succeeded" >&2
+  cat "$tmpdir/locked-posting.log" >&2
+  exit 1
+fi
+if ! grep -q 'no open accounting period' "$tmpdir/locked-posting.log"; then
+  echo 'ERROR: CLOSED-period race was rejected for an unexpected reason' >&2
   cat "$tmpdir/locked-posting.log" >&2
   exit 1
 fi
