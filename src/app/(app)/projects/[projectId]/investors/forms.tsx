@@ -30,18 +30,15 @@ function Submit({ children, disabled = false }: { children: string; disabled?: b
 type RuleParticipant = {
   partyId: string;
   legalName: string;
-  commitmentMinorUnits: string;
 };
 
 export function ConfigureRulesForm({
-  organizationId, projectId, governingVersionId, participants, commonDenominator, currency, disabled,
+  organizationId, projectId, governingVersionId, participants, disabled,
 }: {
   organizationId: string;
   projectId: string;
   governingVersionId: string;
   participants: RuleParticipant[];
-  commonDenominator: string;
-  currency: string;
   disabled?: boolean;
 }) {
   const [state, action] = useActionState(configureAllocationRulesAction, initial);
@@ -55,31 +52,34 @@ export function ConfigureRulesForm({
       <label>
         <span>سياسة التخصيص</span>
         <select name="policy" defaultValue="PRO_RATA">
-          <option value="PRO_RATA">Pro Rata حسب الالتزامات الحاكمة</option>
-          <option value="FIXED_SHARES">حصص ثابتة</option>
+          <option value="PRO_RATA">Pro Rata حسب وحدات الملكية / النسبة المثبتة</option>
+          <option value="FIXED_SHARES">حصص توزيع ثابتة</option>
         </select>
       </label>
       <label>
+        <span>مرجع مستند أساس التخصيص</span>
+        <input name="basisEvidenceReference" minLength={3} maxLength={200} required placeholder="مثال: AGREEMENT-SCHEDULE-A" />
+      </label>
+      <label>
         <span>المقام المشترك للأوزان</span>
-        <input name="commonDenominator" inputMode="numeric" pattern="[1-9][0-9]*" required defaultValue={commonDenominator} />
+        <input name="commonDenominator" inputMode="numeric" pattern="[1-9][0-9]*" required defaultValue="10000" />
       </label>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>المستثمر</th><th>وزن التخصيص</th><th>العملة</th></tr></thead>
+          <thead><tr><th>المستثمر</th><th>وزن التخصيص المستقل</th></tr></thead>
           <tbody>
             {participants.map((participant) => (
               <tr key={participant.partyId}>
                 <td>{participant.legalName}<input type="hidden" name="partyId" value={participant.partyId} /></td>
-                <td><input name="weightNumerator" inputMode="numeric" pattern="[1-9][0-9]*" required defaultValue={participant.commitmentMinorUnits} aria-label={`وزن ${participant.legalName}`} /></td>
-                <td>{currency}</td>
+                <td><input name="weightNumerator" inputMode="numeric" pattern="[1-9][0-9]*" required placeholder="مثال: 2500" aria-label={`وزن ${participant.legalName}`} /></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="muted">في Pro Rata تتحقق قاعدة البيانات أن النسب تطابق الالتزامات في النسخة الحاكمة بالضبط. للحصص الثابتة غيّر الأوزان والمقام بحيث يكون مجموع الأوزان مساويًا للمقام.</p>
+      <p className="muted">مبالغ الالتزام أو المساهمات لا تحدد الملكية ولا حصة الربح. أدخل الوحدات أو النسب من المستند الحاكم نفسه؛ يجب أن يساوي مجموع الأوزان المقام المشترك.</p>
       <ErrorBanner state={state} />
-      <Submit disabled={disabled || participants.length === 0}>تثبيت قواعد التخصيص</Submit>
+      <Submit disabled={disabled || participants.length === 0}>تثبيت أساس وقواعد التخصيص</Submit>
     </form>
   );
 }
