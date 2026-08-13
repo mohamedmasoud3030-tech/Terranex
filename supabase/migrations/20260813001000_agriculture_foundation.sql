@@ -991,3 +991,44 @@ grant execute on function
   public.assign_crop_cycle_to_field(uuid,uuid,uuid,uuid,numeric,text,date,date,text),
   public.transition_crop_cycle(uuid,uuid,text,text,text,text,text)
 to authenticated;
+
+-- GF-013 functions are created after the repository-wide pgcrypto
+-- compatibility migration. Reapply its portable qualification rule so this
+-- batch works whether pgcrypto is installed in public, extensions, or another
+-- extension schema, and public functions never depend on search_path for
+-- digest(). CREATE OR REPLACE preserves the function identity and grants.
+do $pgcrypto_compat$
+declare
+  v_pgcrypto_schema text;
+  v_record record;
+  v_definition text;
+  v_rewritten text;
+begin
+  select n.nspname into v_pgcrypto_schema
+  from pg_extension e
+  join pg_namespace n on n.oid = e.extnamespace
+  where e.extname = 'pgcrypto';
+
+  if v_pgcrypto_schema is null then
+    raise exception 'GF-013 requires the pgcrypto extension';
+  end if;
+
+  for v_record in
+    select p.oid
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prokind = 'f'
+  loop
+    v_definition := pg_get_functiondef(v_record.oid);
+    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\\(' then
+      v_rewritten := regexp_replace(
+        v_definition,
+        '(^|[^[:alnum:]_.])digest[[:space:]]*\\(',
+        E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
+        'g'
+      );
+      execute v_rewritten;
+    end if;
+  end loop;
+end $pgcrypto_compat$;
