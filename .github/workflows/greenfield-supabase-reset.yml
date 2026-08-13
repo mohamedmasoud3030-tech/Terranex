@@ -1,4 +1,4 @@
-name: Terranex Apply S6 Production Scale Fixes Live
+name: Terranex Commit Persistent Realistic Demo
 
 on:
   push:
@@ -11,88 +11,153 @@ permissions:
   contents: read
 
 jobs:
-  apply:
+  seed:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
     steps:
-      - name: Checkout exact merged main
+      - name: Checkout exact validated demo source
         uses: actions/checkout@v4
         with:
-          ref: 4aa2904422a674020b60e40c29ffaf47bc0d34af
+          ref: d5885d1db93534b0ebc63c0a5595116550a09ccb
 
-      - name: Preflight live boundary
+      - name: Preflight no existing demo business project
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          sql="select count(*)::int as ledger_count,
-            exists(select 1 from public.terranex_migration_history where version='20260813000700_s6_close_bigint_totals') as m36,
-            exists(select 1 from public.terranex_migration_history where version='20260813000800_s6_sequential_accounting_periods') as m37
-            from public.terranex_migration_history;"
+          sql="select count(*)::int as demo_projects,
+            (select count(*)::int from public.terranex_migration_history) as ledger_count,
+            exists(select 1 from auth.users where email='demo-maker@terranex.invalid') as maker_exists
+            from public.investment_projects where internal_reference='DEMO-RE-2026-001';"
           jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
           row="$(curl --fail-with-body -sS -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
             --data-binary @"$tmp/q.json" | jq -c '.[0]')"
-          echo "LEDGER_COUNT_BEFORE=$(printf '%s' "$row" | jq -r '.ledger_count')"
-          test "$(printf '%s' "$row" | jq -r '.ledger_count')" = '35'
-          test "$(printf '%s' "$row" | jq -r '.m36')" = 'false'
-          test "$(printf '%s' "$row" | jq -r '.m37')" = 'false'
-
-      - name: Apply both exact migrations and fingerprints atomically
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          m36='supabase/migrations/20260813000700_s6_close_bigint_totals.sql'
-          m37='supabase/migrations/20260813000800_s6_sequential_accounting_periods.sql'
-          sha36="$(sha256sum "$m36" | awk '{print $1}')"
-          sha37="$(sha256sum "$m37" | awk '{print $1}')"
-          test "${#sha36}" -eq 64; test "${#sha37}" -eq 64
-          {
-            echo 'begin;'
-            cat "$m36"
-            printf "\ninsert into public.terranex_migration_history(version,sha256) values ('20260813000700_s6_close_bigint_totals','%s');\n" "$sha36"
-            cat "$m37"
-            printf "\ninsert into public.terranex_migration_history(version,sha256) values ('20260813000800_s6_sequential_accounting_periods','%s');\n" "$sha37"
-            echo 'commit;'
-          } > "$tmp/apply.sql"
-          jq -Rs '{query:.}' < "$tmp/apply.sql" > "$tmp/payload.json"
-          curl --fail-with-body -sS -X POST \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
-            --data-binary @"$tmp/payload.json" > /dev/null
-          echo 'S6_LIVE_APPLY=PASS'
-
-      - name: Verify ledger and live semantics
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          sha36="$(sha256sum supabase/migrations/20260813000700_s6_close_bigint_totals.sql | awk '{print $1}')"
-          sha37="$(sha256sum supabase/migrations/20260813000800_s6_sequential_accounting_periods.sql | awk '{print $1}')"
-          sql="select count(*)::int as ledger_count,
-            exists(select 1 from public.terranex_migration_history where version='20260813000700_s6_close_bigint_totals' and sha256='${sha36}') as m36_ok,
-            exists(select 1 from public.terranex_migration_history where version='20260813000800_s6_sequential_accounting_periods' and sha256='${sha37}') as m37_ok,
-            pg_get_functiondef('public.s6_approve_close_run_impl(uuid,uuid,text)'::regprocedure) ~ 'v_cash_total[[:space:]]+bigint;' as cash_bigint,
-            pg_get_functiondef('public.s6_approve_close_run_impl(uuid,uuid,text)'::regprocedure) ~ 'v_recognized_revenue_total[[:space:]]+bigint;' as revenue_bigint,
-            to_regclass('public.accounting_periods_authoritative_unique') is null as old_index_gone,
-            to_regclass('public.accounting_periods_scope_start_version_unique') is not null as new_index_present
-            from public.terranex_migration_history;"
-          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
-          row="$(curl --fail-with-body -sS -X POST \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
-            --data-binary @"$tmp/q.json" | jq -c '.[0]')"
+          echo "DEMO_PROJECTS_BEFORE=$(printf '%s' "$row" | jq -r '.demo_projects')"
+          echo "LEDGER_COUNT=$(printf '%s' "$row" | jq -r '.ledger_count')"
+          test "$(printf '%s' "$row" | jq -r '.demo_projects')" = '0'
           test "$(printf '%s' "$row" | jq -r '.ledger_count')" = '37'
-          test "$(printf '%s' "$row" | jq -r '.m36_ok')" = 'true'
-          test "$(printf '%s' "$row" | jq -r '.m37_ok')" = 'true'
-          test "$(printf '%s' "$row" | jq -r '.cash_bigint')" = 'true'
-          test "$(printf '%s' "$row" | jq -r '.revenue_bigint')" = 'true'
-          test "$(printf '%s' "$row" | jq -r '.old_index_gone')" = 'true'
-          test "$(printf '%s' "$row" | jq -r '.new_index_present')" = 'true'
-          echo 'LEDGER_COUNT_AFTER=37'
-          echo 'S6_LIVE_VERIFICATION=PASS'
+          test "$(printf '%s' "$row" | jq -r '.maker_exists')" = 'true'
+
+      - name: Commit exact validated S0-S7 demo transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          { echo 'begin;'; cat scripts/demo/seed_real_estate_showcase.sql; echo 'commit;'; } > "$tmp/seed.sql"
+          jq -Rs '{query:.}' < "$tmp/seed.sql" > "$tmp/payload.json"
+          http="$(curl -sS -o "$tmp/result.json" -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/payload.json")"
+          echo "DEMO_COMMIT_HTTP=$http"
+          if [[ "$http" -lt 200 || "$http" -ge 300 ]]; then
+            jq -c '{code:(.code // .error_code // null),message:(.message // .error // .msg // "database error"),hint:(.hint // null)}' "$tmp/result.json" || true
+            exit 1
+          fi
+          result="$(jq -r '[.. | objects | .demo_seed_result? // empty][0] // ""' "$tmp/result.json")"
+          echo "DEMO_SEED_RESULT=${result:-COMMITTED}"
+          echo 'PERSISTENT_DEMO_COMMIT=PASS'
+
+      - name: Verify independent live business truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          sql=$(cat <<'SQL'
+          with p as (
+            select id, organization_id, name, internal_reference
+            from public.investment_projects
+            where internal_reference='DEMO-RE-2026-001'
+          ), cash as (
+            select c.balance_minor_units::bigint balance
+            from public.project_cash_position_read c join p on p.id=c.project_id
+          ), rr as (
+            select r.realized_result_minor_units::bigint realized
+            from public.property_realized_result_read r join p on p.id=r.project_id
+          ), capital as (
+            select coalesce(sum(s.closing_capital_minor_units::bigint),0)::bigint total
+            from public.s5_partner_capital_statement_read s join p on p.id=s.project_id
+          ), ap as (
+            select coalesce(sum(o.outstanding_minor_units::bigint),0)::bigint total
+            from public.cost_obligation_position_read o join p on p.id=o.project_id
+          ), rec as (
+            select count(*)::int n,
+                   count(*) filter(where status='SIGNED_OFF')::int signed,
+                   coalesce(sum(abs(variance_minor_units)),0)::bigint variance
+            from public.s7_reconciliation_checkpoints c join p on p.id=c.project_id
+          ), assets as (
+            select count(*)::int n,
+              count(*) filter(where public.s3_current_property_state(a.id)='DISPOSED')::int disposed,
+              count(*) filter(where public.s3_current_property_state(a.id)='DUE_DILIGENCE')::int due_diligence
+            from public.property_assets a join p on p.id=a.project_id
+          ), periods as (
+            select count(*) filter(where start_date=date '2026-07-01' and status='CLOSED')::int july_closed,
+                   count(*) filter(where start_date=date '2026-08-01' and status='OPEN')::int august_open
+            from public.accounting_periods a join p on p.id=a.project_id
+          ), opening as (
+            select count(*) filter(where status='POSTED')::int posted,
+                   coalesce(max(declared_debit_minor_units),0)::bigint debit,
+                   coalesce(max(declared_credit_minor_units),0)::bigint credit
+            from public.s7_opening_imports o join p on p.id=o.project_id
+          ), unbalanced as (
+            select count(*)::int n from (
+              select jl.batch_id
+              from public.journal_lines jl join p on p.id=jl.project_id
+              group by jl.batch_id
+              having sum(jl.debit_minor_units)<>sum(jl.credit_minor_units) or count(*)<2
+            ) x
+          )
+          select p.id::text project_id, p.name, p.internal_reference,
+            (select balance from cash limit 1) cash_minor_units,
+            (select realized from rr limit 1) realized_result_minor_units,
+            (select total from capital) partner_capital_minor_units,
+            (select total from ap) supplier_payable_minor_units,
+            (select n from rec) reconciliation_count,
+            (select signed from rec) reconciliation_signed,
+            (select variance from rec) reconciliation_abs_variance,
+            (select n from assets) asset_count,
+            (select disposed from assets) disposed_assets,
+            (select due_diligence from assets) due_diligence_assets,
+            (select july_closed from periods) july_closed,
+            (select august_open from periods) august_open,
+            (select posted from opening) opening_posted,
+            (select debit from opening) opening_debit_minor_units,
+            (select credit from opening) opening_credit_minor_units,
+            (select n from unbalanced) unbalanced_batches,
+            ar.human_uat_status
+          from p
+          join public.s7_pilot_acceptance_report_read ar on ar.project_id=p.id;
+          SQL
+          )
+          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
+          row="$(curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/q.json" | jq -c '.[0]')"
+          test "$(printf '%s' "$row" | jq -r '.internal_reference')" = 'DEMO-RE-2026-001'
+          test "$(printf '%s' "$row" | jq -r '.cash_minor_units')" = '4100000000'
+          test "$(printf '%s' "$row" | jq -r '.realized_result_minor_units')" = '750000000'
+          test "$(printf '%s' "$row" | jq -r '.partner_capital_minor_units')" = '3950000000'
+          test "$(printf '%s' "$row" | jq -r '.supplier_payable_minor_units')" = '150000000'
+          test "$(printf '%s' "$row" | jq -r '.reconciliation_count')" = '9'
+          test "$(printf '%s' "$row" | jq -r '.reconciliation_signed')" = '9'
+          test "$(printf '%s' "$row" | jq -r '.reconciliation_abs_variance')" = '0'
+          test "$(printf '%s' "$row" | jq -r '.asset_count')" = '2'
+          test "$(printf '%s' "$row" | jq -r '.disposed_assets')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.due_diligence_assets')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.july_closed')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.august_open')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.opening_posted')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.opening_debit_minor_units')" = '500000000'
+          test "$(printf '%s' "$row" | jq -r '.opening_credit_minor_units')" = '500000000'
+          test "$(printf '%s' "$row" | jq -r '.unbalanced_batches')" = '0'
+          test "$(printf '%s' "$row" | jq -r '.human_uat_status')" = 'NOT_STARTED'
+          echo "DEMO_PROJECT_ID=$(printf '%s' "$row" | jq -r '.project_id')"
+          echo "DEMO_PROJECT_NAME=$(printf '%s' "$row" | jq -r '.name')"
+          echo 'DEMO_LIVE_VERIFICATION=PASS'
+          echo 'DEMO_PHASE2_CREDIT=false'
