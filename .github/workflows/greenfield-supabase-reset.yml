@@ -1,4 +1,4 @@
-name: Terranex Pgcrypto Compatibility Replay
+name: Terranex Demo Hosted Dry Run
 
 on:
   push:
@@ -8,45 +8,95 @@ on:
       - .github/workflows/greenfield-supabase-reset.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  db-replay:
+  demo-dry-run:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
+    timeout-minutes: 15
     env:
-      PGHOST: 127.0.0.1
-      PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: postgres
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
     steps:
-      - name: Checkout exact compatibility branch
+      - name: Checkout demo seed branch
         uses: actions/checkout@v4
         with:
-          ref: fix/pgcrypto-schema-compat
+          ref: demo/real-estate-showcase-data
+          fetch-depth: 1
 
-      - name: Install PostgreSQL client if needed
+      - name: Split acquisition consideration and closing costs correctly
         shell: bash
         run: |
-          if ! command -v psql >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y postgresql-client
-          fi
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/demo/seed_real_estate_showcase.sql')
+          s=p.read_text()
 
-      - name: Full database replay and all SQL/concurrency gates
+          old="  v_acq_obligation uuid;\n  v_dev_obligation uuid;"
+          new="  v_acq_obligation uuid;\n  v_closing_obligation uuid;\n  v_dev_obligation uuid;"
+          assert s.count(old)==1, ('declaration', s.count(old))
+          s=s.replace(old,new)
+
+          old="$$select public.create_cost_obligation(%L,%L,%L,'ثمن الأرض وتكاليف إقفال الاستحواذ – القطاع A',\n      1890000000,'EGP',date '2026-07-09','CAPITALIZABLE_WIP','demo-obligation-acq-001')$$"
+          new="$$select public.create_cost_obligation(%L,%L,%L,'ثمن شراء الأرض – القطاع A',\n      1800000000,'EGP',date '2026-07-09','CAPITALIZABLE_WIP','demo-obligation-acq-001')$$"
+          assert s.count(old)==1, ('acq obligation', s.count(old))
+          s=s.replace(old,new)
+
+          marker="  select id into v_acq_obligation from public.cost_obligations where organization_id=v_org and idempotency_key='demo-obligation-acq-001';"
+          addition=marker+"\n\n  perform pg_temp.terranex_demo_run(v_maker, format(\n    $$select public.create_cost_obligation(%L,%L,%L,'رسوم وإقفال الاستحواذ – القطاع A',\n      90000000,'EGP',date '2026-07-09','CAPITALIZABLE_WIP','demo-obligation-closing-001')$$,\n    v_org, v_project, v_supplier));\n  select id into v_closing_obligation from public.cost_obligations where organization_id=v_org and idempotency_key='demo-obligation-closing-001';"
+          assert s.count(marker)==1, ('acq marker', s.count(marker))
+          s=s.replace(marker,addition)
+
+          old="$$select public.pay_cost_obligation(%L,%L,%L,1890000000,date '2026-07-10','demo-pay-acq-001')$$"
+          new="$$select public.pay_cost_obligation(%L,%L,%L,1800000000,date '2026-07-10','demo-pay-acq-001')$$"
+          assert s.count(old)==1, ('acq payment', s.count(old))
+          s=s.replace(old,new)
+
+          marker="  perform pg_temp.terranex_demo_run(v_checker, format(\n    $$select public.pay_cost_obligation(%L,%L,%L,1800000000,date '2026-07-10','demo-pay-acq-001')$$,\n    v_org, v_acq_obligation, v_cash));"
+          addition=marker+"\n\n  perform pg_temp.terranex_demo_run(v_maker, format(\n    $$select public.classify_property_cost(%L,%L,%L,%L,null,'ACQUISITION',\n      'سياسة رسملة رسوم الإقفال ضمن DEVELOPMENT_WIP','demo-classify-closing-001')$$,\n    v_org, v_closing_obligation, v_asset_a, v_parcel_a));\n  perform pg_temp.terranex_demo_run(v_checker, format(\n    $$select public.authorize_cost_obligation(%L,%L,'demo-authorize-closing-001')$$, v_org, v_closing_obligation));\n  perform pg_temp.terranex_demo_run(v_checker, format(\n    $$select public.pay_cost_obligation(%L,%L,%L,90000000,date '2026-07-10','demo-pay-closing-001')$$,\n    v_org, v_closing_obligation, v_cash));"
+          assert s.count(marker)==1, ('payment marker', s.count(marker))
+          s=s.replace(marker,addition)
+
+          old="if (select lifecycle_state from public.property_assets where id=v_asset_b) <> 'DUE_DILIGENCE' then"
+          new="if public.s3_current_property_state(v_asset_b) <> 'DUE_DILIGENCE' then"
+          assert s.count(old)==1, ('lifecycle assertion', s.count(old))
+          s=s.replace(old,new)
+
+          p.write_text(s)
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/demo/seed_real_estate_showcase.sql
+          git commit -m 'fix(demo): model acquisition costs and lifecycle truth'
+          git push origin HEAD:demo/real-estate-showcase-data
+
+      - name: Fetch tested hosted compatibility migration
         shell: bash
-        run: bash scripts/db-test.sh
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin fix/pgcrypto-schema-compat:refs/remotes/origin/fix/pgcrypto-schema-compat
+          git show origin/fix/pgcrypto-schema-compat:supabase/migrations/20260813000500_pgcrypto_digest_schema_compat.sql > /tmp/pgcrypto.sql
+          test -s /tmp/pgcrypto.sql
+
+      - name: Dry-run hosted compatibility plus full demo with rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          { echo 'begin;'; cat /tmp/pgcrypto.sql; cat scripts/demo/seed_real_estate_showcase.sql; echo 'rollback;'; } > "$tmp/dry.sql"
+          jq -Rs '{query:.}' < "$tmp/dry.sql" > "$tmp/payload.json"
+          http="$(curl -sS -o "$tmp/response.json" -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/payload.json")"
+          echo "HOSTED_DRY_RUN_HTTP=$http"
+          if [[ "$http" -ge 200 && "$http" -lt 300 ]]; then
+            echo 'HOSTED_PGCRYPTO_FIX=PASS'
+            echo 'DEMO_FULL_DRY_RUN=PASS'
+            exit 0
+          fi
+          jq -c '{code:(.code // .error_code // null),message:(.message // .error // .msg // "unknown database error"),hint:(.hint // null),details:(.details // null)}' "$tmp/response.json" || true
+          exit 1
