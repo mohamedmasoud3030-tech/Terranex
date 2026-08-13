@@ -125,6 +125,13 @@ Real Estate status is therefore explicit:
 - latest hosted deployment verification: pending until the production alias SHA is proved;
 - real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
 
+### GF-014 — Field Activity Foundation
+
+Status: **CODE COMPLETE — DRAFT PR**. Bounded Agriculture operational
+record against an existing CropCycle-to-Field assignment.
+
+Canonical decision: `docs/decisions/0014_GF014_FIELD_ACTIVITY.md`.
+
 ### GF-013 — Agriculture Sector Foundation (Farm → Field → CropCycle)
 
 Status: **CODE COMPLETE — DRAFT PR OPEN**. Branch
@@ -220,29 +227,18 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
 - Agriculture capabilities beyond the active bounded slice and all Livestock runtime modules;
-- Agriculture operational entities deferred by GF-013 itself: `FieldActivity`, `InputItem`, `InputLot`, `InputApplication`, `HarvestEvent`, `HarvestLot`, `StorageLocation`, `InventoryMovement`, `AgronomyObservation`, agriculture-side sales/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
+- Agriculture operational entities deferred after GF-014: `InputItem`, `InputLot`, `InputApplication`, `HarvestEvent`, `HarvestLot`, `StorageLocation`, `InventoryMovement`, `AgronomyObservation`, agriculture-side sales/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
 ## Next active batch
 
-`GF-014 — second bounded Agriculture slice`, to be chosen after the
-GF-013 PR is reviewed and merged. The candidate entities documented
-as deferred in the GF-013 migration are
-`FieldActivity`, `InputItem`, `InputLot`, `InputApplication`,
-`HarvestEvent`, `HarvestLot`, `StorageLocation`,
-`InventoryMovement`, and `AgronomyObservation`. The next batch
-must pick the smallest end-to-end workflow that advances the
-agriculture operator journey without re-opening Real Estate or
-scaffolding livestock.
+`GF-015 — next bounded Agriculture slice` after Field Activity
+(inputs, harvest, or another documented operator workflow). Do not
+reopen Real Estate or scaffold livestock.
 
-This batch is authorized only after GF-013 is merged and the
-GF-013 PR's GitHub Actions PostgreSQL 16 database job has
-returned green. Real-customer validation remains a separate
-parallel evidence track; the controlled Real Estate pilot still
-requires a signed engagement, real opening data, exact
-reconciliation, buyer UAT, and runbook evidence before any
-Phase 2/3/4 claim advances. The absence of those events does
-not block GF-014, and no synthetic fixture may impersonate them.
+Real-customer validation remains a separate parallel evidence track.
+No synthetic fixture may impersonate customer, UAT, or production
+verification.
 
 ## Decision rules
 

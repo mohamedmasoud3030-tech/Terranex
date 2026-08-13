@@ -9,6 +9,7 @@ import {
   cropCycleSchema,
   cycleTransitionSchema,
   farmSchema,
+  fieldActivitySchema,
   fieldSchema,
 } from './schema';
 
@@ -42,6 +43,11 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('cancelled crop cycle cannot receive field assignments')) return fail('لا يمكن تخصيص حقول لدورة محصول ملغاة.');
   if (text.includes('assigned area unit') && text.includes('must match')) return fail('وحدة المساحة المخصصة يجب أن تطابق وحدة الحقل.');
   if (text.includes('authentication required')) return fail('انتهت جلسة الدخول. سجّل الدخول ثم أعد المحاولة.');
+  if (text.includes('invalid activity type')) return fail('نوع النشاط غير ضمن القائمة المعتمدة.');
+  if (text.includes('invalid activity date')) return fail('تاريخ النشاط غير صالح.');
+  if (text.includes('quantity and unit must be provided together')) return fail('الكمية ووحدتها يجب إدخالهما معًا أو تركهما معًا.');
+  if (text.includes('quantity must be positive')) return fail('الكمية يجب أن تكون موجبة.');
+  if (text.includes('crop cycle field assignment not found')) return fail('الحقل غير مخصص لهذه الدورة. اختر تخصيصًا قائمًا.');
   return fail(fallback);
 }
 
@@ -169,6 +175,30 @@ export async function transitionCropCycle(_: ActionState, form: FormData): Promi
       p_idempotency_key: value.idempotencyKey,
     },
     'تعذر تأكيد انتقال دورة المحصول.',
+    value.projectId,
+  );
+}
+
+export async function createFieldActivity(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(fieldActivitySchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_field_activity',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_crop_cycle_id: value.cropCycleId,
+      p_field_id: value.fieldId,
+      p_assignment_id: value.assignmentId,
+      p_activity_date: value.activityDate,
+      p_activity_type: value.activityType,
+      p_quantity: value.quantity?.replace(',', '.') ?? null,
+      p_unit: value.unit,
+      p_notes: value.notes,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل نشاط الحقل.',
     value.projectId,
   );
 }

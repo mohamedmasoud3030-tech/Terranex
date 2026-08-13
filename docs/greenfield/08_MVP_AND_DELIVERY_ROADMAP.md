@@ -241,7 +241,14 @@ Coding is authorized. Resolve only the decisions required by the active slice. D
 
 ## 13. Immediate next execution batch
 
-Execute `GF-013 — Agriculture Sector Foundation` as one working vertical slice:
+Execute `GF-014 — Field Activity Foundation` as one working vertical slice
+after the merged GF-013 Farm → Field → CropCycle foundation:
+
+1. Record append-only field activities against an existing CropCycle-to-Field assignment.
+2. Keep the controlled vocabulary, paired quantity/unit, RLS, idempotent command, and existing audit trail.
+3. Do not advance CropCycle state and do not create harvest, inventory, inputs, or accounting facts.
+
+Previous batch (complete on `main`): `GF-013 — Agriculture Sector Foundation`:
 
 1. Extend project creation/identity to support the existing `AGRICULTURE` primary-sector value without weakening Real Estate behavior.
 2. Implement only the Agriculture root required for the first workflow: `Farm → Field → CropCycle`.

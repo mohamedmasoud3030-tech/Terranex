@@ -8,14 +8,15 @@ import {
   getCropCycles,
   getCropCycleTimeline,
   getFarms,
+  getFieldActivities,
   getFields,
 } from '@/features/agriculture/queries';
 import {
   AREA_UNIT_LABEL,
   CYCLE_STATE_LABEL,
   formatAreaUnit,
-  formatCycleState,
   formatDate,
+  formatFieldActivityType,
   formatQuantity,
 } from '@/features/agriculture/labels';
 import {
@@ -23,6 +24,7 @@ import {
   CropCycleForm,
   CycleTransitionForm,
   FarmForm,
+  FieldActivityForm,
   FieldForm,
   ProfileForm,
 } from './forms';
@@ -53,13 +55,14 @@ export default async function AgriculturePage({
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
 
-  const [membership, farms, fields, cycles, assignments, timeline] = await Promise.all([
+  const [membership, farms, fields, cycles, assignments, timeline, activities] = await Promise.all([
     getCurrentMembership(organizationId),
     getFarms(projectId),
     getFields(projectId),
     getCropCycles(projectId),
     getCropAssignments(projectId),
     getCropCycleTimeline(projectId),
+    getFieldActivities(projectId),
   ]);
 
   if (!membership) {
@@ -318,6 +321,60 @@ export default async function AgriculturePage({
         <AssignmentForm
           organizationId={organizationId}
           projectId={projectId}
+          cycles={cycles}
+          fields={fields}
+        />
+      </section>
+
+      <section className="card stack scroll-target" id="activities">
+        <h2>أنشطة الحقل</h2>
+        <p className="muted">
+          سجل تشغيلي لما حدث في الحقل على تخصيص دورة-حقل قائم. لا يغيّر حالة الدورة ولا ينشئ مخزونًا أو قيدًا.
+        </p>
+        {activities.length === 0 ? (
+          <div className="card empty">
+            <h3>لا توجد أنشطة مسجّلة</h3>
+            <p className="muted">بعد تخصيص حقل لدورة، سجّل الري أو التسميد أو المعاينة أو أي نشاط معتمد.</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>النوع</th>
+                  <th>الدورة</th>
+                  <th>الحقل</th>
+                  <th>الكمية</th>
+                  <th>ملاحظات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activities.map((a) => {
+                  const cycle = cycleById.get(a.crop_cycle_id);
+                  const field = fieldById.get(a.field_id);
+                  return (
+                    <tr key={a.id}>
+                      <td>{d(a.activity_date)}</td>
+                      <td>{formatFieldActivityType(a.activity_type)}</td>
+                      <td>{cycle ? `${cycle.crop} · ${cycle.season_reference}` : '—'}</td>
+                      <td>{field?.identifier ?? '—'}</td>
+                      <td>{a.quantity ? `${a.quantity} ${a.unit ?? ''}`.trim() : '—'}</td>
+                      <td>
+                        {a.notes ?? '—'}
+                        {a.evidence_reference ? <div className="muted">دليل: {a.evidence_reference}</div> : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <FieldActivityForm
+          organizationId={organizationId}
+          projectId={projectId}
+          assignments={assignments}
           cycles={cycles}
           fields={fields}
         />

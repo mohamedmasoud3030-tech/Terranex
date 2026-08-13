@@ -23,6 +23,22 @@ export const CYCLE_STATE_LABEL: Record<string, string> = {
   FAILED: 'فشلت',
 };
 
+export const FIELD_ACTIVITY_TYPE_LABEL: Record<string, string> = {
+  PREPARE: 'تجهيز',
+  PLANT: 'زراعة',
+  IRRIGATE: 'ري',
+  FERTILIZE: 'تسميد',
+  SPRAY: 'رش',
+  SCOUT: 'معاينة',
+  WEED: 'تعشيب',
+  OTHER: 'أخرى',
+};
+
+export function formatFieldActivityType(type: string | null | undefined): string {
+  if (!type) return '—';
+  return FIELD_ACTIVITY_TYPE_LABEL[type] ?? type;
+}
+
 export function formatCycleState(state: string | null | undefined): string {
   if (!state) return '—';
   return CYCLE_STATE_LABEL[state] ?? state;
