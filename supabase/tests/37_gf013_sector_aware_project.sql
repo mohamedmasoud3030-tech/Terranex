@@ -7,12 +7,14 @@
 -- attach to a Real Estate project at the database level.
 
 create or replace function s13_run(p_user uuid, p_sql text)
-returns void language plpgsql as $$
+returns uuid language plpgsql as $$
+declare v_result uuid;
 begin
   perform set_config('request.jwt.claim.sub', p_user::text, true);
   perform set_config('role', 'authenticated', false);
-  execute p_sql;
+  execute p_sql into v_result;
   reset role;
+  return v_result;
 end $$;
 
 create or replace function s13_catch(p_user uuid, p_sql text)
