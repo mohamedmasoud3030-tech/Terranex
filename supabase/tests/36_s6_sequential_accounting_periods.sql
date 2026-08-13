@@ -7,8 +7,8 @@ then 1 else 0 end as sequential_period_index_replaced;
 -- This is an index/period-window invariant test, not an authorization test.
 -- Use deterministic fixture IDs so it does not depend on psql variable
 -- interpolation or command-RPC side effects.
-insert into auth.users(id,email)
-values ('00000000-0000-0000-0000-000000006001','s6-sequential-periods@test.invalid')
+insert into auth.users(id)
+values ('00000000-0000-0000-0000-000000006001')
 on conflict (id) do nothing;
 
 insert into public.organizations(id,name)
