@@ -1,4 +1,4 @@
-name: Terranex PR115 Database Verification
+name: Terranex PR115 Live Migration
 
 on:
   push:
@@ -11,33 +11,94 @@ permissions:
   contents: read
 
 jobs:
-  database:
+  apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      MIGRATION_VERSION: '20260813000400_project_intake_readiness'
+      MIGRATION_NAME: '20260813000400_project_intake_readiness.sql'
     steps:
       - name: Checkout PR 115 exact head
         uses: actions/checkout@v4
         with:
           ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
-      - name: Run canonical migration replay and DB suites
-        env:
-          GITHUB_ACTIONS: 'true'
-          PGHOST: 127.0.0.1
-          PGPORT: '5432'
-          PGUSER: postgres
-          PGPASSWORD: postgres
-        run: bash scripts/db-test.sh
+
+      - name: Apply exact tested forward-only migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          file="supabase/migrations/$MIGRATION_NAME"
+          test -f "$file"
+          checksum="$(sha256sum "$file" | awk '{print $1}')"
+
+          query_api() {
+            local sql_file="$1"
+            local payload
+            payload="$(jq -Rs '{query: .}' < "$sql_file")"
+            curl --fail-with-body -sS -X POST \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data-binary "$payload" >/dev/null
+          }
+
+          cat > /tmp/preflight.sql <<'SQL'
+          do $$
+          begin
+            if to_regclass('public.terranex_migration_history') is null then
+              raise exception 'migration ledger missing';
+            end if;
+            if exists (
+              select 1 from public.terranex_migration_history
+              where version = '20260813000400_project_intake_readiness'
+            ) then
+              raise exception 'target migration already recorded; refusing blind replay';
+            end if;
+            if to_regclass('public.project_intake_declarations') is not null
+               or to_regclass('public.project_intake_section_applicability') is not null
+               or to_regclass('public.project_intake_modelling_gaps') is not null
+               or to_regclass('public.project_intake_evidence_items') is not null then
+              raise exception 'intake schema already partially exists; refusing blind replay';
+            end if;
+          end $$;
+          SQL
+          query_api /tmp/preflight.sql
+
+          {
+            echo 'begin;'
+            cat "$file"
+            printf "\ninsert into public.terranex_migration_history(version,name,checksum) values ('%s','%s','%s');\n" "$MIGRATION_VERSION" "$MIGRATION_NAME" "$checksum"
+            echo 'commit;'
+          } > /tmp/apply.sql
+          query_api /tmp/apply.sql
+          echo 'LIVE_MIGRATION_APPLIED=true'
+
+      - name: Verify live intake security contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$(jq -n --arg q "
+          do \\$\\$
+          declare v text;
+          begin
+            if not exists (select 1 from public.terranex_migration_history where version = '20260813000400_project_intake_readiness') then raise exception 'ledger entry missing'; end if;
+            foreach v in array array['project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items'] loop
+              if to_regclass('public.' || v) is null then raise exception 'missing table %', v; end if;
+              if not exists (select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname=v and c.relrowsecurity and c.relforcerowsecurity) then raise exception 'RLS not forced on %', v; end if;
+              if has_table_privilege('anon', 'public.' || v, 'SELECT') then raise exception 'anon select exposed on %', v; end if;
+              if not has_table_privilege('authenticated', 'public.' || v, 'SELECT') then raise exception 'authenticated select missing on %', v; end if;
+            end loop;
+            if has_function_privilege('anon','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') then raise exception 'anon intake command exposed'; end if;
+            if not has_function_privilege('authenticated','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') then raise exception 'authenticated intake command unavailable'; end if;
+            if has_function_privilege('authenticated','public.intake_require_project(uuid,uuid)','EXECUTE') then raise exception 'internal intake helper exposed'; end if;
+          end \\$\\$;
+          " '{query:$q}')"
+          curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$payload" >/dev/null
+          echo 'LIVE_INTAKE_SECURITY_CONTRACT_VERIFIED=true'
