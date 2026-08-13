@@ -1,4 +1,4 @@
-name: Terranex PR115 Live Final Verification
+name: Terranex Activation Path Verification
 
 on:
   push:
@@ -13,61 +13,33 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
-      MIGRATION_VERSION: '20260813000400_project_intake_readiness'
-      MIGRATION_NAME: '20260813000400_project_intake_readiness.sql'
+      APPLY_MIGRATIONS: 'false'
     steps:
-      - name: Checkout exact tested PR 115 head
+      - name: Checkout activation repair branch
         uses: actions/checkout@v4
         with:
-          ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
+          ref: fix/activation-migration-ledger
 
-      - name: Record exact live migration checksum
+      - name: Install Supabase CLI for advisor verification
+        run: npm install -g supabase@2.114.0 --no-audit --no-fund
+
+      - name: Authenticate Supabase CLI without printing token
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
+
+      - name: Run repaired activation inspection only
         shell: bash
         run: |
           set -euo pipefail
-          sha="$(sha256sum "supabase/migrations/$MIGRATION_NAME" | awk '{print $1}')"
-          sql="insert into public.terranex_migration_history(version,sha256)
-          values ('$MIGRATION_VERSION','$sha')
-          on conflict (version) do update set sha256=excluded.sha256
-          where public.terranex_migration_history.sha256=excluded.sha256;"
-          payload="$(jq -n --arg q "$sql" '{query:$q}')"
-          curl --fail-with-body -sS -X POST \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$payload" >/dev/null
-          echo 'LIVE_MIGRATION_LEDGER_RECORDED=true'
-
-      - name: Verify exact live intake and security contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          sha="$(sha256sum "supabase/migrations/$MIGRATION_NAME" | awk '{print $1}')"
-          sql="select
-            exists(select 1 from public.terranex_migration_history where version='$MIGRATION_VERSION' and sha256='$sha') as ledger_exact,
-            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items')) as table_count,
-            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items') and c.relrowsecurity and c.relforcerowsecurity) as forced_rls_count,
-            has_table_privilege('anon','public.project_intake_declarations','SELECT') as anon_select,
-            has_table_privilege('authenticated','public.project_intake_declarations','SELECT') as auth_select,
-            has_function_privilege('anon','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') as anon_command,
-            has_function_privilege('authenticated','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') as auth_command,
-            has_function_privilege('authenticated','public.intake_require_project(uuid,uuid)','EXECUTE') as helper_exposed;"
-          payload="$(jq -n --arg q "$sql" '{query:$q}')"
-          response="$(curl --fail-with-body -sS -X POST \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$payload")"
-          [[ "$(printf '%s' "$response" | jq -r '.[0].ledger_exact')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].table_count')" == 4 ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].forced_rls_count')" == 4 ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].anon_select')" == false ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].auth_select')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].anon_command')" == false ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].auth_command')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].helper_exposed')" == false ]]
-          echo 'LIVE_INTAKE_CONTRACT_VERIFIED=true'
+          output="$(bash .github/pilot-activation/activate.sh)"
+          printf '%s\n' "$output"
+          grep -q '^PROJECT_ACCESSIBLE=true$' <<< "$output"
+          grep -q '^PROJECT_CLASSIFICATION=TERRANEX$' <<< "$output"
+          grep -q '^MIGRATIONS_IN_SYNC=true$' <<< "$output"
+          grep -q '^RLS_VERIFIED=true$' <<< "$output"
+          grep -q '^FINANCIAL_CONTROLS_VERIFIED=true$' <<< "$output"
+          grep -q '^SECURITY_VERIFIED=true$' <<< "$output"
+          echo 'ACTIVATION_REPAIR_VERIFIED=true'
