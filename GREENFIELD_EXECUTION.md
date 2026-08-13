@@ -1,7 +1,7 @@
 # Greenfield Execution Status
 
 **Updated:** 2026-08-13  
-**Working branch:** `greenfield/foundation`  
+**Canonical branch:** `main`
 **Strategy:** Product-first, Egypt-first, thin vertical slices
 
 This file records execution state only. Detailed domain/accounting decisions belong in the numbered ADRs and the approved Greenfield product documents.
@@ -88,7 +88,7 @@ Canonical decision: `docs/decisions/0008_S5_ALLOCATION_AND_DISTRIBUTION.md`.
 
 ### GF-009 / S7 — Pilot Hardening
 
-Status: **COMPLETE — VERIFIED AND MERGED**. Delivered through PR #101 into `greenfield/foundation`.
+Status: **COMPLETE — VERIFIED AND MERGED**. Delivered through PR #101 and subsequently integrated into `main`.
 
 Delivered and verified:
 
@@ -106,6 +106,25 @@ Not claimed: the controlled paid pilot itself, a real customer opening import, f
 
 Canonical decision: `docs/decisions/0009_S7_PILOT_HARDENING.md`.
 
+### GF-010 — Coherent Hosted Real Estate Workspace
+
+Status: **CODE COMPLETE — MERGED**. Delivered through PR #121; merge commit `cfeaf00321f1271af7bc557e09643fe59a678211`.
+
+Proof: one Arabic/RTL business workspace across the nine Real Estate operating sections, canonical read models/RPCs only, synthetic-demo truthfulness, and an explicit separation between technical readiness and real-world evidence.
+
+### GF-011 — Hosted Presentation Readiness
+
+Status: **CODE COMPLETE — MERGED; LATEST PRODUCTION ALIAS VERIFICATION PENDING**. Delivered through PR #122; merge commit `6122cedc1bf4fac2f84df60630c3579aac5f27ce`.
+
+Proof: shared workspace chrome across all nine sections, operator-safe errors and identifiers, tighter mobile/tablet presentation, preserved permanent synthetic showcase, and a server-only presentation-user provisioner. The final PR reported 185 application tests plus lint, typecheck, and build passing locally. GitHub/Vercel reported free-tier deployment rate limiting, so this status does not claim that the production alias serves the merge commit.
+
+Real Estate status is therefore explicit:
+
+- implementation: complete for the authorized S0-S7/GF-010/GF-011 scope;
+- synthetic technical/presentation evidence: complete;
+- latest hosted deployment verification: pending until the production alias SHA is proved;
+- real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
+
 ## Explicitly deferred
 
 - agreement amendment/supersession and funding carry-forward beyond the implemented governing version;
@@ -116,28 +135,16 @@ Canonical decision: `docs/decisions/0009_S7_PILOT_HARDENING.md`.
 - partial-property disposition and other sector-specific complexity not required by the current Real Estate vertical slice;
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
-- Agriculture and Livestock runtime modules;
+- Agriculture capabilities beyond the active bounded slice and all Livestock runtime modules;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
-
-### GF-011 — Production Demo Acceptance & Hosted Readiness
-
-Status: **IN DELIVERY**. Presentation-readiness of the permanent Real Estate showcase through the authenticated hosted application. Synthetic demo data remains excluded from Phase 2 / Phase 3 evidence.
 
 ## Next active batch
 
-Operating the controlled paid Real Estate pilot with a real customer.
+`GF-013 — Agriculture Sector Foundation: Farm → Field → CropCycle`.
 
-This is an execution activity, not a build batch. The software gates for it are met by GF-009 / S7; what remains cannot be produced by writing code:
+This is an authorized product-construction batch. It begins only after GF-012 aligns the canonical branch, CI triggers, agent policy, execution status, and sector sequence. It must reuse the common investment/finance/control core and deliver one bounded Agriculture workflow; it must not scaffold the full Agriculture model or any Livestock runtime.
 
-1. A signed pilot engagement with one Real Estate customer.
-2. A real opening balance import from that customer's own trial balance, approved under maker/checker by their people.
-3. Four weekly reconciliation cycles on real data, each with external control totals, exact variances, owned exceptions where they arise, and immutable sign-off.
-4. Buyer UAT executed and accepted by the customer's authorised approver against the registered UAT tasks.
-5. Operator runbooks exercised in a real support situation, with the escalation owner placeholders filled in for the engagement.
-
-None of these may be recorded in the product before they actually occur. Until then the acceptance report truthfully reports the human gate as not started or pending.
-
-The next build batch is not selected until pilot operation produces evidence of what the customer actually needs next.
+Real-customer validation remains a separate parallel evidence track. When a customer exists, the controlled Real Estate pilot still requires a signed engagement, real opening data, exact reconciliation, buyer UAT, and runbook evidence before Phase 2/3/4 claims advance. The absence of those events does not block GF-013, and no synthetic fixture may impersonate them.
 
 ## Decision rules
 
@@ -146,5 +153,5 @@ The next build batch is not selected until pilot operation produces evidence of 
 - Every batch completes one user workflow across schema, domain, application, UI, permissions, tests, telemetry/audit, and documentation.
 - Money, ownership, allocation, payable and payment semantics must be exact, server-authoritative, tenant-safe and auditable.
 - Approved/posted facts are immutable; correction is forward-versioned or linked reversal, never destructive editing.
-- Every implementation branch starts from the exact latest `origin/greenfield/foundation`, is zero commits behind before delivery, and contains no unrelated legacy churn.
+- Every implementation branch starts from the exact latest `origin/main`, is zero commits behind before delivery, and contains no unrelated legacy churn. `greenfield/foundation` is historical and non-authoritative unless Mohamed explicitly reactivates it.
 - No production deployment or production-data change without explicit authorization.
