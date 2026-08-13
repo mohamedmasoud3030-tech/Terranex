@@ -14,12 +14,14 @@
 --     security_invoker read views.
 
 create or replace function s13a_run(p_user uuid, p_sql text)
-returns void language plpgsql as $$
+returns uuid language plpgsql as $$
+declare v_result uuid;
 begin
   perform set_config('request.jwt.claim.sub', p_user::text, true);
   perform set_config('role', 'authenticated', false);
-  execute p_sql;
+  execute p_sql into v_result;
   reset role;
+  return v_result;
 end $$;
 
 create or replace function s13a_catch(p_user uuid, p_sql text)
@@ -63,9 +65,13 @@ select id as s13_ag_project from public.investment_projects where internal_refer
 -- ---------------------------------------------------------------------------
 select id as s13_re_project from public.investment_projects where internal_reference='GF013-RE-A' \gset
 
-select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
+select s13a_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_agriculture_profile('10000000-0000-4000-8000-000000000001',%L,'cross-sector test','s13a-cross-sector-001')$$
-  , :'s13_re_project')) like '%agriculture project not found%' then 1 else 0 end
+  , :'s13_re_project')) as s13a_cross_sector_error \gset
+select 1/case when :'s13a_cross_sector_error' <> 'NO_EXCEPTION'
+  and not exists (
+    select 1 from public.agriculture_project_profiles where project_id = :'s13_re_project'
+  ) then 1 else 0 end
   as s13a_no_agriculture_profile_on_real_estate;
 
 -- ---------------------------------------------------------------------------
@@ -77,7 +83,7 @@ select s13a_run('00000000-0000-4000-8000-000000000001', format(
 
 select 1/case when s13a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_agriculture_profile('10000000-0000-4000-8000-000000000001',%L,'ملف المزرعة','s13a-profile-001')$$
-  , :'s13_ag_project')) is null then 1 else 0 end as s13a_profile_idempotent_replay;
+  , :'s13_ag_project')) is not null then 1 else 0 end as s13a_profile_idempotent_replay;
 
 -- Different payload with the same key is rejected.
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
@@ -155,7 +161,7 @@ select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
 -- Idempotent re-run of the same transition must succeed (same key, same payload).
 select 1/case when s13a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','ESTABLISHED','تم تجهيز البذرة والتربة','مذكرة تأسيس الدورة','s13a-tr-est')$$
-  , :'s13a_cycle')) is null then 1 else 0 end as s13a_transition_idempotent;
+  , :'s13a_cycle')) is not null then 1 else 0 end as s13a_transition_idempotent;
 
 -- Idempotency-key payload mismatch on a transition is rejected.
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
@@ -167,10 +173,6 @@ select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
 select s13a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','بدأ نمو المحصول','سجل ميداني','s13a-tr-grow')$$
   , :'s13a_cycle'));
-select s13a_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','بدأ نمو المحصول','سجل ميداني','s13a-tr-grow')$$
-  , :'s13a_cycle'));
--- (Above intentionally invalidates for the next test; reset by re-selecting)
 select 1/case when public.agriculture_current_cycle_state(:'s13a_cycle') in ('GROWING','HARVESTING','CLOSED')
   then 1 else 0 end as s13a_tr_grow_passed;
 
