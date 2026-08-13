@@ -1,4 +1,4 @@
-name: Terranex Inspect S6 Close Function
+name: Terranex Final Persistent Demo Rollback Gate
 
 on:
   push:
@@ -11,30 +11,43 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  dry-run:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
     steps:
-      - name: Print only S6 monetary declaration and assignment fragments
+      - name: Checkout demo seed source
+        uses: actions/checkout@v4
+        with:
+          ref: demo/real-estate-showcase-data
+          fetch-depth: 1
+
+      - name: Fetch exact tested S6 bigint migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin fix/s6-close-bigint-totals:refs/remotes/origin/fix/s6-close-bigint-totals
+          git show origin/fix/s6-close-bigint-totals:supabase/migrations/20260813000700_s6_close_bigint_totals.sql > /tmp/s6-bigint.sql
+          test -s /tmp/s6-bigint.sql
+
+      - name: Execute migration plus full demo under one rollback transaction
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          sql="with f as (
-            select pg_get_functiondef('public.s6_approve_close_run_impl(uuid,uuid,text)'::regprocedure) d
-          ) select
-            substring(d from 'v_fail_count[^;]*;') as fail_decl,
-            substring(d from 'v_fail_count_text[^;]*;') as text_decl,
-            substring(d from 'select coalesce\\(\\(select sum\\([\\s\\S]{0,500}?into v_fail_count[\\s\\S]{0,180}?from public.journal_lines jl') as cash_fragment,
-            substring(d from 'select coalesce\\(sum\\(r.recognized_proceeds_minor_units\\), 0\\)[\\s\\S]{0,120}?into v_fail_count[\\s\\S]{0,120}?from public.property_sale_recognitions r') as revenue_fragment,
-            position('recognized_revenue_minor_units' in d)::int as revenue_key_pos
-          from f;"
-          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
-          row="$(curl --fail-with-body -sS -X POST \
+          { echo 'begin;'; cat /tmp/s6-bigint.sql; cat scripts/demo/seed_real_estate_showcase.sql; echo 'rollback;'; } > "$tmp/dry.sql"
+          jq -Rs '{query:.}' < "$tmp/dry.sql" > "$tmp/payload.json"
+          http="$(curl -sS -o "$tmp/response.json" -w '%{http_code}' -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
-            --data-binary @"$tmp/q.json" | jq -c '.[0]')"
-          printf '%s' "$row" | jq '{fail_decl,text_decl,cash_fragment,revenue_fragment,revenue_key_pos}'
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' --data-binary @"$tmp/payload.json")"
+          echo "FINAL_DEMO_DRY_RUN_HTTP=$http"
+          if [[ "$http" -ge 200 && "$http" -lt 300 ]]; then
+            echo 'S6_BIGINT_HOSTED=PASS'
+            echo 'PERSISTENT_DEMO_FULL_ROLLBACK_GATE=PASS'
+            exit 0
+          fi
+          jq -c '{code:(.code // .error_code // null),message:(.message // .error // .msg // "unknown database error"),hint:(.hint // null),details:(.details // null)}' "$tmp/response.json" || true
+          exit 1
