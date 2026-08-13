@@ -181,10 +181,10 @@ select s13a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'شعير','سداس','موسم 2026/2027-2',date '2026-10-20',date '2027-02-20','3500','كجم/فدان','s13a-cycle-002')$$
   , :'s13_ag_project')) as s13a_cycle2 \gset
 select s13a_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','ESTABLISHED','تجهيز','m1','s13a-2-est')$$
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','ESTABLISHED','تجهيز','مرجع 1','s13a-2-est')$$
   , :'s13a_cycle2'));
 select s13a_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','بدأ النمو','m2','s13a-2-grow')$$
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','بدأ النمو','مرجع 2','s13a-2-grow')$$
   , :'s13a_cycle2'));
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'GROWING','ESTABLISHED','محاولة رجوع','مرجع','s13a-2-back')$$
