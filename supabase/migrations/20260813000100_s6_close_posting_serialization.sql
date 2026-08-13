@@ -8,67 +8,33 @@
 -- crossing; snapshot cash stayed 0 while a -90000 bank posting landed inside
 -- the closed period).
 --
--- Fix (forward-only; no applied migration is edited, and no function body is
--- restated):
---   1. The batch and line period-lock triggers now take FOR SHARE on the
---      covering OPEN period row. A concurrent close approval holds that row
---      FOR UPDATE, so an overlapping posting blocks until the close commits
---      and is then rejected by the same existing OPEN-period rule.
---   2. The existing s6_approve_close_run is renamed to an internal function
---      (its body is untouched) and execute is revoked from API roles. A new,
---      thin s6_approve_close_run keeps the identical public contract and
---      first locks the period row FOR UPDATE (after owner authorization),
---      then delegates. Because the lock precedes the delegated totals and
---      snapshot computation, every in-period posting either commits before
---      the lock (and is visible to the snapshot) or blocks until after the
---      close (and is rejected). No posting can silently cross the boundary.
---      Directly calling the internal function cannot reintroduce the race:
---      it is not executable by anon/authenticated/public.
+-- Fix (forward-only; no applied migration is edited and no existing function
+-- body is restated):
+--   1. Two small additive triggers take FOR SHARE on the covering OPEN period
+--      row on every journal batch/line insert. They run before the existing
+--      period-lock guards (trigger names sort first) and change no rule and
+--      no message: the existing guards keep raising exactly as before.
+--   2. The existing s6_approve_close_run is renamed untouched to an internal
+--      function (execute revoked from API roles) and a thin public wrapper
+--      keeps the identical contract, first locking the period row FOR UPDATE
+--      after owner authorization, then delegating. The lock precedes the
+--      delegated totals/snapshot computation, so every in-period posting
+--      either commits before the lock (visible to the snapshot) or blocks
+--      until the close commits and is then rejected by the existing guards.
+--      The internal function is not executable by anon/authenticated/public,
+--      so the race cannot be reintroduced through a direct call.
 --
--- Behavior outside the race is unchanged: same public signature, same rules,
--- same messages, same authorization; no control is weakened.
+-- Result: posting-versus-close is deterministic; the database ends in exactly
+-- one valid state and no posting can silently cross the close boundary.
 
-create or replace function public.s6_validate_posting_in_open_period() returns trigger
+create or replace function public.s6_take_open_period_share_lock() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
 declare
-  v_currency text;
   v_open_period_id uuid;
-  v_period_count int;
 begin
-  -- Reversal postings and S4 disposition control transfer must always be
-  -- allowable at the time of correction/reopen. Their accounting date is the
-  -- correction date, and S6 keeps reversal/correction in the current open
-  -- period by design. A reversal of a previously-closed batch therefore lands
-  -- in the current open period and is allowed here.
-  -- The only "frozen" fact is normal postings to a closed period. A reversal
-  -- by definition is corrective and is therefore allowed when its transaction
-  -- date sits in an open period for the batch's project/currency.
-  if new.reversal_of_batch_id is not null then
-    select jb.project_id into v_currency
-    from public.journal_batches jb
-    where jb.id = new.reversal_of_batch_id
-      and jb.organization_id = new.organization_id;
-    if v_currency is null then
-      raise exception 'reversal references a missing original batch';
-    end if;
-  end if;
-  -- The period lock is only enforced when an authoritative period has been
-  -- opened for this project. Until the S6 close workspace creates the first
-  -- period, the S1-S4 setup flow continues to work unchanged. This keeps the
-  -- period lock a controlled, opt-in database invariant rather than a hard
-  -- gating of every existing financial flow.
-  select count(*) into v_period_count
-  from public.accounting_periods p
-  where p.organization_id = new.organization_id
-    and p.project_id = new.project_id;
-  if v_period_count = 0 then
-    return new;
-  end if;
-  -- FOR SHARE serializes with close approval / reopen, which hold the period
-  -- row FOR UPDATE. A posting overlapping a close approval blocks until the
-  -- close commits and is then re-checked against the new CLOSED state; it can
-  -- never commit unseen across the boundary. At most one OPEN period can
-  -- cover the date for a project/currency.
+  -- Serialize with close approval / reopen, which hold the period row
+  -- FOR UPDATE. If no OPEN period covers the posting date, this selects
+  -- nothing and the existing authoritative guard raises the exact message.
   select p.id into v_open_period_id
   from public.accounting_periods p
   where p.organization_id = new.organization_id
@@ -76,43 +42,18 @@ begin
     and p.status = 'OPEN'
     and new.transaction_date between p.start_date and p.end_date
   for share of p;
-  if not found then
-    raise exception 'no open accounting period covers transaction_date % for this project', new.transaction_date;
-  end if;
   return new;
 end $$;
 
-create or replace function public.s6_validate_line_in_open_period() returns trigger
-language plpgsql set search_path=pg_catalog,public as $$
-declare
-  v_open_period_id uuid;
-  v_period_count int;
-begin
-  -- Same opt-in model as the batch-level guard: until an authoritative
-  -- period exists for this project, the S1-S4 setup flow continues to
-  -- work unchanged. Once a period is opened, the lock is enforced
-  -- strictly: every financial posting in that project must fall inside
-  -- an OPEN period.
-  select count(*) into v_period_count
-  from public.accounting_periods p
-  where p.organization_id = new.organization_id
-    and p.project_id = new.project_id;
-  if v_period_count = 0 then
-    return new;
-  end if;
-  -- Defence in depth: the same FOR SHARE serialization as the batch guard.
-  select p.id into v_open_period_id
-  from public.accounting_periods p
-  where p.organization_id = new.organization_id
-    and p.project_id = new.project_id
-    and p.status = 'OPEN'
-    and new.transaction_date between p.start_date and p.end_date
-  for share of p;
-  if not found then
-    raise exception 'no open accounting period covers line transaction_date % for this project', new.transaction_date;
-  end if;
-  return new;
-end $$;
+drop trigger if exists a_s6_close_serialization_batch_lock on public.journal_batches;
+create trigger a_s6_close_serialization_batch_lock
+before insert on public.journal_batches
+for each row execute function public.s6_take_open_period_share_lock();
+
+drop trigger if exists a_s6_close_serialization_line_lock on public.journal_lines;
+create trigger a_s6_close_serialization_line_lock
+before insert on public.journal_lines
+for each row execute function public.s6_take_open_period_share_lock();
 
 -- Rename the proven approval body; it is unchanged. The wrapper below owns
 -- the public contract and adds the serialization boundary.
