@@ -1,0 +1,54 @@
+name: Terranex Pilot/Staging Activation
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_migrations:
+        description: "Apply missing migrations after read-only safety inspection passes (default: inspection only)"
+        required: true
+        type: boolean
+        default: false
+      supabase_project_ref:
+        description: "Supabase project ref (default: designated Terranex pilot project)"
+        required: true
+        type: string
+        default: nwpyeobuxzbdnnzyfyqw
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terranex-pilot-activation-${{ github.event.inputs.supabase_project_ref || 'nwpyeobuxzbdnnzyfyqw' }}
+  cancel-in-progress: false
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI (pinned)
+        run: npm install -g supabase@2.114.0 --no-audit --no-fund
+
+      - name: Authenticate to Supabase (access token from secret; value never printed)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
+
+      - name: Inspect and (optionally) activate
+        id: activate
+        env:
+          SUPABASE_PROJECT_REF: ${{ github.event.inputs.supabase_project_ref || 'nwpyeobuxzbdnnzyfyqw' }}
+          APPLY_MIGRATIONS: ${{ github.event.inputs.apply_migrations || 'false' }}
+        run: bash .github/pilot-activation/activate.sh
+
+      - name: SAFE summary
+        run: |
+          echo "Project ref: ${SUPABASE_PROJECT_REF}"
+          echo "apply_migrations: ${APPLY_MIGRATIONS}"
+          echo "See the 'Inspect and (optionally) activate' step and its job summary for the six SAFE summary lines."
+        env:
+          SUPABASE_PROJECT_REF: ${{ github.event.inputs.supabase_project_ref || 'nwpyeobuxzbdnnzyfyqw' }}
+          APPLY_MIGRATIONS: ${{ github.event.inputs.apply_migrations || 'false' }}
