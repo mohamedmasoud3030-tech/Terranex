@@ -1,17 +1,18 @@
 # Terranex Greenfield — 08 MVP & Delivery Roadmap
 
-**Status:** Execution baseline v1  
+**Status:** Execution baseline v2
 **Goal:** Reach a paid design partner quickly without compromising money, ownership, security, or audit integrity.
 
 ## 1. MVP decision
 
-Do not build equal depth for all three sectors before revenue. Build:
+The sellable MVP remains the shared core plus the technically implemented Real Estate pack. Product construction now continues sequentially to prove the remaining bounded contexts:
 
 1. the shared investment/finance/control core;
-2. one production-ready Real Estate sector pack;
-3. thin schema/workflow spikes for the other sectors only to prove the core boundary.
+2. the technically complete Real Estate sector pack, pending real-customer validation;
+3. Agriculture as the second bounded sector;
+4. Livestock after Agriculture reaches its technical gate.
 
-Start with **real-estate acquisition/development/disposal** because it exposes the investment core with less biological/offline complexity. Change the first sector only through an explicit product decision; do not prebuild the other sectors.
+Real Estate remains the first commercial presentation path. Agriculture and Livestock construction does not make them part of a paid pilot automatically and does not satisfy customer-evidence gates. Build one bounded vertical slice at a time; never create duplicate investment, finance, ownership, payment, approval, document, or audit cores for a sector.
 
 ## 2. MVP promise
 
@@ -134,7 +135,7 @@ Deliver S3, S4, S5, S6 for the selected sector.
 - support/admin console and service-level policy;
 - billing/plan limits;
 - external accounting export adapter;
-- second design partner and only then second sector pack.
+- second design partner before declaring a second sector commercially validated; technical sector construction may precede that evidence under P-007.
 
 ## 6. Backlog priority
 
@@ -240,14 +241,13 @@ Coding is authorized. Resolve only the decisions required by the active slice. D
 
 ## 13. Immediate next execution batch
 
-Execute `GF-002 / S0` as working software:
+Execute `GF-013 — Agriculture Sector Foundation` as one working vertical slice:
 
-1. Scaffold one root Next.js/TypeScript application with the minimum maintained dependencies and CI.
-2. Implement Supabase Auth session handling and validated environment configuration.
-3. Add one migration for organizations, memberships, investment projects, and minimal audit events with constraints and default-deny RLS.
-4. Implement the Arabic/RTL flow to create/resolve an organization and create, list, and open a Real Estate project shell.
-5. Verify two-tenant isolation, validation, responsive states, typecheck, targeted tests, migration replay, and build.
-6. Do not scaffold later J1–J8 entities, finance, approvals, documents, offline/PWA, integrations, other sectors, or generic architecture.
+1. Extend project creation/identity to support the existing `AGRICULTURE` primary-sector value without weakening Real Estate behavior.
+2. Implement only the Agriculture root required for the first workflow: `Farm → Field → CropCycle`.
+3. Enforce organization/project integrity, field-area rules, lifecycle transitions, RLS, idempotent commands, and append-only audit evidence.
+4. Add the Arabic/RTL project workspace entry and responsive create/list/detail flow for farms, fields, and crop cycles.
+5. Reuse the canonical organization, project, authorization, audit, evidence, money, and workspace implementations; do not build Agriculture finance or a generic sector framework.
+6. Verify clean migration replay, upgrade compatibility, two-tenant isolation, lifecycle/invariant tests, application tests, typecheck, lint, and build.
 
-This is the boundary between **product design** and **software construction**. The legacy codebase is not refactored into this model; reusable technical pieces may be evaluated later against these contracts.
-
+Inputs, activities, harvest lots, inventory movements, sale, profitability, offline drafts, and Livestock remain later bounded slices. The permanent Real Estate showcase remains intact and synthetic; it never counts as customer evidence for Agriculture or Livestock.

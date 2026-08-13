@@ -171,7 +171,9 @@ Pricing numbers are a commercial experiment, not a product requirement. The firs
 
 ## 11. Kill criteria and sequencing
 
-Build the common Investment Operations Core and one production-ready sector pack before expanding breadth. The first operating market is Egypt, and real estate is the default first sector pack unless Mohamed explicitly changes it. Validate common behavior against established industry patterns, authoritative standards, public/reference artifacts, and executable end-to-end scenarios; do not wait for customer interviews to begin implementation. When the first Egyptian company onboards, represent its differences through configuration, versioned policies, templates, or bounded extensions—not a tenant-specific fork. Stop or narrow any feature that cannot be justified as common product behavior or isolated cleanly from company-specific practice.
+Build the common Investment Operations Core and one technically complete sector pack before expanding breadth. That construction gate is satisfied by the Real Estate S0-S7 path and its synthetic end-to-end showcase; this is implementation evidence, not customer acceptance or commercial proof. The first operating market remains Egypt. Agriculture is the authorized second bounded sector and Livestock follows after Agriculture reaches its technical gate. Build one sector at a time and reuse the common core rather than creating sector-specific ownership, finance, payment, approval, or audit engines.
+
+Validate common behavior against established industry patterns, authoritative standards, public/reference artifacts, and executable end-to-end scenarios; do not wait for customer interviews to begin implementation. Real customer evidence remains mandatory before claiming customer validation, buyer UAT, a paid pilot, or the commercial Phase 2/3 exits. When the first Egyptian company onboards, represent its differences through configuration, versioned policies, templates, or bounded extensions—not a tenant-specific fork. Stop or narrow any feature that cannot be justified as common product behavior or isolated cleanly from company-specific practice.
 
 ## 12. Foundational decisions
 
@@ -183,6 +185,7 @@ Build the common Investment Operations Core and one production-ready sector pack
 | P-004 | One investment core plus three bounded sector contexts |
 | P-005 | Exact double-entry operational/investment subledger; statutory accounting is integrated/exported |
 | P-006 | First paid pilot ships platform core plus the sector of the first contracted customer |
+| P-007 | Technical sector construction may continue before customer validation: Real Estate first, Agriculture second, Livestock third; validation and commercial evidence remain separately gated |
 
 ## Sources
 
@@ -196,4 +199,3 @@ Build the common Investment Operations Core and one production-ready sector pack
 - [ILPA Capital Call & Distribution Template](https://ilpa.org/industry-guidance/templates-standards-model-documents/ilpa-templates-hub/ilpa-capital-call-distribution-template/)
 - [Egypt FRA — Financial Technology](https://fra.gov.eg/en/%D8%A7%D9%84%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9/)
 - [Egypt FRA — Digital real-estate fund platforms](https://fra.gov.eg/fra_news/%D8%A7%D9%84%D8%B1%D9%82%D8%A7%D8%A8%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9-%D8%AA%D8%B5%D8%AF%D8%B1-%D8%B6%D9%88%D8%A7%D8%A8%D8%B7-%D8%A5%D9%86%D8%B4%D8%A7%D8%A1-%D8%A7%D9%84%D9%85%D9%86/)
-

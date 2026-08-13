@@ -1,7 +1,7 @@
 # Terranex Greenfield — Agent Policy
 
-**Effective:** 2026-08-10
-**Status:** Canonical for `greenfield/foundation` and all descendant Greenfield branches
+**Effective:** 2026-08-13
+**Status:** Canonical for `main` and every branch created from it
 
 ## Mission
 
@@ -23,7 +23,8 @@ Read these files completely before changing the product:
 10. `GREENFIELD_EXECUTION.md`
 11. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
 12. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
-13. `docs/DB_DEVELOPMENT.md`
+13. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`
+14. `docs/DB_DEVELOPMENT.md`
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
@@ -32,18 +33,20 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 - Do not refactor, port, or recreate legacy business logic by default.
 - Do not copy legacy entities, migrations, workflows, routes, financial rules, tests, or product documentation into Greenfield.
 - A generic technical fragment may be reused only after a written assessment proves it matches the Greenfield contracts and introduces no hidden domain assumption.
-- Do not build equal depth for three sectors. Real Estate is the first sector pack unless Mohamed explicitly changes the product decision.
+- Real Estate remains the first implemented sector pack. Agriculture is the authorized second sector and Livestock follows it; build them sequentially, never as competing duplicate cores.
 - Terranex is a private operational system in v1, not crowdfunding, custody, a public marketplace, or a statutory general ledger.
 
 ## Current delivery gate
 
-Current phase: **Phase 1 — architecture runway and executable product foundation**.
+Current state: **post-GF-011 — Real Estate technically implemented; GF-012 governance closeout active; Agriculture is next**.
 
 Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
 Implementation is authorized now. Record decisions just in time for the active slice; do not create an architecture-document phase before working software. A slice may introduce only the schema, rules, UI, and tests it actually uses. Keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated until professionally validated.
 
-The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core. Real estate remains the first sector-pack default unless Mohamed explicitly changes it.
+The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core.
+
+Real Estate has completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Real-customer evidence, buyer UAT, and commercial Phase 2/3 exits remain pending and must never be fabricated. Their absence does not block authorized product construction: the next bounded sector is Agriculture, followed by Livestock after Agriculture reaches its technical gate. No agent may reopen or rebuild the completed Real Estate architecture without a proven defect or an explicit product decision.
 
 ## Target architecture
 
@@ -84,8 +87,8 @@ The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminol
 
 ## Change discipline
 
-- Before starting any implementation branch, run `git fetch origin` and create the branch from the exact current `origin/greenfield/foundation`; never trust a stale session/workspace branch as the base.
-- Before opening or updating a Greenfield implementation PR, verify `git rev-list --left-right --count origin/greenfield/foundation...HEAD`; the branch must be **0 behind** its target. If it is behind, repair the lineage before delivery rather than opening a divergent PR.
+- Before starting any implementation branch, run `git fetch origin` and create the branch from the exact current `origin/main`; never trust a stale session/workspace branch as the base. `greenfield/foundation` is historical and non-authoritative unless Mohamed explicitly reactivates it.
+- Before opening or updating an implementation PR, verify `git rev-list --left-right --count origin/main...HEAD`; the branch must be **0 behind** its target. If it is behind, repair the lineage before delivery rather than opening a divergent PR.
 - Inspect the target comparison before delivery. A narrow vertical slice must not unexpectedly delete/reintroduce legacy files or show unrelated repository-wide churn.
 - Do not replace the canonical database runner with an embedded/alternate PostgreSQL implementation. Extend `scripts/db-test.sh` and `supabase/tests` only when the active slice needs new verification.
 - Work in one bounded vertical slice at a time.
