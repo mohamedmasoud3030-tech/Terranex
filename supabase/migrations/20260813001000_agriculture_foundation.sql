@@ -80,6 +80,7 @@ create table public.fields (
   idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
   request_hash text not null check (char_length(request_hash) = 64),
   unique (organization_id, farm_id, identifier),
+  unique (id, organization_id, project_id),
   unique (id, organization_id, project_id, farm_id),
   unique (organization_id, idempotency_key),
   foreign key (farm_id, organization_id, project_id)
