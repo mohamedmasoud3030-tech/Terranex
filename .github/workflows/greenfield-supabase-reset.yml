@@ -1,4 +1,4 @@
-name: Terranex Activation Repair Patch v3
+name: Terranex Activation Repair Verification Final
 
 on:
   push:
@@ -8,33 +8,33 @@ on:
       - .github/workflows/greenfield-supabase-reset.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      APPLY_MIGRATIONS: 'false'
     steps:
-      - name: Checkout activation repair branch
+      - name: Checkout exact activation repair head
         uses: actions/checkout@v4
         with:
-          ref: fix/activation-migration-ledger
+          ref: 36619d4e834b0b75df03d84edd13f80526500d42
 
-      - name: Apply and validate focused patch
+      - name: Validate script and inspect live pilot read-only
         shell: bash
         run: |
           set -euo pipefail
-          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnAgPSBQYXRoKCIuZ2l0aHViL3BpbG90LWFjdGl2YXRpb24vYWN0aXZhdGUuc2giKQpzID0gcC5yZWFkX3RleHQoKQoKb2xkID0gImN1cmwgLS1mYWlsLXdpdGgtYm9keSAtc1MgLVggUE9TVCIKbmV3ID0gImN1cmwgLS1mYWlsLXdpdGgtYm9keSAtc1MgLS1yZXRyeSAzIC0tcmV0cnktYWxsLWVycm9ycyAtLXJldHJ5LWRlbGF5IDEgLS1jb25uZWN0LXRpbWVvdXQgMTAgLS1tYXgtdGltZSA0NSAtWCBQT1NUIgphc3NlcnQgcy5jb3VudChvbGQpID09IDEsIGYiUE9TVCBjdXJsIGNvdW50PXtzLmNvdW50KG9sZCl9IgpzID0gcy5yZXBsYWNlKG9sZCwgbmV3KQoKb2xkID0gJ1BST0pFQ1RfSlNPTj0iJChjdXJsIC0tZmFpbC13aXRoLWJvZHkgLXNTIFxcXG4nCm5ldyA9ICdQUk9KRUNUX0pTT049IiQoY3VybCAtLWZhaWwtd2l0aC1ib2R5IC1zUyAtLXJldHJ5IDMgLS1yZXRyeS1hbGwtZXJyb3JzIC0tcmV0cnktZGVsYXkgMSAtLWNvbm5lY3QtdGltZW91dCAxMCAtLW1heC10aW1lIDQ1IFxcXG4nCmFzc2VydCBzLmNvdW50KG9sZCkgPT0gMSwgZiJwcm9qZWN0IGN1cmwgY291bnQ9e3MuY291bnQob2xkKX0iCnMgPSBzLnJlcGxhY2Uob2xkLCBuZXcpCgpvbGQgPSAnJydxYm9vbCBzZWNkZWZfc2VhcmNoX3BhdGhfYm91bmRhcnkgInNlbGVjdCB0b19qc29uYihjb3VudCgqKSA9IDAgZnJvbSBwZ19wcm9jIHAgd2hlcmUgcC5wcm9zZWNkZWYgYW5kIHAucHJvbmFtZXNwYWNlPSdwdWJsaWMnOjpyZWduYW1lc3BhY2UgYW5kIChwLnByb2NvbmZpZyBpcyBudWxsIG9yIG5vdCBleGlzdHMgKHNlbGVjdCAxIGZyb20gdW5uZXN0KHAucHJvY29uZmlnKSBwYyB3aGVyZSBwYyBsaWtlICdzZWFyY2hfcGF0aD1wZ19jYXRhbG9nLHB1YmxpYycpKSk7IicnJwpuZXcgPSAnJydxYm9vbCBzZWNkZWZfc2VhcmNoX3BhdGhfYm91bmRhcnkgInNlbGVjdCB0b19qc29uYigoc2VsZWN0IGNvdW50KCopIGZyb20gcGdfcHJvYyBwIHdoZXJlIHAucHJvc2VjZGVmIGFuZCBwLnByb25hbWVzcGFjZT0ncHVibGljJzo6cmVnbmFtZXNwYWNlIGFuZCAocC5wcm9jb25maWcgaXMgbnVsbCBvciBub3QgZXhpc3RzIChzZWxlY3QgMSBmcm9tIHVubmVzdChwLnByb2NvbmZpZykgcGMgd2hlcmUgcGMgbGlrZSAnc2VhcmNoX3BhdGg9cGdfY2F0YWxvZyxwdWJsaWMnKSkpID0gMCk7IicnJwphc3NlcnQgcy5jb3VudChvbGQpID09IDEsIGYic2VjZGVmIGNvdW50PXtzLmNvdW50KG9sZCl9IgpzID0gcy5yZXBsYWNlKG9sZCwgbmV3KQoKc3RhcnQgPSBzLmluZGV4KCIjIFNlY3VyaXR5IGFkdmlzb3JzIHJlbWFpbiBhbiBpbmRlcGVuZGVudCB2ZXJpZmljYXRpb24gc2lnbmFsLiIpCmVuZCA9IHMuaW5kZXgoIlxuU0VDVVJJVFlfT0s9ZmFsc2UiLCBzdGFydCkKYWR2aXNvciA9ICcnJyMgU2VjdXJpdHkgYWR2aXNvcnMgYXJlIHJlYWQgdGhyb3VnaCB0aGUgc2FtZSBNYW5hZ2VtZW50IEFQSSB1c2VkIGZvciBTUUwuCkFEVklTT1JTX1JDPTEKbm90ZSAnUnVubmluZyBTdXBhYmFzZSBzZWN1cml0eSBhZHZpc29ycyB0aHJvdWdoIE1hbmFnZW1lbnQgQVBJIC4uLicKaWYgY3VybCAtLWZhaWwtd2l0aC1ib2R5IC1zUyAtLXJldHJ5IDMgLS1yZXRyeS1hbGwtZXJyb3JzIC0tcmV0cnktZGVsYXkgMSAtLWNvbm5lY3QtdGltZW91dCAxMCAtLW1heC10aW1lIDQ1IFxcCiAgImh0dHBzOi8vYXBpLnN1cGFiYXNlLmNvbS92MS9wcm9qZWN0cy8kUkVGL2Fkdmlzb3JzL3NlY3VyaXR5IiBcXAogIC1IICJBdXRob3JpemF0aW9uOiBCZWFyZXIgJFNVUEFCQVNFX0FDQ0VTU19UT0tFTiIgXFwKICAtbyAiJFRNUC9hZHZpc29ycy5qc29uIjsgdGhlbgogIEFEVklTT1JfRVJST1JfQ09VTlQ9IiQoanEgJ1subGludHNbXT8gfCBzZWxlY3QoKCgoLmxldmVsIC8vIC5zZXZlcml0eSAvLyAiIikgfCBhc2NpaV9kb3duY2FzZSkpID09ICJlcnJvciIpXSB8IGxlbmd0aCcgIiRUTVAvYWR2aXNvcnMuanNvbiIgMj4vZGV2L251bGwgfHwgZWNobyAtMSkiCiAgaWYgW1sgIiRBRFZJU09SX0VSUk9SX0NPVU5UIiA9PSAwIF1dOyB0aGVuCiAgICBBRFZJU09SU19SQz0wCiAgICBub3RlICcgIHNlY3VyaXR5IGFkdmlzb3JzOiBubyBlcnJvci1sZXZlbCBmaW5kaW5ncycKICBlbHNlCiAgICB3YXJuICJzZWN1cml0eSBhZHZpc29ycyByZXBvcnQgJEFEVklTT1JfRVJST1JfQ09VTlQgZXJyb3ItbGV2ZWwgZmluZGluZyhzKSIKICBmaQplbHNlCiAgd2FybiAnc2VjdXJpdHkgYWR2aXNvciBNYW5hZ2VtZW50IEFQSSByZXF1ZXN0IGZhaWxlZCcKZmkKJycnCnMgPSBzWzpzdGFydF0gKyBhZHZpc29yICsgc1tlbmQ6XQpwLndyaXRlX3RleHQocykK' | base64 -d > /tmp/patch.py
-          python3 /tmp/patch.py
           bash -n .github/pilot-activation/activate.sh
-          git diff --check
-
-      - name: Commit activation repair
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/pilot-activation/activate.sh
-          git commit -m 'fix(ops): use resilient Management API verification'
-          git push origin HEAD:fix/activation-migration-ledger
+          output="$(bash .github/pilot-activation/activate.sh)"
+          printf '%s\n' "$output"
+          grep -q '^PROJECT_ACCESSIBLE=true$' <<< "$output"
+          grep -q '^PROJECT_CLASSIFICATION=TERRANEX$' <<< "$output"
+          grep -q '^MIGRATIONS_IN_SYNC=true$' <<< "$output"
+          grep -q '^RLS_VERIFIED=true$' <<< "$output"
+          grep -q '^FINANCIAL_CONTROLS_VERIFIED=true$' <<< "$output"
+          grep -q '^SECURITY_VERIFIED=true$' <<< "$output"
+          echo 'ACTIVATION_REPAIR_LIVE_VERIFIED=true'
