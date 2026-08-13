@@ -1,4 +1,4 @@
-name: Terranex Activation Search Path Patch
+name: Terranex Activation Repair Live Gate
 
 on:
   push:
@@ -8,27 +8,33 @@ on:
       - .github/workflows/greenfield-supabase-reset.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      APPLY_MIGRATIONS: 'false'
     steps:
-      - name: Checkout activation repair branch
+      - name: Checkout exact repaired activation head
         uses: actions/checkout@v4
         with:
-          ref: fix/activation-migration-ledger
+          ref: def8d52a25e915fc7ab3ed4d6008806bd7b7e394
 
-      - name: Normalize canonical search path comparison
+      - name: Run read-only live activation gate
         shell: bash
         run: |
           set -euo pipefail
-          python3 -c "from pathlib import Path; p=Path('.github/pilot-activation/activate.sh'); s=p.read_text(); old=\"pc like 'search_path=pg_catalog,public'\"; new=\"replace(pc,' ','') = 'search_path=pg_catalog,public'\"; assert s.count(old)==1, s.count(old); p.write_text(s.replace(old,new))"
           bash -n .github/pilot-activation/activate.sh
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/pilot-activation/activate.sh
-          git commit -m 'fix(ops): normalize canonical search path check'
-          git push origin HEAD:fix/activation-migration-ledger
+          output="$(bash .github/pilot-activation/activate.sh)"
+          printf '%s\n' "$output"
+          grep -q '^PROJECT_ACCESSIBLE=true$' <<< "$output"
+          grep -q '^PROJECT_CLASSIFICATION=TERRANEX$' <<< "$output"
+          grep -q '^MIGRATIONS_IN_SYNC=true$' <<< "$output"
+          grep -q '^RLS_VERIFIED=true$' <<< "$output"
+          grep -q '^FINANCIAL_CONTROLS_VERIFIED=true$' <<< "$output"
+          grep -q '^SECURITY_VERIFIED=true$' <<< "$output"
+          echo 'ACTIVATION_REPAIR_LIVE_GATE=PASS'
