@@ -1,4 +1,4 @@
-name: Terranex Runtime Auth Verification
+name: Terranex PR115 Database Verification
 
 on:
   push:
@@ -11,21 +11,33 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  database:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
-      - name: Checkout runtime auth fix
+      - name: Checkout PR 115 exact head
         uses: actions/checkout@v4
         with:
-          ref: fix/runtime-auth-sequencing
-      - name: Install dependencies
-        run: npm ci
-      - name: Unit tests
-        run: npm test
-      - name: Lint
-        run: npm run lint
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Production build
-        run: npm run build
+          ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
+      - name: Run canonical migration replay and DB suites
+        env:
+          GITHUB_ACTIONS: 'true'
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: bash scripts/db-test.sh
