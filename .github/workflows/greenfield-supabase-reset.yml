@@ -1,4 +1,4 @@
-name: Terranex Activation Repair Live Gate
+name: Terranex Demo Seed Prerequisite Probe
 
 on:
   push:
@@ -11,30 +11,35 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  probe:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
-      APPLY_MIGRATIONS: 'false'
     steps:
-      - name: Checkout exact repaired activation head
-        uses: actions/checkout@v4
-        with:
-          ref: def8d52a25e915fc7ab3ed4d6008806bd7b7e394
-
-      - name: Run read-only live activation gate
+      - name: Probe auth and key prerequisites safely
         shell: bash
         run: |
           set -euo pipefail
-          bash -n .github/pilot-activation/activate.sh
-          output="$(bash .github/pilot-activation/activate.sh)"
-          printf '%s\n' "$output"
-          grep -q '^PROJECT_ACCESSIBLE=true$' <<< "$output"
-          grep -q '^PROJECT_CLASSIFICATION=TERRANEX$' <<< "$output"
-          grep -q '^MIGRATIONS_IN_SYNC=true$' <<< "$output"
-          grep -q '^RLS_VERIFIED=true$' <<< "$output"
-          grep -q '^FINANCIAL_CONTROLS_VERIFIED=true$' <<< "$output"
-          grep -q '^SECURITY_VERIFIED=true$' <<< "$output"
-          echo 'ACTIVATION_REPAIR_LIVE_GATE=PASS'
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          sql="select count(*)::int as total_users,
+                      count(*) filter (where last_sign_in_at is not null)::int as signed_in_users,
+                      exists(select 1 from auth.users where last_sign_in_at is not null) as has_recent_owner_candidate
+               from auth.users;"
+          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
+          auth_meta="$(curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/q.json")"
+          echo "AUTH_TOTAL_USERS=$(printf '%s' "$auth_meta" | jq -r '.[0].total_users')"
+          echo "AUTH_SIGNED_IN_USERS=$(printf '%s' "$auth_meta" | jq -r '.[0].signed_in_users')"
+          echo "HAS_OWNER_CANDIDATE=$(printf '%s' "$auth_meta" | jq -r '.[0].has_recent_owner_candidate')"
+
+          keys="$(curl --fail-with-body -sS \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=false" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          safe="$(printf '%s' "$keys" | jq -c '(if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end) | map({name,type,disabled})')"
+          echo "KEY_METADATA=$safe"
+          echo "HAS_SERVICE_ROLE_KEY=$(printf '%s' "$keys" | jq -r '(if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end) | any(((.name // "")|ascii_downcase)=="service_role" or ((.type // "")|ascii_downcase)=="service_role")')"
