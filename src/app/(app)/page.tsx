@@ -36,10 +36,10 @@ export default async function Home() {
       ) : (
         <div className="grid">
           {projects.map((p) => (
-            <Link key={p.id} href={`/projects/${p.id}/intake`} className="project">
+            <Link key={p.id} href={`/projects/${p.id}/overview`} className="project">
               <strong>{p.name}</strong>
               <p className="muted">{p.internal_reference || 'بدون مرجع داخلي'}</p>
-              <span className="status">إدخال موجّه · {p.reporting_currency}</span>
+              <span className="status">مساحة عمل المشروع · {p.reporting_currency}</span>
             </Link>
           ))}
         </div>

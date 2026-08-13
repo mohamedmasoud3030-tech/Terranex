@@ -111,8 +111,15 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
           <a href="#close">الإغلاق</a>
           <a href="#snapshots">اللقطات</a>
           <a href="#corrections">التصحيح</a>
+          <Link href={`/projects/${projectId}/investors`}>التخصيص والتوزيعات</Link>
         </nav>
       </header>
+
+      <div className="banner info" role="note">
+        بعد إغلاق فترة محاسبية، انتقل إلى{' '}
+        <Link href={`/projects/${projectId}/investors`}>التخصيص والتوزيعات</Link> لإصدار قرار التخصيص
+        وتوزيع النتيجة على الشركاء.
+      </div>
 
       <section id="periods" className="card stack scroll-target">
         <h2>الفترات المحاسبية</h2>

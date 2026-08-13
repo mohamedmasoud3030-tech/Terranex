@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getActiveVersion, getProjectCapitalPosition } from '@/features/funding/queries';
+import { getCurrentMembership, getCashAccountPositions } from '@/features/finance/queries';
+import { getProjectCapitalPosition } from '@/features/funding/queries';
+import { getAccountingPeriods } from '@/features/close/queries';
+import { getRealizedResults } from '@/features/revenue/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { WorkspaceNav } from '@/features/workspace/nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,75 +23,87 @@ export default async function ProjectShell({
   const { projectId } = await params;
   const project = await getProject(projectId);
   if (!project) notFound();
-  const [activeVersion, position] = await Promise.all([
-    getActiveVersion(projectId),
+  const organizationId = project.organization_id;
+  const currency = project.reporting_currency;
+
+  const [membership, position, cashAccounts, results, periods] = await Promise.all([
+    getCurrentMembership(organizationId),
     getProjectCapitalPosition(projectId),
+    getCashAccountPositions(projectId),
+    getRealizedResults(projectId),
+    getAccountingPeriods(projectId),
   ]);
+
+  const isDemo = Boolean(project.internal_reference?.startsWith('DEMO'));
+  const totalCash = cashAccounts.reduce((sum, account) => sum + BigInt(account.balance_minor_units), 0n);
+  const realizedResult = results.reduce((sum, result) => sum + BigInt(result.realized_result_minor_units), 0n);
+  const openPeriod = periods.find((period) => period.status === 'OPEN') ?? null;
 
   return (
     <section className="stack">
-      <div>
-        <Link className="muted" href="/">
-          ← المشاريع
-        </Link>
-        <span className="status">{STATE_LABEL[project.lifecycle_state] ?? project.lifecycle_state}</span>
-        <h1>{project.name}</h1>
-        <p className="muted">
-          مشروع عقاري · {project.reporting_currency}
-          {project.internal_reference ? ` · ${project.internal_reference}` : ''}
-        </p>
-      </div>
+      <header className="project-context card">
+        <div>
+          <Link className="muted" href="/">← المشاريع</Link>
+          <div className="topline">
+            <div>
+              <span className="status">{STATE_LABEL[project.lifecycle_state] ?? project.lifecycle_state}</span>
+              <h1>{project.name}</h1>
+              <p className="muted">
+                مشروع عقاري · {currency}
+                {project.internal_reference ? ` · ${project.internal_reference}` : ''}
+              </p>
+            </div>
+            <Link className="button secondary" href="/intake">إدخال مشروع حقيقي</Link>
+          </div>
+        </div>
+      </header>
+
+      {isDemo && (
+        <div className="banner info" role="note">
+          هذا المشروع ({project.internal_reference}) بيانات توضيحية اصطناعية ثابتة. تُستخدم للمعاينة والتدريب
+          والتحقق، ولا تُحتسب كدليل عميل حقيقي أو إغلاق لأي بوابة مرحلَة ثانية أو ثالثة.
+        </div>
+      )}
+
+      <WorkspaceNav projectId={projectId} active="overview" />
 
       <section className="card stack">
-        <h2>مساحة عمل المشروع</h2>
+        <div className="topline">
+          <h2>مساحة عمل المشروع</h2>
+          <Link className="button" href={`/projects/${projectId}/overview`}>نظرة المشروع الكاملة</Link>
+        </div>
         <p>{project.description || 'لم يُضف وصف للمشروع بعد.'}</p>
-        <nav className="grid">
-          <Link className="card" href={`/projects/${projectId}/intake`}>
-            <strong>إدخال المشروع الحقيقي</strong>
-            <p className="muted">مسار موجّه: المستثمرون، العقار، النقدية، الأرصدة الافتتاحية، التحقق</p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/terms`}>
-            <strong>الشروط والاتفاقية</strong>
-            <p className="muted">
-              {activeVersion
-                ? `النسخة ${activeVersion.version_no} مفعّلة`
-                : 'لا توجد اتفاقية مفعّلة'}
-            </p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/funding`}>
-            <strong>التمويل ورأس المال</strong>
-            <p className="muted">
-              {activeVersion
-                ? `مستلم ${formatMinorUnits(position?.contributed_minor_units ?? 0, project.reporting_currency)}`
-                : 'فعّل الاتفاقية أولًا'}
-            </p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/operations`}>
-            <strong>العمليات العقارية</strong>
-            <p className="muted">الأصول والسيطرة والتطوير والتكلفة والتصرف والبيع والتحصيل والنتيجة المحققة</p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/costs`}>
-            <strong>التكاليف والالتزامات</strong>
-            <p className="muted">سجّل الالتزامات واعتمدها وادفعها</p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/cash`}>
-            <strong>النقدية والبنك</strong>
-            <p className="muted">الحسابات، كشوف البنك، والمطابقة</p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/close`}>
-            <strong>الإغلاق المالي والتصحيح</strong>
-            <p className="muted">فترات محاسبية، بوابات الإغلاق، لقطات مجمدة، تصحيح مرتبط</p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/investors`}>
-            <strong>المستثمرون والتخصيص والتوزيعات</strong>
-            <p className="muted">قواعد حاكمة، تخصيص نتيجة مغلقة، مستحقات توزيع، دفع، وكشف رأس المال</p>
-          </Link>
-          <Link className="card" href={`/projects/${projectId}/pilot`}>
-            <strong>تجهيز التشغيل التجريبي</strong>
-            <p className="muted">الاستيراد الافتتاحي، مجاميع الرقابة، فروق المطابقة، اختبار القبول، والوصول</p>
-          </Link>
-        </nav>
+        <div className="overview-kpis">
+          <article className="overview-kpi">
+            <span>رأس المال المساهم به</span>
+            <strong>{formatMinorUnits(position?.contributed_minor_units ?? '0', currency)}</strong>
+            <small>من القراءة الرسمية للموقف الرأسمالي</small>
+          </article>
+          <article className="overview-kpi">
+            <span>النقدية الحالية</span>
+            <strong>{formatMinorUnits(totalCash, currency)}</strong>
+            <small>مجموع أرصدة الحسابات النقدية</small>
+          </article>
+          <article className="overview-kpi">
+            <span>النتيجة المحققة</span>
+            <strong>{formatMinorUnits(realizedResult, currency)}</strong>
+            <small>من قيود الاعتراف المتوازنة</small>
+          </article>
+          <article className="overview-kpi">
+            <span>الفترة المحاسبية</span>
+            <strong>
+              {openPeriod
+                ? `${new Date(openPeriod.start_date).toLocaleDateString('ar-EG')} → ${new Date(openPeriod.end_date).toLocaleDateString('ar-EG')}`
+                : 'لا توجد فترة مفتوحة'}
+            </strong>
+            <small>{openPeriod ? openPeriod.status : 'أنشئ فترة من الإغلاق المالي'}</small>
+          </article>
+        </div>
       </section>
+
+      {!membership && (
+        <p className="error" role="alert">عضويتك الحالية لا تسمح بالوصول الكامل لهذا المشروع.</p>
+      )}
     </section>
   );
 }
