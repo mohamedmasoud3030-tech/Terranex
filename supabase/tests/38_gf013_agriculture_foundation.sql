@@ -142,19 +142,19 @@ select 1/case when public.agriculture_current_cycle_state(:'s13a_cycle') = 'ESTA
 
 -- Skip: ESTABLISHED -> HARVESTING must fail.
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','HARVESTING','محاولة تخطي','x','s13a-tr-skip')$$
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','HARVESTING','محاولة تخطي','مرجع','s13a-tr-skip')$$
   , :'s13a_cycle')) like '%invalid crop cycle transition%' then 1 else 0 end
   as s13a_skip_rejected;
 
 -- Backward: ESTABLISHED -> PLANNED must fail.
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','PLANNED','محاولة رجوع للخلف','x','s13a-tr-back')$$
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','PLANNED','محاولة رجوع للخلف','مرجع','s13a-tr-back')$$
   , :'s13a_cycle')) like '%invalid crop cycle transition%' then 1 else 0 end
   as s13a_backward_rejected;
 
 -- Wrong expected_state must fail.
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','GROWING','توقع خاطئ','x','s13a-tr-wrong')$$
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','GROWING','توقع خاطئ','مرجع','s13a-tr-wrong')$$
   , :'s13a_cycle')) like '%expected state mismatch%' then 1 else 0 end
   as s13a_expected_state_mismatch;
 
@@ -187,7 +187,7 @@ select s13a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','بدأ النمو','m2','s13a-2-grow')$$
   , :'s13a_cycle2'));
 select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'GROWING','ESTABLISHED','محاولة رجوع','x','s13a-2-back')$$
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'GROWING','ESTABLISHED','محاولة رجوع','مرجع','s13a-2-back')$$
   , :'s13a_cycle2')) like '%invalid crop cycle transition%' then 1 else 0 end
   as s13a_failed_only_from_growing;
 select s13a_run('00000000-0000-4000-8000-000000000001', format(
