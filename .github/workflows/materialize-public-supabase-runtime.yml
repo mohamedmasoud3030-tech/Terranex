@@ -46,15 +46,15 @@ jobs:
 
           umask 077
           {
-            echo '# Public browser configuration. Never place Supabase secret/service_role keys in this file.'
+            echo '# Public browser configuration. Never place privileged Supabase keys in this file.'
             echo "NEXT_PUBLIC_SUPABASE_URL=https://$SUPABASE_PROJECT_REF.supabase.co"
             printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$publishable"
           } > .env.production
 
           grep -q '^NEXT_PUBLIC_SUPABASE_URL=https://nwpyeobuxzbdnnzyfyqw\.supabase\.co$' .env.production
           grep -q '^NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_' .env.production
-          if grep -qiE 'service_role|sb_secret_' .env.production; then
-            echo '::error::Privileged key material detected in production public config.'
+          if grep -qiE '^NEXT_PUBLIC_[A-Z0-9_]+=(sb_secret_|.*service_role)' .env.production; then
+            echo '::error::Privileged key material detected in a production public value.'
             exit 1
           fi
 
