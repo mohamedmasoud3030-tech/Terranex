@@ -57,6 +57,22 @@ begin
   return 'NO_EXCEPTION';
 end $$;
 
+-- This helper deliberately retains the fixture owner role so append-only
+-- triggers are exercised directly; authenticated-role write denial is tested
+-- separately below.
+create or replace function s13a_owner_catch(p_sql text)
+returns text language plpgsql as $$
+declare v_msg text;
+begin
+  begin
+    execute p_sql;
+  exception when others then
+    v_msg := sqlerrm;
+    return v_msg;
+  end;
+  return 'NO_EXCEPTION';
+end $$;
+
 -- Resolve the canonical Agriculture project from the prior test.
 select id as s13_ag_project from public.investment_projects where internal_reference='GF013-AG-A' \gset
 
@@ -209,10 +225,10 @@ select 1/case when public.agriculture_current_cycle_state(:'s13a_cycle3') = 'CAN
 -- ---------------------------------------------------------------------------
 -- 6. History is append-only.
 -- ---------------------------------------------------------------------------
-select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
+select 1/case when s13a_owner_catch(format(
   $$update public.crop_cycle_state_history set reason = 'تعديل' where id = %L$$
   , :'s13a_tr_est')) like '%append-only%' then 1 else 0 end as s13a_history_update_rejected;
-select 1/case when s13a_catch('00000000-0000-4000-8000-000000000001', format(
+select 1/case when s13a_owner_catch(format(
   $$delete from public.crop_cycle_state_history where id = %L$$
   , :'s13a_tr_est')) like '%append-only%' then 1 else 0 end as s13a_history_delete_rejected;
 
