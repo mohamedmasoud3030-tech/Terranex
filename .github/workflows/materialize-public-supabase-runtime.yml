@@ -1,0 +1,75 @@
+name: Materialize Terranex Public Supabase Runtime
+
+on:
+  push:
+    branches:
+      - fix/vercel-supabase-runtime
+    paths:
+      - .github/workflows/materialize-public-supabase-runtime.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+    steps:
+      - name: Checkout runtime branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/vercel-supabase-runtime
+
+      - name: Fetch only the public client key and write production config
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          keys="$(curl --fail-with-body -sS \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+
+          publishable="$(printf '%s' "$keys" | jq -r '
+            (if type == "array" then . elif ((.api_keys // null) | type) == "array" then .api_keys else [] end)
+            | map(select((.type // "") == "publishable" and ((.disabled // false) == false)))
+            | .[0]
+            | (.api_key // .value // .key // empty)
+          ')"
+
+          if [[ -z "$publishable" || "$publishable" != sb_publishable_* ]]; then
+            echo '::error::An active modern Supabase publishable key could not be resolved.'
+            exit 1
+          fi
+
+          umask 077
+          {
+            echo '# Public browser configuration. Never place Supabase secret/service_role keys in this file.'
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://$SUPABASE_PROJECT_REF.supabase.co"
+            printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$publishable"
+          } > .env.production
+
+          grep -q '^NEXT_PUBLIC_SUPABASE_URL=https://nwpyeobuxzbdnnzyfyqw\.supabase\.co$' .env.production
+          grep -q '^NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_' .env.production
+          if grep -qiE 'service_role|sb_secret_' .env.production; then
+            echo '::error::Privileged key material detected in production public config.'
+            exit 1
+          fi
+
+          echo 'PUBLIC_SUPABASE_RUNTIME_CONFIG_READY=true'
+
+      - name: Commit public production config without logging its value
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f .env.production
+          if git diff --cached --quiet; then
+            echo 'No runtime config change required.'
+            exit 0
+          fi
+          git commit -m 'config: connect Vercel production to Greenfield Supabase'
+          git push origin HEAD:fix/vercel-supabase-runtime
