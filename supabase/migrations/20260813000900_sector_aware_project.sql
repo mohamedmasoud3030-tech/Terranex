@@ -110,8 +110,8 @@ end $$;
 create or replace function public.create_investment_project(
   p_organization_id uuid,
   p_name text,
-  p_internal_reference text,
-  p_description text
+  p_internal_reference text default null,
+  p_description text default null
 ) returns uuid
 language plpgsql
 security definer

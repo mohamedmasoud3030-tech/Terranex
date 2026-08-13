@@ -73,15 +73,25 @@ select 1/case when s13_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع غير مسموح','GF013-BAD','x','LIVESTOCK')$$
 )) like '%invalid sector%' then 1 else 0 end as s13_invalid_sector_rejected;
 
--- The historical 4-argument RPC still works and is locked to
--- REAL_ESTATE. Existing test suite + older callers stay green.
+-- Historical 2-, 3-, and 4-argument calls still resolve only to the
+-- compatibility wrapper and remain locked to REAL_ESTATE.
 select s13_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع قديم 4-وسيطة','GF013-LEGACY','compat','REAL_ESTATE')$$
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع قديم وسيطتان')$$
+)) as s13_legacy_two \gset
+
+select s13_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع قديم 3-وسائط','GF013-LEGACY-3')$$
+)) as s13_legacy_three \gset
+
+select s13_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع قديم 4-وسائط','GF013-LEGACY-4','compat')$$
 )) as s13_legacy \gset
 
 select 1/case when (
-  select sector = 'REAL_ESTATE' from public.investment_projects where id = :'s13_legacy'
-) then 1 else 0 end as s13_legacy_keeps_real_estate;
+  select count(*) from public.investment_projects
+  where id in (:'s13_legacy_two', :'s13_legacy_three', :'s13_legacy')
+    and sector = 'REAL_ESTATE'
+) = 3 then 1 else 0 end as s13_legacy_arity_keeps_real_estate;
 
 -- Cross-tenant write is still rejected by is_active_member.
 select 1/case when s13_catch('00000000-0000-4000-8000-000000000002', format(
