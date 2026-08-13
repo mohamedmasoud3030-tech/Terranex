@@ -1,4 +1,4 @@
-name: Terranex Greenfield Supabase Finalize
+name: Terranex Greenfield Verification
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  finalize:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify live Greenfield schema and frontend/backend contract
+      - name: Verify Greenfield schema and frontend/backend contract
         shell: bash
         run: |
           set -euo pipefail
@@ -29,9 +29,11 @@ jobs:
           query() {
             jq -n --arg query "$1" '{query:$query}' > "$tmp/payload.json"
             curl --fail-with-body -sS -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
               --data-binary @"$tmp/payload.json"
           }
+
           meta="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
           test "$(printf '%s' "$meta" | jq -r '.name')" = 'Terranex'
           test "$(printf '%s' "$meta" | jq -r '.status')" = 'ACTIVE_HEALTHY'
@@ -40,8 +42,8 @@ jobs:
           import json, pathlib, re
           src='\n'.join(p.read_text(errors='ignore') for p in pathlib.Path('src').rglob('*') if p.suffix in {'.ts','.tsx','.js','.jsx'})
           print(json.dumps({
-            'tables': sorted(set(re.findall(r"\.from\(\s*['\"]([A-Za-z0-9_]+)['\"]",src))),
-            'rpcs': sorted(set(re.findall(r"\.rpc\(\s*['\"]([A-Za-z0-9_]+)['\"]",src)))
+            'tables': sorted(set(re.findall(r"\.from\(\s*['\"]([A-Za-z0-9_]+)['\"]", src))),
+            'rpcs': sorted(set(re.findall(r"\.rpc\(\s*['\"]([A-Za-z0-9_]+)['\"]", src)))
           }))
           PY
 
@@ -64,9 +66,18 @@ jobs:
           missing_tables="$(query "with wanted(name) as (select jsonb_array_elements_text('$tables_json'::jsonb)) select coalesce(jsonb_agg(name order by name),'[]'::jsonb) missing from wanted where to_regclass('public.'||name) is null;" | jq -c '.[0].missing')"
           missing_rpcs="$(query "with wanted(name) as (select jsonb_array_elements_text('$rpcs_json'::jsonb)) select coalesce(jsonb_agg(name order by name),'[]'::jsonb) missing from wanted where not exists(select 1 from pg_proc p where p.pronamespace='public'::regnamespace and p.proname=wanted.name);" | jq -c '.[0].missing')"
 
-          anchors="$(query "select json_build_object('s6_evaluate_gate',exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname='s6_evaluate_gate'),'close_serialization',(select count(*) from pg_trigger where tgname in ('a_s6_close_serialization_batch_lock','a_s6_close_serialization_line_lock') and not tgisinternal)=2,'audit_append_only',exists(select 1 from pg_trigger where tgname='audit_events_append_only' and not tgisinternal),'journal_balance',exists(select 1 from pg_trigger where tgname='journal_lines_balance_guard' and not tgisinternal),'s7_import',to_regclass('public.s7_opening_imports') is not null,'s7_reconciliation',to_regclass('public.s7_reconciliation_checkpoints') is not null) checks;")"
-          anchors_ok="$(printf '%s' "$anchors" | jq -r '.[0].checks | all(.[])')"
+          anchor_ok="$(query "select (
+            exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname='s6_evaluate_gate')
+            and (select count(*) from pg_trigger where tgname in ('a_s6_close_serialization_batch_lock','a_s6_close_serialization_line_lock') and not tgisinternal)=2
+            and exists(select 1 from pg_trigger where tgname='audit_events_append_only' and not tgisinternal)
+            and exists(select 1 from pg_trigger where tgname='journal_lines_balance_guard' and not tgisinternal)
+            and to_regclass('public.s7_opening_imports') is not null
+            and to_regclass('public.s7_reconciliation_checkpoints') is not null
+          ) as ok;" | jq -r '.[0].ok')"
 
+          echo "PROJECT_NAME=$(printf '%s' "$meta" | jq -r '.name')"
+          echo "PROJECT_STATUS=$(printf '%s' "$meta" | jq -r '.status')"
+          echo "PROJECT_REGION=$(printf '%s' "$meta" | jq -r '.region')"
           echo "CANONICAL_TABLES=$live/$expected"
           echo "RLS_FORCE_REQUIRED=$forced_live/$forced_expected"
           echo "UNRELATED_PUBLIC_TABLES=$unrelated"
@@ -75,7 +86,7 @@ jobs:
           echo "FRONTEND_RPC_COUNT=$(jq '.rpcs|length' "$tmp/contract.json")"
           echo "FRONTEND_MISSING_TABLES=$missing_tables"
           echo "FRONTEND_MISSING_RPCS=$missing_rpcs"
-          echo "SECURITY_ANCHORS_OK=$anchors_ok"
+          echo "SECURITY_ANCHORS_OK=$anchor_ok"
 
           test "$live" = "$expected"
           test "$unrelated" = '0'
@@ -83,27 +94,35 @@ jobs:
           test "$ledger" = "$migrations"
           test "$missing_tables" = '[]'
           test "$missing_rpcs" = '[]'
-          test "$anchors_ok" = 'true'
+          test "$anchor_ok" = 'true'
           echo 'FRONTEND_BACKEND_OBJECT_CONTRACT=true'
           echo 'GREENFIELD_SCHEMA_VERIFIED=true'
 
-      - name: Ensure modern publishable key
+      - name: Inspect or create modern publishable key safely
         if: always()
         shell: bash
         run: |
           set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
           keys="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=false" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
-          has="$(printf '%s' "$keys" | jq -r 'if type=="array" then . elif (.api_keys?|type)=="array" then .api_keys else [] end | any(.[]; (.type//"")=="publishable" and ((.disabled//false)==false))')"
-          if [[ "$has" != true ]]; then
-            curl --fail-with-body -sS -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys" \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
-              --data '{"type":"publishable","name":"terranex-web"}' >/dev/null
+          printf '%s' "$keys" | jq -c 'if type=="array" then map({id,name,type,disabled}) elif ((.api_keys // null)|type)=="array" then .api_keys|map({id,name,type,disabled}) else [] end' > "$tmp/safe-key-metadata.json"
+          echo "KEY_METADATA=$(cat "$tmp/safe-key-metadata.json")"
+          has="$(printf '%s' "$keys" | jq -r '(if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end) | map(select((.type // "") == "publishable" and ((.disabled // false) == false))) | length > 0')"
+          if [[ "$has" != 'true' ]]; then
+            http="$(curl -sS -o "$tmp/create.json" -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=false" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data '{"type":"publishable","name":"terranex-web"}')"
+            echo "PUBLISHABLE_CREATE_HTTP=$http"
+            if [[ "$http" -lt 200 || "$http" -ge 300 ]]; then
+              jq -c '{code:(.code // null),message:(.message // .error // "request rejected")}' "$tmp/create.json" || true
+            fi
           fi
           keys="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=false" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
-          has="$(printf '%s' "$keys" | jq -r 'if type=="array" then . elif (.api_keys?|type)=="array" then .api_keys else [] end | any(.[]; (.type//"")=="publishable" and ((.disabled//false)==false))')"
-          test "$has" = true
-          echo 'NEXT_PUBLIC_SUPABASE_URL_AVAILABLE=true'
-          echo 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_AVAILABLE=true'
+          has="$(printf '%s' "$keys" | jq -r '(if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end) | map(select((.type // "") == "publishable" and ((.disabled // false) == false))) | length > 0')"
+          echo "NEXT_PUBLIC_SUPABASE_URL=https://$SUPABASE_PROJECT_REF.supabase.co"
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_AVAILABLE=$has"
+          test "$has" = 'true'
 
       - name: Supabase security advisor
         if: always()
@@ -111,8 +130,8 @@ jobs:
         run: |
           set -euo pipefail
           result="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/advisors/security" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
-          errors="$(printf '%s' "$result" | jq '[..|objects|select(((.level?//.severity?//"")|ascii_downcase)=="error")]|length')"
-          warnings="$(printf '%s' "$result" | jq '[..|objects|select(((.level?//.severity?//"")|ascii_downcase)=="warning")]|length')"
+          errors="$(printf '%s' "$result" | jq '[.. | objects | (.level // .severity // empty) | strings | ascii_downcase] | map(select(. == "error")) | length')"
+          warnings="$(printf '%s' "$result" | jq '[.. | objects | (.level // .severity // empty) | strings | ascii_downcase] | map(select(. == "warning")) | length')"
           echo "SECURITY_ADVISOR_ERRORS=$errors"
           echo "SECURITY_ADVISOR_WARNINGS=$warnings"
           test "$errors" = '0'
