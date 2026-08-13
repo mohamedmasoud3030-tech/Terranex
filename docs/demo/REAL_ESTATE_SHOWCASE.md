@@ -44,6 +44,8 @@ The seed is an explicit, idempotent operational fixture, not a migration and not
 
 The demo maker Auth identity is intentionally retained for maker/checker history. Its credentials are not stored in the repository.
 
+Presentation login is a real authenticated membership. See `docs/demo/PRESENTATION_ACCESS.md`.
+
 ## Protection rule
 
 Do not delete or reset this project unless the repository owner explicitly requests deletion of the permanent Terranex showcase. Database cleanup scripts must exclude internal reference `DEMO-RE-2026-001`.

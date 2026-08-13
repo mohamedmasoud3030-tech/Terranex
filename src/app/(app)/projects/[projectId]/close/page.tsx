@@ -19,6 +19,7 @@ import {
   type CorrectionRequest,
 } from '@/features/close/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 import {
   ApproveCloseForm,
   ApproveCorrectionForm,
@@ -71,13 +72,7 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
     getCorrectionRequests(projectId),
   ]);
   if (!membership) {
-    return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك الحالية لا تسمح بقراءة الإغلاق المالي لهذا المشروع.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
-    );
+    return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة الإغلاق المالي لهذا المشروع." />;
   }
   const isOwner = membership.role === 'OWNER';
 
@@ -100,20 +95,20 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
 
   return (
     <section className="stack">
-      <header className="project-context card">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
-          <h1>الإغلاق المالي والتصحيح</h1>
-          <p className="muted">{project.name} · {project.reporting_currency}</p>
-        </div>
-        <nav className="context-nav" aria-label="تنقل الإغلاق">
-          <a href="#periods">الفترات</a>
-          <a href="#close">الإغلاق</a>
-          <a href="#snapshots">اللقطات</a>
-          <a href="#corrections">التصحيح</a>
-          <Link href={`/projects/${projectId}/investors`}>التخصيص والتوزيعات</Link>
-        </nav>
-      </header>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="close"
+        title="الإغلاق والتوزيع"
+        subtitle={`${project.name} · ${project.reporting_currency}`}
+        internalReference={project.internal_reference}
+      />
+      <nav className="context-nav" aria-label="تنقل الإغلاق">
+        <a href="#periods">الفترات</a>
+        <a href="#close">الإغلاق</a>
+        <a href="#snapshots">اللقطات</a>
+        <a href="#corrections">التصحيح</a>
+        <Link href={`/projects/${projectId}/investors`}>التخصيص والتوزيعات</Link>
+      </nav>
 
       <div className="banner info" role="note">
         بعد إغلاق فترة محاسبية، انتقل إلى{' '}

@@ -14,6 +14,25 @@ import { readFileSync } from 'node:fs';
 
 const workspaceNav = readFileSync('src/features/workspace/nav.tsx', 'utf8');
 
+describe('GF-011 nine workspace sections share chrome', () => {
+  const pages = [
+    'src/app/(app)/projects/[projectId]/overview/page.tsx',
+    'src/app/(app)/projects/[projectId]/funding/page.tsx',
+    'src/app/(app)/projects/[projectId]/operations/page.tsx',
+    'src/app/(app)/projects/[projectId]/costs/page.tsx',
+    'src/app/(app)/projects/[projectId]/revenue/page.tsx',
+    'src/app/(app)/projects/[projectId]/close/page.tsx',
+    'src/app/(app)/projects/[projectId]/statements/page.tsx',
+    'src/app/(app)/projects/[projectId]/pilot/page.tsx',
+    'src/app/(app)/projects/[projectId]/controls/page.tsx',
+  ];
+  for (const page of pages) {
+    it(`${page} mounts WorkspaceChrome`, () => {
+      expect(readFileSync(page, 'utf8')).toMatch(/WorkspaceChrome/);
+    });
+  }
+});
+
 describe('GF-010 workspace navigation contract', () => {
   it('exposes exactly the nine business sections', () => {
     const ids = Array.from(

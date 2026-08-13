@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 export type AllocationRuleSet = {
   rule_set_id: string;
@@ -116,7 +117,7 @@ async function many<T>(view: string, columns: string, projectId: string, orderCo
   let query = s.from(view).select(columns).eq('project_id', projectId);
   if (orderColumn) query = query.order(orderColumn, { ascending: false });
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as T[];
 }
 
@@ -141,7 +142,7 @@ export async function getAllocationLines(runIds: string[]): Promise<AllocationLi
     .select('allocation_line_id,organization_id,project_id,run_id,participant_party_id,legal_name,weight_numerator,weight_denominator,exact_floor_minor_units,remainder_numerator,rounding_award_minor_units,allocated_minor_units,currency')
     .in('run_id', runIds)
     .order('legal_name');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as AllocationLine[];
 }
 
@@ -158,7 +159,7 @@ export async function getDistributionCapacity(projectId: string): Promise<Distri
     .select('organization_id,project_id,currency,cash_minor_units,supplier_payable_minor_units,distribution_payable_minor_units,distributable_cash_minor_units')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as DistributionCapacity | null;
 }
 

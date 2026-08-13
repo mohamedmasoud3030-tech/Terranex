@@ -13,7 +13,7 @@ import { getDistributions } from '@/features/allocation/queries';
 import { getAccountingPeriods, getCloseRuns } from '@/features/close/queries';
 import { getPilotAcceptanceReport } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
-import { WorkspaceNav } from '@/features/workspace/nav';
+import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,13 +68,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
   ]);
 
   if (!membership) {
-    return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك الحالية لا تسمح بقراءة نظرة المشروع العامة.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
-    );
+    return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة نظرة المشروع العامة." />;
   }
 
   const totalCash = cashAccounts.reduce((sum, account) => sum + BigInt(account.balance_minor_units), 0n);
@@ -132,8 +126,6 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
           <span>{blockers.join(' · ')}</span>
         </div>
       )}
-
-      <WorkspaceNav projectId={projectId} active="overview" />
 
       <section className="card stack">
         <h2>الوضع المالي</h2>

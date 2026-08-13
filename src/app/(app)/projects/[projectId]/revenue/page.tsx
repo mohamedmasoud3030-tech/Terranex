@@ -10,7 +10,9 @@ import {
   getUnreconciledPositiveStatementLines,
 } from '@/features/revenue/queries';
 import { formatMinorUnits } from '@/shared/money';
-import { WorkspaceNav } from '@/features/workspace/nav';
+import { getCashAccountPositions } from '@/features/finance/queries';
+import { getPropertyWorkspaces } from '@/features/real-estate/queries';
+import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,26 +34,24 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
   const currency = project.reporting_currency;
   const money = (value: string | number | bigint | null | undefined) => formatMinorUnits(value ?? '0', currency);
 
-  const [membership, dispositions, results, collections, parties, unreconciledLines] = await Promise.all([
+  const [membership, dispositions, results, collections, parties, unreconciledLines, assets, cashAccounts] = await Promise.all([
     getCurrentMembership(organizationId),
     getPropertyDispositions(projectId),
     getRealizedResults(projectId),
     getSaleCollections(projectId),
     getParties(organizationId),
     getUnreconciledPositiveStatementLines(projectId),
+    getPropertyWorkspaces(projectId),
+    getCashAccountPositions(projectId),
   ]);
 
   if (!membership) {
-    return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك الحالية لا تسمح بقراءة الإيراد لهذا المشروع.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
-    );
+    return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة الإيراد لهذا المشروع." />;
   }
 
   const partyName = new Map(parties.map((party) => [party.id, party.legal_name]));
+  const assetName = new Map(assets.map((asset) => [asset.property_asset_id, asset.name]));
+  const cashName = new Map(cashAccounts.map((account) => [account.cash_account_id, account.name]));
   const recognizedRevenue = results.reduce((sum, result) => sum + BigInt(result.recognized_revenue_minor_units), 0n);
   const realizedResult = results.reduce((sum, result) => sum + BigInt(result.realized_result_minor_units), 0n);
   const totalCollected = collections
@@ -60,21 +60,19 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
 
   return (
     <section className="stack">
-      <header className="project-context card">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
-          <h1>الإيراد والبيع</h1>
-          <p className="muted">{project.name} · {currency}</p>
-        </div>
-        <nav className="context-nav" aria-label="تنقل الإيراد">
-          <a href="#dispositions">التصرفات</a>
-          <a href="#result">النتيجة المحققة</a>
-          <a href="#collections">التحصيل</a>
-          <a href="#bank">المطابقة البنكية</a>
-        </nav>
-      </header>
-
-      <WorkspaceNav projectId={projectId} active="revenue" />
+      <WorkspaceChrome
+        projectId={projectId}
+        active="revenue"
+        title="الإيراد والبيع"
+        subtitle={`${project.name} · ${currency}`}
+        internalReference={project.internal_reference}
+      />
+      <nav className="context-nav" aria-label="تنقل الإيراد">
+        <a href="#dispositions">التصرفات</a>
+        <a href="#result">النتيجة المحققة</a>
+        <a href="#collections">التحصيل</a>
+        <a href="#bank">المطابقة البنكية</a>
+      </nav>
 
       <section className="card stack">
         <h2>ملخص الإيراد</h2>
@@ -114,7 +112,7 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
                 {dispositions.map((disposition) => (
                   <tr key={disposition.disposition_id}>
                     <td>{disposition.agreement_reference}</td>
-                    <td>{partyName.get(disposition.buyer_party_id) || disposition.buyer_party_id}</td>
+                    <td>{partyName.get(disposition.buyer_party_id) || 'مشتري'}</td>
                     <td><span className="status">{DISPOSITION_STATUS[disposition.status] ?? disposition.status}</span></td>
                     <td>{formatMinorUnits(disposition.agreed_proceeds_minor_units, disposition.currency)}</td>
                     <td>{d(disposition.agreement_date)}</td>
@@ -138,7 +136,7 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
               <tbody>
                 {results.map((result) => (
                   <tr key={result.recognition_id}>
-                    <td>{result.property_asset_id}</td>
+                    <td>{assetName.get(result.property_asset_id) || 'أصل عقاري'}</td>
                     <td>{d(result.recognition_date)}</td>
                     <td>{formatMinorUnits(result.recognized_revenue_minor_units, result.currency)}</td>
                     <td>{formatMinorUnits(result.carrying_cost_derecognized_minor_units, result.currency)}</td>

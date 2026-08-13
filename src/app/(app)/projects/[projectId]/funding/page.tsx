@@ -12,6 +12,7 @@ import {
   getProjectCapitalPosition,
 } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { WorkspaceChrome } from '@/features/workspace/chrome';
 import { CapitalCallForm, ContributionForm } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,13 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
           <h1>التمويل</h1>
         </div>
+        <WorkspaceChrome
+          projectId={projectId}
+          active="capital"
+          title="رأس المال"
+          subtitle={project.name}
+          internalReference={project.internal_reference}
+        />
         <section className="card stack">
           <p>لا توجد اتفاقية مفعّلة بعد. فعّل الشروط أولًا لتتمكن من طلب رأس المال واستلام المساهمات.</p>
           <Link className="button" href={`/projects/${projectId}/terms`}>إدارة الشروط والاتفاقية</Link>
@@ -159,7 +167,7 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
                       <td>{participantName.get(contribution.participant_id) ?? '—'}</td>
                       <td>{call?.reference || contribution.capital_call_id.slice(0, 8)}</td>
                       <td>{formatMinorUnits(contribution.contribution_minor_units, contribution.currency)}</td>
-                      <td><code>{contribution.agreement_version_id.slice(0, 8)}</code></td>
+                      <td>النسخة الحاكمة {activeVersion.version_no}</td>
                     </tr>
                   );
                 })}
