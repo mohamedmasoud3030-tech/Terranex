@@ -51,4 +51,6 @@ Owner names are deliberately left as placeholders. They are filled in per engage
 | [`CROSS_TENANT_OR_SECURITY_INCIDENT.md`](CROSS_TENANT_OR_SECURITY_INCIDENT.md) | Suspected data exposure across organizations |
 | [`BACKUP_AND_RESTORE.md`](BACKUP_AND_RESTORE.md) | Backup verification, or a real restore is being considered |
 | [`FAILED_DEPLOYMENT_OR_MIGRATION.md`](FAILED_DEPLOYMENT_OR_MIGRATION.md) | A release or database migration failed |
+| [`CLOSE_RUN_GATE_FAILURE.md`](CLOSE_RUN_GATE_FAILURE.md) | A period close run is blocked by one or more failing S6 close gates |
+| [`NON_CASH_CHECKPOINT_VARIANCE.md`](NON_CASH_CHECKPOINT_VARIANCE.md) | A non-cash S7 reconciliation checkpoint records a non-zero variance |
 | [`SUPPORT_ESCALATION.md`](SUPPORT_ESCALATION.md) | Deciding severity, ownership, and when to escalate |
