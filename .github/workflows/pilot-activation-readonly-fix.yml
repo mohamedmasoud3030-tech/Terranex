@@ -26,22 +26,41 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: supabase login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
 
-      - name: Patch project-list parser in checked-out copy
+      - name: Patch inspection transport in checked-out copy
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('.github/pilot-activation/activate.sh')
           s = p.read_text()
-          old = '''PROJ="$(printf '%s' "$LIST_JSON" | jq -c --arg ref "$REF" '[.[] | select(.id == $ref)][0]')"'''
-          new = '''PROJ="$(printf '%s' "$LIST_JSON" | jq -c --arg ref "$REF" '(if type == "array" then . elif (type == "object" and (.projects? | type) == "array") then .projects else [] end) | map(select((.id // .ref // "") == $ref))[0] // null')"'''
-          if old not in s:
+
+          old_parser = '''PROJ="$(printf '%s' "$LIST_JSON" | jq -c --arg ref "$REF" '[.[] | select(.id == $ref)][0]')"'''
+          new_parser = '''PROJ="$(printf '%s' "$LIST_JSON" | jq -c --arg ref "$REF" '(if type == "array" then . elif (type == "object" and (.projects? | type) == "array") then .projects else [] end) | map(select((.id // .ref // "") == $ref))[0] // null')"'''
+          if old_parser not in s:
               raise SystemExit('expected parser line not found')
-          p.write_text(s.replace(old, new, 1))
+          s = s.replace(old_parser, new_parser, 1)
+
+          old_transport = '''runq_file() {
+            supabase db query --project-ref "$REF" --output-format json -f "$1" 2>"$TMP/q.err"
+          }'''
+          new_transport = '''runq_file() {
+            local payload
+            payload="$(jq -Rs '{query:.}' "$1")"
+            curl --fail-with-body -sS -X POST \
+              "https://api.supabase.com/v1/projects/$REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "$payload" 2>"$TMP/q.err"
+          }'''
+          if old_transport not in s:
+              raise SystemExit('expected query transport not found')
+          s = s.replace(old_transport, new_transport, 1)
+          p.write_text(s)
           PY
 
       - name: Inspect Terranex project read-only
         env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
           APPLY_MIGRATIONS: 'false'
         run: bash .github/pilot-activation/activate.sh
