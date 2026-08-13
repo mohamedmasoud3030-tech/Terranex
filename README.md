@@ -4,15 +4,10 @@ Terranex is an Arabic-first Investment Operations OS for Egyptian and MENA priva
 
 ## Current status
 
-- Phase: `GF-002 / S0` — executable product foundation.
-- Strategy: product-first; customer interviews are not a coding prerequisite.
-- Architecture: one Next.js modular monolith + one Supabase/PostgreSQL backend.
-- First market: Egypt; Arabic/RTL and EGP-ready configuration.
-- First sector: Real Estate.
-- Production: not deployed from this branch.
-
-## Active implementation boundary
-
-The next batch builds a runnable application and the first complete slice: authentication, organization isolation, and a Real Estate project shell. Agreements, finance posting, approvals, documents, offline/PWA, integrations, Agriculture, and Livestock remain deferred.
+- Phase: GF-010 — hosted Real Estate pilot workspace and real-project intake readiness.
+- S0–S7 vertical slices merged to `main`; the permanent realistic Real Estate showcase (DEMO-RE-2026-001) is preserved and operable from the hosted application.
+- Architecture: one Next.js modular monolith + one Supabase/PostgreSQL backend, Arabic/RTL and EGP-ready, first sector Real Estate.
+- Hosted operator workspace: one coherent project workspace (نظرة عامة، رأس المال، الأصول العقارية، التكاليف والنقدية، الإيراد والبيع، الإغلاق والتوزيع، كشوف الشركاء، الاستيراد والمطابقة، الرقابة والجاهزية) built entirely on canonical read models and RPCs.
+- **Truthfulness:** the permanent demo is synthetic demonstration data. It is used for verification, training, presentation, and regression — it is **not** customer evidence and does not satisfy canonical Phase 2 or Phase 3 exit gates. Phase 2/3 remain **not passed** until a real project's signed source balances are imported and reproduced at zero variance.
 
 Read [`AGENTS.md`](AGENTS.md), [`GREENFIELD_EXECUTION.md`](GREENFIELD_EXECUTION.md), the eight files under [`docs/greenfield`](docs/greenfield), and the accepted decisions under [`docs/decisions`](docs/decisions) before implementation.

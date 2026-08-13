@@ -25,6 +25,10 @@ This pack is the set of procedures, contracts, checklists, and matrices those hu
 
 No real-project, customer, UAT, reconciliation, close, restore, deployment, or buyer-acceptance gate is marked passed anywhere in this pack. Every such gate remains pending real evidence.
 
+### GF-010 hosted workflow status
+
+The hosted application now presents the pilot as **one coherent project workspace** in business language (نظرة عامة، رأس المال، الأصول العقارية، التكاليف والنقدية، الإيراد والبيع، الإغلاق والتوزيع، كشوف الشركاء، الاستيراد والمطابقة، الرقابة والجاهزية). Every displayed number comes from canonical read models; all mutations use the canonical RPC/command path. This is an operator-readiness improvement — it does **not** change the evidence gates below. The permanent demo (DEMO-RE-2026-001) remains synthetic; the real-world evidence section stays explicitly not satisfied for it. Phase 2 and Phase 3 exit gates remain **not passed** until real project source data is imported and reproduced at zero unexplained variance.
+
 ## What this pack is not
 
 - Not a strategy memo: every gate has an owner, evidence, and deterministic pass/fail.
