@@ -13,7 +13,21 @@ permissions:
 jobs:
   db-replay:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Checkout hardening PR
         uses: actions/checkout@v4
@@ -22,4 +36,8 @@ jobs:
       - name: Run canonical migration replay and DB suites
         env:
           GITHUB_ACTIONS: 'true'
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGPASSWORD: postgres
         run: bash scripts/db-test.sh
