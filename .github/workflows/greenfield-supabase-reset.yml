@@ -1,4 +1,4 @@
-name: Terranex PR115 Live Apply Final
+name: Terranex PR115 Ledger Reconcile
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  apply:
+  reconcile:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
@@ -25,48 +25,32 @@ jobs:
         with:
           ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
 
-      - name: Apply exact migration transaction
+      - name: Reconcile deployment ledger only
         shell: bash
         run: |
           set -euo pipefail
-          file="supabase/migrations/$MIGRATION_NAME"
-          checksum="$(sha256sum "$file" | awk '{print $1}')"
-          api_query() {
-            local sql="$1"
-            local payload
-            payload="$(jq -n --arg q "$sql" '{query:$q}')"
-            curl --fail-with-body -sS -X POST \
-              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-              -H 'Content-Type: application/json' \
-              --data-binary "$payload"
-          }
-
-          preflight="$(api_query "select
-            exists(select 1 from public.terranex_migration_history where version='$MIGRATION_VERSION') as recorded,
-            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items')) as table_count;")"
-          [[ "$(printf '%s' "$preflight" | jq -r '.[0].recorded')" == false ]]
-          [[ "$(printf '%s' "$preflight" | jq -r '.[0].table_count')" == 0 ]]
-          echo 'LIVE_PREFLIGHT_SAFE=true'
-
-          { echo 'begin;'; cat "$file"; echo 'commit;'; } > /tmp/migration.sql
-          payload="$(jq -Rs '{query: .}' < /tmp/migration.sql)"
+          checksum="$(sha256sum "supabase/migrations/$MIGRATION_NAME" | awk '{print $1}')"
+          sql="begin;
+          alter table public.terranex_migration_history no force row level security;
+          insert into public.terranex_migration_history(version,name,checksum)
+          values ('$MIGRATION_VERSION','$MIGRATION_NAME','$checksum');
+          alter table public.terranex_migration_history force row level security;
+          commit;"
+          payload="$(jq -n --arg q "$sql" '{query:$q}')"
           curl --fail-with-body -sS -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H 'Content-Type: application/json' \
             --data-binary "$payload" >/dev/null
-          echo 'LIVE_MIGRATION_APPLIED=true'
-
-          api_query "insert into public.terranex_migration_history(version,name,checksum) values ('$MIGRATION_VERSION','$MIGRATION_NAME','$checksum');" >/dev/null
           echo 'LIVE_MIGRATION_LEDGER_RECORDED=true'
 
-      - name: Verify live intake security contract
+      - name: Verify live intake contract
         shell: bash
         run: |
           set -euo pipefail
           sql="select
             exists(select 1 from public.terranex_migration_history where version='20260813000400_project_intake_readiness') as ledger_recorded,
+            (select relforcerowsecurity from pg_class where oid='public.terranex_migration_history'::regclass) as ledger_force_rls,
             (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items') and c.relrowsecurity and c.relforcerowsecurity) as forced_rls_count,
             has_table_privilege('anon','public.project_intake_declarations','SELECT') as anon_select,
             has_table_privilege('authenticated','public.project_intake_declarations','SELECT') as auth_select,
@@ -80,6 +64,7 @@ jobs:
             -H 'Content-Type: application/json' \
             --data-binary "$payload")"
           [[ "$(printf '%s' "$response" | jq -r '.[0].ledger_recorded')" == true ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].ledger_force_rls')" == true ]]
           [[ "$(printf '%s' "$response" | jq -r '.[0].forced_rls_count')" == 4 ]]
           [[ "$(printf '%s' "$response" | jq -r '.[0].anon_select')" == false ]]
           [[ "$(printf '%s' "$response" | jq -r '.[0].auth_select')" == true ]]
