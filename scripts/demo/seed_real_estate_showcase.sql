@@ -18,7 +18,7 @@ exception when others then
 end $$;
 
 create or replace function pg_temp.terranex_seed_showcase()
-returns text language plpgsql as $$
+returns text language plpgsql as $seed$
 declare
   v_checker uuid;
   v_maker uuid;
@@ -574,6 +574,6 @@ begin
   end if;
 
   return 'DEMO_CREATED';
-end $$;
+end $seed$;
 
 select pg_temp.terranex_seed_showcase() as demo_seed_result;
