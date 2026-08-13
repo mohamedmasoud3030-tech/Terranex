@@ -1,4 +1,4 @@
-name: Terranex Activation Repair Patch v2
+name: Terranex Activation Repair Patch v3
 
 on:
   push:
@@ -20,54 +20,12 @@ jobs:
         with:
           ref: fix/activation-migration-ledger
 
-      - name: Apply focused activation corrections
+      - name: Apply and validate focused patch
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('.github/pilot-activation/activate.sh')
-          s = p.read_text()
-
-          old = 'curl --fail-with-body -sS -X POST'
-          new = 'curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 -X POST'
-          assert s.count(old) == 1, f'POST curl count={s.count(old)}'
-          s = s.replace(old, new)
-
-          old = 'PROJECT_JSON="$(curl --fail-with-body -sS \\\n'
-          new = 'PROJECT_JSON="$(curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \\\n'
-          assert s.count(old) == 1, f'project curl count={s.count(old)}'
-          s = s.replace(old, new)
-
-          old = 'qbool secdef_search_path_boundary "select to_jsonb(count(*) = 0 from pg_proc p where p.prosecdef and p.pronamespace=\'public\'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like \'search_path=pg_catalog,public\')));"'
-          new = 'qbool secdef_search_path_boundary "select to_jsonb((select count(*) from pg_proc p where p.prosecdef and p.pronamespace=\'public\'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like \'search_path=pg_catalog,public\'))) = 0);"'
-          assert s.count(old) == 1, f'secdef count={s.count(old)}'
-          s = s.replace(old, new)
-
-          start = s.index('# Security advisors remain an independent verification signal.')
-          end = s.index('\nSECURITY_OK=false', start)
-          advisor = '''# Security advisors are read through the same Management API used for SQL.
-ADVISORS_RC=1
-note 'Running Supabase security advisors through Management API ...'
-if curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \\
-  "https://api.supabase.com/v1/projects/$REF/advisors/security" \\
-  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \\
-  -o "$TMP/advisors.json"; then
-  ADVISOR_ERROR_COUNT="$(jq '[.lints[]? | select((((.level // .severity // "") | ascii_downcase)) == "error")] | length' "$TMP/advisors.json" 2>/dev/null || echo -1)"
-  if [[ "$ADVISOR_ERROR_COUNT" == 0 ]]; then
-    ADVISORS_RC=0
-    note '  security advisors: no error-level findings'
-  else
-    warn "security advisors report $ADVISOR_ERROR_COUNT error-level finding(s)"
-  fi
-else
-  warn 'security advisor Management API request failed'
-fi
-'''
-          s = s[:start] + advisor + s[end:]
-          p.write_text(s)
-          PY
-
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnAgPSBQYXRoKCIuZ2l0aHViL3BpbG90LWFjdGl2YXRpb24vYWN0aXZhdGUuc2giKQpzID0gcC5yZWFkX3RleHQoKQoKb2xkID0gImN1cmwgLS1mYWlsLXdpdGgtYm9keSAtc1MgLVggUE9TVCIKbmV3ID0gImN1cmwgLS1mYWlsLXdpdGgtYm9keSAtc1MgLS1yZXRyeSAzIC0tcmV0cnktYWxsLWVycm9ycyAtLXJldHJ5LWRlbGF5IDEgLS1jb25uZWN0LXRpbWVvdXQgMTAgLS1tYXgtdGltZSA0NSAtWCBQT1NUIgphc3NlcnQgcy5jb3VudChvbGQpID09IDEsIGYiUE9TVCBjdXJsIGNvdW50PXtzLmNvdW50KG9sZCl9IgpzID0gcy5yZXBsYWNlKG9sZCwgbmV3KQoKb2xkID0gJ1BST0pFQ1RfSlNPTj0iJChjdXJsIC0tZmFpbC13aXRoLWJvZHkgLXNTIFxcXG4nCm5ldyA9ICdQUk9KRUNUX0pTT049IiQoY3VybCAtLWZhaWwtd2l0aC1ib2R5IC1zUyAtLXJldHJ5IDMgLS1yZXRyeS1hbGwtZXJyb3JzIC0tcmV0cnktZGVsYXkgMSAtLWNvbm5lY3QtdGltZW91dCAxMCAtLW1heC10aW1lIDQ1IFxcXG4nCmFzc2VydCBzLmNvdW50KG9sZCkgPT0gMSwgZiJwcm9qZWN0IGN1cmwgY291bnQ9e3MuY291bnQob2xkKX0iCnMgPSBzLnJlcGxhY2Uob2xkLCBuZXcpCgpvbGQgPSAnJydxYm9vbCBzZWNkZWZfc2VhcmNoX3BhdGhfYm91bmRhcnkgInNlbGVjdCB0b19qc29uYihjb3VudCgqKSA9IDAgZnJvbSBwZ19wcm9jIHAgd2hlcmUgcC5wcm9zZWNkZWYgYW5kIHAucHJvbmFtZXNwYWNlPSdwdWJsaWMnOjpyZWduYW1lc3BhY2UgYW5kIChwLnByb2NvbmZpZyBpcyBudWxsIG9yIG5vdCBleGlzdHMgKHNlbGVjdCAxIGZyb20gdW5uZXN0KHAucHJvY29uZmlnKSBwYyB3aGVyZSBwYyBsaWtlICdzZWFyY2hfcGF0aD1wZ19jYXRhbG9nLHB1YmxpYycpKSk7IicnJwpuZXcgPSAnJydxYm9vbCBzZWNkZWZfc2VhcmNoX3BhdGhfYm91bmRhcnkgInNlbGVjdCB0b19qc29uYigoc2VsZWN0IGNvdW50KCopIGZyb20gcGdfcHJvYyBwIHdoZXJlIHAucHJvc2VjZGVmIGFuZCBwLnByb25hbWVzcGFjZT0ncHVibGljJzo6cmVnbmFtZXNwYWNlIGFuZCAocC5wcm9jb25maWcgaXMgbnVsbCBvciBub3QgZXhpc3RzIChzZWxlY3QgMSBmcm9tIHVubmVzdChwLnByb2NvbmZpZykgcGMgd2hlcmUgcGMgbGlrZSAnc2VhcmNoX3BhdGg9cGdfY2F0YWxvZyxwdWJsaWMnKSkpID0gMCk7IicnJwphc3NlcnQgcy5jb3VudChvbGQpID09IDEsIGYic2VjZGVmIGNvdW50PXtzLmNvdW50KG9sZCl9IgpzID0gcy5yZXBsYWNlKG9sZCwgbmV3KQoKc3RhcnQgPSBzLmluZGV4KCIjIFNlY3VyaXR5IGFkdmlzb3JzIHJlbWFpbiBhbiBpbmRlcGVuZGVudCB2ZXJpZmljYXRpb24gc2lnbmFsLiIpCmVuZCA9IHMuaW5kZXgoIlxuU0VDVVJJVFlfT0s9ZmFsc2UiLCBzdGFydCkKYWR2aXNvciA9ICcnJyMgU2VjdXJpdHkgYWR2aXNvcnMgYXJlIHJlYWQgdGhyb3VnaCB0aGUgc2FtZSBNYW5hZ2VtZW50IEFQSSB1c2VkIGZvciBTUUwuCkFEVklTT1JTX1JDPTEKbm90ZSAnUnVubmluZyBTdXBhYmFzZSBzZWN1cml0eSBhZHZpc29ycyB0aHJvdWdoIE1hbmFnZW1lbnQgQVBJIC4uLicKaWYgY3VybCAtLWZhaWwtd2l0aC1ib2R5IC1zUyAtLXJldHJ5IDMgLS1yZXRyeS1hbGwtZXJyb3JzIC0tcmV0cnktZGVsYXkgMSAtLWNvbm5lY3QtdGltZW91dCAxMCAtLW1heC10aW1lIDQ1IFxcCiAgImh0dHBzOi8vYXBpLnN1cGFiYXNlLmNvbS92MS9wcm9qZWN0cy8kUkVGL2Fkdmlzb3JzL3NlY3VyaXR5IiBcXAogIC1IICJBdXRob3JpemF0aW9uOiBCZWFyZXIgJFNVUEFCQVNFX0FDQ0VTU19UT0tFTiIgXFwKICAtbyAiJFRNUC9hZHZpc29ycy5qc29uIjsgdGhlbgogIEFEVklTT1JfRVJST1JfQ09VTlQ9IiQoanEgJ1subGludHNbXT8gfCBzZWxlY3QoKCgoLmxldmVsIC8vIC5zZXZlcml0eSAvLyAiIikgfCBhc2NpaV9kb3duY2FzZSkpID09ICJlcnJvciIpXSB8IGxlbmd0aCcgIiRUTVAvYWR2aXNvcnMuanNvbiIgMj4vZGV2L251bGwgfHwgZWNobyAtMSkiCiAgaWYgW1sgIiRBRFZJU09SX0VSUk9SX0NPVU5UIiA9PSAwIF1dOyB0aGVuCiAgICBBRFZJU09SU19SQz0wCiAgICBub3RlICcgIHNlY3VyaXR5IGFkdmlzb3JzOiBubyBlcnJvci1sZXZlbCBmaW5kaW5ncycKICBlbHNlCiAgICB3YXJuICJzZWN1cml0eSBhZHZpc29ycyByZXBvcnQgJEFEVklTT1JfRVJST1JfQ09VTlQgZXJyb3ItbGV2ZWwgZmluZGluZyhzKSIKICBmaQplbHNlCiAgd2FybiAnc2VjdXJpdHkgYWR2aXNvciBNYW5hZ2VtZW50IEFQSSByZXF1ZXN0IGZhaWxlZCcKZmkKJycnCnMgPSBzWzpzdGFydF0gKyBhZHZpc29yICsgc1tlbmQ6XQpwLndyaXRlX3RleHQocykK' | base64 -d > /tmp/patch.py
+          python3 /tmp/patch.py
           bash -n .github/pilot-activation/activate.sh
           git diff --check
 
