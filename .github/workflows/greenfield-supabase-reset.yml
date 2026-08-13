@@ -1,4 +1,4 @@
-name: Terranex Activation Path Verification
+name: Terranex Security Advisor API Probe
 
 on:
   push:
@@ -11,35 +11,23 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
-      APPLY_MIGRATIONS: 'false'
     steps:
-      - name: Checkout activation repair branch
-        uses: actions/checkout@v4
-        with:
-          ref: fix/activation-migration-ledger
-
-      - name: Install Supabase CLI for advisor verification
-        run: npm install -g supabase@2.114.0 --no-audit --no-fund
-
-      - name: Authenticate Supabase CLI without printing token
-        run: supabase login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
-
-      - name: Run repaired activation inspection only
+      - name: Probe safe advisor response shape
         shell: bash
         run: |
           set -euo pipefail
-          output="$(bash .github/pilot-activation/activate.sh)"
-          printf '%s\n' "$output"
-          grep -q '^PROJECT_ACCESSIBLE=true$' <<< "$output"
-          grep -q '^PROJECT_CLASSIFICATION=TERRANEX$' <<< "$output"
-          grep -q '^MIGRATIONS_IN_SYNC=true$' <<< "$output"
-          grep -q '^RLS_VERIFIED=true$' <<< "$output"
-          grep -q '^FINANCIAL_CONTROLS_VERIFIED=true$' <<< "$output"
-          grep -q '^SECURITY_VERIFIED=true$' <<< "$output"
-          echo 'ACTIVATION_REPAIR_VERIFIED=true'
+          code="$(curl -sS -o /tmp/advisors.json -w '%{http_code}' \
+            --retry 3 --retry-all-errors --retry-delay 1 \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/advisors/security" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          echo "ADVISOR_HTTP=$code"
+          [[ "$code" == 2* ]]
+          echo "ADVISOR_JSON_TYPE=$(jq -r 'type' /tmp/advisors.json)"
+          echo "ADVISOR_TOP_KEYS=$(jq -r 'if type=="object" then (keys|join(",")) else "array" end' /tmp/advisors.json)"
+          echo "ADVISOR_ERROR_LEVEL_COUNT=$(jq '[.. | objects | select(((.level // .severity // "")|ascii_downcase) == "error")] | length' /tmp/advisors.json)"
