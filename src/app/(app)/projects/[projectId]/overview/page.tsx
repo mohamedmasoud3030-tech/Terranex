@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
@@ -37,6 +37,11 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
   const { projectId } = await params;
   const project = await getProject(projectId);
   if (!project) notFound();
+  // Agriculture projects do not have a Real Estate overview; the
+  // canonical sector landing is the agriculture workspace.
+  if (project.sector === 'AGRICULTURE') {
+    redirect(`/projects/${projectId}/agriculture`);
+  }
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
   const money = (value: string | number | bigint | null | undefined) => formatMinorUnits(value ?? '0', currency);

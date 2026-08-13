@@ -34,9 +34,11 @@ describe('GF-011 nine workspace sections share chrome', () => {
 });
 
 describe('GF-010 workspace navigation contract', () => {
-  it('exposes exactly the nine business sections', () => {
+  it('exposes exactly the nine Real Estate business sections', () => {
+    const realEstateBlock = workspaceNav.match(/REAL_ESTATE_SECTIONS[\s\S]*?\]\s*;/);
+    expect(realEstateBlock).not.toBeNull();
     const ids = Array.from(
-      workspaceNav.matchAll(/id: '([a-z-]+)'/g),
+      realEstateBlock![0].matchAll(/id: '([a-z-]+)'/g),
       (match) => match[1],
     );
     expect(ids).toEqual([
@@ -50,6 +52,16 @@ describe('GF-010 workspace navigation contract', () => {
       'opening',
       'controls',
     ]);
+  });
+
+  it('exposes a single Agriculture business section that is not a Real Estate one', () => {
+    const agriBlock = workspaceNav.match(/AGRICULTURE_SECTIONS[\s\S]*?\]\s*;/);
+    expect(agriBlock).not.toBeNull();
+    const ids = Array.from(
+      agriBlock![0].matchAll(/id: '([a-z-]+)'/g),
+      (match) => match[1],
+    );
+    expect(ids).toEqual(['agriculture']);
   });
 
   it('does not expose engineering slice names to operators', () => {
