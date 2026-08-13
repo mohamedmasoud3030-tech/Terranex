@@ -1,4 +1,4 @@
-name: Terranex Migration Ledger Ownership
+name: Terranex Migration Ledger Insert Diagnostic
 
 on:
   push:
@@ -11,30 +11,63 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  diagnose:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      MIGRATION_VERSION: '20260813000400_project_intake_readiness'
+      MIGRATION_NAME: '20260813000400_project_intake_readiness.sql'
     steps:
-      - name: Inspect safe ledger execution identity
+      - name: Checkout exact PR 115 head
+        uses: actions/checkout@v4
+        with:
+          ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
+
+      - name: Diagnose ledger insert inside rollback-only transaction
         shell: bash
         run: |
           set -euo pipefail
-          sql="select current_user,
-            pg_get_userbyid(c.relowner) as ledger_owner,
-            r.rolsuper as current_superuser,
-            r.rolbypassrls as current_bypassrls,
-            has_table_privilege(current_user,'public.terranex_migration_history','INSERT') as can_insert,
-            c.relrowsecurity as rls_enabled,
-            c.relforcerowsecurity as rls_forced
-          from pg_class c join pg_roles r on r.rolname=current_user
-          where c.oid='public.terranex_migration_history'::regclass;"
-          payload="$(jq -n --arg q "$sql" '{query:$q}')"
-          response="$(curl --fail-with-body -sS -X POST \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$payload")"
-          printf '%s' "$response" | jq -r '.[0] | "CURRENT_USER=\(.current_user)\nLEDGER_OWNER=\(.ledger_owner)\nCURRENT_SUPERUSER=\(.current_superuser)\nCURRENT_BYPASSRLS=\(.current_bypassrls)\nCAN_INSERT=\(.can_insert)\nRLS_ENABLED=\(.rls_enabled)\nRLS_FORCED=\(.rls_forced)"'
+          checksum="$(sha256sum "supabase/migrations/$MIGRATION_NAME" | awk '{print $1}')"
+
+          query() {
+            local sql="$1" out="$2"
+            local payload
+            payload="$(jq -n --arg q "$sql" '{query:$q}')"
+            curl -sS -o "$out" -w '%{http_code}' -X POST \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data-binary "$payload"
+          }
+
+          state_sql="select
+            exists(select 1 from public.terranex_migration_history where version='$MIGRATION_VERSION') as target_recorded,
+            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items')) as intake_table_count,
+            (select count(*) from pg_trigger where tgrelid='public.terranex_migration_history'::regclass and not tgisinternal) as ledger_user_trigger_count;"
+          code="$(query "$state_sql" /tmp/state.json)"
+          [[ "$code" == 2* ]]
+          recorded="$(jq -r '.[0].target_recorded' /tmp/state.json)"
+          echo "TARGET_RECORDED_BEFORE=$recorded"
+          echo "INTAKE_TABLE_COUNT=$(jq -r '.[0].intake_table_count' /tmp/state.json)"
+          echo "LEDGER_USER_TRIGGER_COUNT=$(jq -r '.[0].ledger_user_trigger_count' /tmp/state.json)"
+
+          if [[ "$recorded" == true ]]; then
+            echo 'LEDGER_INSERT_PROBE_SKIPPED=already_recorded'
+            exit 0
+          fi
+
+          probe_sql="begin;
+          insert into public.terranex_migration_history(version,name,checksum)
+          values ('$MIGRATION_VERSION','$MIGRATION_NAME','$checksum');
+          rollback;"
+          probe_code="$(query "$probe_sql" /tmp/probe.json)"
+          echo "LEDGER_INSERT_PROBE_HTTP=$probe_code"
+          if [[ "$probe_code" == 2* ]]; then
+            echo 'LEDGER_INSERT_PROBE_OK=true'
+            exit 0
+          fi
+
+          jq -r '[.message // empty, .error // empty, .details // empty, .hint // empty, .code // empty] | map(select((type == "string") and length>0)) | .[]' /tmp/probe.json | head -n 10
+          exit 1
