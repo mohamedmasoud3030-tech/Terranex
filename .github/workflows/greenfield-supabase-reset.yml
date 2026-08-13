@@ -1,4 +1,4 @@
-name: Terranex PR115 Live Migration State
+name: Terranex PR115 Verified Live Migration
 
 on:
   push:
@@ -11,31 +11,86 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      MIGRATION_VERSION: '20260813000400_project_intake_readiness'
+      MIGRATION_NAME: '20260813000400_project_intake_readiness.sql'
     steps:
-      - name: Inspect safe live migration state
+      - name: Checkout exact tested PR 115 head
+        uses: actions/checkout@v4
+        with:
+          ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
+
+      - name: Preflight and apply exact migration
         shell: bash
         run: |
           set -euo pipefail
           test -n "$SUPABASE_ACCESS_TOKEN"
-          sql="select
+          file="supabase/migrations/$MIGRATION_NAME"
+          test -f "$file"
+          checksum="$(sha256sum "$file" | awk '{print $1}')"
+
+          api_query() {
+            local sql="$1"
+            local payload
+            payload="$(jq -n --arg q "$sql" '{query:$q}')"
+            curl --fail-with-body -sS -X POST \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data-binary "$payload"
+          }
+
+          preflight="$(api_query "select
             to_regclass('public.terranex_migration_history') is not null as ledger_exists,
-            case when to_regclass('public.terranex_migration_history') is null then false else exists(select 1 from public.terranex_migration_history where version='20260813000400_project_intake_readiness') end as target_recorded,
-            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items')) as intake_table_count;"
+            exists(select 1 from public.terranex_migration_history where version='$MIGRATION_VERSION') as target_recorded,
+            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items')) as intake_table_count;")"
+          [[ "$(printf '%s' "$preflight" | jq -r '.[0].ledger_exists')" == true ]]
+          [[ "$(printf '%s' "$preflight" | jq -r '.[0].target_recorded')" == false ]]
+          [[ "$(printf '%s' "$preflight" | jq -r '.[0].intake_table_count')" == 0 ]]
+          echo 'LIVE_PREFLIGHT_SAFE=true'
+
+          {
+            echo 'begin;'
+            cat "$file"
+            printf "\ninsert into public.terranex_migration_history(version,name,checksum) values ('%s','%s','%s');\n" "$MIGRATION_VERSION" "$MIGRATION_NAME" "$checksum"
+            echo 'commit;'
+          } > /tmp/apply.sql
+          apply_payload="$(jq -Rs '{query: .}' < /tmp/apply.sql)"
+          curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$apply_payload" >/dev/null
+          echo 'LIVE_MIGRATION_APPLIED=true'
+
+      - name: Verify live intake security contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          sql="select
+            exists(select 1 from public.terranex_migration_history where version='20260813000400_project_intake_readiness') as ledger_recorded,
+            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items') and c.relrowsecurity and c.relforcerowsecurity) as forced_rls_count,
+            has_table_privilege('anon','public.project_intake_declarations','SELECT') as anon_select,
+            has_table_privilege('authenticated','public.project_intake_declarations','SELECT') as auth_select,
+            has_function_privilege('anon','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') as anon_command,
+            has_function_privilege('authenticated','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') as auth_command,
+            has_function_privilege('authenticated','public.intake_require_project(uuid,uuid)','EXECUTE') as internal_helper_exposed;"
           payload="$(jq -n --arg q "$sql" '{query:$q}')"
           response="$(curl --fail-with-body -sS -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H 'Content-Type: application/json' \
             --data-binary "$payload")"
-          ledger="$(printf '%s' "$response" | jq -r '.[0].ledger_exists // false')"
-          recorded="$(printf '%s' "$response" | jq -r '.[0].target_recorded // false')"
-          count="$(printf '%s' "$response" | jq -r '.[0].intake_table_count // -1')"
-          echo "LEDGER_EXISTS=$ledger"
-          echo "TARGET_MIGRATION_RECORDED=$recorded"
-          echo "INTAKE_TABLE_COUNT=$count"
+          [[ "$(printf '%s' "$response" | jq -r '.[0].ledger_recorded')" == true ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].forced_rls_count')" == 4 ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].anon_select')" == false ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].auth_select')" == true ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].anon_command')" == false ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].auth_command')" == true ]]
+          [[ "$(printf '%s' "$response" | jq -r '.[0].internal_helper_exposed')" == false ]]
+          echo 'LIVE_INTAKE_SECURITY_CONTRACT_VERIFIED=true'
