@@ -124,7 +124,7 @@ fi
 
 # Real Estate row must survive the upgrade untouched.
 SURVIVED=$(psql_cmd "$UPGRADE_DB" "
-  select (count(*) = 1 and sector = 'REAL_ESTATE')::text
+  select (count(*) = 1 and bool_and(sector = 'REAL_ESTATE'))::text
   from public.investment_projects
   where id = '30000000-0000-4000-8000-000000000001'::uuid
 ")
