@@ -43,6 +43,7 @@ declare
   v_phase uuid;
   v_milestone uuid;
   v_acq_obligation uuid;
+  v_closing_obligation uuid;
   v_dev_obligation uuid;
   v_budget uuid;
   v_valuation_a uuid;
@@ -274,10 +275,16 @@ begin
       'بدء الفحص القانوني والفني','DEMO-DD-PACK-A17','demo-state-a-dd')$$, v_org, v_asset_a));
 
   perform pg_temp.terranex_demo_run(v_maker, format(
-    $$select public.create_cost_obligation(%L,%L,%L,'ثمن الأرض وتكاليف إقفال الاستحواذ – القطاع A',
-      1890000000,'EGP',date '2026-07-09','CAPITALIZABLE_WIP','demo-obligation-acq-001')$$,
+    $$select public.create_cost_obligation(%L,%L,%L,'ثمن شراء الأرض – القطاع A',
+      1800000000,'EGP',date '2026-07-09','CAPITALIZABLE_WIP','demo-obligation-acq-001')$$,
     v_org, v_project, v_supplier));
   select id into v_acq_obligation from public.cost_obligations where organization_id=v_org and idempotency_key='demo-obligation-acq-001';
+
+  perform pg_temp.terranex_demo_run(v_maker, format(
+    $$select public.create_cost_obligation(%L,%L,%L,'رسوم وإقفال الاستحواذ – القطاع A',
+      90000000,'EGP',date '2026-07-09','CAPITALIZABLE_WIP','demo-obligation-closing-001')$$,
+    v_org, v_project, v_supplier));
+  select id into v_closing_obligation from public.cost_obligations where organization_id=v_org and idempotency_key='demo-obligation-closing-001';
 
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.record_property_acquisition(%L,%L,%L,'DEMO-ACQ-2026-017',1800000000,90000000,'EGP',
@@ -337,8 +344,18 @@ begin
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.authorize_cost_obligation(%L,%L,'demo-authorize-acq-001')$$, v_org, v_acq_obligation));
   perform pg_temp.terranex_demo_run(v_checker, format(
-    $$select public.pay_cost_obligation(%L,%L,%L,1890000000,date '2026-07-10','demo-pay-acq-001')$$,
+    $$select public.pay_cost_obligation(%L,%L,%L,1800000000,date '2026-07-10','demo-pay-acq-001')$$,
     v_org, v_acq_obligation, v_cash));
+
+  perform pg_temp.terranex_demo_run(v_maker, format(
+    $$select public.classify_property_cost(%L,%L,%L,%L,null,'ACQUISITION',
+      'سياسة رسملة رسوم الإقفال ضمن DEVELOPMENT_WIP','demo-classify-closing-001')$$,
+    v_org, v_closing_obligation, v_asset_a, v_parcel_a));
+  perform pg_temp.terranex_demo_run(v_checker, format(
+    $$select public.authorize_cost_obligation(%L,%L,'demo-authorize-closing-001')$$, v_org, v_closing_obligation));
+  perform pg_temp.terranex_demo_run(v_checker, format(
+    $$select public.pay_cost_obligation(%L,%L,%L,90000000,date '2026-07-10','demo-pay-closing-001')$$,
+    v_org, v_closing_obligation, v_cash));
 
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.transition_development_phase(%L,%L,'PLANNED','ACTIVE','بدء أعمال تجهيز الموقع','demo-phase-active-001')$$,
@@ -569,7 +586,7 @@ begin
   ) then
     raise exception 'demo contains an unbalanced journal batch';
   end if;
-  if (select lifecycle_state from public.property_assets where id=v_asset_b) <> 'DUE_DILIGENCE' then
+  if public.s3_current_property_state(v_asset_b) <> 'DUE_DILIGENCE' then
     raise exception 'demo expansion asset must remain in DUE_DILIGENCE';
   end if;
 
