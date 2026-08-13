@@ -5,8 +5,8 @@
 -- pgcrypto layouts.
 --
 -- Keep the locked search_path. Qualify only the pgcrypto dependency in every
--- existing public function that still contains an unqualified digest call.
--- CREATE OR REPLACE preserves function identity, ownership and grants.
+-- existing public ordinary function that still contains an unqualified digest
+-- call. CREATE OR REPLACE preserves function identity, ownership and grants.
 
 do $pgcrypto_compat$
 declare
@@ -30,6 +30,7 @@ begin
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
+      and p.prokind = 'f'
       and pg_get_functiondef(p.oid)
         ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\('
     order by p.oid::regprocedure::text
