@@ -43,7 +43,7 @@ sed 's/create role authenticated nologin; create role anon nologin;//' \
 # Exact merged S5/S6 boundary: every migration except the S7 family.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    202608120002*.sql) continue ;;
+    202608120002*.sql|20260813*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done
