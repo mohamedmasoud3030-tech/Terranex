@@ -7,6 +7,7 @@ import {
   approveCloseExceptionAction,
   approveCloseRunAction,
   approveCorrectionAction,
+  createAccountingPeriodAction,
   executeCorrectionAction,
   prepareCloseRunAction,
   reopenPeriodAction,
@@ -46,6 +47,36 @@ function useFormActionState(action: (state: ActionState, fd: FormData) => Promis
   const [state, dispatch] = useActionState(action, initial);
   const { pending } = useFormStatus();
   return { state, dispatch, pending };
+}
+
+export function CreateAccountingPeriodForm({
+  organizationId, projectId, startDate, endDate, disabled,
+}: {
+  organizationId: string;
+  projectId: string;
+  startDate?: string;
+  endDate?: string;
+  disabled?: boolean;
+}) {
+  const [state, action] = useActionState(createAccountingPeriodAction, initial);
+  return (
+    <form action={action} className="stack">
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="projectId" value={projectId} />
+      <label>
+        <span>بداية الفترة</span>
+        <input type="date" name="startDate" required defaultValue={startDate} />
+      </label>
+      <label>
+        <span>نهاية الفترة</span>
+        <input type="date" name="endDate" required defaultValue={endDate} />
+      </label>
+      <p className="muted">الفترة المفتوحة هي النافذة الوحيدة المسموح بالترحيل داخلها، بما في ذلك القيد الافتتاحي.</p>
+      <ErrorBanner state={state} />
+      <button className="button" type="submit" disabled={disabled}>فتح فترة محاسبية</button>
+      {disabled && <p className="muted">الإجراء متاح لمالك المنظمة فقط.</p>}
+    </form>
+  );
 }
 
 export function PrepareCloseForm({

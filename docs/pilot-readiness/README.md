@@ -47,6 +47,7 @@ No real-project, customer, UAT, reconciliation, close, restore, deployment, or b
 | [`10_COMMERCIAL_HANDOFF_REQUIREMENTS.md`](10_COMMERCIAL_HANDOFF_REQUIREMENTS.md) | What must be agreed before the paid pilot begins |
 | [`11_GA_READINESS_BACKLOG.md`](11_GA_READINESS_BACKLOG.md) | Prioritized Phase 5 work packages |
 | [`12_PRE_PILOT_ACTIVATION_AND_INTAKE_STATUS.md`](12_PRE_PILOT_ACTIVATION_AND_INTAKE_STATUS.md) | Pre-pilot environment classification, provisioning boundary, and missing-value inventory (names only) |
+| [`13_GUIDED_REAL_PROJECT_INTAKE.md`](13_GUIDED_REAL_PROJECT_INTAKE.md) | Guided Arabic intake overlay over S0–S7; ready to receive real data, Phase 2 still not passed |
 | [`templates/`](templates/) | Blank preparation worksheets (no customer data) |
 
 Validation scripts live in `scripts/pilot-readiness/` (zero-dependency bash; they inspect the repository only and never read secret values).

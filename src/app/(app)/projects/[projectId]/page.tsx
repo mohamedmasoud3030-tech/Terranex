@@ -42,6 +42,10 @@ export default async function ProjectShell({
         <h2>مساحة عمل المشروع</h2>
         <p>{project.description || 'لم يُضف وصف للمشروع بعد.'}</p>
         <nav className="grid">
+          <Link className="card" href={`/projects/${projectId}/intake`}>
+            <strong>إدخال المشروع الحقيقي</strong>
+            <p className="muted">مسار موجّه: المستثمرون، العقار، النقدية، الأرصدة الافتتاحية، التحقق</p>
+          </Link>
           <Link className="card" href={`/projects/${projectId}/terms`}>
             <strong>الشروط والاتفاقية</strong>
             <p className="muted">

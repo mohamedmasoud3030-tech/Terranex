@@ -3,6 +3,7 @@ import {
   approveCloseSchema,
   approveCorrectionSchema,
   approveExceptionSchema,
+  createAccountingPeriodSchema,
   executeCorrectionSchema,
   prepareCloseSchema,
   reopenSchema,
@@ -18,6 +19,21 @@ const base = {
 };
 
 describe('close schema', () => {
+  it('accepts a valid open-period payload and rejects inverted dates', () => {
+    expect(createAccountingPeriodSchema.safeParse({
+      organizationId: base.organizationId,
+      projectId: base.projectId,
+      startDate: '2026-03-01',
+      endDate: '2026-03-31',
+    }).success).toBe(true);
+    expect(createAccountingPeriodSchema.safeParse({
+      organizationId: base.organizationId,
+      projectId: base.projectId,
+      startDate: '2026-03-31',
+      endDate: '2026-03-01',
+    }).success).toBe(false);
+  });
+
   it('accepts a valid prepare-close payload', () => {
     const parsed = prepareCloseSchema.safeParse(base);
     expect(parsed.success).toBe(true);

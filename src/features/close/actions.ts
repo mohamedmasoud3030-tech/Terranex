@@ -7,6 +7,7 @@ import {
   approveCloseSchema,
   approveCorrectionSchema,
   approveExceptionSchema,
+  createAccountingPeriodSchema,
   executeCorrectionSchema,
   prepareCloseSchema,
   reopenSchema,
@@ -59,6 +60,18 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('no open accounting period covers')) {
     return fail('لا توجد فترة محاسبية مفتوحة لتاريخ الترحيل هذا.');
   }
+  if (text.includes('an open period already exists')) {
+    return fail('توجد فترة مفتوحة بالفعل لهذا المشروع. أغلقها أو استخدمها.');
+  }
+  if (text.includes('period dates overlap')) {
+    return fail('تواريخ الفترة تتقاطع مع فترة قائمة.');
+  }
+  if (text.includes('invalid period boundaries')) {
+    return fail('حدود الفترة غير صحيحة.');
+  }
+  if (text.includes('organization owner required')) {
+    return fail('إنشاء الفترة المحاسبية يتطلب صلاحية مالك المنظمة.');
+  }
   return fail(fallback);
 }
 
@@ -66,6 +79,21 @@ async function callRpc(functionName: string, args: Record<string, unknown>) {
   const s = await createClient();
   // Supabase rpc returns data with snake_case keys; cast through unknown.
   return s.rpc(functionName, args) as unknown as Promise<{ data: unknown; error: { message: string } | null }>;
+}
+
+export async function createAccountingPeriodAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = createAccountingPeriodSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات الفترة غير صحيحة');
+  const input = parsed.data;
+  const { error } = await callRpc('s6_create_accounting_period', {
+    p_organization_id: input.organizationId,
+    p_project_id: input.projectId,
+    p_start_date: input.startDate,
+    p_end_date: input.endDate,
+  });
+  if (error) return domainError(error.message, 'تعذّر إنشاء الفترة المحاسبية');
+  refreshProject(input.projectId);
+  return {};
 }
 
 export async function prepareCloseRunAction(_: ActionState, formData: FormData): Promise<ActionState> {

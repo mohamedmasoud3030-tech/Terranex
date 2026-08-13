@@ -5,6 +5,21 @@ const idempotencyKey = z.string().trim().min(8, 'مفتاح إعادة المح�
 
 const uuid = z.string().uuid();
 
+export const createAccountingPeriodSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  startDate: z.string().date(),
+  endDate: z.string().date(),
+}).superRefine((value, ctx) => {
+  if (value.startDate > value.endDate) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['endDate'],
+      message: 'تاريخ نهاية الفترة يجب أن يكون في أو بعد تاريخ البداية.',
+    });
+  }
+});
+
 export const prepareCloseSchema = z.object({
   organizationId: uuid,
   projectId: uuid,
@@ -76,6 +91,7 @@ export const executeCorrectionSchema = z.object({
 const _moneyGuard: (v: string) => boolean = (v) => isValidMajorMoney(v, 'EGP');
 void _moneyGuard;
 
+export type CreateAccountingPeriodInput = z.infer<typeof createAccountingPeriodSchema>;
 export type PrepareCloseInput = z.infer<typeof prepareCloseSchema>;
 export type ApproveCloseInput = z.infer<typeof approveCloseSchema>;
 export type RequestExceptionInput = z.infer<typeof requestExceptionSchema>;
