@@ -76,7 +76,7 @@ api_headers=(-H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type:
 runq_file() {
   local sql_file="$1" payload
   payload="$(jq -Rs '{query: .}' < "$sql_file")"
-  curl --fail-with-body -sS -X POST \
+  curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 -X POST \
     "https://api.supabase.com/v1/projects/$REF/database/query" \
     "${api_headers[@]}" \
     --data-binary "$payload" \
@@ -145,7 +145,7 @@ note "Canonical tables=$CANONICAL_COUNT required-force-RLS tables=$RLS_REQUIRED_
 
 # 1. Project accessibility and safe metadata.
 note "Verifying access to project ref: $REF"
-PROJECT_JSON="$(curl --fail-with-body -sS \
+PROJECT_JSON="$(curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \
   "https://api.supabase.com/v1/projects/$REF" \
   -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" 2>"$TMP/project.err")"
 if [[ $? -ne 0 || -z "$PROJECT_JSON" ]]; then
@@ -197,7 +197,7 @@ verify_controls() {
   RLS_OK=false
   [[ "$RLS_TABLES_OK" == true && "$RLS_PREDICATE" == true ]] && RLS_OK=true
 
-  qbool secdef_search_path_boundary "select to_jsonb(count(*) = 0 from pg_proc p where p.prosecdef and p.pronamespace='public'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like 'search_path=pg_catalog,public')));"
+  qbool secdef_search_path_boundary "select to_jsonb((select count(*) from pg_proc p where p.prosecdef and p.pronamespace='public'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like 'search_path=pg_catalog,public'))) = 0);"
   SECDEF_OK="$CHECK_VAL"
 
   qbool s6_evaluate_gate_authorization "select to_jsonb(to_regprocedure('public.s6_evaluate_gate(uuid,uuid,uuid,text)') is not null and not has_function_privilege('anon','public.s6_evaluate_gate(uuid,uuid,uuid,text)','EXECUTE') and not has_function_privilege('public','public.s6_evaluate_gate(uuid,uuid,uuid,text)','EXECUTE') and has_function_privilege('authenticated','public.s6_evaluate_gate(uuid,uuid,uuid,text)','EXECUTE'));"
@@ -362,19 +362,22 @@ if [[ "$APPLY" == true && "$APPLY_FAILED" == false ]]; then
 fi
 MIGRATIONS_IN_SYNC="$LEDGER_FULL_SYNC"
 
-# Security advisors remain an independent verification signal. The CLI is
-# optional for SQL execution; when present, use it without exposing secrets.
+# Security advisors are read through the same Management API used for SQL.
 ADVISORS_RC=1
-if command -v supabase >/dev/null 2>&1; then
-  note 'Running Supabase security advisors ...'
-  if supabase db advisors --type security --project-ref "$REF" --fail-on error >"$TMP/adv.out" 2>"$TMP/adv.err"; then
+note 'Running Supabase security advisors through Management API ...'
+if curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \
+  "https://api.supabase.com/v1/projects/$REF/advisors/security" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -o "$TMP/advisors.json"; then
+  ADVISOR_ERROR_COUNT="$(jq '[.lints[]? | select((((.level // .severity // "") | ascii_downcase)) == "error")] | length' "$TMP/advisors.json" 2>/dev/null || echo -1)"
+  if [[ "$ADVISOR_ERROR_COUNT" == 0 ]]; then
     ADVISORS_RC=0
     note '  security advisors: no error-level findings'
   else
-    warn 'security advisors returned an error or could not run'
+    warn "security advisors report $ADVISOR_ERROR_COUNT error-level finding(s)"
   fi
 else
-  warn 'Supabase CLI unavailable; security advisor verification not completed'
+  warn 'security advisor Management API request failed'
 fi
 
 SECURITY_OK=false
