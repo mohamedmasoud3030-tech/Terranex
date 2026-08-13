@@ -1,4 +1,4 @@
-name: Terranex Demo Seed Prerequisite Probe
+name: Terranex Persistent Demo Seed
 
 on:
   push:
@@ -11,35 +11,171 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  seed:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
     steps:
-      - name: Probe auth and key prerequisites safely
+      - name: Checkout exact demo seed branch
+        uses: actions/checkout@v4
+        with:
+          ref: demo/real-estate-showcase-data
+
+      - name: Provision non-login demo maker safely
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          sql="select count(*)::int as total_users,
-                      count(*) filter (where last_sign_in_at is not null)::int as signed_in_users,
-                      exists(select 1 from auth.users where last_sign_in_at is not null) as has_recent_owner_candidate
-               from auth.users;"
+          keys="$(curl --fail-with-body -sS \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          service_key="$(printf '%s' "$keys" | jq -r '
+            (if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end)
+            | map(select(((.name // "")|ascii_downcase)=="service_role"))
+            | .[0] | (.api_key // .key // .value // .secret // empty)')"
+          test -n "$service_key"
+          echo "::add-mask::$service_key"
+
+          sql="select exists(select 1 from auth.users where email='demo-maker@terranex.invalid') as exists;"
           jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
-          auth_meta="$(curl --fail-with-body -sS -X POST \
+          exists="$(curl --fail-with-body -sS -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H 'Content-Type: application/json' \
-            --data-binary @"$tmp/q.json")"
-          echo "AUTH_TOTAL_USERS=$(printf '%s' "$auth_meta" | jq -r '.[0].total_users')"
-          echo "AUTH_SIGNED_IN_USERS=$(printf '%s' "$auth_meta" | jq -r '.[0].signed_in_users')"
-          echo "HAS_OWNER_CANDIDATE=$(printf '%s' "$auth_meta" | jq -r '.[0].has_recent_owner_candidate')"
+            --data-binary @"$tmp/q.json" | jq -r '.[0].exists')"
+          if [[ "$exists" != 'true' ]]; then
+            password="$(openssl rand -base64 42 | tr -d '\n')"
+            echo "::add-mask::$password"
+            jq -n --arg email 'demo-maker@terranex.invalid' --arg password "$password" \
+              '{email:$email,password:$password,email_confirm:true,user_metadata:{display_name:"Terranex Demo Maker",demo:true}}' > "$tmp/user.json"
+            http="$(curl -sS -o "$tmp/auth-create.json" -w '%{http_code}' -X POST \
+              "https://$SUPABASE_PROJECT_REF.supabase.co/auth/v1/admin/users" \
+              -H "apikey: $service_key" \
+              -H "Authorization: Bearer $service_key" \
+              -H 'Content-Type: application/json' \
+              --data-binary @"$tmp/user.json")"
+            if [[ "$http" -lt 200 || "$http" -ge 300 ]]; then
+              echo "Demo maker Auth provisioning failed with HTTP $http"
+              jq -c '{code:(.code // null),message:(.msg // .message // .error // "request rejected")}' "$tmp/auth-create.json" || true
+              exit 1
+            fi
+            echo 'DEMO_MAKER_CREATED=true'
+          else
+            echo 'DEMO_MAKER_CREATED=false'
+            echo 'DEMO_MAKER_REUSED=true'
+          fi
 
-          keys="$(curl --fail-with-body -sS \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=false" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
-          safe="$(printf '%s' "$keys" | jq -c '(if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end) | map({name,type,disabled})')"
-          echo "KEY_METADATA=$safe"
-          echo "HAS_SERVICE_ROLE_KEY=$(printf '%s' "$keys" | jq -r '(if type=="array" then . elif ((.api_keys // null)|type)=="array" then .api_keys else [] end) | any(((.name // "")|ascii_downcase)=="service_role" or ((.type // "")|ascii_downcase)=="service_role")')"
+      - name: Dry-run full demo seed with rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          {
+            echo 'begin;'
+            cat scripts/demo/seed_real_estate_showcase.sql
+            echo 'rollback;'
+          } > "$tmp/dry.sql"
+          jq -Rs '{query:.}' < "$tmp/dry.sql" > "$tmp/payload.json"
+          curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/payload.json" > "$tmp/result.json"
+          echo 'DEMO_DRY_RUN=PASS'
+
+      - name: Apply exact demo seed transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          {
+            echo 'begin;'
+            cat scripts/demo/seed_real_estate_showcase.sql
+            echo 'commit;'
+          } > "$tmp/apply.sql"
+          jq -Rs '{query:.}' < "$tmp/apply.sql" > "$tmp/payload.json"
+          curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/payload.json" > "$tmp/result.json"
+          echo 'DEMO_APPLY=PASS'
+
+      - name: Verify live demo financial and operational truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          sql=$(cat <<'SQL'
+          with p as (
+            select id, organization_id, name, internal_reference
+            from public.investment_projects
+            where internal_reference='DEMO-RE-2026-001'
+          ), cash as (
+            select c.balance_minor_units::bigint balance
+            from public.project_cash_position_read c join p on p.id=c.project_id
+          ), result as (
+            select r.realized_result_minor_units::bigint realized
+            from public.property_realized_result_read r join p on p.id=r.project_id
+          ), capital as (
+            select coalesce(sum(s.closing_capital_minor_units::bigint),0)::bigint total
+            from public.s5_partner_capital_statement_read s join p on p.id=s.project_id
+          ), ap as (
+            select coalesce(sum(o.outstanding_minor_units::bigint),0)::bigint total
+            from public.cost_obligation_position_read o join p on p.id=o.project_id
+          ), rec as (
+            select count(*)::int n,
+                   count(*) filter(where status='SIGNED_OFF')::int signed,
+                   coalesce(sum(abs(variance_minor_units)),0)::bigint variance
+            from public.s7_reconciliation_checkpoints c join p on p.id=c.project_id
+          ), assets as (
+            select count(*)::int n,
+                   count(*) filter(where lifecycle_state='DUE_DILIGENCE')::int due_diligence
+            from public.property_assets a join p on p.id=a.project_id
+          ), unbalanced as (
+            select count(*)::int n from (
+              select jl.batch_id
+              from public.journal_lines jl join p on p.id=jl.project_id
+              group by jl.batch_id
+              having sum(jl.debit_minor_units)<>sum(jl.credit_minor_units) or count(*)<2
+            ) x
+          )
+          select p.name, p.internal_reference,
+                 (select balance from cash limit 1) cash_minor_units,
+                 (select realized from result limit 1) realized_result_minor_units,
+                 (select total from capital) partner_capital_minor_units,
+                 (select total from ap) supplier_payable_minor_units,
+                 (select n from rec) reconciliation_count,
+                 (select signed from rec) reconciliation_signed,
+                 (select variance from rec) reconciliation_abs_variance,
+                 (select n from assets) asset_count,
+                 (select due_diligence from assets) due_diligence_assets,
+                 (select n from unbalanced) unbalanced_batches,
+                 ar.human_uat_status
+          from p
+          join public.s7_pilot_acceptance_report_read ar on ar.project_id=p.id;
+          SQL
+          )
+          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
+          row="$(curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/q.json" | jq -c '.[0]')"
+          test "$(printf '%s' "$row" | jq -r '.internal_reference')" = 'DEMO-RE-2026-001'
+          test "$(printf '%s' "$row" | jq -r '.cash_minor_units')" = '4100000000'
+          test "$(printf '%s' "$row" | jq -r '.realized_result_minor_units')" = '750000000'
+          test "$(printf '%s' "$row" | jq -r '.partner_capital_minor_units')" = '3950000000'
+          test "$(printf '%s' "$row" | jq -r '.supplier_payable_minor_units')" = '150000000'
+          test "$(printf '%s' "$row" | jq -r '.reconciliation_count')" = '9'
+          test "$(printf '%s' "$row" | jq -r '.reconciliation_signed')" = '9'
+          test "$(printf '%s' "$row" | jq -r '.reconciliation_abs_variance')" = '0'
+          test "$(printf '%s' "$row" | jq -r '.asset_count')" = '2'
+          test "$(printf '%s' "$row" | jq -r '.due_diligence_assets')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.unbalanced_batches')" = '0'
+          test "$(printf '%s' "$row" | jq -r '.human_uat_status')" = 'NOT_STARTED'
+          echo "DEMO_PROJECT_NAME=$(printf '%s' "$row" | jq -r '.name')"
+          echo 'DEMO_LIVE_VERIFICATION=PASS'
+          echo 'DEMO_PHASE2_CREDIT=false'
