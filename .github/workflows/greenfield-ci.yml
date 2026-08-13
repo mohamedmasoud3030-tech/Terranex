@@ -3,7 +3,6 @@ name: Greenfield CI
 on:
   pull_request:
     branches:
-      - main
       - greenfield/foundation
   workflow_dispatch:
 
