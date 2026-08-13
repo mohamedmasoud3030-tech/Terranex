@@ -29,17 +29,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Supabase CLI (pinned)
-        run: npm install -g supabase@2.114.0 --no-audit --no-fund
-
-      - name: Authenticate to Supabase (access token from secret; value never printed)
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: supabase login --token "$SUPABASE_ACCESS_TOKEN" --no-browser
-
       - name: Inspect and (optionally) activate
         id: activate
         env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ github.event.inputs.supabase_project_ref || 'nwpyeobuxzbdnnzyfyqw' }}
           APPLY_MIGRATIONS: ${{ github.event.inputs.apply_migrations || 'false' }}
         run: bash .github/pilot-activation/activate.sh
