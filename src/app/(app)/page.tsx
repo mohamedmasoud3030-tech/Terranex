@@ -1,2 +1,49 @@
-import Link from 'next/link'; import { getOrganizations } from '@/features/organizations/queries'; import { getProjects } from '@/features/projects/queries';
-export default async function Home() { const orgs=await getOrganizations(); if(!orgs.length) return <section className="card stack"><h1>لنبدأ بإنشاء منظمتك</h1><p className="muted">المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك.</p><Link className="button" href="/onboarding">إنشاء منظمة</Link></section>; const org=orgs[0]; const projects=await getProjects(org.id); return <section className="stack"><div className="top"><div><p className="muted">{org.name}</p><h1>المشاريع الاستثمارية</h1></div><Link className="button" href="/projects/new">مشروع جديد</Link></div>{projects.length===0?<section className="card stack"><h2>لا توجد مشاريع بعد</h2><p className="muted">أنشئ أول مشروع عقاري لمساحة عمل فريقك. لن نعرض أرقامًا أو بيانات تجريبية.</p><Link className="button" href="/projects/new">إنشاء مشروع عقاري</Link></section>:<div className="grid">{projects.map(p=><Link key={p.id} href={`/projects/${p.id}`} className="project"><strong>{p.name}</strong><p className="muted">{p.internal_reference || 'بدون مرجع داخلي'}</p><span className="status">مسودة · {p.reporting_currency}</span></Link>)}</div>}</section>; }
+import Link from 'next/link';
+import { getOrganizations } from '@/features/organizations/queries';
+import { getProjects } from '@/features/projects/queries';
+
+export default async function Home() {
+  const orgs = await getOrganizations();
+  if (!orgs.length) {
+    return (
+      <section className="card stack">
+        <h1>لنبدأ بإنشاء منظمتك</h1>
+        <p className="muted">المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك.</p>
+        <Link className="button" href="/onboarding">إنشاء منظمة</Link>
+      </section>
+    );
+  }
+  const org = orgs[0];
+  const projects = await getProjects(org.id);
+  return (
+    <section className="stack">
+      <div className="top">
+        <div>
+          <p className="muted">{org.name}</p>
+          <h1>المشاريع الاستثمارية</h1>
+        </div>
+        <div className="stack" style={{ justifyItems: 'end' }}>
+          <Link className="button" href="/intake">إدخال مشروع حقيقي</Link>
+          <Link className="button secondary" href="/projects/new">مشروع جديد</Link>
+        </div>
+      </div>
+      {projects.length === 0 ? (
+        <section className="card stack">
+          <h2>لا توجد مشاريع بعد</h2>
+          <p className="muted">أدخل أول مشروع عقاري عبر المسار الموجّه. لن نعرض أرقامًا أو بيانات تجريبية.</p>
+          <Link className="button" href="/intake">بدء إدخال المشروع</Link>
+        </section>
+      ) : (
+        <div className="grid">
+          {projects.map((p) => (
+            <Link key={p.id} href={`/projects/${p.id}/intake`} className="project">
+              <strong>{p.name}</strong>
+              <p className="muted">{p.internal_reference || 'بدون مرجع داخلي'}</p>
+              <span className="status">إدخال موجّه · {p.reporting_currency}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}

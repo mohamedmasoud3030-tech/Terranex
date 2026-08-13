@@ -25,6 +25,7 @@ function refreshProject(projectId: string) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/costs`);
   revalidatePath(`/projects/${projectId}/cash`);
+  revalidatePath(`/projects/${projectId}/intake`);
 }
 
 function domainError(message: string | undefined, fallback: string): ActionState {

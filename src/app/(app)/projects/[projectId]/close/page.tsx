@@ -23,6 +23,7 @@ import {
   ApproveCloseForm,
   ApproveCorrectionForm,
   ApproveExceptionForm,
+  CreateAccountingPeriodForm,
   ExecuteCorrectionForm,
   PrepareCloseForm,
   ReopenForm,
@@ -148,11 +149,13 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
             ))}
           </div>
         )}
-        <details>
-          <summary>إنشاء فترة محاسبية جديدة (OWNER فقط)</summary>
-          <form action={async () => { 'use server'; }} className="stack">
-            <p className="muted">إنشاء فترة جديدة يتم من خلال أمر خادم مخصص. راجع `s6_create_accounting_period` أو استخدم نموذج التحضير أدناه على فترة موجودة.</p>
-          </form>
+        <details open={periods.length === 0}>
+          <summary>فتح فترة محاسبية جديدة (مالك المنظمة فقط)</summary>
+          <CreateAccountingPeriodForm
+            organizationId={organizationId}
+            projectId={projectId}
+            disabled={!isOwner}
+          />
         </details>
       </section>
 

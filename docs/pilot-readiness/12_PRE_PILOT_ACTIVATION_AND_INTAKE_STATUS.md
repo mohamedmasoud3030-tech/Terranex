@@ -165,6 +165,8 @@ S0–S7 implementation, database replay, live schema/security verification, fron
 
 The technical environment is ready. The next delivery sequence is now:
 
-`customer source-data freeze → signed source control totals → S7 controlled opening import → rejection resolution → approval/posting → exact zero-variance opening reconciliation → Phase 2 exit → full real-project lifecycle in staging → Phase 3 exit → controlled paid pilot Phase 4`
+`guided intake workspace → customer source-data freeze → signed source control totals → S7 controlled opening import → rejection resolution → approval/posting → exact zero-variance opening reconciliation → Phase 2 exit → full real-project lifecycle in staging → Phase 3 exit → controlled paid pilot Phase 4`
+
+The guided intake workspace is documented in [`13_GUIDED_REAL_PROJECT_INTAKE.md`](13_GUIDED_REAL_PROJECT_INTAKE.md). It does not pass Phase 2.
 
 No canonical phase advances until its real evidence exists.

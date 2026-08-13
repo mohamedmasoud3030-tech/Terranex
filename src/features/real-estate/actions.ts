@@ -25,6 +25,7 @@ function refresh(projectId: string) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/operations`);
   revalidatePath(`/projects/${projectId}/costs`);
+  revalidatePath(`/projects/${projectId}/intake`);
 }
 function projectId(form: FormData): string { return String(form.get('projectId') ?? ''); }
 function domainError(message: string | undefined, fallback: string): ActionState {

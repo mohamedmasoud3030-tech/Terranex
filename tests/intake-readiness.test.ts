@@ -1,0 +1,243 @@
+import { describe, expect, it } from 'vitest';
+import {
+  declareControlTotalsSchema,
+  recordFreezeDateSchema,
+  recordSetupReferencesSchema,
+  reportModellingGapSchema,
+} from '@/features/intake/schema';
+import {
+  emptyIntakeSnapshot,
+  evaluateIntakeReadiness,
+  type IntakeSnapshot,
+} from '@/features/intake/readiness';
+
+const organizationId = '00000000-0000-4000-8000-000000000001';
+const projectId = '00000000-0000-4000-8000-000000000002';
+
+function snapshot(over: Partial<IntakeSnapshot> = {}): IntakeSnapshot {
+  return { ...emptyIntakeSnapshot(), ...over };
+}
+
+describe('intake declaration schemas', () => {
+  it('accepts a freeze date with evidence', () => {
+    expect(recordFreezeDateSchema.safeParse({
+      organizationId, projectId, freezeDate: '2026-03-31', evidenceReference: 'FREEZE-PACK-01',
+    }).success).toBe(true);
+  });
+
+  it('rejects a freeze date that is not ISO', () => {
+    expect(recordFreezeDateSchema.safeParse({
+      organizationId, projectId, freezeDate: '31/03/2026', evidenceReference: 'FREEZE-PACK-01',
+    }).success).toBe(false);
+  });
+
+  it('rejects unbalanced declared control totals before they reach PostgreSQL', () => {
+    const parsed = declareControlTotalsSchema.safeParse({
+      organizationId, projectId, declaredDebitTotal: '1000', declaredCreditTotal: '900', evidenceReference: 'TB-1',
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('accepts balanced integer minor-unit totals and refuses decimals', () => {
+    expect(declareControlTotalsSchema.safeParse({
+      organizationId, projectId, declaredDebitTotal: '125000', declaredCreditTotal: '125000', evidenceReference: 'TB-1',
+    }).success).toBe(true);
+    expect(declareControlTotalsSchema.safeParse({
+      organizationId, projectId, declaredDebitTotal: '1250.00', declaredCreditTotal: '1250.00', evidenceReference: 'TB-1',
+    }).success).toBe(false);
+  });
+
+  it('requires at least one setup reference', () => {
+    expect(recordSetupReferencesSchema.safeParse({
+      organizationId, projectId, agreementTitleOrReference: '', organizationEvidenceReference: '', projectEvidenceReference: '',
+    }).success).toBe(false);
+    expect(recordSetupReferencesSchema.safeParse({
+      organizationId, projectId, agreementTitleOrReference: 'اتفاقية الشركاء', organizationEvidenceReference: '', projectEvidenceReference: '',
+    }).success).toBe(true);
+  });
+
+  it('does not invent an opening mapping code for an unmappable balance', () => {
+    const parsed = reportModellingGapSchema.safeParse({
+      organizationId,
+      projectId,
+      sourceReference: 'TB-LINE-240',
+      description: 'قرض شريك',
+      amountMinorUnits: '500000',
+      whyUnmappable: 'لا يوجد ترميز افتتاحي لالتزامات القروض',
+    });
+    expect(parsed.success).toBe(true);
+  });
+});
+
+describe('intake readiness derivation', () => {
+  it('starts empty as not ready and never marks Phase 2 passed', () => {
+    const result = evaluateIntakeReadiness(snapshot());
+    expect(result.phase2Passed).toBe(false);
+    expect(result.verdict).toBe('INTAKE_IN_PROGRESS');
+    expect(result.sections.find((section) => section.code === 'DS01_ORGANIZATION')?.status).toBe('MISSING');
+    expect(result.sections.find((section) => section.code === 'DS09_OPENING_BALANCES')?.status).toBe('BLOCKED');
+  });
+
+  it('treats organization, project and freeze date as the setup group', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'شركة النخيل',
+      projectName: 'أرض الطريق الدائري',
+      reportingCurrency: 'EGP',
+      freezeDate: '2026-03-31',
+      freezeEvidenceReference: 'FREEZE-1',
+    }));
+    expect(result.sections.find((section) => section.code === 'DS01_ORGANIZATION')?.status).toBe('COMPLETE');
+    expect(result.sections.find((section) => section.code === 'DS02_PROJECT')?.status).toBe('COMPLETE');
+    expect(result.sections.find((section) => section.code === 'FREEZE_DATE')?.status).toBe('COMPLETE');
+  });
+
+  it('blocks the agreement until at least one investor exists', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 0,
+    }));
+    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('BLOCKED');
+  });
+
+  it('requires ownership weights and an agreement title after activation', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 2,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 2,
+      allocationRulesConfigured: false,
+      agreementTitleOrReference: null,
+    }));
+    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('IN_PROGRESS');
+    expect(result.sections.find((section) => section.code === 'DS05_COMMITMENTS')?.status).toBe('COMPLETE');
+  });
+
+  it('honours an explicit not-applicable declaration for historical calls', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 1,
+      activeAgreement: true,
+      commitmentCount: 1,
+      applicability: { HISTORICAL_CALLS: false },
+    }));
+    expect(result.sections.find((section) => section.code === 'DS06_HISTORICAL_CALLS')?.status).toBe('NOT_APPLICABLE');
+  });
+
+  it('fails when a contribution is also expressed as opening contributed capital', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 1,
+      activeAgreement: true,
+      commitmentCount: 1,
+      contributionCount: 1,
+      openingMappingCodes: ['OPENING_CONTRIBUTED_CAPITAL'],
+      openingImportStatus: 'DRAFT',
+    }));
+    expect(result.sections.find((section) => section.code === 'DS07_HISTORICAL_CONTRIBUTIONS')?.status).toBe('FAILED');
+  });
+
+  it('refuses unbalanced declared totals and rejected opening rows', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      freezeDate: '2026-03-31',
+      declaredDebitTotal: '100',
+      declaredCreditTotal: '90',
+      cashAccountCount: 1,
+      openingImportStatus: 'REJECTED',
+      openingRejectedRowCount: 2,
+    }));
+    expect(result.sections.find((section) => section.code === 'CONTROL_TOTALS')?.status).toBe('FAILED');
+    expect(result.sections.find((section) => section.code === 'DS09_OPENING_BALANCES')?.status).toBe('FAILED');
+    expect(result.verdict).toBe('OPENING_BLOCKED');
+  });
+
+  it('is ready to stage when freeze, totals, cash and an open period exist', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      reportingCurrency: 'EGP',
+      freezeDate: '2026-03-31',
+      freezeEvidenceReference: 'F',
+      organizationEvidenceReference: 'CR-1',
+      projectEvidenceReference: 'SCOPE-1',
+      agreementTitleOrReference: 'اتفاقية',
+      declaredDebitTotal: '1000',
+      declaredCreditTotal: '1000',
+      investorCount: 1,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 1,
+      allocationRulesConfigured: true,
+      cashAccountCount: 1,
+      openPeriodExists: true,
+      openPeriodCoversFreeze: true,
+      realEstateProfile: true,
+      realEstateStrategy: 'ACQUIRE_HOLD',
+      assetCount: 1,
+      parcelCount: 1,
+      acquisitionCount: 1,
+      evidenceItemCount: 1,
+      applicability: {
+        HISTORICAL_CALLS: false,
+        HISTORICAL_CONTRIBUTIONS: false,
+        DEVELOPMENT_BASELINE: false,
+        UNPAID_SUPPLIERS: false,
+        SALES_DISPOSITIONS: false,
+        HISTORICAL_DISTRIBUTIONS: false,
+        BANK_STATEMENTS: false,
+      },
+    }));
+    expect(result.sections.find((section) => section.code === 'DS09_OPENING_BALANCES')?.status).toBe('MISSING');
+    expect(result.verdict).toBe('OPENING_READY_TO_STAGE');
+    expect(result.phase2Passed).toBe(false);
+  });
+
+  it('treats exact-zero posted reconciliation as pending real evidence, never Phase 2', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      freezeDate: '2026-03-31',
+      declaredDebitTotal: '1000',
+      declaredCreditTotal: '1000',
+      investorCount: 1,
+      activeAgreement: true,
+      commitmentCount: 1,
+      allocationRulesConfigured: true,
+      agreementTitleOrReference: 'اتفاقية',
+      cashAccountCount: 1,
+      openPeriodExists: true,
+      openPeriodCoversFreeze: true,
+      realEstateProfile: true,
+      assetCount: 1,
+      parcelCount: 1,
+      openingImportStatus: 'POSTED',
+      openingControlTotalsMatch: true,
+      openingDebitVariance: '0',
+      openingCreditVariance: '0',
+      matchedZeroVarianceCheckpoints: 6,
+      evidenceItemCount: 3,
+    }));
+    expect(result.sections.find((section) => section.code === 'OPENING_RECONCILIATION')?.status).toBe('COMPLETE');
+    expect(result.verdict).toBe('OPENING_RECONCILED_PENDING_REAL_EVIDENCE');
+    expect(result.phase2Passed).toBe(false);
+  });
+
+  it('keeps a develop-sell project missing until an approved budget or N/A exists', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      realEstateProfile: true,
+      realEstateStrategy: 'DEVELOP_SELL',
+      assetCount: 1,
+      parcelCount: 1,
+      approvedBudgetCount: 0,
+    }));
+    expect(result.sections.find((section) => section.code === 'DS13_DEVELOPMENT')?.status).toBe('MISSING');
+  });
+});
