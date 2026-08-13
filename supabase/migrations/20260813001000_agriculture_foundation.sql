@@ -1021,10 +1021,10 @@ begin
       and p.prokind = 'f'
   loop
     v_definition := pg_get_functiondef(v_record.oid);
-    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\\(' then
+    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\(' then
       v_rewritten := regexp_replace(
         v_definition,
-        '(^|[^[:alnum:]_.])digest[[:space:]]*\\(',
+        '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
         E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
         'g'
       );
