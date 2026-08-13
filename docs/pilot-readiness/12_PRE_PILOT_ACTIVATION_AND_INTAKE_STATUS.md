@@ -1,61 +1,117 @@
 # 12 — Pre-Pilot Activation & Real-Project Intake Status
 
-**Purpose:** the single consolidated record of where Terranex stands at the pre-pilot boundary — environment readiness, the provisioning boundary for the isolated pilot Supabase project, real-project intake readiness, and the exact values still required from outside the repository. It classifies every required environment value and lists every still-missing customer/operator value **by name only**.
+**Purpose:** consolidated technical truth at the pre-pilot boundary: live environment readiness, Greenfield database state, frontend/backend compatibility, deployment status, remaining customer/operator inputs, and canonical phase status.
 
-**Status:** this is a preparation record. **Nothing here activates, deploys, or imports anything.** A pilot Supabase project ref has been designated by the operator but **not yet verified** (see §7); no customer value is recorded, and no canonical delivery exit (Phase 2 / Phase 3 / Phase 4) is marked passed. Where this document and a canonical Greenfield document or an earlier pack file disagree, the canonical source wins.
+**Current status:** the Terranex technical pilot environment is now **initialized, synchronized, secured, connected to the application, and smoke-tested**. This does **not** satisfy canonical Phase 2 or Phase 3, because those exits require real-project evidence. Phase 4 remains not started.
 
-**Standing rules apply:** zero-minor-unit acceptance, names-only for secrets, no customer data in this repository, no self-advancing human gates, no service-role credential in any browser path.
-
----
-
-## 1. Environment readiness — required values classification
-
-The shipped application consumes **exactly two** environment variables (see `.env.example` and `src/shared/supabase/env.ts`). Everything else is infrastructure the operator supplies outside this repository.
-
-| # | Required value | Class | Meaning and state |
-| --- | --- | --- | --- |
-| 1 | `NEXT_PUBLIC_SUPABASE_URL` | **B** | Required but missing. Value can only exist once a dedicated pilot Supabase project is provisioned (source is **C** — operator/external infrastructure). |
-| 2 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | **B** | Required but missing. Publishable (browser-safe) key of that same pilot project; still configured per environment, never hardcoded. Source is **C**. |
-| 3 | Dedicated pilot Supabase project (isolated, empty or migrations-only) | **C** | External infrastructure dependency. A ref has been designated (`nwpyeobuxzbdnnzyfyqw`) but **not yet verified** as isolated/usable — access verification was blocked (see §7). Must be a dedicated project, never a shared/dev project. |
-| 4 | Supabase Auth (email sign-in) configuration on the pilot project | **C** | Operator config on the pilot project; no customer user exists yet. |
-| 5 | Application deployment target (Next.js host, HTTPS, agreed domain/subdomain) | **C** | Operator decision (architecture decision A-001: one deployable unit). Not chosen. |
-| 6 | Secrets location, access restriction, rotation procedure | **C** | Operator-supplied provider; this repository stores none. |
-| 7 | Scheduled logical backups + named owner + RPO/RTO agreement | **C/S** | Operator + professional review. The repository rehearsal (`26_s7_backup_restore.sh`) is **not** the production backup policy. |
-| 8 | Error monitoring / alerting path + named on-call | **C/S** | Operator tooling choice; v1 ships no built-in monitor. |
-| 9 | Service-role key in any browser path | **D** | **Not required — and must never be added.** The product is publishable-key-only by design; verify absence, do not introduce one. |
-
-**GitHub Actions secrets:** CI (`greenfield-ci.yml`) consumes only build-time placeholders and requires **no** repository secret today. No deployment workflow exists in the repository. Pilot Supabase credentials, when provisioned, belong to the operator's secret manager outside this repository — never in repository files or in chat. (At the time of this record, repository secrets could not be enumerated by the executing agent — HTTP 403 on the secrets API — so the presence/absence of any operator-added secret is recorded as **unverified**, not as a configured value.)
-
-**PRM-01 / PRM-02 outcome:** `NOT_STARTED`. The `08_DEPLOYMENT_ENVIRONMENT_CHECKLIST.md` sign-off block remains `(pending)`. This is honest: the pilot environment does not exist, so no checklist item is claimed as evidenced.
+Standing rules remain binding: zero-minor-unit reconciliation, forward-only migrations, no customer secrets/data in Git, no self-advancing human gates, and no service-role/secret key in any browser path.
 
 ---
 
-## 2. Provisioning boundary (everything prepared up to the external credential)
+## 1. Live technical environment
 
-The repository already contains every artifact needed to bring up an isolated pilot database **up to the point where external credentials are required**. The operator must:
+### Supabase
 
-1. Provision a dedicated Supabase project (PostgreSQL 16) for the pilot. External act.
-2. Replay the complete schema **from migrations only**, never by hand: run the canonical database gate `bash scripts/db-test.sh` (or `npm run db:test`) against the pilot project's PostgreSQL — every ordered migration under `supabase/migrations/*.sql` applies in order, and every verification suite under `supabase/tests/*` runs. No ad-hoc schema reconstruction.
-3. Capture the migration-state listing as PRM-02 evidence (which migrations, in which order).
-4. Verify the authorization boundary on the pilot project — all covered by existing suites, re-demonstrated per engagement:
-   - default-deny RLS and two-tenant isolation (`01_s0_isolation.sql`, plus S7 re-assertions);
-   - OWNER/MEMBER boundary, maker ≠ checker, last-active-owner guard, immediate access revocation (`23_s7_pilot_hardening.sql`, `24_s7_concurrency.sh`);
-   - required RPCs exercised through the same suites (no new RPC is required — S0–S7 suites call them);
-   - **no browser client holds service-role access** — the shipped client is publishable-key-only; verify by inspection of `src/shared/supabase/*` and the built bundle, not by adding a key.
-5. Verify financial posting and period-close controls on the pilot project (`16_s6_period_close.sql`, `17_s6_close_concurrency.sh`, `28_phase2c_financial_integrity.sql`).
-6. Verify the S7 import path (`23_s7_pilot_hardening.sql`, `24_s7_concurrency.sh`, `27_s7_end_to_end_rehearsal.sql`).
-7. Configure `.env.local` on the deployment target with the two names from §1 (values supplied by the operator's secret mechanism, never committed).
-8. Run the release smoke test per `08_DEPLOYMENT_ENVIRONMENT_CHECKLIST.md` §14 **before any customer data entry**.
+- Project ref: `nwpyeobuxzbdnnzyfyqw`
+- Project name: `Terranex`
+- Region: `eu-central-1`
+- Status: `ACTIVE_HEALTHY`
+- PostgreSQL version observed during activation: `17.6.1.127`
+- Public URL: `https://nwpyeobuxzbdnnzyfyqw.supabase.co`
+- Modern publishable browser key: **available and active**; value is intentionally not reproduced here.
+- Service-role/secret key in browser configuration: **absent by design**.
 
-**Boundary statement:** the repository is ready up to and including step 7's configuration point. Steps 1 (project provisioning) and the credential values are the external infrastructure dependency; nothing else blocks technical activation. No pilot environment was actually reached in this execution, and none is claimed.
+The previously existing legacy Terranex `public` application schema was explicitly authorized for replacement. The legacy `public` schema was removed and the Greenfield schema was rebuilt exclusively from repository migrations. Supabase Auth/Storage schemas were not dropped by that reset.
+
+### Vercel
+
+- Production URL: `https://terranex.vercel.app`
+- Production deployment framework: Next.js 16.3 via the repository `vercel.json` override.
+- Production build: **READY**.
+- Browser runtime values loaded by the production build:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- No PAT, database password, Supabase secret key, or service-role key is present in the browser runtime configuration.
+
+Final anonymous smoke test on production:
+
+- `GET /` → protected by the auth proxy and redirected to `/login`.
+- `GET /login` → `200`.
+- Runtime logs for the final deployment showed no `permission denied for table organizations` recurrence and no 500 from the smoke sequence.
 
 ---
 
-## 3. Real-project intake readiness
+## 2. Greenfield database verification
 
-The existing intake contract (`02_DATA_INTAKE_CONTRACT.md`) was re-verified against the S0–S7 data needs and is **complete**. Coverage:
+The live database was verified against the repository after activation.
 
-| Dataset | Covers | S0–S7 need |
+| Check | Verified result |
+| --- | --- |
+| Canonical Greenfield tables | **62 / 62 present** |
+| Unrelated/legacy `public` application tables | **0** |
+| Tables explicitly required by migrations to use `FORCE ROW LEVEL SECURITY` | **22 / 22** |
+| Applied migration ledger | **32 / 32** |
+| Frontend `.from(...)` object references inspected | **28** |
+| Frontend `.rpc(...)` function references inspected | **18** |
+| Missing frontend-referenced tables/views in live DB | **0** |
+| Missing frontend-referenced RPCs in live DB | **0** |
+| Core S6/S7/audit/journal security anchors | **verified** |
+| Supabase Security Advisor error-level findings after hardening | **0** |
+
+The post-activation hardening is recorded in the forward-only migration:
+
+`supabase/migrations/20260813000300_pilot_security_advisor_hardening.sql`
+
+It closes the live advisor findings without weakening tenant controls:
+
+- enables and forces RLS on `s7_opening_mapping_codes`;
+- permits authenticated read-only access to that immutable reference registry;
+- removes accidental anonymous/public execution of the 9-argument S5 allocation command while retaining the authenticated command surface;
+- pins the search path on the three S1 trigger guards.
+
+The same repository state was replayed from zero on a PostgreSQL 16 CI service. The canonical migration replay plus SQL/concurrency verification suites passed before the hardening PR was merged.
+
+---
+
+## 3. Frontend ↔ backend compatibility
+
+The application and live Greenfield backend are now aligned at the database object contract level.
+
+The frontend currently uses the canonical Supabase client from `src/shared/supabase/*` and requires exactly the two browser-safe runtime values listed in §1. Static extraction of frontend Supabase calls found 28 table/view references and 18 RPC names; every referenced object exists in the live Greenfield database.
+
+A production-only sequencing defect was also found and fixed after the first live connection: Next.js could begin a tenant page query before the parent layout's anonymous-user redirect completed. The fix moves the anonymous private-route guard into `src/proxy.ts`, so an unauthenticated request is redirected before tenant queries execute. Database grants were **not** widened to make anonymous access work.
+
+This proves the currently shipped frontend has the required live table/RPC surface. It does not replace user-flow UAT with a real signed-in pilot user.
+
+---
+
+## 4. Environment readiness classification
+
+| Required item | State |
+| --- | --- |
+| Dedicated Terranex Supabase project | **READY / verified** |
+| Greenfield schema replay | **COMPLETE** |
+| Migration state synchronized | **COMPLETE — 32/32** |
+| Tenant/security database anchors | **VERIFIED** |
+| Supabase Security Advisor error-level findings | **0** |
+| Modern publishable key | **AVAILABLE** |
+| Vercel production deployment | **READY** |
+| Production Supabase runtime configuration | **CONFIGURED** |
+| Anonymous production smoke | **PASS** |
+| Real pilot user provisioning / signed-in UAT | **PENDING real engagement** |
+| Scheduled production backup owner + agreed RPO/RTO | **PENDING operator decision/evidence** |
+| Error monitoring / alerting owner | **PENDING operator decision/evidence** |
+| Real customer intake | **NOT STARTED** |
+
+Technical environment activation is therefore no longer the blocker for the next delivery evidence. Remaining gates are either operational hardening items explicitly listed above or real-customer evidence requirements.
+
+---
+
+## 5. Real-project intake readiness
+
+The existing intake contract (`02_DATA_INTAKE_CONTRACT.md`) remains the binding data contract and covers the S0–S7 opening needs:
+
+| Dataset | Covers | Slice |
 | --- | --- | --- |
 | DS-01 Organization / DS-02 Projects | tenant + project shell | S0 |
 | DS-03 Parties / DS-04 Agreements / DS-05 Commitments / DS-06 Calls / DS-07 Contributions | terms & funding | S1 |
@@ -63,82 +119,52 @@ The existing intake contract (`02_DATA_INTAKE_CONTRACT.md`) was re-verified agai
 | DS-11 Assets/parcels / DS-12 Acquisitions / DS-13 Development costs | real-estate operations | S3 |
 | DS-14 Sales & dispositions | revenue & realized result | S4 |
 | DS-15 Historical distributions | allocation & distribution | S5 |
-| DS-09 Opening balances (six locked mapping codes) | controlled opening import | S7 |
-| DS-17 Supporting documents (evidence references) | evidence across all slices | all |
+| DS-09 Opening balances using the six locked mapping codes | controlled opening import | S7 |
+| DS-17 Supporting documents/evidence references | evidence across slices | all |
 
-The binding intake sequence in `02_DATA_INTAKE_CONTRACT.md` (§"Intake sequence") matches the S0→S1→S2→S3→S7 product order, and the six locked mapping codes / nine checkpoint codes / ten close gates are consistent with the migrations (verified by `scripts/pilot-readiness/check-readiness-pack.sh`).
-
-**Result:** no genuinely required Terranex field is missing from the intake contract. **No contract change was required** in this execution. Every balance that cannot enter through an existing S0–S7 command is already designated EVIDENCE-ONLY and stays in the customer's systems. There is no second import engine and none is added.
-
-The blank intake worksheets already exist and are header-only: `templates/opening-import-worksheet.csv`, `templates/source-data-coverage-tracker.csv`, `templates/pilot-evidence-register.csv`.
+No second import engine is required. Blank controlled worksheets already exist under `docs/pilot-readiness/templates/`.
 
 ---
 
-## 4. Missing values inventory (names only — never fabricated)
+## 6. Remaining external values — names only
 
-Every value below is **C** (external / customer / operator supplied). None is authorized or recorded. Each is listed with the exact gate it blocks. Until it exists, the named gate stays pending — this is a dependency, not a defect.
+These are real engagement/customer/operator inputs, not technical schema defects:
 
-| Missing value (exact name) | Class | Blocks |
+- `CUSTOMER_NAME` / `LEGAL_ENTITY_NAME`
+- `CUSTOMER_OWNER_USER` / `CUSTOMER_APPROVER` / `CUSTOMER_EMAIL`
+- `REAL_FREEZE_DATE`
+- `SIGNED_CONTROL_TOTALS`
+- `CUSTOMER_SOURCE_FILES`
+- `CUSTOMER_OPENING_BALANCES`
+- `CUSTOMER_BANK_BALANCES`
+- `CUSTOMER_RECEIVABLES`
+- `CUSTOMER_PAYABLES`
+- `REAL_PROPERTY_VALUES`
+- `REAL_CAPITAL_POSITIONS`
+- named backup owner + accepted RPO/RTO
+- named monitoring/on-call owner
+
+`REAL_ORGANIZATION_ID` and `REAL_PROJECT_ID` are product-generated identifiers and must not be fabricated in advance.
+
+---
+
+## 7. Canonical phase status
+
+| Canonical gate | Status | Required evidence |
 | --- | --- | --- |
-| `CUSTOMER_NAME` / `LEGAL_ENTITY_NAME` | C | DS-01 organization; PRM-03 engagement |
-| `CUSTOMER_OWNER_USER` / `CUSTOMER_APPROVER` / `CUSTOMER_EMAIL` | C | PRM-03 engagement; PRM-08 user provisioning; PRM-15 UAT |
-| `REAL_FREEZE_DATE` | C | PRM-03 engagement; PRM-04 intake delivery |
-| `SIGNED_CONTROL_TOTALS` | C | PRM-04/PRM-05 data quality; PRM-06 import; PRM-07 reconciliation |
-| `CUSTOMER_SOURCE_FILES` | C | PRM-04 intake delivery |
-| `CUSTOMER_OPENING_BALANCES` | C | PRM-06 opening import (canonical Phase 2 exit) |
-| `CUSTOMER_BANK_BALANCES` / `CUSTOMER_RECEIVABLES` / `CUSTOMER_PAYABLES` | C | PRM-06/PRM-07 (Phase 2 exit) |
-| `REAL_PROPERTY_VALUES` / `REAL_CAPITAL_POSITIONS` | C | PRM-04/PRM-07 (Phase 2 exit) |
-| `PRODUCTION_DOMAIN` | C | PRM-02 environment (HTTPS/domain) |
-| `REAL-PILOT SUPABASE PROJECT CREDENTIALS` | C | PRM-01/PRM-02 environment |
+| Phase 2 exit — real opening project imported and every financial balance reproduced | **NOT PASSED** | real controlled opening import + exact zero-variance reconciliation |
+| Phase 3 exit — one real project runs the required lifecycle in staging | **NOT PASSED** | supervised real-project staging lifecycle proof |
+| Phase 4 — controlled paid pilot | **NOT STARTED / NOT YET ALLOWED** | Phase 2 + Phase 3 exits first |
+| Phase 5 — GA | **NOT STARTED** | Phase 4 exit first |
 
-**Product-generated (not external, must not be pre-invented):** `REAL_ORGANIZATION_ID` and `REAL_PROJECT_ID` are assigned by the product at activation (organization/project creation), not supplied from outside. They exist only when the customer creates them; they are not intake inputs.
+S0–S7 implementation, database replay, live schema/security verification, frontend/backend object compatibility, and production deployment are technical evidence only. They do not substitute for the real-project evidence required by Phase 2 and Phase 3.
 
 ---
 
-## 5. Canonical phase status (unchanged, honest)
+## 8. Next governed execution sequence
 
-| Canonical gate | Status | Produced by |
-| --- | --- | --- |
-| Phase 2 exit — "a real opening project can be imported and every financial balance reproduced" | **Not passed** | PRM-04 + PRM-05 + PRM-06 + PRM-07 on real customer data |
-| Phase 3 exit — "one real project runs … in staging" | **Not passed** | PRM-09B supervised real-project staging proof |
-| Phase 4 — controlled paid pilot | **Not started** | blocked until Phase 2 + Phase 3 exits pass with real evidence |
-| Phase 5 — general availability | **Not started** | blocked until Phase 4 exit (PRM-16) passes |
+The technical environment is ready. The next delivery sequence is now:
 
-Technical verification (S0–S7 merged; typecheck/lint/test/build and migration/RLS/concurrency rehearsals green on fixtures) is **not** delivery exit evidence. The sequence remains: technical baseline → isolated pilot/staging environment → customer source-data freeze → signed control totals → S7 controlled opening import → validation/rejection resolution → approval/posting → exact zero-variance opening reconciliation → full real-project lifecycle staging proof → Phase 2 exit → Phase 3 exit → controlled paid pilot → four weeks of operation → buyer UAT → Phase 4 exit → only then Phase 5.
+`customer source-data freeze → signed source control totals → S7 controlled opening import → rejection resolution → approval/posting → exact zero-variance opening reconciliation → Phase 2 exit → full real-project lifecycle in staging → Phase 3 exit → controlled paid pilot Phase 4`
 
----
-
-## 6. Activation sequence (reference only — no step is executed here)
-
-PRM-00 (verified main) → PRM-01/PRM-02 (environment, §1–§2 above) → PRM-03 (signed engagement + freeze date + named approver) → PRM-04/PRM-05 (intake delivery + quality gate) → PRM-06 (S7 opening import) → PRM-07 (zero-variance opening reconciliation = Phase 2 exit evidence) → PRM-08 (user provisioning) → PRM-09 + PRM-09B (training + real-project staging proof = Phase 3 exit evidence) → PRM-10 (go-live) → PRM-11…PRM-16 (pilot operation through Phase 4 exit) → PRM-17 (GA decision). Details in `01_PILOT_READINESS_MAP.md`; no gate advances without its real evidence.
-
----
-
-## 7. Supabase pilot project designation — verification attempt (blocked, fail-closed)
-
-An operator-designated Supabase project was supplied for Terranex pilot/staging use:
-
-- `TERRANEX_SUPABASE_PROJECT_REF = nwpyeobuxzbdnnzyfyqw` — **designated**; not yet verified.
-- A Supabase personal access token was supplied to the executing agent for authentication. It is **not** recorded in this repository, **not** committed, and **not** reproduced in any report (secret).
-
-The required verification **could not be performed in this execution**, and the agent failed closed rather than proceeding blind. The execution sandbox applies a domain allowlist to outbound egress: GitHub and the npm registry are reachable, but **every Supabase host is connection-reset at the TLS handshake** (`SSL_ERROR_SYSCALL`) — `supabase.com`, `api.supabase.com`, `mcp.supabase.com`, and the project host `nwpyeobuxzbdnnzyfyqw.supabase.co`. The `codex` CLI, the Supabase MCP server, and the `supabase` CLI are also absent from the sandbox, but the block is at the network layer, not a missing tool.
-
-Because the project could not be inspected, **no write of any kind was attempted**, consistent with the standing rule to fail closed when isolation and current state cannot be confirmed. Nothing below was performed, and none of it is claimed:
-
-| Step | State |
-| --- | --- |
-| Project accessibility check | **NOT verified** (network block) |
-| Project metadata read (name / region / PostgreSQL version / purpose) | **NOT read** |
-| Database-state inspection (EMPTY / PARTIALLY INITIALIZED / ALREADY TERRANEX / UNRELATED DATA) | **UNDETERMINED** |
-| Live migration/schema state vs `main` | **NOT compared** |
-| Apply missing migrations in canonical order | **NOT applied** (no write attempted) |
-| Live verification (RLS, OWNER/MEMBER isolation, SECURITY DEFINER RPC boundaries, S6 close controls, S7 import, reconciliation, audit append-only, journal integrity) | **NOT run** |
-| Supabase security / performance advisors | **NOT run** |
-| TypeScript database types generation | **NOT generated** |
-| Project URL + active publishable key retrieval | **NOT obtained** |
-
-**Truthful state (as recorded in PR #108):** a project ref is designated, but access is **not verified**, the environment is **not confirmed initialized**, migrations are **not synchronized** (unknown), security verification has **not passed** (not run), and application environment configuration is **not ready** (no `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` values obtained).
-
-**Supported activation path:** GitHub Actions is now the supported activation path when the Arena sandbox cannot reach Supabase (its egress allowlist blocks every Supabase host). The workflow **`.github/workflows/pilot-activation.yml`** (manual `workflow_dispatch`) authenticates to Supabase with the `SUPABASE_ACCESS_TOKEN` repository secret, performs the same fail-closed read-only inspection, and — only when explicitly run with `apply_migrations=true` and only after the inspection passes — applies the missing repository migrations in canonical order via the Supabase Management API (no database password, no service-role key, no secret printed). Its orchestration script is **`.github/pilot-activation/activate.sh`**. The fail-closed order is: verify access → read metadata → confirm isolation (fail closed on unrelated application data) → inspect DB state → only then apply missing migrations in canonical order → run live verification → run security advisors. It emits a SAFE six-line summary: `PROJECT_ACCESSIBLE`, `PROJECT_CLASSIFICATION` (`EMPTY|PARTIAL_TERRANEX|TERRANEX|UNRELATED`), `MIGRATIONS_IN_SYNC`, `RLS_VERIFIED`, `FINANCIAL_CONTROLS_VERIFIED`, `SECURITY_VERIFIED`.
-
-**Not claimed until the workflow actually runs:** this environment is **not** marked initialized, migrations **not** marked synchronized, and security verification **not** marked passed until the workflow executes successfully against `nwpyeobuxzbdnnzyfyqw`. Canonical Phase 2 / Phase 3 remain **not passed** regardless of environment deployment, and Phase 4 remains **not started**.
+No canonical phase advances until its real evidence exists.
