@@ -1,0 +1,37 @@
+name: Supabase Runtime Config Probe
+
+on:
+  push:
+    branches:
+      - probe/supabase-runtime-config
+    paths:
+      - .github/workflows/supabase-runtime-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe project and public key availability
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: nwpyeobuxzbdnnzyfyqw
+        shell: bash
+        run: |
+          set -euo pipefail
+          meta="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$REF" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          keys="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$REF/api-keys?reveal=false" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          name="$(printf '%s' "$meta" | jq -r '.name // ""')"
+          status="$(printf '%s' "$meta" | jq -r '.status // ""')"
+          region="$(printf '%s' "$meta" | jq -r '.region // ""')"
+          pub="$(printf '%s' "$keys" | jq -r 'if type=="array" then . elif (.api_keys? | type)=="array" then .api_keys else [] end | any(.[]; ((.type // "") == "publishable") and ((.disabled // false) == false))')"
+          anon="$(printf '%s' "$keys" | jq -r 'if type=="array" then . elif (.api_keys? | type)=="array" then .api_keys else [] end | any(.[]; (((.name // "") == "anon") or ((.type // "") == "anon")) and ((.disabled // false) == false))')"
+          echo "PROJECT_NAME=$name"
+          echo "PROJECT_STATUS=$status"
+          echo "PROJECT_REGION=$region"
+          echo "NEXT_PUBLIC_SUPABASE_URL=https://$REF.supabase.co"
+          echo "PUBLISHABLE_KEY_AVAILABLE=$pub"
+          echo "LEGACY_ANON_KEY_AVAILABLE=$anon"
