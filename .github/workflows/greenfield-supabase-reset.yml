@@ -21,30 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify target and finish migration ledger
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          meta="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
-          test "$(printf '%s' "$meta" | jq -r '.name')" = 'Terranex'
-          test "$(printf '%s' "$meta" | jq -r '.status')" = 'ACTIVE_HEALTHY'
-          query_file() {
-            jq -Rs '{query:.}' "$1" > "$tmp/payload.json"
-            curl --fail-with-body -sS -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
-              --data-binary @"$tmp/payload.json" >/dev/null
-          }
-          : > "$tmp/ledger.sql"
-          while IFS= read -r migration; do
-            version="$(basename "$migration" .sql)"
-            digest="$(sha256sum "$migration" | awk '{print $1}')"
-            printf "insert into public.terranex_migration_history(version,sha256) values ('%s','%s') on conflict (version) do update set sha256=excluded.sha256;\n" "$version" "$digest" >> "$tmp/ledger.sql"
-          done < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | sort)
-          query_file "$tmp/ledger.sql"
-          echo "MIGRATION_LEDGER_ROWS=$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d ' ')"
-
-      - name: Verify live schema, security anchors, and frontend/backend objects
+      - name: Verify live Greenfield schema and frontend/backend contract
         shell: bash
         run: |
           set -euo pipefail
@@ -55,6 +32,10 @@ jobs:
               -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
               --data-binary @"$tmp/payload.json"
           }
+          meta="$(curl --fail-with-body -sS "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")"
+          test "$(printf '%s' "$meta" | jq -r '.name')" = 'Terranex'
+          test "$(printf '%s' "$meta" | jq -r '.status')" = 'ACTIVE_HEALTHY'
+
           python - <<'PY' > "$tmp/contract.json"
           import json, pathlib, re
           src='\n'.join(p.read_text(errors='ignore') for p in pathlib.Path('src').rglob('*') if p.suffix in {'.ts','.tsx','.js','.jsx'})
@@ -63,36 +44,51 @@ jobs:
             'rpcs': sorted(set(re.findall(r"\.rpc\(\s*['\"]([A-Za-z0-9_]+)['\"]",src)))
           }))
           PY
+
           canonical="$(grep -rhoiE "create table( if not exists)?[[:space:]]+public\.[a-z0-9_]+" supabase/migrations/*.sql | sed -E 's/.*public\.//I' | tr 'A-Z' 'a-z' | sort -u)"
           expected="$(printf '%s\n' "$canonical" | sed '/^$/d' | wc -l | tr -d ' ')"
           table_sql="$(printf '%s\n' "$canonical" | sed '/^$/d' | sed "s/'/''/g;s/.*/'&'/" | paste -sd, -)"
+
+          forced="$(grep -rhoiE "alter table[[:space:]]+public\.[a-z0-9_]+[[:space:]]+force row level security" supabase/migrations/*.sql | sed -E 's/.*public\.([a-z0-9_]+).*/\1/I' | tr 'A-Z' 'a-z' | sort -u)"
+          forced_expected="$(printf '%s\n' "$forced" | sed '/^$/d' | wc -l | tr -d ' ')"
+          forced_sql="$(printf '%s\n' "$forced" | sed '/^$/d' | sed "s/'/''/g;s/.*/'&'/" | paste -sd, -)"
+
           live="$(query "select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname=any(array[$table_sql]);" | jq -r '.[0].n')"
           unrelated="$(query "select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname<>all(array[$table_sql]) and c.relname<>'terranex_migration_history';" | jq -r '.[0].n')"
-          rls="$(query "select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname=any(array[$table_sql]) and c.relrowsecurity and c.relforcerowsecurity;" | jq -r '.[0].n')"
+          forced_live="$(query "select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname=any(array[$forced_sql]) and c.relrowsecurity and c.relforcerowsecurity;" | jq -r '.[0].n')"
           ledger="$(query 'select count(*)::int n from public.terranex_migration_history;' | jq -r '.[0].n')"
           migrations="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d ' ')"
-          test "$live" = "$expected"
-          test "$unrelated" = '0'
-          test "$rls" = "$expected"
-          test "$ledger" = "$migrations"
+
           tables_json="$(jq -c '.tables' "$tmp/contract.json")"
           rpcs_json="$(jq -c '.rpcs' "$tmp/contract.json")"
           missing_tables="$(query "with wanted(name) as (select jsonb_array_elements_text('$tables_json'::jsonb)) select coalesce(jsonb_agg(name order by name),'[]'::jsonb) missing from wanted where to_regclass('public.'||name) is null;" | jq -c '.[0].missing')"
           missing_rpcs="$(query "with wanted(name) as (select jsonb_array_elements_text('$rpcs_json'::jsonb)) select coalesce(jsonb_agg(name order by name),'[]'::jsonb) missing from wanted where not exists(select 1 from pg_proc p where p.pronamespace='public'::regnamespace and p.proname=wanted.name);" | jq -c '.[0].missing')"
-          test "$missing_tables" = '[]'
-          test "$missing_rpcs" = '[]'
+
           anchors="$(query "select json_build_object('s6_evaluate_gate',exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname='s6_evaluate_gate'),'close_serialization',(select count(*) from pg_trigger where tgname in ('a_s6_close_serialization_batch_lock','a_s6_close_serialization_line_lock') and not tgisinternal)=2,'audit_append_only',exists(select 1 from pg_trigger where tgname='audit_events_append_only' and not tgisinternal),'journal_balance',exists(select 1 from pg_trigger where tgname='journal_lines_balance_guard' and not tgisinternal),'s7_import',to_regclass('public.s7_opening_imports') is not null,'s7_reconciliation',to_regclass('public.s7_reconciliation_checkpoints') is not null) checks;")"
-          test "$(printf '%s' "$anchors" | jq -r '.[0].checks | all(.[])')" = 'true'
+          anchors_ok="$(printf '%s' "$anchors" | jq -r '.[0].checks | all(.[])')"
+
           echo "CANONICAL_TABLES=$live/$expected"
-          echo "RLS_FORCE=$rls/$expected"
+          echo "RLS_FORCE_REQUIRED=$forced_live/$forced_expected"
           echo "UNRELATED_PUBLIC_TABLES=$unrelated"
           echo "MIGRATIONS_IN_LEDGER=$ledger/$migrations"
+          echo "FRONTEND_TABLE_COUNT=$(jq '.tables|length' "$tmp/contract.json")"
+          echo "FRONTEND_RPC_COUNT=$(jq '.rpcs|length' "$tmp/contract.json")"
           echo "FRONTEND_MISSING_TABLES=$missing_tables"
           echo "FRONTEND_MISSING_RPCS=$missing_rpcs"
+          echo "SECURITY_ANCHORS_OK=$anchors_ok"
+
+          test "$live" = "$expected"
+          test "$unrelated" = '0'
+          test "$forced_live" = "$forced_expected"
+          test "$ledger" = "$migrations"
+          test "$missing_tables" = '[]'
+          test "$missing_rpcs" = '[]'
+          test "$anchors_ok" = 'true'
           echo 'FRONTEND_BACKEND_OBJECT_CONTRACT=true'
           echo 'GREENFIELD_SCHEMA_VERIFIED=true'
 
       - name: Ensure modern publishable key
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -110,6 +106,7 @@ jobs:
           echo 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_AVAILABLE=true'
 
       - name: Supabase security advisor
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
