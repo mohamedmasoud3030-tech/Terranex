@@ -1,4 +1,4 @@
-name: Terranex Activation Repair Patch
+name: Terranex Activation Repair Patch v2
 
 on:
   push:
@@ -29,45 +29,45 @@ jobs:
           p = Path('.github/pilot-activation/activate.sh')
           s = p.read_text()
 
-          old = '''  curl --fail-with-body -sS -X POST \\\n            "https://api.supabase.com/v1/projects/$REF/database/query" \\\n          '''
-          new = '''  curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 -X POST \\\n            "https://api.supabase.com/v1/projects/$REF/database/query" \\\n          '''
-          assert s.count(old) == 1, s.count(old)
+          old = 'curl --fail-with-body -sS -X POST'
+          new = 'curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 -X POST'
+          assert s.count(old) == 1, f'POST curl count={s.count(old)}'
           s = s.replace(old, new)
 
-          old = '''PROJECT_JSON="$(curl --fail-with-body -sS \\\n            "https://api.supabase.com/v1/projects/$REF" \\\n          '''
-          new = '''PROJECT_JSON="$(curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \\\n            "https://api.supabase.com/v1/projects/$REF" \\\n          '''
-          assert s.count(old) == 1, s.count(old)
+          old = 'PROJECT_JSON="$(curl --fail-with-body -sS \\\n'
+          new = 'PROJECT_JSON="$(curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \\\n'
+          assert s.count(old) == 1, f'project curl count={s.count(old)}'
           s = s.replace(old, new)
 
-          old = '''  qbool secdef_search_path_boundary "select to_jsonb(count(*) = 0 from pg_proc p where p.prosecdef and p.pronamespace='public'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like 'search_path=pg_catalog,public')));"'''
-          new = '''  qbool secdef_search_path_boundary "select to_jsonb((select count(*) from pg_proc p where p.prosecdef and p.pronamespace='public'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like 'search_path=pg_catalog,public'))) = 0);"'''
-          assert s.count(old) == 1, s.count(old)
+          old = 'qbool secdef_search_path_boundary "select to_jsonb(count(*) = 0 from pg_proc p where p.prosecdef and p.pronamespace=\'public\'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like \'search_path=pg_catalog,public\')));"'
+          new = 'qbool secdef_search_path_boundary "select to_jsonb((select count(*) from pg_proc p where p.prosecdef and p.pronamespace=\'public\'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like \'search_path=pg_catalog,public\'))) = 0);"'
+          assert s.count(old) == 1, f'secdef count={s.count(old)}'
           s = s.replace(old, new)
 
-          start = s.index("# Security advisors remain an independent verification signal.")
-          end = s.index("\nSECURITY_OK=false", start)
+          start = s.index('# Security advisors remain an independent verification signal.')
+          end = s.index('\nSECURITY_OK=false', start)
           advisor = '''# Security advisors are read through the same Management API used for SQL.
-          ADVISORS_RC=1
-          note 'Running Supabase security advisors through Management API ...'
-          if curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \\
-            "https://api.supabase.com/v1/projects/$REF/advisors/security" \\
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \\
-            -o "$TMP/advisors.json"; then
-            ADVISOR_ERROR_COUNT="$(jq '[.lints[]? | select((((.level // .severity // "") | ascii_downcase)) == "error")] | length' "$TMP/advisors.json" 2>/dev/null || echo -1)"
-            if [[ "$ADVISOR_ERROR_COUNT" == 0 ]]; then
-              ADVISORS_RC=0
-              note '  security advisors: no error-level findings'
-            else
-              warn "security advisors report $ADVISOR_ERROR_COUNT error-level finding(s)"
-            fi
-          else
-            warn 'security advisor Management API request failed'
-          fi
-          '''
+ADVISORS_RC=1
+note 'Running Supabase security advisors through Management API ...'
+if curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 --connect-timeout 10 --max-time 45 \\
+  "https://api.supabase.com/v1/projects/$REF/advisors/security" \\
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \\
+  -o "$TMP/advisors.json"; then
+  ADVISOR_ERROR_COUNT="$(jq '[.lints[]? | select((((.level // .severity // "") | ascii_downcase)) == "error")] | length' "$TMP/advisors.json" 2>/dev/null || echo -1)"
+  if [[ "$ADVISOR_ERROR_COUNT" == 0 ]]; then
+    ADVISORS_RC=0
+    note '  security advisors: no error-level findings'
+  else
+    warn "security advisors report $ADVISOR_ERROR_COUNT error-level finding(s)"
+  fi
+else
+  warn 'security advisor Management API request failed'
+fi
+'''
           s = s[:start] + advisor + s[end:]
-
           p.write_text(s)
           PY
+
           bash -n .github/pilot-activation/activate.sh
           git diff --check
 
