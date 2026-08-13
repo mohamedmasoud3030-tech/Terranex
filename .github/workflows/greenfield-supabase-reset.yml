@@ -1,4 +1,4 @@
-name: Terranex Activation Repair Verification Final
+name: Terranex Security Definer Search Path Probe
 
 on:
   push:
@@ -11,30 +11,32 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
-      APPLY_MIGRATIONS: 'false'
     steps:
-      - name: Checkout exact activation repair head
-        uses: actions/checkout@v4
-        with:
-          ref: 36619d4e834b0b75df03d84edd13f80526500d42
-
-      - name: Validate script and inspect live pilot read-only
+      - name: List Terranex public SECURITY DEFINER search-path offenders
         shell: bash
         run: |
           set -euo pipefail
-          bash -n .github/pilot-activation/activate.sh
-          output="$(bash .github/pilot-activation/activate.sh)"
-          printf '%s\n' "$output"
-          grep -q '^PROJECT_ACCESSIBLE=true$' <<< "$output"
-          grep -q '^PROJECT_CLASSIFICATION=TERRANEX$' <<< "$output"
-          grep -q '^MIGRATIONS_IN_SYNC=true$' <<< "$output"
-          grep -q '^RLS_VERIFIED=true$' <<< "$output"
-          grep -q '^FINANCIAL_CONTROLS_VERIFIED=true$' <<< "$output"
-          grep -q '^SECURITY_VERIFIED=true$' <<< "$output"
-          echo 'ACTIVATION_REPAIR_LIVE_VERIFIED=true'
+          sql="select p.oid::regprocedure::text as signature,
+            coalesce(array_to_string(p.proconfig, ','), '') as config
+          from pg_proc p
+          where p.prosecdef
+            and p.pronamespace='public'::regnamespace
+            and (p.proconfig is null or not exists (
+              select 1 from unnest(p.proconfig) pc
+              where pc like 'search_path=pg_catalog,public'
+            ))
+          order by 1;"
+          payload="$(jq -n --arg q "$sql" '{query:$q}')"
+          response="$(curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 \
+            -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary "$payload")"
+          echo "OFFENDER_COUNT=$(printf '%s' "$response" | jq 'length')"
+          printf '%s' "$response" | jq -r '.[] | "FUNCTION=\(.signature) CONFIG=\(.config)"'
