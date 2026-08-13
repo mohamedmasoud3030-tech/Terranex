@@ -1,4 +1,4 @@
-name: Terranex Pilot Security DB Replay
+name: Terranex Runtime Auth Verification
 
 on:
   push:
@@ -11,33 +11,21 @@ permissions:
   contents: read
 
 jobs:
-  db-replay:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
+    timeout-minutes: 15
     steps:
-      - name: Checkout hardening PR
+      - name: Checkout runtime auth fix
         uses: actions/checkout@v4
         with:
-          ref: fix/pilot-security-advisor
-      - name: Run canonical migration replay and DB suites
-        env:
-          GITHUB_ACTIONS: 'true'
-          PGHOST: 127.0.0.1
-          PGPORT: '5432'
-          PGUSER: postgres
-          PGPASSWORD: postgres
-        run: bash scripts/db-test.sh
+          ref: fix/runtime-auth-sequencing
+      - name: Install dependencies
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
