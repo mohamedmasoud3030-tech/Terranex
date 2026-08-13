@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 // S2 read models. Money arrives as text (bigint transported exactly through
 // the *_read views); it is formatted with the shared money module.
@@ -113,7 +114,7 @@ export async function getCurrentMembership(organizationId: string): Promise<{ ro
     .eq('organization_id', organizationId)
     .eq('status', 'ACTIVE')
     .maybeSingle();
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as { role: string } | null;
 }
 
@@ -124,7 +125,7 @@ export async function getCashAccountPositions(projectId: string): Promise<CashAc
     .select('cash_account_id,organization_id,project_id,name,currency,balance_minor_units,last_posting_date')
     .eq('project_id', projectId)
     .order('name');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as CashAccountPosition[];
 }
 
@@ -135,7 +136,7 @@ export async function getObligationPositions(projectId: string): Promise<Obligat
     .select('obligation_id,organization_id,project_id,party_id,description,amount_minor_units,currency,transaction_date,cost_treatment,status,prepared_by,authorized_by,authorized_at,created_at,paid_minor_units,outstanding_minor_units,is_posted,is_reversed,authorization_batch_id,reversal_batch_id')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as ObligationPosition[];
 }
 
@@ -146,7 +147,7 @@ export async function getPayments(projectId: string): Promise<PaymentStatus[]> {
     .select('payment_id,organization_id,project_id,obligation_id,cash_account_id,amount_minor_units,currency,payment_date,paid_by,posted_at,batch_id,is_reversed,reversal_batch_id,is_reconciled,match_id')
     .eq('project_id', projectId)
     .order('posted_at', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as PaymentStatus[];
 }
 
@@ -157,7 +158,7 @@ export async function getStatementLines(projectId: string): Promise<BankStatemen
     .select('line_id,organization_id,project_id,cash_account_id,import_id,provider_reference,transaction_date,amount_minor_units,currency,description,fingerprint,created_at,is_reconciled,match_id,matched_payment_id,matched_at')
     .eq('project_id', projectId)
     .order('transaction_date', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as BankStatementLineStatus[];
 }
 
@@ -168,7 +169,7 @@ export async function getLedgerForObligation(obligationId: string): Promise<Jour
     .select('batch_id,organization_id,project_id,source_type,source_id,batch_transaction_date,posted_at,posted_by,reversal_of_batch_id,line_id,account_id,account_role,account_label,debit_minor_units,credit_minor_units,currency,cash_account_id,obligation_id,party_id,line_transaction_date')
     .eq('obligation_id', obligationId)
     .order('posted_at');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as JournalLedgerLine[];
 }
 
@@ -179,7 +180,7 @@ export async function getLedgerForBatch(batchId: string): Promise<JournalLedgerL
     .select('batch_id,organization_id,project_id,source_type,source_id,batch_transaction_date,posted_at,posted_by,reversal_of_batch_id,line_id,account_id,account_role,account_label,debit_minor_units,credit_minor_units,currency,cash_account_id,obligation_id,party_id,line_transaction_date')
     .eq('batch_id', batchId)
     .order('posted_at');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as JournalLedgerLine[];
 }
 
@@ -192,7 +193,7 @@ export async function getAuditEvents(entityIds: string[]): Promise<AuditEvent[]>
     .in('entity_id', entityIds)
     .order('created_at', { ascending: false })
     .limit(200);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as AuditEvent[];
 }
 
@@ -215,7 +216,7 @@ export async function getUnpostedContributions(projectId: string): Promise<Contr
     .select('id,project_id,participant_id,agreement_version_id,capital_call_id,contribution_minor_units,currency,occurred_on,created_at')
     .eq('project_id', projectId)
     .order('occurred_on');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   const list = contributions as Contribution[];
   const posted = new Set<string>();
   const { data: batches, error: batchError } = await s

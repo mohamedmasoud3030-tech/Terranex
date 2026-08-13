@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 // GF-009 / S7 read models. Money always arrives as text (bigint transported
 // exactly through the *_read views) and free text arrives already neutralized
@@ -185,7 +186,7 @@ async function many<T>(view: string, columns: string, projectId: string, orderCo
   let query = s.from(view).select(columns).eq('project_id', projectId);
   if (orderColumn) query = query.order(orderColumn, { ascending: false });
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as T[];
 }
 
@@ -203,7 +204,7 @@ export async function getOpeningImportRows(importIds: string[]): Promise<Opening
     .select('row_id,organization_id,project_id,import_id,row_number,mapping_code,mapping_label,account_role,party_id,party_legal_name,cash_account_id,debit_minor_units,credit_minor_units,description,status,reject_reason,fingerprint')
     .in('import_id', importIds)
     .order('row_number');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as OpeningImportRow[];
 }
 
@@ -212,7 +213,7 @@ export async function getOpeningMappingCodes(): Promise<OpeningMappingCode[]> {
   const { data, error } = await s.from('s7_opening_mapping_codes_read')
     .select('code,account_role,label_ar,natural_side,requires_party,requires_cash_account')
     .order('code');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as OpeningMappingCode[];
 }
 
@@ -250,7 +251,7 @@ export async function getPilotAcceptanceReport(projectId: string): Promise<Pilot
     .select('project_id,organization_id,reporting_currency,posted_opening_imports,opening_import_rejected_rows,opening_control_totals_match,reconciliation_checkpoints,reconciliation_non_zero_variances,reconciliation_max_abs_variance_minor_units,unresolved_exceptions,unresolved_critical_exceptions,unreconciled_bank_statement_lines,unbalanced_journal_batches,partner_capital_rollforward_breaks,investor_statement_total_minor_units,end_to_end_result,backup_restore_result,access_revocation_result,uat_total_tasks,uat_accepted_tasks,uat_rejected_tasks,human_uat_status')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as PilotAcceptanceReport | null;
 }
 
@@ -260,6 +261,6 @@ export async function getMembershipAccess(organizationId: string): Promise<Membe
     .select('membership_id,organization_id,user_id,role,status,has_access,created_at')
     .eq('organization_id', organizationId)
     .order('created_at');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as MembershipAccess[];
 }

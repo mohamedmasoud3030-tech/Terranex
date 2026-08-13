@@ -18,6 +18,7 @@ import {
   type OpeningImportRow,
 } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { WorkspaceChrome, ForbiddenCard, memberDisplayLabel } from '@/features/workspace/chrome';
 import {
   AcceptUatTaskForm,
   ApproveOpeningImportForm,
@@ -157,13 +158,7 @@ export default async function PilotPage({
     ]);
 
   if (!membership) {
-    return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك لا تسمح بقراءة لوحة التشغيل التجريبي لهذا المشروع. قد تكون عضويتك أُلغيت.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
-    );
+    return <ForbiddenCard projectId={projectId} message="عضويتك لا تسمح بقراءة لوحة التشغيل التجريبي لهذا المشروع. قد تكون عضويتك أُلغيت." />;
   }
 
   const isOwner = membership.role === 'OWNER';
@@ -205,12 +200,14 @@ export default async function PilotPage({
 
   return (
     <section className="stack">
-      <header className="project-context card">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
-          <h1>تجهيز التشغيل التجريبي</h1>
-          <p className="muted">{project.name} · {currency}</p>
-        </div>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="opening"
+        title="الاستيراد والمطابقة"
+        subtitle={`${project.name} · ${currency}`}
+        internalReference={project.internal_reference}
+      />
+      <header className="card">
         <nav className="context-nav" aria-label="تنقل التشغيل التجريبي">
           <a href="#readiness">الجاهزية</a>
           <a href="#approvals">بانتظار الاعتماد</a>
@@ -335,8 +332,8 @@ export default async function PilotPage({
                     <td>{money(row.computed_credit_total_minor_units)}</td>
                     <td className={BigInt(row.debit_variance_minor_units) === 0n ? undefined : 'error'}>{money(row.debit_variance_minor_units)}</td>
                     <td className={BigInt(row.credit_variance_minor_units) === 0n ? undefined : 'error'}>{money(row.credit_variance_minor_units)}</td>
-                    <td>{row.prepared_by.slice(0, 8)}…</td>
-                    <td>{row.approved_by ? `${row.approved_by.slice(0, 8)}…` : '—'}</td>
+                    <td>مُعِدّ مسجّل</td>
+                    <td>{row.approved_by ? 'مالك معتمد' : '—'}</td>
                     <td>{d(row.posting_date)}</td>
                     <td>{row.journal_batch_id ? <Link href={`/projects/${projectId}/cash`}>عرض المصدر</Link> : '—'}</td>
                   </tr>
@@ -489,8 +486,8 @@ export default async function PilotPage({
                     </td>
                     <td><span className="status">{row.status === 'SIGNED_OFF' ? 'معتمدة' : row.status === 'MATCHED' ? 'مطابقة' : 'فرق'}</span></td>
                     <td>{row.open_exception_count}{row.max_open_severity ? ` · ${SEVERITY_AR[row.max_open_severity]}` : ''}</td>
-                    <td>{row.prepared_by.slice(0, 8)}…</td>
-                    <td>{row.signed_off_by ? `${row.signed_off_by.slice(0, 8)}…` : '—'}</td>
+                    <td>مُعِدّ مسجّل</td>
+                    <td>{row.signed_off_by ? 'مالك معتمد' : '—'}</td>
                     <td>{row.external_evidence_reference}</td>
                     <td>
                       {isOwner && row.status !== 'SIGNED_OFF' && row.open_exception_count === 0 && (
@@ -649,7 +646,7 @@ export default async function PilotPage({
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>
-                    <td><code>{member.user_id.slice(0, 8)}…</code></td>
+                    <td>{memberDisplayLabel(member.role, members.indexOf(member))}</td>
                     <td>{member.role === 'OWNER' ? 'مالك' : 'عضو'}</td>
                     <td><span className="status">{member.status === 'ACTIVE' ? 'نشط' : 'مُلغى'}</span></td>
                     <td className={member.has_access ? undefined : 'error'}>{member.has_access ? 'ممنوح' : 'محجوب'}</td>

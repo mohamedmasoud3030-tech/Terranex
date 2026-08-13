@@ -5,7 +5,7 @@ import { getCurrentMembership } from '@/features/finance/queries';
 import { getActiveVersion, getParticipants } from '@/features/funding/queries';
 import { getPartnerCapitalStatement } from '@/features/allocation/queries';
 import { formatMinorUnits } from '@/shared/money';
-import { WorkspaceNav } from '@/features/workspace/nav';
+import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,13 +24,7 @@ export default async function StatementsPage({ params }: { params: Promise<{ pro
   ]);
 
   if (!membership) {
-    return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك الحالية لا تسمح بقراءة كشوف الشركاء لهذا المشروع.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
-    );
+    return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة كشوف الشركاء لهذا المشروع." />;
   }
 
   const participantName = new Map(
@@ -39,18 +33,13 @@ export default async function StatementsPage({ params }: { params: Promise<{ pro
 
   return (
     <section className="stack">
-      <header className="project-context card">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
-          <h1>كشوف الشركاء</h1>
-          <p className="muted">
-            {project.name} · {currency}
-            {activeVersion ? ` · النسخة الحاكمة ${activeVersion.version_no}` : ' · لا توجد اتفاقية مفعّلة'}
-          </p>
-        </div>
-      </header>
-
-      <WorkspaceNav projectId={projectId} active="statements" />
+      <WorkspaceChrome
+        projectId={projectId}
+        active="statements"
+        title="كشوف الشركاء"
+        subtitle={`${project.name} · ${currency}${activeVersion ? ` · النسخة الحاكمة ${activeVersion.version_no}` : ' · لا توجد اتفاقية مفعّلة'}`}
+        internalReference={project.internal_reference}
+      />
 
       {statements.length === 0 ? (
         <section className="card stack">

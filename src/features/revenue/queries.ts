@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 export type PropertyDisposition = {
   disposition_id:string; organization_id:string; project_id:string; property_asset_id:string; buyer_party_id:string;
@@ -49,7 +50,7 @@ async function many<T>(table:string,columns:string,projectId:string,orderColumn?
   let query=s.from(table).select(columns).eq('project_id',projectId);
   if(orderColumn) query=query.order(orderColumn,{ascending:false});
   const {data,error}=await query;
-  if(error) throw error;
+  if(error) throwOperatorQuery(error);
   return data as unknown as T[];
 }
 
@@ -82,6 +83,6 @@ export async function getUnreconciledPositiveStatementLines(projectId:string):Pr
   const {data,error}=await s.from('bank_statement_line_status_read')
     .select('line_id,project_id,cash_account_id,transaction_date,amount_minor_units,currency,description,provider_reference,is_reconciled')
     .eq('project_id',projectId).eq('is_reconciled',false).order('transaction_date',{ascending:false});
-  if(error) throw error;
+  if(error) throwOperatorQuery(error);
   return (data as PositiveStatementLine[]).filter((line)=>BigInt(line.amount_minor_units)>0n);
 }

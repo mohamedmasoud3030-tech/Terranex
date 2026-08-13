@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 export type RealEstateProfile = { id:string; organization_id:string; project_id:string; strategy:string; jurisdiction:string|null };
 export type PropertyWorkspace = {
@@ -26,12 +27,12 @@ async function many<T>(table:string, columns:string, projectId:string, orderColu
   let query=s.from(table).select(columns).eq('project_id',projectId);
   if(orderColumn) query=query.order(orderColumn,{ascending:false});
   const {data,error}=await query;
-  if(error) throw error;
+  if(error) throwOperatorQuery(error);
   return data as unknown as T[];
 }
 
 export async function getRealEstateProfile(projectId:string):Promise<RealEstateProfile|null>{
-  const s=await createClient(); const {data,error}=await s.from('real_estate_project_profiles').select('id,organization_id,project_id,strategy,jurisdiction').eq('project_id',projectId).maybeSingle(); if(error) throw error; return data as RealEstateProfile|null;
+  const s=await createClient(); const {data,error}=await s.from('real_estate_project_profiles').select('id,organization_id,project_id,strategy,jurisdiction').eq('project_id',projectId).maybeSingle(); if(error) throwOperatorQuery(error); return data as RealEstateProfile|null;
 }
 export const getPropertyWorkspaces=(id:string)=>many<PropertyWorkspace>('property_asset_workspace_read','property_asset_id,organization_id,project_id,name,asset_reference,strategy,jurisdiction,operational_state,state_changed_at,title_status,title_effective_date,title_evidence_reference,possession_status,possession_effective_date,possession_evidence_reference,acquisition_id,acquisition_state,contract_reference,contract_date,consideration_minor_units,closing_costs_minor_units,acquisition_currency,consideration_obligation_id,acquisition_payment_status',id);
 export const getParcels=(id:string)=>many<Parcel>('parcels_read','id,organization_id,project_id,property_asset_id,identifier,cadastral_reference,legal_description,area_quantity,area_unit,created_at',id,'created_at');

@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 import type { ConditionalSectionCode } from './schema';
 import {
   emptyIntakeSnapshot,
@@ -58,7 +59,7 @@ export async function getIntakeDeclaration(projectId: string): Promise<IntakeDec
     .select('declaration_id,organization_id,project_id,freeze_date,freeze_evidence_reference,freeze_recorded_by,freeze_recorded_at,declared_debit_total_minor_units,declared_credit_total_minor_units,control_totals_evidence_reference,control_totals_declared_by,control_totals_declared_at,agreement_title_or_reference,organization_evidence_reference,project_evidence_reference')
     .eq('project_id', projectId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as IntakeDeclaration | null;
 }
 
@@ -68,7 +69,7 @@ export async function getIntakeApplicability(projectId: string): Promise<IntakeA
     .select('applicability_id,section_code,applicable,reason,evidence_reference')
     .eq('project_id', projectId)
     .order('section_code');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as IntakeApplicability[];
 }
 
@@ -78,7 +79,7 @@ export async function getIntakeModellingGaps(projectId: string): Promise<IntakeM
     .select('gap_id,source_reference,description,amount_minor_units,currency,why_unmappable,status,recorded_at,resolution_evidence_reference')
     .eq('project_id', projectId)
     .order('recorded_at', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as IntakeModellingGap[];
 }
 
@@ -88,7 +89,7 @@ export async function getIntakeEvidenceItems(projectId: string): Promise<IntakeE
     .select('evidence_item_id,evidence_identifier,linked_fact,customer_storage_location,recorded_at')
     .eq('project_id', projectId)
     .order('recorded_at', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as IntakeEvidenceItem[];
 }
 
@@ -101,7 +102,7 @@ export async function getAllocationRuleLines(ruleSetId: string): Promise<Array<{
   const { data, error } = await s.from('s5_allocation_rules')
     .select('participant_party_id,weight_numerator,weight_denominator')
     .eq('rule_set_id', ruleSetId);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return (data ?? []).map((row) => ({
     participant_party_id: row.participant_party_id as string,
     weight_numerator: String(row.weight_numerator),

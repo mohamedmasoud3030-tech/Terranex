@@ -128,8 +128,8 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
       </section>
 
       <section id="allocation" className="card stack scroll-target">
-        <div><h2>تخصيص النتيجة المحققة</h2><p className="muted">المبلغ لا يُكتب يدويًا. PostgreSQL يشتقه من الـledger كما كان لحظة لقطة S6 المعتمدة، ثم يوزعه بـlargest remainder دون كسور مالية.</p></div>
-        {approvedSnapshots.length === 0 && <p className="muted">لا توجد لقطة إغلاق S6 معتمدة جاهزة للتخصيص.</p>}
+        <div><h2>تخصيص النتيجة المحققة</h2><p className="muted">المبلغ لا يُكتب يدويًا. PostgreSQL يشتقه من الـledger كما كان لحظة لقطة الإغلاق المعتمدة، ثم يوزعه بـlargest remainder دون كسور مالية.</p></div>
+        {approvedSnapshots.length === 0 && <p className="muted">لا توجد لقطة إغلاق معتمدة جاهزة للتخصيص.</p>}
         {activeVersion && activeRuleSet && approvedSnapshots.map((snapshot) => {
           const existing = runs.find((run) => run.close_snapshot_id === snapshot.snapshot_id);
           return (

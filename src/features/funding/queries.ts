@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 export type Party = { id: string; legal_name: string; party_type: 'PERSON' | 'ORGANIZATION' };
 export type Participant = {
@@ -68,7 +69,7 @@ export async function getParties(organizationId: string): Promise<Party[]> {
   const s = await createClient();
   const { data, error } = await s.from('parties').select('id,legal_name,party_type')
     .eq('organization_id', organizationId).order('legal_name');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as Party[];
 }
 
@@ -76,7 +77,7 @@ export async function getParticipants(projectId: string): Promise<Participant[]>
   const s = await createClient();
   const { data, error } = await s.from('project_participants')
     .select('id,party_id,role,parties(legal_name)').eq('project_id', projectId).order('created_at');
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as Participant[];
 }
 
@@ -85,7 +86,7 @@ export async function getActiveVersion(projectId: string): Promise<AgreementVers
   const { data, error } = await s.from('agreement_versions')
     .select('id,version_no,status,effective_date,activated_at,terms_hash')
     .eq('project_id', projectId).eq('status', 'ACTIVE').maybeSingle();
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as AgreementVersion | null;
 }
 
@@ -94,7 +95,7 @@ export async function getVersions(projectId: string): Promise<AgreementVersion[]
   const { data, error } = await s.from('agreement_versions')
     .select('id,version_no,status,effective_date,activated_at,terms_hash')
     .eq('project_id', projectId).order('version_no', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as AgreementVersion[];
 }
 
@@ -103,7 +104,7 @@ export async function getCommitments(versionId: string): Promise<CommitmentTerm[
   const { data, error } = await s.from('commitment_terms_read')
     .select('id,participant_id,commitment_minor_units,currency')
     .eq('agreement_version_id', versionId);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as CommitmentTerm[];
 }
 
@@ -112,7 +113,7 @@ export async function getCapitalCalls(projectId: string): Promise<CapitalCall[]>
   const { data, error } = await s.from('capital_calls')
     .select('id,status,reference,due_date,issued_at,agreement_version_id')
     .eq('project_id', projectId).order('issued_at', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as CapitalCall[];
 }
 
@@ -122,7 +123,7 @@ export async function getCapitalCallLines(callIds: string[]): Promise<CapitalCal
   const { data, error } = await s.from('capital_call_lines_read')
     .select('id,capital_call_id,participant_id,amount_minor_units,currency')
     .in('capital_call_id', callIds);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as CapitalCallLine[];
 }
 
@@ -131,7 +132,7 @@ export async function getContributions(projectId: string): Promise<Contribution[
   const { data, error } = await s.from('contributions_read')
     .select('id,capital_call_id,participant_id,agreement_version_id,contribution_minor_units,currency,occurred_on,created_at')
     .eq('project_id', projectId).order('occurred_on', { ascending: false });
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as Contribution[];
 }
 
@@ -140,7 +141,7 @@ export async function getProjectCapitalPosition(projectId: string): Promise<Proj
   const { data, error } = await s.from('project_capital_position_read')
     .select('project_id,currency,committed_minor_units,called_minor_units,contributed_minor_units,receivable_minor_units')
     .eq('project_id', projectId).maybeSingle();
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as ProjectCapitalPosition | null;
 }
 
@@ -149,6 +150,6 @@ export async function getPartnerCapitalPositions(versionId: string): Promise<Par
   const { data, error } = await s.from('partner_capital_position_read')
     .select('participant_id,agreement_version_id,commitment_minor_units,called_minor_units,contributed_minor_units,receivable_minor_units,currency')
     .eq('agreement_version_id', versionId);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as PartnerCapitalPosition[];
 }

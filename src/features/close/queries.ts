@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/supabase/server';
+import { throwOperatorQuery } from '@/shared/supabase/errors';
 
 export type AccountingPeriod = {
   period_id: string;
@@ -175,7 +176,7 @@ async function many<T>(view: string, columns: string, projectId: string, orderCo
   let query = s.from(view).select(columns).eq('project_id', projectId);
   if (orderColumn) query = query.order(orderColumn, { ascending: false });
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as T[];
 }
 
@@ -198,7 +199,7 @@ export async function getCloseRunGates(closeRunId: string): Promise<CloseRunGate
   const { data, error } = await s.from('close_run_gates_read')
     .select('gate_id,organization_id,close_run_id,gate_code,result,detail,evidence,evaluated_at,exception_id,exception_status,exception_reason,exception_evidence_reference,exception_materiality_comment,exception_approved_by,exception_approved_at')
     .eq('close_run_id', closeRunId);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as CloseRunGate[];
 }
 
@@ -207,7 +208,7 @@ export async function getCloseRunExceptions(closeRunId: string): Promise<CloseRu
   const { data, error } = await s.from('close_run_exceptions_read')
     .select('exception_id,organization_id,close_run_id,gate_code,reason,evidence_reference,materiality_comment,requested_by,requested_at,approved_by,approved_at,status,project_id,period_id')
     .eq('close_run_id', closeRunId);
-  if (error) throw error;
+  if (error) throwOperatorQuery(error);
   return data as unknown as CloseRunException[];
 }
 

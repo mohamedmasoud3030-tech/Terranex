@@ -119,6 +119,10 @@ Canonical decision: `docs/decisions/0009_S7_PILOT_HARDENING.md`.
 - Agriculture and Livestock runtime modules;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
+### GF-011 — Production Demo Acceptance & Hosted Readiness
+
+Status: **IN DELIVERY**. Presentation-readiness of the permanent Real Estate showcase through the authenticated hosted application. Synthetic demo data remains excluded from Phase 2 / Phase 3 evidence.
+
 ## Next active batch
 
 Operating the controlled paid Real Estate pilot with a real customer.

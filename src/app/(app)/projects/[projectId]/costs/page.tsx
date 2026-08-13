@@ -11,6 +11,7 @@ import {
   getObligationPositions,
 } from '@/features/finance/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
+import { WorkspaceChrome } from '@/features/workspace/chrome';
 import {
   AuthorizeObligationButton,
   DeleteDraftButton,
@@ -75,14 +76,16 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>تكاليف المشروع</h1>
-          <p className="muted">{project.name} · {project.reporting_currency}</p>
-        </div>
-        <Link className="button secondary" href={`/projects/${projectId}/cash`}>النقدية والبنك</Link>
-      </div>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="costs-cash"
+        title="التكاليف والنقدية"
+        subtitle={`${project.name} · ${project.reporting_currency}`}
+        internalReference={project.internal_reference}
+      />
+      <nav className="context-nav">
+        <Link href={`/projects/${projectId}/cash`}>النقدية والبنك</Link>
+      </nav>
 
       <section className="grid">
         <div className="card">
