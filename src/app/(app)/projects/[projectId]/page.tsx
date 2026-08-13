@@ -6,7 +6,8 @@ import { getProjectCapitalPosition } from '@/features/funding/queries';
 import { getAccountingPeriods } from '@/features/close/queries';
 import { getRealizedResults } from '@/features/revenue/queries';
 import { formatMinorUnits } from '@/shared/money';
-import { WorkspaceNav } from '@/features/workspace/nav';
+import { WorkspaceNav, sectorLandingHref } from '@/features/workspace/nav';
+import { SECTOR_LABEL } from '@/features/agriculture/labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function ProjectShell({
   if (!project) notFound();
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
+  const sector = project.sector;
 
   const [membership, position, cashAccounts, results, periods] = await Promise.all([
     getCurrentMembership(organizationId),
@@ -46,14 +48,18 @@ export default async function ProjectShell({
           <Link className="muted" href="/">← المشاريع</Link>
           <div className="topline">
             <div>
-              <span className="status">{STATE_LABEL[project.lifecycle_state] ?? project.lifecycle_state}</span>
+              <span className="status">
+                {SECTOR_LABEL[sector] ?? sector} · {STATE_LABEL[project.lifecycle_state] ?? project.lifecycle_state}
+              </span>
               <h1>{project.name}</h1>
               <p className="muted">
-                مشروع عقاري · {currency}
+                {SECTOR_LABEL[sector] ?? sector} · {currency}
                 {project.internal_reference ? ` · ${project.internal_reference}` : ''}
               </p>
             </div>
-            <Link className="button secondary" href="/intake">إدخال مشروع حقيقي</Link>
+            <Link className="button secondary" href={sectorLandingHref(sector, projectId)}>
+              دخول مساحة القطاع
+            </Link>
           </div>
         </div>
       </header>
@@ -65,12 +71,12 @@ export default async function ProjectShell({
         </div>
       )}
 
-      <WorkspaceNav projectId={projectId} active="overview" />
+      <WorkspaceNav projectId={projectId} active="overview" sector={sector} />
 
       <section className="card stack">
         <div className="topline">
           <h2>مساحة عمل المشروع</h2>
-          <Link className="button" href={`/projects/${projectId}/overview`}>نظرة المشروع الكاملة</Link>
+          <Link className="button" href={sectorLandingHref(sector, projectId)}>دخول مساحة القطاع</Link>
         </div>
         <p>{project.description || 'لم يُضف وصف للمشروع بعد.'}</p>
         <div className="overview-kpis">

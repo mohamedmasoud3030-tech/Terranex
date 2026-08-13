@@ -3,12 +3,21 @@ import Link from 'next/link';
 /**
  * The coherent business-facing project workspace navigation.
  *
- * These nine sections are the operator's mental model for one Real Estate
- * project. Internal implementation labels are never exposed here; each section
- * links to the canonical operator page for that business concern. The detailed
- * workhorse pages (terms, funding, operations, costs, cash, close, investors,
- * pilot) remain the execution surface behind these business labels.
+ * Real Estate projects keep their nine business sections exactly as GF-010
+ * shipped them. Agriculture projects use a single, truthful entry that
+ * leads to the Agriculture sector workspace at /projects/[id]/agriculture.
+ * Internal implementation labels are never exposed here; each section
+ * links to the canonical operator page for that business concern.
+ *
+ * The Agriculture entry is intentional: per ADR 0012 / GF-013 the first
+ * bounded agriculture foundation only ships Farm → Field → CropCycle;
+ * later bounded agriculture batches will add more sections when the
+ * corresponding workflow is implemented and tested. Scaffolding a full
+ * multi-section agriculture workspace before the underlying commands
+ * exist would fabricate KPIs and would not be honest with the operator.
  */
+
+export type WorkspaceSector = 'REAL_ESTATE' | 'AGRICULTURE';
 
 export type WorkspaceSection =
   | 'overview'
@@ -19,14 +28,17 @@ export type WorkspaceSection =
   | 'close'
   | 'statements'
   | 'opening'
-  | 'controls';
+  | 'controls'
+  | 'agriculture';
 
-export const WORKSPACE_SECTIONS: Array<{
+type SectionDef = {
   id: WorkspaceSection;
   label: string;
   description: string;
   href: (projectId: string) => string;
-}> = [
+};
+
+const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'overview', label: 'نظرة عامة', description: 'الوضع المالي والتشغيلي للمشروع من المصادر الرسمية', href: (p) => `/projects/${p}/overview` },
   { id: 'capital', label: 'رأس المال', description: 'الالتزامات، طلبات رأس المال، المساهمات والموقف الرأسمالي', href: (p) => `/projects/${p}/funding` },
   { id: 'property', label: 'الأصول العقارية', description: 'الأصول، السيطرة، التطوير، دورة حياة العقار', href: (p) => `/projects/${p}/operations` },
@@ -38,16 +50,40 @@ export const WORKSPACE_SECTIONS: Array<{
   { id: 'controls', label: 'الرقابة والجاهزية', description: 'الرقابة الداخلية، الوصول، والجاهزية للبيانات الحقيقية', href: (p) => `/projects/${p}/controls` },
 ];
 
+const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
+  { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
+];
+
+export const REAL_ESTATE_SECTION_IDS = REAL_ESTATE_SECTIONS.map((s) => s.id);
+export const AGRICULTURE_SECTION_IDS = AGRICULTURE_SECTIONS.map((s) => s.id);
+
+export function sectionsFor(sector: WorkspaceSector): ReadonlyArray<SectionDef> {
+  return sector === 'AGRICULTURE' ? AGRICULTURE_SECTIONS : REAL_ESTATE_SECTIONS;
+}
+
+export function sectionHref(section: WorkspaceSection, projectId: string): string {
+  const def = [...REAL_ESTATE_SECTIONS, ...AGRICULTURE_SECTIONS].find((s) => s.id === section);
+  return def ? def.href(projectId) : `/projects/${projectId}`;
+}
+
+export function sectorLandingHref(sector: WorkspaceSector, projectId: string): string {
+  if (sector === 'AGRICULTURE') return `/projects/${projectId}/agriculture`;
+  return `/projects/${projectId}/operations`;
+}
+
 export function WorkspaceNav({
   projectId,
   active,
+  sector,
 }: {
   projectId: string;
   active: WorkspaceSection;
+  sector: WorkspaceSector;
 }) {
+  const sections = sectionsFor(sector);
   return (
     <nav className="workspace-nav" aria-label="مساحة عمل المشروع">
-      {WORKSPACE_SECTIONS.map((section) => {
+      {sections.map((section) => {
         const current = section.id === active;
         return (
           <Link

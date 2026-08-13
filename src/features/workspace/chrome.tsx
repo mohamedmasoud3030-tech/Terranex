@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { WorkspaceNav, type WorkspaceSection } from './nav';
+import { WorkspaceNav, type WorkspaceSection, type WorkspaceSector } from './nav';
 
 export function DemoBanner({ internalReference }: { internalReference: string | null | undefined }) {
   if (!internalReference?.startsWith('DEMO')) return null;
@@ -17,12 +17,14 @@ export function WorkspaceChrome({
   title,
   subtitle,
   internalReference,
+  sector,
 }: {
   projectId: string;
   active: WorkspaceSection;
   title: string;
   subtitle?: string;
   internalReference?: string | null;
+  sector?: WorkspaceSector;
 }) {
   return (
     <>
@@ -34,7 +36,7 @@ export function WorkspaceChrome({
         </div>
       </header>
       <DemoBanner internalReference={internalReference} />
-      <WorkspaceNav projectId={projectId} active={active} />
+      {sector ? <WorkspaceNav projectId={projectId} active={active} sector={sector} /> : null}
     </>
   );
 }
