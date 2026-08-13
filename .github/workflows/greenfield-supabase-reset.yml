@@ -1,4 +1,4 @@
-name: Terranex Demo Seed Dry-Run Diagnostic
+name: Terranex Demo Seed Patch And Dry Run
 
 on:
   push:
@@ -8,31 +8,51 @@ on:
       - .github/workflows/greenfield-supabase-reset.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  patch-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
     steps:
-      - name: Checkout exact demo seed branch
+      - name: Checkout demo seed branch
         uses: actions/checkout@v4
         with:
           ref: demo/real-estate-showcase-data
 
-      - name: Run exact demo seed transaction and print safe error only
+      - name: Fix outer PLpgSQL delimiter
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/demo/seed_real_estate_showcase.sql')
+          s=p.read_text()
+          old="create or replace function pg_temp.terranex_seed_showcase()\nreturns text language plpgsql as $$"
+          new="create or replace function pg_temp.terranex_seed_showcase()\nreturns text language plpgsql as $seed$"
+          assert s.count(old)==1, s.count(old)
+          s=s.replace(old,new)
+          old="  return 'DEMO_CREATED';\nend $$;\n\nselect pg_temp.terranex_seed_showcase() as demo_seed_result;"
+          new="  return 'DEMO_CREATED';\nend $seed$;\n\nselect pg_temp.terranex_seed_showcase() as demo_seed_result;"
+          assert s.count(old)==1, s.count(old)
+          p.write_text(s.replace(old,new))
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/demo/seed_real_estate_showcase.sql
+          git commit -m 'fix(demo): isolate seed function dollar delimiter'
+          git push origin HEAD:demo/real-estate-showcase-data
+
+      - name: Dry-run patched demo with rollback
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          {
-            echo 'begin;'
-            cat scripts/demo/seed_real_estate_showcase.sql
-            echo 'rollback;'
-          } > "$tmp/dry.sql"
+          { echo 'begin;'; cat scripts/demo/seed_real_estate_showcase.sql; echo 'rollback;'; } > "$tmp/dry.sql"
           jq -Rs '{query:.}' < "$tmp/dry.sql" > "$tmp/payload.json"
           http="$(curl -sS -o "$tmp/response.json" -w '%{http_code}' -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
@@ -40,9 +60,6 @@ jobs:
             -H 'Content-Type: application/json' \
             --data-binary @"$tmp/payload.json")"
           echo "DRY_RUN_HTTP=$http"
-          if [[ "$http" -ge 200 && "$http" -lt 300 ]]; then
-            echo 'DEMO_DRY_RUN=PASS'
-            exit 0
-          fi
+          if [[ "$http" -ge 200 && "$http" -lt 300 ]]; then echo 'DEMO_DRY_RUN=PASS'; exit 0; fi
           jq -c '{code:(.code // .error_code // null),message:(.message // .error // .msg // "unknown database error"),hint:(.hint // null),details:(.details // null)}' "$tmp/response.json" || true
           exit 1
