@@ -319,4 +319,17 @@ select 1/case when (select count(*) from public.close_run_snapshots_read
   where project_id = :'s6_project') >= 1
   then 1 else 0 end as s6_snapshot_read_model_available;
 
+-- S6 gate evaluation authorization regression checks
+select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select * from public.s6_evaluate_gate('20000000-0000-4000-8000-000000000002', %L, %L, 'JOURNAL_BATCHES_BALANCED')$$,
+  :'s6_project', :'s6_period1'), 'P0001') then 1 else 0 end as s6_evaluate_gate_cross_tenant_denied;
+
+select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000001', format(
+  $$select * from public.s6_evaluate_gate_core('10000000-0000-4000-8000-000000000001', %L, %L, 'JOURNAL_BATCHES_BALANCED')$$,
+  :'s6_project', :'s6_period1'), '42501') then 1 else 0 end as s6_evaluate_gate_core_isolated;
+
+select 1/case when s6_expect_ok('00000000-0000-4000-8000-000000000001', format(
+  $$select * from public.s6_evaluate_gate('10000000-0000-4000-8000-000000000001', %L, %L, 'JOURNAL_BATCHES_BALANCED')$$,
+  :'s6_project', :'s6_period1')) then 1 else 0 end as s6_evaluate_gate_owner_success;
+
 select 'S6 period close and correction SQL PASS' as result;

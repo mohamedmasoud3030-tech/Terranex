@@ -30,3 +30,18 @@ describe('S2 server authorization contract',()=>{
     }
   });
 });
+
+const s6AuthMigration=readFileSync('supabase/migrations/20260812000300_s6_evaluate_gate_authorization.sql','utf8');
+describe('S6 evaluate gate authorization contract',()=>{
+  it('isolates s6_evaluate_gate_core from browser roles',()=>{
+    expect(s6AuthMigration).toContain('revoke all on function public.s6_evaluate_gate_core(uuid, uuid, uuid, text)');
+    expect(s6AuthMigration).toContain('from public, anon, authenticated');
+  });
+  it('enforces owner authorization and scope validation on s6_evaluate_gate',()=>{
+    expect(s6AuthMigration).toContain('perform public.s2_require_owner(p_organization_id)');
+    expect(s6AuthMigration).toContain('project not found in organization');
+    expect(s6AuthMigration).toContain('period not found for this project');
+    expect(s6AuthMigration).toContain('grant execute on function public.s6_evaluate_gate(uuid, uuid, uuid, text)');
+  });
+});
+
