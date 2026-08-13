@@ -332,4 +332,14 @@ select 1/case when s6_expect_ok('00000000-0000-4000-8000-000000000001', format(
   $$select * from public.s6_evaluate_gate('10000000-0000-4000-8000-000000000001', %L, %L, 'JOURNAL_BATCHES_BALANCED')$$,
   :'s6_project', :'s6_period1')) then 1 else 0 end as s6_evaluate_gate_owner_success;
 
+-- An ACTIVE MEMBER of the SAME organization (user 0003, membership created in
+-- 04_s2_cost_and_cash.sql) is not an OWNER: the public gate function must deny
+-- the call before any gate evaluation, returning no result row and no evidence.
+select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000003', format(
+  $$select * from public.s6_evaluate_gate('10000000-0000-4000-8000-000000000001', %L, %L, 'JOURNAL_BATCHES_BALANCED')$$,
+  :'s6_project', :'s6_period1'), 'P0001') then 1 else 0 end as s6_evaluate_gate_same_tenant_member_denied;
+select 1/case when s6_expect_raise('00000000-0000-4000-8000-000000000003', format(
+  $$select * from public.s6_evaluate_gate('10000000-0000-4000-8000-000000000001', %L, %L, 'SECTOR_CUT_OFF')$$,
+  :'s6_project', :'s6_period1'), 'P0001') then 1 else 0 end as s6_evaluate_gate_same_tenant_member_denied_sector_cut_off;
+
 select 'S6 period close and correction SQL PASS' as result;
