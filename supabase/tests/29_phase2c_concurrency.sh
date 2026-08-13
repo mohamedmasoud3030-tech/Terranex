@@ -9,26 +9,26 @@ set -euo pipefail
 #   Race 4: duplicate S7 opening-import approval (exactly one posting).
 # Overlap is forced with test-only delay triggers that are dropped at the end.
 
-DB="${TERRANEX_TEST_DB:-terranex_test}"
-PGUSER="${PGUSER:-postgres}"
+P2C_DB="${TERRANEX_TEST_DB:-terranex_test}"
+P2C_PGUSER="${PGUSER:-postgres}"
 PGPASSWORD="${PGPASSWORD:-postgres}"
 export PGPASSWORD
-CONTAINER="${TERRANEX_DB_CONTAINER:-}"
+P2C_CONTAINER="${TERRANEX_DB_CONTAINER:-}"
 
 p2c_sql() {
   local sql="$1"
-  if [[ -n "$CONTAINER" ]]; then
-    printf '%s\n' "$sql" | docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -q -U "$PGUSER" -d "$DB"
+  if [[ -n "$P2C_CONTAINER" ]]; then
+    printf '%s\n' "$sql" | docker exec -i "$P2C_CONTAINER" psql -q -v ON_ERROR_STOP=1 -U "$P2C_PGUSER" -d "$P2C_DB"
   else
-    printf '%s\n' "$sql" | psql -v ON_ERROR_STOP=1 -q -d "$DB"
+    printf '%s\n' "$sql" | psql -q -v ON_ERROR_STOP=1 -d "$P2C_DB"
   fi
 }
 p2c_value() {
   local sql="$1"
-  if [[ -n "$CONTAINER" ]]; then
-    docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -Atq -U "$PGUSER" -d "$DB" -c "$sql"
+  if [[ -n "$P2C_CONTAINER" ]]; then
+    docker exec -i "$P2C_CONTAINER" psql -Atq -v ON_ERROR_STOP=1 -U "$P2C_PGUSER" -d "$P2C_DB" -c "$sql"
   else
-    psql -v ON_ERROR_STOP=1 -Atq -d "$DB" -c "$sql"
+    psql -Atq -v ON_ERROR_STOP=1 -d "$P2C_DB" -c "$sql"
   fi
 }
 p2c_session() {

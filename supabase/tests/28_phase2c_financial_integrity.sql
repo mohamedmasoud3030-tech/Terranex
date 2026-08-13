@@ -73,6 +73,44 @@ exception when others then
     and (p_message_like is null or sqlerrm like p_message_like);
 end $$;
 
+-- Compact command vocabulary: each wrapper binds the tenant so call sites do
+-- not repeat long identical token sequences.
+create or replace function p2c_pay(p_obligation uuid, p_cash uuid, p_amount bigint, p_date date, p_key text)
+returns uuid language plpgsql as $$
+begin return public.pay_cost_obligation(public.p2c_org(), p_obligation, p_cash, p_amount, p_date, p_key); end $$;
+create or replace function p2c_authorize_obl(p_obligation uuid, p_key text) returns uuid
+language plpgsql as $$ begin return public.authorize_cost_obligation(public.p2c_org(), p_obligation, p_key); end $$;
+create or replace function p2c_create_obl(p_project uuid, p_party uuid, p_desc text, p_amount bigint, p_date date, p_treatment text, p_key text)
+returns uuid language plpgsql as $$
+begin return public.create_cost_obligation(public.p2c_org(), p_project, p_party, p_desc, p_amount, 'EGP', p_date, p_treatment, p_key); end $$;
+create or replace function p2c_collect(p_recognition uuid, p_cash uuid, p_amount bigint, p_date date, p_evidence text, p_key text)
+returns uuid language plpgsql as $$
+begin return public.collect_property_sale_receivable(public.p2c_org(), p_recognition, p_cash, p_amount, p_date, p_evidence, p_key); end $$;
+create or replace function p2c_reverse(p_batch uuid, p_reason text, p_key text) returns uuid
+language plpgsql as $$ begin return public.reverse_journal_batch(public.p2c_org(), p_batch, p_reason, p_key); end $$;
+create or replace function p2c_transition(p_asset uuid, p_from text, p_to text, p_reason text, p_evidence text, p_key text)
+returns uuid language plpgsql as $$
+begin return public.transition_property_asset(public.p2c_org(), p_asset, p_from, p_to, p_reason, p_evidence, p_key); end $$;
+create or replace function p2c_control(p_asset uuid, p_record_type text, p_name text, p_result text, p_date date, p_evidence text, p_notes text, p_key text)
+returns uuid language plpgsql as $$
+begin
+  return public.record_property_control(public.p2c_org(), p_asset, null, p_record_type, p_name, 'PASSED',
+    p_date, null, p_result, '00000000-0000-4000-8000-000000000011', p_evidence, p_notes, p_key);
+end $$;
+create or replace function p2c_stage(p_project uuid, p_file text, p_checksum text, p_codes text[], p_parties uuid[], p_cash uuid[],
+  p_debits text[], p_credits text[], p_descs text[], p_declared_debit text, p_declared_credit text, p_key text)
+returns uuid language plpgsql as $$
+begin
+  return public.s7_stage_opening_import(public.p2c_org(), p_project, 'S7.OPENING.V1', p_file, p_checksum,
+    p_codes, p_parties, p_cash, p_debits, p_credits, p_descs, p_declared_debit, p_declared_credit, p_key);
+end $$;
+create or replace function p2c_validate_import(p_import uuid, p_key text) returns text
+language plpgsql as $$ begin return public.s7_validate_opening_import(public.p2c_org(), p_import, p_key); end $$;
+create or replace function p2c_review_import(p_import uuid, p_notes text, p_key text) returns uuid
+language plpgsql as $$ begin return public.s7_review_opening_import(public.p2c_org(), p_import, p_notes, p_key); end $$;
+create or replace function p2c_approve_import(p_import uuid, p_date date, p_key text) returns uuid
+language plpgsql as $$ begin return public.s7_approve_opening_import(public.p2c_org(), p_import, p_date, p_key); end $$;
+
 -- Test-only batch insert used by the direct-writer journal attacks.
 create or replace function p2c_make_batch(p_key text, p_hash_seed text, p_date date)
 returns uuid language plpgsql as $$
@@ -150,34 +188,34 @@ select id as p2c_asset from public.property_assets where idempotency_key='p2c-as
 select p2c_owner1_run(format(
   $$select public.record_property_acquisition(public.p2c_org(),%L,%L,'P2C-ACQ-001',500000,25000,'EGP',current_date-10,null,'عقد شراء موقع P2C-ACQ-001','p2c-acquisition-001')$$,
   :'p2c_asset', :'p2c_supplier'));
-select p2c_owner1_run(format($$select public.transition_property_asset(public.p2c_org(),%L,'CANDIDATE','DUE_DILIGENCE','بدء الفحص النافي للجهالة','مذكرة قرار P2C-DD','p2c-state-dd-0001')$$, :'p2c_asset'));
+select p2c_owner1_run(format($$select public.p2c_transition(%L,'CANDIDATE','DUE_DILIGENCE','بدء الفحص النافي للجهالة','مذكرة قرار P2C-DD','p2c-state-dd-0001')$$, :'p2c_asset'));
 select p2c_owner1_run(format(
-  $$select public.record_property_control(public.p2c_org(),%L,null,'ACQUISITION_CHECK','فحص قانوني للعقد','PASSED',current_date-6,null,'لا توجد موانع مسجلة','00000000-0000-4000-8000-000000000011','P2C-DD-CHK-001','تمت مراجعة سلسلة العقود','p2c-control-dd-001')$$,
+  $$select public.p2c_control(%L,'ACQUISITION_CHECK','فحص قانوني للعقد','لا توجد موانع مسجلة',current_date-6,'P2C-DD-CHK-001','تمت مراجعة سلسلة العقود','p2c-control-dd-001')$$,
   :'p2c_asset'));
-select p2c_owner1_run(format($$select public.transition_property_asset(public.p2c_org(),%L,'DUE_DILIGENCE','ACQUIRING','اجتياز الفحص وتسجيل العقد','تقرير قانوني P2C-44','p2c-state-acq-001')$$, :'p2c_asset'));
+select p2c_owner1_run(format($$select public.p2c_transition(%L,'DUE_DILIGENCE','ACQUIRING','اجتياز الفحص وتسجيل العقد','تقرير قانوني P2C-44','p2c-state-acq-001')$$, :'p2c_asset'));
 select p2c_owner1_run(format(
-  $$select public.record_property_control(public.p2c_org(),%L,null,'TITLE','سند ملكية مسجل','PASSED',current_date-5,null,'السند يغطي الأصل','00000000-0000-4000-8000-000000000011','P2C-TITLE-ACQ',null,'p2c-control-title-acq')$$,
+  $$select public.p2c_control(%L,'TITLE','سند ملكية مسجل','السند يغطي الأصل',current_date-5,'P2C-TITLE-ACQ',null,'p2c-control-title-acq')$$,
   :'p2c_asset'));
 select p2c_owner1_run(format(
-  $$select public.record_property_control(public.p2c_org(),%L,null,'POSSESSION','حيازة فعلية عند الشراء','PASSED',current_date-5,null,'الحيازة مكتملة','00000000-0000-4000-8000-000000000011','P2C-POS-ACQ',null,'p2c-control-pos-acq')$$,
+  $$select public.p2c_control(%L,'POSSESSION','حيازة فعلية عند الشراء','الحيازة مكتملة',current_date-5,'P2C-POS-ACQ',null,'p2c-control-pos-acq')$$,
   :'p2c_asset'));
-select p2c_owner1_run(format($$select public.transition_property_asset(public.p2c_org(),%L,'ACQUIRING','HELD','إثبات السيطرة','سند مسجل P2C-TITLE-ACQ','p2c-state-held-001')$$, :'p2c_asset'));
+select p2c_owner1_run(format($$select public.p2c_transition(%L,'ACQUIRING','HELD','إثبات السيطرة','سند مسجل P2C-TITLE-ACQ','p2c-state-held-001')$$, :'p2c_asset'));
 
 -- ---------------------------------------------------------------------------
 -- S2 obligations (all fixture postings dated current_date-5 so they fall
 -- inside the first close period).
 -- ---------------------------------------------------------------------------
 select p2c_owner1_run(format(
-  $$select public.create_cost_obligation(public.p2c_org(),%L,%L,'أعمال تطوير الفحص',100000,'EGP',current_date-5,'EXPENSE','p2c-obl-main-0001')$$,
+  $$select public.p2c_create_obl(%L,%L,'أعمال تطوير الفحص',100000,current_date-5,'EXPENSE','p2c-obl-main-0001')$$,
   :'p2c_project', :'p2c_supplier'));
 select id as p2c_obligation from public.cost_obligations where idempotency_key='p2c-obl-main-0001' \gset
-select p2c_owner1_run(format($$select public.authorize_cost_obligation(public.p2c_org(),%L,'p2c-obl-auth-001')$$, :'p2c_obligation'));
+select p2c_owner1_run(format($$select public.p2c_authorize_obl(%L,'p2c-obl-auth-001')$$, :'p2c_obligation'));
 
 select p2c_owner1_run(format(
-  $$select public.create_cost_obligation(public.p2c_org(),%L,%L,'تطوير رأسمالي للفحص',400000,'EGP',current_date-5,'CAPITALIZABLE_WIP','p2c-obl-wip-0001')$$,
+  $$select public.p2c_create_obl(%L,%L,'تطوير رأسمالي للفحص',400000,current_date-5,'CAPITALIZABLE_WIP','p2c-obl-wip-0001')$$,
   :'p2c_project', :'p2c_supplier'));
 select id as p2c_wip_obligation from public.cost_obligations where idempotency_key='p2c-obl-wip-0001' \gset
-select p2c_owner1_run(format($$select public.authorize_cost_obligation(public.p2c_org(),%L,'p2c-wip-auth-001')$$, :'p2c_wip_obligation'));
+select p2c_owner1_run(format($$select public.p2c_authorize_obl(%L,'p2c-wip-auth-001')$$, :'p2c_wip_obligation'));
 select p2c_owner1_run(format(
   $$select public.classify_property_cost(public.p2c_org(),%L,%L,null,null,'CONSTRUCTION','قرار رسملة WIP للفحص','p2c-cost-class-001')$$,
   :'p2c_wip_obligation', :'p2c_asset'));
@@ -191,12 +229,12 @@ select p2c_owner1_run(format(
   :'p2c_project', :'p2c_asset', :'p2c_buyer'));
 select id as p2c_disposition from public.property_dispositions where idempotency_key='p2c-disposition-001' \gset
 select p2c_owner1_run(format($$select public.approve_property_disposition(public.p2c_org(),%L,'p2c-disp-approve-01')$$, :'p2c_disposition'));
-select p2c_owner1_run(format($$select public.transition_property_asset(public.p2c_org(),%L,'HELD','EXITING','بدء تخارج الفحص','P2C-DISP-001','p2c-state-exiting-01')$$, :'p2c_asset'));
+select p2c_owner1_run(format($$select public.p2c_transition(%L,'HELD','EXITING','بدء تخارج الفحص','P2C-DISP-001','p2c-state-exiting-01')$$, :'p2c_asset'));
 select p2c_owner1_run(format(
-  $$select public.record_property_control(public.p2c_org(),%L,null,'TITLE','سند ملكية عند التخارج','PASSED',current_date-5,null,'السند يغطي الأصل كاملًا','00000000-0000-4000-8000-000000000011','P2C-TITLE-EXIT',null,'p2c-control-title-exit')$$,
+  $$select public.p2c_control(%L,'TITLE','سند ملكية عند التخارج','السند يغطي الأصل كاملًا',current_date-5,'P2C-TITLE-EXIT',null,'p2c-control-title-exit')$$,
   :'p2c_asset'));
 select p2c_owner1_run(format(
-  $$select public.record_property_control(public.p2c_org(),%L,null,'POSSESSION','حيازة عند التخارج','PASSED',current_date-5,null,'الحيازة مكتملة','00000000-0000-4000-8000-000000000011','P2C-POS-EXIT',null,'p2c-control-pos-exit')$$,
+  $$select public.p2c_control(%L,'POSSESSION','حيازة عند التخارج','الحيازة مكتملة',current_date-5,'P2C-POS-EXIT',null,'p2c-control-pos-exit')$$,
   :'p2c_asset'));
 select p2c_owner1_run(format(
   $$select public.confirm_property_control_transfer(public.p2c_org(),%L,current_date-5,'محضر تسليم الفحص P2C','p2c-transfer-001')$$,
@@ -288,7 +326,7 @@ select id as p2c_foreign_project from public.investment_projects where name='م�
 select id as p2c_foreign_party from public.parties where legal_name='مورد منظمة باء' \gset
 
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.create_cost_obligation(public.p2c_org(),%L,%L,'التزام خارج النطاق',5000,'EGP',current_date,'EXPENSE','p2c-foreign-project-obl')$$,
+  $$select public.p2c_create_obl(%L,%L,'التزام خارج النطاق',5000,current_date,'EXPENSE','p2c-foreign-project-obl')$$,
   :'p2c_foreign_project', :'p2c_supplier'), 'P0001'),
   'obligation creation against a foreign project must be rejected');
 select p2c_assert(p2c_owner1_raises(format(
@@ -296,7 +334,7 @@ select p2c_assert(p2c_owner1_raises(format(
   :'p2c_project', :'p2c_asset', :'p2c_foreign_party'), 'P0001'),
   'disposition with a foreign-organization buyer must be rejected');
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.pay_cost_obligation(public.p2c_org(),%L,%L,1000,current_date,'p2c-foreign-cash-pay1')$$,
+  $$select public.p2c_pay(%L,%L,1000,current_date,'p2c-foreign-cash-pay1')$$,
   :'p2c_obligation',
   (select id from public.project_cash_accounts where name='حساب مشروع ثانٍ' limit 1)), 'P0001'),
   'payment through a foreign-project cash account must be rejected');
@@ -328,12 +366,12 @@ select p2c_assert(p2c_outsider_raises(format(
 -- Items 1, 2, 5: payment idempotency, payload binding, and overpay rejection.
 -- ---------------------------------------------------------------------------
 select p2c_owner1_run(format(
-  $$select public.pay_cost_obligation(public.p2c_org(),%L,%L,40000,current_date,'p2c-pay-main-01')$$,
+  $$select public.p2c_pay(%L,%L,40000,current_date,'p2c-pay-main-01')$$,
   :'p2c_obligation', :'p2c_cash'));
 select id as p2c_payment1 from public.project_payments where idempotency_key='p2c-pay-main-01' \gset
 
 select p2c_owner1_run(format(
-  $$select public.pay_cost_obligation(public.p2c_org(),%L,%L,40000,current_date,'p2c-pay-main-01')$$,
+  $$select public.p2c_pay(%L,%L,40000,current_date,'p2c-pay-main-01')$$,
   :'p2c_obligation', :'p2c_cash'));
 select p2c_assert((select count(*)=1 from public.project_payments where idempotency_key='p2c-pay-main-01'),
   'idempotent payment replay with identical payload must reuse the same fact');
@@ -342,18 +380,18 @@ select p2c_assert((select count(*)=1 from public.journal_batches
   'idempotent payment replay must not duplicate the journal effect');
 
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.pay_cost_obligation(public.p2c_org(),%L,%L,40001,current_date,'p2c-pay-main-01')$$,
+  $$select public.p2c_pay(%L,%L,40001,current_date,'p2c-pay-main-01')$$,
   :'p2c_obligation', :'p2c_cash'), 'P0001', '%idempotency key payload mismatch%'),
   'same idempotency key with an altered payload must hard-fail');
 select p2c_assert((select count(*)=1 from public.project_payments where obligation_id=:'p2c_obligation'),
   'payload-mismatch replay must leave exactly one payment fact');
 
 select p2c_owner1_run(format(
-  $$select public.pay_cost_obligation(public.p2c_org(),%L,%L,60000,current_date,'p2c-pay-main-02')$$,
+  $$select public.p2c_pay(%L,%L,60000,current_date,'p2c-pay-main-02')$$,
   :'p2c_obligation', :'p2c_cash'));
 select id as p2c_payment2 from public.project_payments where idempotency_key='p2c-pay-main-02' \gset
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.pay_cost_obligation(public.p2c_org(),%L,%L,1,current_date,'p2c-pay-main-03')$$,
+  $$select public.p2c_pay(%L,%L,1,current_date,'p2c-pay-main-03')$$,
   :'p2c_obligation', :'p2c_cash'), 'P0001', '%payment exceeds remaining payable%'),
   'payment greater than the remaining obligation must be rejected');
 
@@ -361,20 +399,20 @@ select p2c_assert(p2c_owner1_raises(format(
 -- Item 6: collection cannot exceed the outstanding receivable.
 -- ---------------------------------------------------------------------------
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.collect_property_sale_receivable(public.p2c_org(),%L,%L,1000002,current_date,'دليل تحصيل زائد','p2c-overcollect-001')$$,
+  $$select public.p2c_collect(%L,%L,1000002,current_date,'دليل تحصيل زائد','p2c-overcollect-001')$$,
   :'p2c_recognition', :'p2c_cash'), 'P0001', '%collection exceeds outstanding receivable%'),
   'collection greater than the remaining receivable must be rejected');
 select p2c_owner1_run(format(
-  $$select public.collect_property_sale_receivable(public.p2c_org(),%L,%L,600000,current_date,'دليل تحصيل جزئي','p2c-collect-main-01')$$,
+  $$select public.p2c_collect(%L,%L,600000,current_date,'دليل تحصيل جزئي','p2c-collect-main-01')$$,
   :'p2c_recognition', :'p2c_cash'));
 select id as p2c_collection1 from public.property_sale_collections where idempotency_key='p2c-collect-main-01' \gset
 select p2c_owner1_run(format(
-  $$select public.collect_property_sale_receivable(public.p2c_org(),%L,%L,600000,current_date,'دليل تحصيل جزئي','p2c-collect-main-01')$$,
+  $$select public.p2c_collect(%L,%L,600000,current_date,'دليل تحصيل جزئي','p2c-collect-main-01')$$,
   :'p2c_recognition', :'p2c_cash'));
 select p2c_assert((select count(*)=1 from public.property_sale_collections where recognition_id=:'p2c_recognition'),
   'idempotent collection replay must reuse the same fact without duplicate posting');
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.collect_property_sale_receivable(public.p2c_org(),%L,%L,400002,current_date,'دليل تحصيل متبقٍ','p2c-collect-main-02')$$,
+  $$select public.p2c_collect(%L,%L,400002,current_date,'دليل تحصيل متبقٍ','p2c-collect-main-02')$$,
   :'p2c_recognition', :'p2c_cash'), 'P0001', '%collection exceeds outstanding receivable%'),
   'a second collection beyond the remaining receivable must be rejected');
 
@@ -384,15 +422,15 @@ select p2c_assert(p2c_owner1_raises(format(
 select id as p2c_pay2_batch from public.journal_batches
 where source_type='PAYMENT' and source_id=:'p2c_payment2' \gset
 select p2c_owner1_run(format(
-  $$select public.reverse_journal_batch(public.p2c_org(),%L,'إلغاء دفعة لأغراض الفحص','p2c-reverse-pay2-001')$$,
+  $$select public.p2c_reverse(%L,'إلغاء دفعة لأغراض الفحص','p2c-reverse-pay2-001')$$,
   :'p2c_pay2_batch'));
 select id as p2c_reversal1 from public.journal_batches where source_type='REVERSAL' and source_id=:'p2c_pay2_batch' \gset
 select p2c_assert(p2c_owner1_raises(format(
-  $$select public.reverse_journal_batch(public.p2c_org(),%L,'محاولة إلغاء ثانية','p2c-reverse-pay2-002')$$,
+  $$select public.p2c_reverse(%L,'محاولة إلغاء ثانية','p2c-reverse-pay2-002')$$,
   :'p2c_pay2_batch'), 'P0001', '%already reversed%'),
   'a second reversal with a different key must be rejected');
 select p2c_owner1_run(format(
-  $$select public.reverse_journal_batch(public.p2c_org(),%L,'إلغاء دفعة لأغراض الفحص','p2c-reverse-pay2-001')$$,
+  $$select public.p2c_reverse(%L,'إلغاء دفعة لأغراض الفحص','p2c-reverse-pay2-001')$$,
   :'p2c_pay2_batch'));
 select p2c_assert((select count(*)=1 from public.journal_batches where source_type='REVERSAL' and source_id=:'p2c_pay2_batch'),
   'identical reversal replay must be idempotent and never double-reverse');
@@ -443,7 +481,7 @@ select p2c_assert(p2c_owner2_raises(format(
 -- the approval race in 29_phase2c_concurrency.sh.
 -- ---------------------------------------------------------------------------
 select p2c_owner2_run(format(
-  $$select public.s7_stage_opening_import(public.p2c_org(),%L,'S7.OPENING.V1','opening-p2c-mismatch.csv',%L,
+  $$select public.p2c_stage(%L,'opening-p2c-mismatch.csv',%L,
     array['OPENING_BANK_CASH','OPENING_SUPPLIER_PAYABLE']::text[],
     array[null,%L]::uuid[], array[%L,null]::uuid[],
     array['400000','0']::text[], array['0','400000']::text[],
@@ -451,7 +489,7 @@ select p2c_owner2_run(format(
     '400001','400000','p2c-opening-mismatch-01')$$,
   :'p2c_project', :'p2c_sum_mismatch', :'p2c_supplier', :'p2c_cash'));
 select id as p2c_import_mismatch from public.s7_opening_imports where idempotency_key='p2c-opening-mismatch-01' \gset
-select p2c_owner2_run(format($$select public.s7_validate_opening_import(public.p2c_org(),%L,'p2c-validate-mismatch1')$$, :'p2c_import_mismatch'));
+select p2c_owner2_run(format($$select public.p2c_validate_import(%L,'p2c-validate-mismatch1')$$, :'p2c_import_mismatch'));
 select p2c_assert((select status='REJECTED' and debit_variance_minor_units=-1 and credit_variance_minor_units=0
     and computed_debit_total_minor_units=400000
   from public.s7_opening_imports where id=:'p2c_import_mismatch'),
@@ -461,7 +499,7 @@ select p2c_assert((select count(*)=0 from public.journal_batches
   'rejected opening import must never post');
 
 select p2c_owner2_run(format(
-  $$select public.s7_stage_opening_import(public.p2c_org(),%L,'S7.OPENING.V1','opening-p2c-clean.csv',%L,
+  $$select public.p2c_stage(%L,'opening-p2c-clean.csv',%L,
     array['OPENING_BANK_CASH','OPENING_SUPPLIER_PAYABLE','OPENING_CONTRIBUTED_CAPITAL']::text[],
     array[null,%L,%L]::uuid[], array[%L,null,null]::uuid[],
     array['700000','0','0']::text[], array['0','200000','500000']::text[],
@@ -469,17 +507,17 @@ select p2c_owner2_run(format(
     '700000','700000','p2c-opening-clean-0001')$$,
   :'p2c_project', :'p2c_sum_clean', :'p2c_supplier', :'p2c_inv1', :'p2c_cash'));
 select id as p2c_import_clean from public.s7_opening_imports where idempotency_key='p2c-opening-clean-0001' \gset
-select p2c_owner2_run(format($$select public.s7_validate_opening_import(public.p2c_org(),%L,'p2c-validate-clean-01')$$, :'p2c_import_clean'));
+select p2c_owner2_run(format($$select public.p2c_validate_import(%L,'p2c-validate-clean-01')$$, :'p2c_import_clean'));
 select p2c_assert((select status='VALIDATED' and control_totals_match
   from public.s7_opening_imports_read where import_id=:'p2c_import_clean'),
   'clean opening import must validate with zero variance');
 select p2c_owner2_run(format(
-  $$select public.s7_review_opening_import(public.p2c_org(),%L,'مراجعة أرصدة افتتاحية مكتملة','p2c-review-clean-001')$$,
+  $$select public.p2c_review_import(%L,'مراجعة أرصدة افتتاحية مكتملة','p2c-review-clean-001')$$,
   :'p2c_import_clean'));
 select p2c_assert((select status='READY_FOR_APPROVAL' from public.s7_opening_imports where id=:'p2c_import_clean'),
   'clean opening import must reach READY_FOR_APPROVAL for the race suite');
 select p2c_assert(p2c_owner2_raises(format(
-  $$select public.s7_approve_opening_import(public.p2c_org(),%L,current_date,'p2c-approve-self-001')$$,
+  $$select public.p2c_approve_import(%L,current_date,'p2c-approve-self-001')$$,
   :'p2c_import_clean'), '23514'),
   'opening import self-approval by the stager must violate maker/checker');
 
@@ -487,7 +525,7 @@ select p2c_assert(p2c_owner2_raises(format(
 -- the first import posts in 29_phase2c_concurrency.sh, approving this second
 -- one must be refused (no destructive overwrite of an opening position).
 select p2c_owner2_run(format(
-  $$select public.s7_stage_opening_import(public.p2c_org(),%L,'S7.OPENING.V1','opening-p2c-second.csv',%L,
+  $$select public.p2c_stage(%L,'opening-p2c-second.csv',%L,
     array['OPENING_BANK_CASH','OPENING_CONTRIBUTED_CAPITAL']::text[],
     array[null,%L]::uuid[], array[%L,null]::uuid[],
     array['700000','0']::text[], array['0','700000']::text[],
@@ -495,9 +533,9 @@ select p2c_owner2_run(format(
     '700000','700000','p2c-opening-second-01')$$,
   :'p2c_project', :'p2c_sum_second', :'p2c_inv1', :'p2c_cash'));
 select id as p2c_import_second from public.s7_opening_imports where idempotency_key='p2c-opening-second-01' \gset
-select p2c_owner2_run(format($$select public.s7_validate_opening_import(public.p2c_org(),%L,'p2c-validate-second-01')$$, :'p2c_import_second'));
+select p2c_owner2_run(format($$select public.p2c_validate_import(%L,'p2c-validate-second-01')$$, :'p2c_import_second'));
 select p2c_owner2_run(format(
-  $$select public.s7_review_opening_import(public.p2c_org(),%L,'مراجعة أرصدة افتتاحية ثانية','p2c-review-second-01')$$,
+  $$select public.p2c_review_import(%L,'مراجعة أرصدة افتتاحية ثانية','p2c-review-second-01')$$,
   :'p2c_import_second'));
 select p2c_assert((select status='READY_FOR_APPROVAL' from public.s7_opening_imports where id=:'p2c_import_second'),
   'second opening import must reach READY_FOR_APPROVAL before the race suite');
@@ -508,20 +546,20 @@ select p2c_assert((select status='READY_FOR_APPROVAL' from public.s7_opening_imp
 --  * race project with a prepared close run: posting-versus-close race.
 -- ---------------------------------------------------------------------------
 select p2c_owner1_run(format(
-  $$select public.create_cost_obligation(public.p2c_org(),%L,%L,'التزام سباق الدفع',120000,'EGP',current_date,'EXPENSE','p2c-obl-race-01')$$,
+  $$select public.p2c_create_obl(%L,%L,'التزام سباق الدفع',120000,current_date,'EXPENSE','p2c-obl-race-01')$$,
   :'p2c_project', :'p2c_supplier'));
 select id as p2c_race_obligation from public.cost_obligations where idempotency_key='p2c-obl-race-01' \gset
-select p2c_owner1_run(format($$select public.authorize_cost_obligation(public.p2c_org(),%L,'p2c-race-obl-auth-01')$$, :'p2c_race_obligation'));
+select p2c_owner1_run(format($$select public.p2c_authorize_obl(%L,'p2c-race-obl-auth-01')$$, :'p2c_race_obligation'));
 
 select p2c_owner1_run($$select public.create_investment_project(public.p2c_org(),'مشروع سباق الإغلاق',null,null)$$);
 select id as p2c_race_project from public.investment_projects where name='مشروع سباق الإغلاق' \gset
 select p2c_owner1_run(format($$select public.create_project_cash_account(public.p2c_org(),%L,'حساب سباق الإغلاق','EGP')$$, :'p2c_race_project'));
 select id as p2c_race_cash from public.project_cash_accounts where name='حساب سباق الإغلاق' \gset
 select p2c_owner1_run(format(
-  $$select public.create_cost_obligation(public.p2c_org(),%L,%L,'التزام سباق الإغلاق',90000,'EGP',current_date,'EXPENSE','p2c-obl-raceclose-01')$$,
+  $$select public.p2c_create_obl(%L,%L,'التزام سباق الإغلاق',90000,current_date,'EXPENSE','p2c-obl-raceclose-01')$$,
   :'p2c_race_project', :'p2c_supplier'));
 select id as p2c_raceclose_obligation from public.cost_obligations where idempotency_key='p2c-obl-raceclose-01' \gset
-select p2c_owner1_run(format($$select public.authorize_cost_obligation(public.p2c_org(),%L,'p2c-raceclose-auth-01')$$, :'p2c_raceclose_obligation'));
+select p2c_owner1_run(format($$select public.p2c_authorize_obl(%L,'p2c-raceclose-auth-01')$$, :'p2c_raceclose_obligation'));
 select p2c_owner1_run(format($$select public.s6_create_accounting_period(public.p2c_org(),%L,current_date-2,current_date)$$, :'p2c_race_project'));
 select id as p2c_race_period from public.accounting_periods where project_id=:'p2c_race_project' and status='OPEN' \gset
 select p2c_owner1_run(format($$select public.s6_prepare_close_run(public.p2c_org(),%L,%L,'race close prepare')$$, :'p2c_race_project', :'p2c_race_period'));
