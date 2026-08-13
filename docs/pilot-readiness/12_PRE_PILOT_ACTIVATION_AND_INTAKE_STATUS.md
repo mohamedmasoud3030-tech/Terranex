@@ -2,7 +2,7 @@
 
 **Purpose:** the single consolidated record of where Terranex stands at the pre-pilot boundary — environment readiness, the provisioning boundary for the isolated pilot Supabase project, real-project intake readiness, and the exact values still required from outside the repository. It classifies every required environment value and lists every still-missing customer/operator value **by name only**.
 
-**Status:** this is a preparation record. **Nothing here activates, deploys, or imports anything.** No pilot Supabase project has been provisioned, no customer value is recorded, and no canonical delivery exit (Phase 2 / Phase 3 / Phase 4) is marked passed. Where this document and a canonical Greenfield document or an earlier pack file disagree, the canonical source wins.
+**Status:** this is a preparation record. **Nothing here activates, deploys, or imports anything.** A pilot Supabase project ref has been designated by the operator but **not yet verified** (see §7); no customer value is recorded, and no canonical delivery exit (Phase 2 / Phase 3 / Phase 4) is marked passed. Where this document and a canonical Greenfield document or an earlier pack file disagree, the canonical source wins.
 
 **Standing rules apply:** zero-minor-unit acceptance, names-only for secrets, no customer data in this repository, no self-advancing human gates, no service-role credential in any browser path.
 
@@ -16,7 +16,7 @@ The shipped application consumes **exactly two** environment variables (see `.en
 | --- | --- | --- | --- |
 | 1 | `NEXT_PUBLIC_SUPABASE_URL` | **B** | Required but missing. Value can only exist once a dedicated pilot Supabase project is provisioned (source is **C** — operator/external infrastructure). |
 | 2 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | **B** | Required but missing. Publishable (browser-safe) key of that same pilot project; still configured per environment, never hardcoded. Source is **C**. |
-| 3 | Dedicated pilot Supabase project (isolated, empty or migrations-only) | **C** | External infrastructure dependency. **Does not exist yet.** Must be a dedicated project, never a shared/dev project. |
+| 3 | Dedicated pilot Supabase project (isolated, empty or migrations-only) | **C** | External infrastructure dependency. A ref has been designated (`nwpyeobuxzbdnnzyfyqw`) but **not yet verified** as isolated/usable — access verification was blocked (see §7). Must be a dedicated project, never a shared/dev project. |
 | 4 | Supabase Auth (email sign-in) configuration on the pilot project | **C** | Operator config on the pilot project; no customer user exists yet. |
 | 5 | Application deployment target (Next.js host, HTTPS, agreed domain/subdomain) | **C** | Operator decision (architecture decision A-001: one deployable unit). Not chosen. |
 | 6 | Secrets location, access restriction, rotation procedure | **C** | Operator-supplied provider; this repository stores none. |
@@ -111,3 +111,32 @@ Technical verification (S0–S7 merged; typecheck/lint/test/build and migration/
 ## 6. Activation sequence (reference only — no step is executed here)
 
 PRM-00 (verified main) → PRM-01/PRM-02 (environment, §1–§2 above) → PRM-03 (signed engagement + freeze date + named approver) → PRM-04/PRM-05 (intake delivery + quality gate) → PRM-06 (S7 opening import) → PRM-07 (zero-variance opening reconciliation = Phase 2 exit evidence) → PRM-08 (user provisioning) → PRM-09 + PRM-09B (training + real-project staging proof = Phase 3 exit evidence) → PRM-10 (go-live) → PRM-11…PRM-16 (pilot operation through Phase 4 exit) → PRM-17 (GA decision). Details in `01_PILOT_READINESS_MAP.md`; no gate advances without its real evidence.
+
+---
+
+## 7. Supabase pilot project designation — verification attempt (blocked, fail-closed)
+
+An operator-designated Supabase project was supplied for Terranex pilot/staging use:
+
+- `TERRANEX_SUPABASE_PROJECT_REF = nwpyeobuxzbdnnzyfyqw` — **designated**; not yet verified.
+- A Supabase personal access token was supplied to the executing agent for authentication. It is **not** recorded in this repository, **not** committed, and **not** reproduced in any report (secret).
+
+The required verification **could not be performed in this execution**, and the agent failed closed rather than proceeding blind. The execution sandbox applies a domain allowlist to outbound egress: GitHub and the npm registry are reachable, but **every Supabase host is connection-reset at the TLS handshake** (`SSL_ERROR_SYSCALL`) — `supabase.com`, `api.supabase.com`, `mcp.supabase.com`, and the project host `nwpyeobuxzbdnnzyfyqw.supabase.co`. The `codex` CLI, the Supabase MCP server, and the `supabase` CLI are also absent from the sandbox, but the block is at the network layer, not a missing tool.
+
+Because the project could not be inspected, **no write of any kind was attempted**, consistent with the standing rule to fail closed when isolation and current state cannot be confirmed. Nothing below was performed, and none of it is claimed:
+
+| Step | State |
+| --- | --- |
+| Project accessibility check | **NOT verified** (network block) |
+| Project metadata read (name / region / PostgreSQL version / purpose) | **NOT read** |
+| Database-state inspection (EMPTY / PARTIALLY INITIALIZED / ALREADY TERRANEX / UNRELATED DATA) | **UNDETERMINED** |
+| Live migration/schema state vs `main` | **NOT compared** |
+| Apply missing migrations in canonical order | **NOT applied** (no write attempted) |
+| Live verification (RLS, OWNER/MEMBER isolation, SECURITY DEFINER RPC boundaries, S6 close controls, S7 import, reconciliation, audit append-only, journal integrity) | **NOT run** |
+| Supabase security / performance advisors | **NOT run** |
+| TypeScript database types generation | **NOT generated** |
+| Project URL + active publishable key retrieval | **NOT obtained** |
+
+**Truthful state (as recorded in PR #108):** a project ref is designated, but access is **not verified**, the environment is **not confirmed initialized**, migrations are **not synchronized** (unknown), security verification has **not passed** (not run), and application environment configuration is **not ready** (no `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` values obtained).
+
+**Next step (external, still required):** execute the inspection-and-activation sequence from an environment with Supabase egress — an operator workstation running the Supabase CLI/MCP (e.g. `codex mcp add supabase ...` then `codex mcp login supabase`), or a CI runner authorized to reach `api.supabase.com` and the project host. The fail-closed order must still be followed: verify access → read metadata → confirm isolation from unrelated applications → inspect DB state → only then apply missing migrations in canonical order and run live verification. Canonical Phase 2 / Phase 3 remain **not passed** regardless of environment deployment, and Phase 4 remains **not started**.
