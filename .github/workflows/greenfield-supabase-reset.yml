@@ -30,7 +30,7 @@ jobs:
             (select coalesce(max(declared_debit_total_minor_units),0) from public.s7_opening_imports where project_id='${PROJECT_ID}'::uuid)::bigint as opening_debit,
             (select coalesce(max(declared_credit_total_minor_units),0) from public.s7_opening_imports where project_id='${PROJECT_ID}'::uuid)::bigint as opening_credit,
             (select count(*) from (select batch_id from public.journal_lines where project_id='${PROJECT_ID}'::uuid group by batch_id having sum(debit_minor_units)<>sum(credit_minor_units) or count(*)<2) x)::int as unbalanced_batches,
-            (select count(*) from public.s7_pilot_rehearsals where project_id='${PROJECT_ID}'::uuid and rehearsal_type='END_TO_END_CYCLE' and result='PASS')::int as demo_rehearsals,
+            (select count(*) from public.s7_pilot_rehearsals where project_id='${PROJECT_ID}'::uuid and rehearsal_code='END_TO_END_CYCLE' and result='PASS')::int as demo_rehearsals,
             (select count(*) from public.s7_uat_tasks where project_id='${PROJECT_ID}'::uuid)::int as uat_tasks,
             (select count(*) from public.terranex_migration_history)::int as ledger_count;"
           jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
