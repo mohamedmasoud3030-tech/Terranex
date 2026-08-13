@@ -197,7 +197,7 @@ verify_controls() {
   RLS_OK=false
   [[ "$RLS_TABLES_OK" == true && "$RLS_PREDICATE" == true ]] && RLS_OK=true
 
-  qbool secdef_search_path_boundary "select to_jsonb((select count(*) from pg_proc p where p.prosecdef and p.pronamespace='public'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where pc like 'search_path=pg_catalog,public'))) = 0);"
+  qbool secdef_search_path_boundary "select to_jsonb((select count(*) from pg_proc p where p.prosecdef and p.pronamespace='public'::regnamespace and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) pc where replace(pc,' ','') = 'search_path=pg_catalog,public'))) = 0);"
   SECDEF_OK="$CHECK_VAL"
 
   qbool s6_evaluate_gate_authorization "select to_jsonb(to_regprocedure('public.s6_evaluate_gate(uuid,uuid,uuid,text)') is not null and not has_function_privilege('anon','public.s6_evaluate_gate(uuid,uuid,uuid,text)','EXECUTE') and not has_function_privilege('public','public.s6_evaluate_gate(uuid,uuid,uuid,text)','EXECUTE') and has_function_privilege('authenticated','public.s6_evaluate_gate(uuid,uuid,uuid,text)','EXECUTE'));"
