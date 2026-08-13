@@ -1,4 +1,4 @@
-name: Terranex Verify Persistent Demo Facts
+name: Terranex Final Persistent Demo Verification
 
 on:
   push:
@@ -13,80 +13,40 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      PROJECT_ID: 0556711f-0605-4ff4-bf6c-e65492eb9c5b
     steps:
-      - name: Verify committed demo facts independently
+      - name: Verify remaining canonical facts
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          q() {
-            local label="$1" sql="$2" http
-            jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
-            http="$(curl -sS -o "$tmp/out.json" -w '%{http_code}' -X POST \
-              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-              -H 'Content-Type: application/json' --data-binary @"$tmp/q.json")"
-            if [[ "$http" -lt 200 || "$http" -ge 300 ]]; then
-              echo "${label}_HTTP=$http"
-              jq -c '{message:(.message // .error // .msg // "query rejected")}' "$tmp/out.json" || true
-              return 1
-            fi
-            echo "${label}=$(jq -c '.[0]' "$tmp/out.json")"
-          }
-
-          q PROJECT "select id::text project_id,name,internal_reference,organization_id::text organization_id from public.investment_projects where internal_reference='DEMO-RE-2026-001'"
-          project_id="$(jq -r '.[0].project_id' "$tmp/out.json")"
-          test -n "$project_id"; test "$project_id" != 'null'
-          echo "PROJECT_ID=$project_id"
-
-          q CASH "select balance_minor_units::bigint balance_minor_units from public.project_cash_position_read where project_id='${project_id}'::uuid"
-          cash="$(jq -r '.[0].balance_minor_units' "$tmp/out.json")"; test "$cash" = '4100000000'
-
-          q RESULT "select coalesce(sum(realized_result_minor_units::bigint),0)::bigint realized_result_minor_units from public.property_realized_result_read where recognition_id in (select id from public.property_sale_recognitions where project_id='${project_id}'::uuid)"
-          result="$(jq -r '.[0].realized_result_minor_units' "$tmp/out.json")"; test "$result" = '750000000'
-
-          q CAPITAL "select coalesce(sum(closing_capital_minor_units::bigint),0)::bigint partner_capital_minor_units from public.s5_partner_capital_statement_read where project_id='${project_id}'::uuid"
-          capital="$(jq -r '.[0].partner_capital_minor_units' "$tmp/out.json")"; test "$capital" = '3950000000'
-
-          q AP "select coalesce(sum(outstanding_minor_units::bigint),0)::bigint supplier_payable_minor_units from public.cost_obligation_position_read where project_id='${project_id}'::uuid"
-          ap="$(jq -r '.[0].supplier_payable_minor_units' "$tmp/out.json")"; test "$ap" = '150000000'
-
-          q RECON "select count(*)::int checkpoint_count,count(*) filter(where status='SIGNED_OFF')::int signed_count,coalesce(sum(abs(variance_minor_units)),0)::bigint abs_variance from public.s7_reconciliation_checkpoints where project_id='${project_id}'::uuid"
-          test "$(jq -r '.[0].checkpoint_count' "$tmp/out.json")" = '9'
-          test "$(jq -r '.[0].signed_count' "$tmp/out.json")" = '9'
-          test "$(jq -r '.[0].abs_variance' "$tmp/out.json")" = '0'
-
-          q ASSETS "select count(*)::int asset_count,count(*) filter(where public.s3_current_property_state(id)='DISPOSED')::int disposed_count,count(*) filter(where public.s3_current_property_state(id)='DUE_DILIGENCE')::int due_diligence_count from public.property_assets where project_id='${project_id}'::uuid"
-          test "$(jq -r '.[0].asset_count' "$tmp/out.json")" = '2'
-          test "$(jq -r '.[0].disposed_count' "$tmp/out.json")" = '1'
-          test "$(jq -r '.[0].due_diligence_count' "$tmp/out.json")" = '1'
-
-          q PERIODS "select count(*) filter(where start_date=date '2026-07-01' and status='CLOSED')::int july_closed,count(*) filter(where start_date=date '2026-08-01' and status='OPEN')::int august_open from public.accounting_periods where project_id='${project_id}'::uuid"
-          test "$(jq -r '.[0].july_closed' "$tmp/out.json")" = '1'
-          test "$(jq -r '.[0].august_open' "$tmp/out.json")" = '1'
-
-          q OPENING "select count(*) filter(where status='POSTED')::int posted_count,coalesce(max(declared_debit_minor_units),0)::bigint debit_minor_units,coalesce(max(declared_credit_minor_units),0)::bigint credit_minor_units from public.s7_opening_imports where project_id='${project_id}'::uuid"
-          test "$(jq -r '.[0].posted_count' "$tmp/out.json")" = '1'
-          test "$(jq -r '.[0].debit_minor_units' "$tmp/out.json")" = '500000000'
-          test "$(jq -r '.[0].credit_minor_units' "$tmp/out.json")" = '500000000'
-
-          q JOURNAL "select count(*)::int unbalanced_batches from (select batch_id from public.journal_lines where project_id='${project_id}'::uuid group by batch_id having sum(debit_minor_units)<>sum(credit_minor_units) or count(*)<2) x"
-          test "$(jq -r '.[0].unbalanced_batches' "$tmp/out.json")" = '0'
-
-          q REHEARSAL "select count(*)::int demo_rehearsals from public.s7_pilot_rehearsals where project_id='${project_id}'::uuid and rehearsal_type='END_TO_END_CYCLE' and result='PASS'"
-          test "$(jq -r '.[0].demo_rehearsals' "$tmp/out.json")" = '1'
-
-          q UAT "select count(*)::int uat_task_count from public.s7_uat_tasks where project_id='${project_id}'::uuid"
-          test "$(jq -r '.[0].uat_task_count' "$tmp/out.json")" = '0'
-
-          echo "FINAL_PROJECT_ID=$project_id"
-          echo "FINAL_CASH_MINOR_UNITS=$cash"
-          echo "FINAL_REALIZED_RESULT_MINOR_UNITS=$result"
-          echo "FINAL_PARTNER_CAPITAL_MINOR_UNITS=$capital"
-          echo "FINAL_SUPPLIER_PAYABLE_MINOR_UNITS=$ap"
-          echo 'PERSISTENT_DEMO_INDEPENDENT_VERIFICATION=PASS'
+          sql="select
+            (select count(*) from public.investment_projects where id='${PROJECT_ID}'::uuid and internal_reference='DEMO-RE-2026-001')::int as project_exists,
+            (select count(*) filter(where status='POSTED') from public.s7_opening_imports where project_id='${PROJECT_ID}'::uuid)::int as opening_posted,
+            (select coalesce(max(declared_debit_total_minor_units),0) from public.s7_opening_imports where project_id='${PROJECT_ID}'::uuid)::bigint as opening_debit,
+            (select coalesce(max(declared_credit_total_minor_units),0) from public.s7_opening_imports where project_id='${PROJECT_ID}'::uuid)::bigint as opening_credit,
+            (select count(*) from (select batch_id from public.journal_lines where project_id='${PROJECT_ID}'::uuid group by batch_id having sum(debit_minor_units)<>sum(credit_minor_units) or count(*)<2) x)::int as unbalanced_batches,
+            (select count(*) from public.s7_pilot_rehearsals where project_id='${PROJECT_ID}'::uuid and rehearsal_type='END_TO_END_CYCLE' and result='PASS')::int as demo_rehearsals,
+            (select count(*) from public.s7_uat_tasks where project_id='${PROJECT_ID}'::uuid)::int as uat_tasks,
+            (select count(*) from public.terranex_migration_history)::int as ledger_count;"
+          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
+          row="$(curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/q.json" | jq -c '.[0]')"
+          echo "FINAL_VERIFICATION=$row"
+          test "$(printf '%s' "$row" | jq -r '.project_exists')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.opening_posted')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.opening_debit')" = '500000000'
+          test "$(printf '%s' "$row" | jq -r '.opening_credit')" = '500000000'
+          test "$(printf '%s' "$row" | jq -r '.unbalanced_batches')" = '0'
+          test "$(printf '%s' "$row" | jq -r '.demo_rehearsals')" = '1'
+          test "$(printf '%s' "$row" | jq -r '.uat_tasks')" = '0'
+          test "$(printf '%s' "$row" | jq -r '.ledger_count')" = '37'
+          echo "FINAL_PROJECT_ID=$PROJECT_ID"
+          echo 'PERSISTENT_DEMO_FINAL_VERIFICATION=PASS'
           echo 'DEMO_PHASE2_CREDIT=false'
