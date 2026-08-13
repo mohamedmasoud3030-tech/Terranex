@@ -9,12 +9,14 @@
 --     overlapping; both fit if each individually fits.
 
 create or replace function s13b_run(p_user uuid, p_sql text)
-returns void language plpgsql as $$
+returns uuid language plpgsql as $$
+declare v_result uuid;
 begin
   perform set_config('request.jwt.claim.sub', p_user::text, true);
   perform set_config('role', 'authenticated', false);
-  execute p_sql;
+  execute p_sql into v_result;
   reset role;
+  return v_result;
 end $$;
 
 create or replace function s13b_catch(p_user uuid, p_sql text)
@@ -94,12 +96,8 @@ select 1/case when s13b_catch('00000000-0000-4000-8000-000000000001', format(
   , :'s13b_project', :'s13b_cycle_c', :'s13b_field')) like '%assigned area unit%must match%' then 1 else 0 end
   as s13b_unit_must_match_field;
 
--- Cancelling Cycle A frees its capacity. A new cycle overlapping
--- Cycle A's range can now be assigned.
-select s13b_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','CANCELLED','إلغاء الدورة','مذكرة','s13b-cancel-A')$$
-  , :'s13a_cycle3'));  -- dummy, will fail; just placeholder
--- Cancel cycle A (it is still PLANNED).
+-- Cancel cycle A (it is still PLANNED). Its six assigned FEDDAN no longer
+-- consume capacity; cycle B's four overlapping FEDDAN still do.
 select s13b_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','CANCELLED','إلغاء الدورة','مذكرة','s13b-cancel-A-real')$$
   , :'s13b_cycle_a'));
@@ -112,7 +110,7 @@ select s13b_run('00000000-0000-4000-8000-000000000001', format(
   , :'s13b_project')) as s13b_cycle_d \gset
 
 select s13b_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.assign_crop_cycle_to_field('10000000-0000-4000-8000-000000000001',%L,%L,%L,'7','FEDDAN',date '2026-11-01',date '2027-01-15','s13b-assign-D')$$
+  $$select public.assign_crop_cycle_to_field('10000000-0000-4000-8000-000000000001',%L,%L,%L,'6','FEDDAN',date '2026-11-01',date '2027-01-15','s13b-assign-D')$$
   , :'s13b_project', :'s13b_cycle_d', :'s13b_field')) as s13b_ass_d \gset
 
 reset role;
