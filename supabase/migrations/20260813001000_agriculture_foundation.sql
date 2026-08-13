@@ -22,9 +22,12 @@ create table public.agriculture_project_profiles (
   notes text check (notes is null or char_length(trim(notes)) between 3 and 2000),
   created_by uuid not null references auth.users(id) on delete restrict,
   created_at timestamptz not null default now(),
+  idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
+  request_hash text not null check (char_length(request_hash) = 64),
   unique (project_id),
   unique (id, organization_id, project_id),
   unique (organization_id, project_id),
+  unique (organization_id, idempotency_key),
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict,
   -- Sector guard: a profile may only attach to an Agriculture project.
