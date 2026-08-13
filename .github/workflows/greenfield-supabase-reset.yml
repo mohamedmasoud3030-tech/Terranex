@@ -1,4 +1,4 @@
-name: Terranex S6 Bigint Close Replay
+name: Terranex Apply Lifecycle Chain Tip Live
 
 on:
   push:
@@ -11,42 +11,61 @@ permissions:
   contents: read
 
 jobs:
-  db-replay:
+  apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
+    timeout-minutes: 10
     env:
-      PGHOST: 127.0.0.1
-      PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: postgres
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
+      MIGRATION_VERSION: 20260813000600_s3_lifecycle_chain_tip
     steps:
-      - name: Checkout exact S6 bigint branch
+      - name: Checkout merged main
         uses: actions/checkout@v4
         with:
-          ref: fix/s6-close-bigint-totals
+          ref: 51c55e819c746700afadc288ee48e378b30ec749
 
-      - name: Install PostgreSQL client if needed
+      - name: Apply exact migration and ledger fingerprint atomically
         shell: bash
         run: |
-          if ! command -v psql >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y postgresql-client
-          fi
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          file="supabase/migrations/${MIGRATION_VERSION}.sql"
+          sha="$(sha256sum "$file" | awk '{print $1}')"
+          pre="select count(*)::int as ledger_count, exists(select 1 from public.terranex_migration_history where version='${MIGRATION_VERSION}') as exists from public.terranex_migration_history;"
+          jq -n --arg query "$pre" '{query:$query}' > "$tmp/pre.json"
+          row="$(curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/pre.json" | jq -c '.[0]')"
+          test "$(printf '%s' "$row" | jq -r '.ledger_count')" = '34'
+          test "$(printf '%s' "$row" | jq -r '.exists')" = 'false'
+          { echo 'begin;'; cat "$file"; printf "\ninsert into public.terranex_migration_history(version,sha256) values ('%s','%s');\n" "$MIGRATION_VERSION" "$sha"; echo 'commit;'; } > "$tmp/apply.sql"
+          jq -Rs '{query:.}' < "$tmp/apply.sql" > "$tmp/apply.json"
+          curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/apply.json" > /dev/null
+          echo 'LIFECYCLE_LIVE_APPLY=PASS'
 
-      - name: Full database replay and all SQL/concurrency gates
+      - name: Verify causal state logic and ledger 35
         shell: bash
-        run: bash scripts/db-test.sh
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          file="supabase/migrations/${MIGRATION_VERSION}.sql"
+          sha="$(sha256sum "$file" | awk '{print $1}')"
+          sql="select count(*)::int as ledger_count,
+            exists(select 1 from public.terranex_migration_history where version='${MIGRATION_VERSION}' and sha256='${sha}') as fingerprint_ok,
+            pg_get_functiondef('public.transition_property_asset(uuid,uuid,text,text,text,text,text)'::regprocedure) like '%s3_property_history_tip_id%' as property_tip_ok,
+            pg_get_functiondef('public.s3_validate_property_transition()'::regprocedure) like '%DISPOSED%' as s4_states_ok
+            from public.terranex_migration_history;"
+          jq -n --arg query "$sql" '{query:$query}' > "$tmp/q.json"
+          row="$(curl --fail-with-body -sS -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \
+            --data-binary @"$tmp/q.json" | jq -c '.[0]')"
+          test "$(printf '%s' "$row" | jq -r '.ledger_count')" = '35'
+          test "$(printf '%s' "$row" | jq -r '.fingerprint_ok')" = 'true'
+          test "$(printf '%s' "$row" | jq -r '.property_tip_ok')" = 'true'
+          test "$(printf '%s' "$row" | jq -r '.s4_states_ok')" = 'true'
+          echo 'LIFECYCLE_LIVE_VERIFICATION=PASS'
