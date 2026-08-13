@@ -4,6 +4,25 @@
 
 **Canonical Phase 5 order (roadmap §5):** hardened onboarding/import → support/admin console and service-level policy → billing/plan limits → external accounting export adapter → second design partner → **only then** second sector pack.
 
+**Sequencing lock (authoritative):**
+
+```text
+technical verification (PRM-00)
+  → real opening project imported / canonical Phase 2 exit (PRM-04…PRM-07)
+  → real project end-to-end in staging / canonical Phase 3 exit (PRM-09B)
+  → controlled paid pilot / Phase 4 operation (PRM-10…PRM-15)
+  → Phase 4 exit (PRM-16)
+  → WP1 / Phase 5
+```
+
+**Do not start WP1 (or any Phase 5 product code) immediately after the technical audit.** A green audit stream proves technical correctness on fixtures; it does not produce the pilot friction evidence Phase 5 productization must be built from. Three modes are distinct and must not blur:
+
+| Mode | Allowed when | Examples |
+| --- | --- | --- |
+| Safe pre-pilot preparation | now (this pack) | procedures, templates, checklists, runbooks, documentation — no product code |
+| Phase 4 operational execution | after Phase 2/3 staging gates | running the pilot on real data, capturing friction evidence |
+| Phase 5 productization | **only after Phase 4 exit (PRM-16) passes** | WP1–WP5 product code, built from observed pilot evidence, not speculated friction |
+
 **Hard exclusions for all packages:** second sector implementation (Agriculture/Livestock); advanced waterfall/carry/preferred return/clawback; public investor onboarding or marketplace; native banking/money movement; AI forecasting/automated valuation; custom report builder; offline/PWA; tenant-specific forks. Nothing in this backlog may start before the pilot exit gate (PRM-16) passes, and nothing outranks an open audit finding (roadmap §6 priority 1).
 
 ---
@@ -11,7 +30,7 @@
 ## WP1 — Hardened onboarding & import (start first)
 
 - **Purpose:** turn the single-customer opening-intake process (this pack's `02`/`03` procedures + S7 import) into a repeatable product onboarding for the next customers, killing per-customer code. This is the direct answer to roadmap commercial learning test #7: "onboarding can be repeated for a second company without custom code."
-- **Dependencies:** PRM-16 pilot exit passed; pilot friction evidence (rejected-row reasons, modelling-gap reports from DS-09, intake rework logs); merged audit-stream state.
+- **Dependencies:** **Phase 4 exit (PRM-16) passed — mandatory and non-negotiable.** WP1 must not start after the technical audit alone, and it must not productize speculated pilot friction before the pilot is observed. Inputs: real pilot friction evidence (rejected-row reasons, modelling-gap reports from DS-09, intake rework logs, staging-proof findings from PRM-09B) plus merged audit-stream state.
 - **Expected files/domains:** `src/features/pilot/` (import workspace ergonomics, staging worksheets), S7 import schema evolution via new forward migrations (e.g. staged-row ergonomics, rejection reporting, intake summary read models) — additive only; intake templates moved into the product rather than this pack's worksheets where proven; onboarding checklist surfaced in the pilot workspace.
 - **Acceptance gate:** a second organization's opening position is imported and reconciled to zero variance without any repository code change; intake rejection reasons cover every observed pilot failure mode or are explicitly reported as modelling gaps; S7 suites extended, none weakened.
 - **Must NOT be built yet:** a universal importer or mapping designer; arbitrary chart-of-accounts ingestion; new semantic account roles; non-EGP currency support; document storage. The six-code locked registry stays locked unless a real modelling gap and a product decision say otherwise.
@@ -52,10 +71,12 @@
 
 ## Sequencing summary
 
+All triggers presuppose the full sequencing lock above (technical verification → Phase 2 exit → Phase 3 exit → Phase 4 → Phase 4 exit). The technical audit finishing is a precondition for the *staging gates*, not for Phase 5 product work.
+
 | Order | Package | Trigger |
 | --- | --- | --- |
-| 1 | WP1 Hardened onboarding & import | immediately after the active audit stream merges and pilot exit passes |
-| 2 | WP2 Support/admin console + SLA | pilot incident evidence (can overlap WP1) |
+| 1 | WP1 Hardened onboarding & import | **Phase 4 exit (PRM-16) passed** with real pilot friction evidence — never earlier |
+| 2 | WP2 Support/admin console + SLA | pilot incident evidence (can overlap WP1, still post-Phase-4-exit) |
 | 3 | WP3 Billing & plan limits | renewal intent confirmed |
 | 4 | WP4 External accounting export adapter | closed-period evidence + accountant engagement |
 | 5 | WP5 Second design partner | WP1–WP4 delivered |

@@ -2,7 +2,18 @@
 
 **Purpose:** ten repeatable reconciliations for the pilot (weekly where noted), each with fixed sources, calculation, and acceptance. They are executed through the product's existing machinery: S2 bank matching, S6 close gates, and the nine S7 reconciliation checkpoints (`PROJECT_CASH`, `SUPPLIER_OBLIGATION_POSITION`, `CUSTOMER_RECEIVABLE_POSITION`, `REALIZED_RESULT`, `CONTRIBUTED_CAPITAL`, `PARTNER_CAPITAL`, `DISTRIBUTION_PAYABLE`, `DISTRIBUTION_PAID`, `INVESTOR_STATEMENT_TOTAL`).
 
-**Universal acceptance rule:** financial acceptance variance is **zero minor units**. The S7 checkpoint stores `variance = external − terranex` as an exact integer; acceptance is `MATCHED` at variance 0, recorded explicitly — never implied. Any non-zero variance opens a mandatory owned exception; sign-off is refused while it is open. The Terranex side is always derived inside PostgreSQL from posted journal lines; the external number is evidence only and never influences a Terranex balance.
+**Universal acceptance rule:** financial acceptance variance is **zero minor units**. There are no percentage tolerances, immateriality bands, or rounding accommodations anywhere in this pack. The S7 checkpoint stores `variance = external − terranex` as an exact integer; acceptance is `MATCHED` at variance 0, recorded explicitly — never implied. Any non-zero variance opens a mandatory owned exception; sign-off is refused while it is open. The Terranex side is always derived inside PostgreSQL from posted journal lines; the external number is evidence only and never influences a Terranex balance.
+
+**Four categories that must never be collapsed** (per `05_FINANCE_AND_ACCOUNTING.md` and the charter's principles):
+
+| Category | Examples | Reconciliation treatment |
+| --- | --- | --- |
+| Authoritative financial facts | posted journal lines, derived balances, checkpoints' Terranex side | reconcile exactly, zero minor units |
+| External evidence | bank statements, customer trial balance, capital register | evidence only; never writes a Terranex balance |
+| Management estimates/valuations | `property_valuations`, forecast-at-completion | **not** ledger reconciliation inputs. A valuation differing from cost or from a prior estimate is a business/evidence matter reviewed via the valuation workflow (method/source/approval); it never silently becomes a ledger tolerance, and it never enters a checkpoint as a "variance to accept" |
+| Operational status | lifecycle states, milestone completion, exception states | reviewed as operational truth; a status is never a substitute for a financial figure |
+
+If a valuation or estimate disagrees with posted cost/result, the disagreement is documented and decided by the approval workflow — the ledger side stays exact and unrevised until a real correction posts through the product.
 
 **Universal roles:** preparer = `<FINANCE_CONTROL_OWNER>` (or delegate); signer = a different active member; sign-off is immutable and maker/checker (product CHECK: signer ≠ preparer). Exception owner = active member named on the exception.
 

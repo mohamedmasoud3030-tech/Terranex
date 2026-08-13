@@ -10,6 +10,21 @@ S0–S7 established **technical** pilot readiness. Per `docs/decisions/0009_S7_P
 
 This pack is the set of procedures, contracts, checklists, and matrices those human events need in order to run with minimal ambiguity. It adds **no application code, no migrations, no import functionality, and no new roles**. Everything here operates the product exactly as built by S0–S7.
 
+## Delivery status (read first)
+
+**Technical verification and delivery exit evidence are separate concepts.** Automated fixtures, rehearsals, and synthetic PostgreSQL tests prove technical correctness; they do **not** satisfy the canonical Phase 2 and Phase 3 exit gates, which require *real* project evidence.
+
+| Canonical milestone | Requirement (roadmap §5) | Status |
+| --- | --- | --- |
+| S0–S7 implementation | Platform core + Real Estate sector pack + pilot hardening built | **Built** (merged to main through PR #103; S7 via PR #101). Technical audit/remediation streams run in parallel and supersede where they land. |
+| Technical verification | typecheck/lint/tests/build, migration replay, RLS/concurrency/idempotency/reversal/period-lock suites, rehearsals on fixtures | **Based on merged main** — automated gates green on fixtures. This proves the product is technically operable; it is not delivery exit evidence. |
+| Phase 2 exit | "a real opening project can be imported and every financial balance reproduced" | **Not passed.** Requires real opening-project evidence: a real customer trial balance imported through the S7 controlled import and every financial balance reproduced at zero variance (pack gates PRM-04…PRM-07 produce this evidence). |
+| Phase 3 exit | "one real project runs from operational event through cost/revenue, close, allocation, distribution, statement, and correction in staging" | **Not passed.** Requires the supervised real-project staging proof on the selected pilot project's verified data (pack gate PRM-09B). Synthetic fixture rehearsals (e.g. `27_s7_end_to_end_rehearsal.sql`) are explicitly **not** this evidence. |
+| Phase 4 — controlled paid pilot | four consecutive weekly reconciliations, one period close, accurate investor statement, zero unresolved critical security/data issues, buyer acceptance | **Not started.** Cannot start until the Phase 2 and Phase 3 staging gates above are complete with real evidence. |
+| Phase 5 — general availability | hardened onboarding/import, support/admin console + SLA, billing/plan limits, accounting export adapter, second design partner, then second sector | **Not started.** Cannot start until Phase 4 exit passes. Preparation documentation (like this pack) is allowed before the pilot; productization is not. |
+
+No real-project, customer, UAT, reconciliation, close, restore, deployment, or buyer-acceptance gate is marked passed anywhere in this pack. Every such gate remains pending real evidence.
+
 ## What this pack is not
 
 - Not a strategy memo: every gate has an owner, evidence, and deterministic pass/fail.

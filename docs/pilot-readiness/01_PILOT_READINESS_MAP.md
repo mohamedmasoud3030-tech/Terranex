@@ -6,36 +6,53 @@
 
 - Owners use the responsibility titles defined in [`09_PILOT_ROLES_AND_RESPONSIBILITIES.md`](09_PILOT_ROLES_AND_RESPONSIBILITIES.md). Named people are placeholders (`<...>`) until the engagement fills them in, exactly as in `docs/runbooks/README.md`.
 - "Minor units" means integer currency minor units (EGP piastres for the Egypt launch). Acceptance variance is **zero minor units** everywhere.
-- Gate IDs `PRM-00`…`PRM-17` are stable references used by the other pack documents.
+- Gate IDs `PRM-00`…`PRM-09B`…`PRM-17` are stable references used by the other pack documents.
+
+## Technical verification vs canonical delivery exits (read first)
+
+**PRM-00 "verified main" is technical verification only.** It means the automated gates are green on merged `main`. It does **not** imply that any canonical delivery exit has passed:
+
+- Canonical **Phase 2 exit** ("a real opening project can be imported and every financial balance reproduced") requires *real opening-project evidence*. Automated fixtures and synthetic PostgreSQL tests cannot satisfy "real opening project". This pack's gates **PRM-04 → PRM-07** (source-data intake → data-quality gate → opening import → opening reconciliation at zero variance) are what produce that evidence. **Status: not passed.**
+- Canonical **Phase 3 exit** ("one real project runs from operational event through cost/revenue, close, allocation, distribution, statement, and correction in staging") requires the **supervised real-project staging proof** on the selected pilot project's verified data — gate **PRM-09B** below. The S7 fixture rehearsals (`27_s7_end_to_end_rehearsal.sql`, `26_s7_backup_restore.sh`) are technical rehearsals and are explicitly **not** real-project staging evidence. **Status: not passed.**
+- Canonical **Phase 4** (controlled paid pilot) may begin only after both staging gates above are complete with real evidence. **Status: not started.**
+- Canonical **Phase 5** may begin only after Phase 4 exit passes. **Status: not started.**
+
+| Canonical gate | Produced by (this map) | Evidence type |
+| --- | --- | --- |
+| Phase 2 exit | PRM-04 + PRM-05 + PRM-06 + PRM-07 | real trial balance imported; every financial balance reproduced at zero variance |
+| Phase 3 exit | PRM-09B | real-project end-to-end staging cycle incl. close, statement, correction |
+| Phase 4 exit | PRM-11 + PRM-12 + PRM-13 + PRM-14 + PRM-15 → PRM-16 | four signed weekly reconciliations, one close, accurate statement, zero critical issues, buyer acceptance |
+| Phase 5 entry | PRM-17 | GA decision after Phase 4 exit |
 
 ## Gate sequence
 
 ```text
-PRM-00 verified main
+PRM-00 verified main (technical verification only — NOT a canonical delivery exit)
   └─ PRM-01 deployment readiness
        └─ PRM-02 environment configuration
             └─ PRM-03 customer onboarding prerequisites
                  └─ PRM-04 source-data intake
                       └─ PRM-05 data-quality gate
                            └─ PRM-06 opening import
-                                └─ PRM-07 opening reconciliation
+                                └─ PRM-07 opening reconciliation   [canonical Phase 2 exit evidence]
                                      └─ PRM-08 user provisioning
                                           └─ PRM-09 operational rehearsal
-                                               └─ PRM-10 controlled go-live
-                                                    ├─ PRM-11 daily exception handling (continuous, Weeks 1–4)
-                                                    └─ PRM-12 weekly reconciliation (×4, Weeks 1–4)
-                                                         └─ PRM-13 first period close
-                                                              └─ PRM-14 investor statement verification
-                                                                   └─ PRM-15 signed UAT
-                                                                        └─ PRM-16 four-week pilot exit
-                                                                             └─ PRM-17 GA decision
+                                               └─ PRM-09B real-project staging proof   [canonical Phase 3 exit evidence]
+                                                    └─ PRM-10 controlled go-live          [Phase 4 begins]
+                                                         ├─ PRM-11 daily exception handling (continuous, Weeks 1–4)
+                                                         └─ PRM-12 weekly reconciliation (×4, Weeks 1–4)
+                                                              └─ PRM-13 first period close
+                                                                   └─ PRM-14 investor statement verification
+                                                                        └─ PRM-15 signed UAT
+                                                                             └─ PRM-16 four-week pilot exit   [canonical Phase 4 exit]
+                                                                                  └─ PRM-17 GA decision        [Phase 5 entry decision]
 ```
 
 PRM-11 and PRM-12 run in parallel every pilot week; PRM-13 requires the final (Week 4) reconciliation of PRM-12. PRM-08 depends on PRM-03 (the customer OWNER already exists) but is sequenced after PRM-07 because full operating-user provisioning is only justified once the opening position is trustworthy.
 
 ---
 
-## PRM-00 — Verified main
+## PRM-00 — Verified main (technical verification only)
 
 - **Owner:** Terranex engineering (`<ENGINEERING_ONCALL>`).
 - **Input:** the audit workstream (Phase 2C/2D, security and financial-integrity remediation) finished and merged to `main`.
@@ -44,6 +61,7 @@ PRM-11 and PRM-12 run in parallel every pilot week; PRM-13 requires the final (W
 - **Fail condition:** any audit finding unresolved, or any red gate on the merge commit.
 - **Remediation:** stays inside the audit workstream until closed; this readiness pack does not patch audit findings.
 - **Dependency:** none (start of chain).
+- **Boundary:** this gate proves the product is technically operable on fixtures. It does **not** pass canonical Phase 2 or Phase 3 exit — those require real-project evidence produced later by PRM-04…PRM-07 and PRM-09B.
 
 ## PRM-01 — Deployment readiness
 
@@ -114,6 +132,7 @@ PRM-11 and PRM-12 run in parallel every pilot week; PRM-13 requires the final (W
 - **Fail condition:** any non-zero variance or any open exception at sign-off time (the product refuses sign-off while an exception is open).
 - **Remediation:** follow [`03_OPENING_BALANCE_CONTROL_PACK.md`](03_OPENING_BALANCE_CONTROL_PACK.md) §8 (variance handling): correct via linked reversal or a corrected import per runbook, then record a **new** checkpoint — checkpoints are never edited.
 - **Dependency:** PRM-06.
+- **Canonical effect:** PRM-04 + PRM-05 + PRM-06 + this gate, passed on the real selected pilot project, constitute the evidence for the **canonical Phase 2 exit** ("a real opening project can be imported and every financial balance reproduced"). Until they pass with real customer data, Phase 2 exit remains unpassed regardless of any automated suite.
 
 ## PRM-08 — User provisioning
 
@@ -135,15 +154,49 @@ PRM-11 and PRM-12 run in parallel every pilot week; PRM-13 requires the final (W
 - **Remediation:** fix environment/training gaps and repeat; a failing rehearsal is an engineering incident (`docs/runbooks/FAILED_DEPLOYMENT_OR_MIGRATION.md` where deployment-related).
 - **Dependency:** PRM-08.
 
+## PRM-09B — Real-project staging proof (canonical Phase 3 exit)
+
+**A synthetic fixture rehearsal is not real-project staging.** This gate runs the complete lifecycle chain on the **real selected pilot project's verified data** in a dedicated staging environment, supervised, before any controlled production go-live. It is the evidence for the canonical Phase 3 exit: "one real project runs from operational event through cost/revenue, close, allocation, distribution, statement, and correction in staging."
+
+- **Owner:** `<PILOT_OPS_OWNER>` (facilitation) with the customer operating users who will run the pilot; `<FINANCE_CONTROL_OWNER>` verifies the financial evidence.
+- **Input:** PRM-07 passed (real opening position reconciled at zero variance); PRM-09 passed (users trained, technical rehearsals current); a staging environment provisioned and migrated to the same release as the pilot target.
+- **Scope exercised (where applicable to the selected project):**
+  1. project / party / agreement configuration from real data;
+  2. commitment / capital call / contribution;
+  3. obligation / payment (recorded after the customer's banking process) / bank reconciliation;
+  4. Real Estate lifecycle: profile, asset, parcel, control/acquisition evidence;
+  5. budget / cost / management valuation;
+  6. disposition / sale recognition / collection;
+  7. realized result;
+  8. allocation from an approved close snapshot;
+  9. distribution approval and payment record;
+  10. investor statement generation;
+  11. period close;
+  12. correction / linked reversal of a staged error.
+- **Required evidence:**
+  - staging environment reference and the staging project id;
+  - source-data references (the same intake contract artifacts used, with the staging import id/checksum);
+  - **exact financial reconciliation:** staging checkpoint set at variance = 0 against the customer's independent figures;
+  - close evidence: close run id, ten gate results, approved snapshot;
+  - statement reproduction: investor statement regenerated from posted facts and independently recalculated at variance 0;
+  - correction/reversal proof: original → reversal → replacement chain recorded;
+  - zero unresolved critical integrity/security defects at the end of the staging cycle.
+- **Pass condition:** every applicable item above completes on the real project's data with the listed evidence; all financial comparisons at zero variance; no unresolved critical defect.
+- **Fail condition:** any applicable lifecycle step cannot be completed on real data, any variance cannot be driven to zero, or any critical defect remains open.
+- **Remediation:** defects route to the audit/engineering stream or to intake remediation (`02_DATA_INTAKE_CONTRACT.md`) depending on cause; the staging cycle is then repeated from the affected step. Do not advance to controlled go-live with a failed or skipped staging proof.
+- **Dependency:** PRM-07 (real opening evidence), PRM-09 (trained users, current rehearsals).
+- **Canonical effect:** passing this gate with the recorded evidence is the **canonical Phase 3 exit**. Fixture rehearsals (`27_s7_end_to_end_rehearsal.sql`) support it but can never substitute for it.
+
 ## PRM-10 — Controlled go-live
 
 - **Owner:** `<PILOT_OPS_OWNER>` with `<CUSTOMER_APPROVER>`.
-- **Input:** PRM-09 passed; written go-live decision from `<CUSTOMER_APPROVER>`.
+- **Input:** PRM-09 passed **and PRM-09B passed** (canonical Phase 2 and Phase 3 exit evidence complete); written go-live decision from `<CUSTOMER_APPROVER>`.
 - **Required evidence:** go-live decision record (date, decision, participants); the daily and weekly operating cadence from `04_PILOT_RUNBOOK_WEEKS_0_TO_4.md` scheduled; support channel and escalation owners confirmed live (`SUPPORT_ESCALATION.md` placeholders filled for this engagement).
 - **Pass condition:** the customer starts capturing real daily operations in Terranex from the agreed go-live date; no fallback decision ("stay on spreadsheets only") was taken.
-- **Fail condition:** the customer declines go-live, or support ownership is not confirmed.
+- **Fail condition:** the customer declines go-live, support ownership is not confirmed, or the PRM-09B staging proof is incomplete.
 - **Remediation:** resolve the blocking concern; go-live is re-decided explicitly — it never happens by drift.
-- **Dependency:** PRM-09.
+- **Dependency:** PRM-09 and **PRM-09B**.
+- **Canonical effect:** controlled Phase 4 operation begins here. It is authorized only because the canonical Phase 2 and Phase 3 exits are evidenced; without them this gate cannot pass.
 
 ## PRM-11 — Daily exception handling (Weeks 1–4, continuous)
 
@@ -206,6 +259,7 @@ PRM-11 and PRM-12 run in parallel every pilot week; PRM-13 requires the final (W
   3. accurate investor statement verified at zero variance (PRM-14);
   4. zero unresolved critical security/data issues (PRM-11 + audit stream findings);
   5. buyer acceptance recorded (PRM-15 + explicit written acceptance).
+- **Canonical effect:** this is the canonical Phase 4 exit verbatim. Phase 5 work (`11_GA_READINESS_BACKLOG.md`) is blocked until it passes.
 - **Fail condition:** any of the five unmet.
 - **Remediation:** continue pilot operation (extended weeks, restarted reconciliation count) until all five are met; the roadmap allows no partial exit.
 - **Dependency:** PRM-11–PRM-15.
@@ -226,19 +280,20 @@ PRM-11 and PRM-12 run in parallel every pilot week; PRM-13 requires the final (W
 
 | Gate | Primary product evidence | Primary pack document |
 | --- | --- | --- |
-| PRM-00 | CI green run on `main`; rehearsal facts | audit workstream output |
+| PRM-00 | CI green run on `main`; rehearsal facts (technical verification only, not a delivery exit) | audit workstream output |
 | PRM-01/02 | checklist completion record | `08_DEPLOYMENT_ENVIRONMENT_CHECKLIST.md` |
 | PRM-03 | signed engagement reference | `10_COMMERCIAL_HANDOFF_REQUIREMENTS.md` |
 | PRM-04/05 | coverage tracker, validation worksheets | `02_DATA_INTAKE_CONTRACT.md` |
 | PRM-06 | `s7_opening_imports` POSTED record | `03_OPENING_BALANCE_CONTROL_PACK.md` |
-| PRM-07 | `s7_reconciliation_checkpoints` sign-offs | `03_OPENING_BALANCE_CONTROL_PACK.md` |
+| PRM-07 | `s7_reconciliation_checkpoints` sign-offs — with PRM-04…06 this is the canonical **Phase 2 exit** evidence | `03_OPENING_BALANCE_CONTROL_PACK.md` |
 | PRM-08 | membership list | `09_PILOT_ROLES_AND_RESPONSIBILITIES.md` |
 | PRM-09 | `s7_pilot_rehearsals`, executed UAT tasks | `04_PILOT_RUNBOOK_WEEKS_0_TO_4.md` |
+| PRM-09B | staging project id, staging import/checkpoint/close/statement/correction evidence — canonical **Phase 3 exit** evidence | `04_PILOT_RUNBOOK_WEEKS_0_TO_4.md` (Week 0 staging proof) |
 | PRM-10 | go-live decision record | `04_PILOT_RUNBOOK_WEEKS_0_TO_4.md` |
 | PRM-11 | exception queue records | `07_INCIDENT_SUPPORT_MATRIX.md` |
 | PRM-12 | weekly checkpoint sets | `06_RECONCILIATION_PROCEDURES.md` |
 | PRM-13 | `close_runs` + ten gates + snapshot | `04_PILOT_RUNBOOK_WEEKS_0_TO_4.md` |
 | PRM-14 | `INVESTOR_STATEMENT_TOTAL` checkpoint | `06_RECONCILIATION_PROCEDURES.md` |
 | PRM-15 | `s7_uat_tasks` ACCEPTED set | `05_UAT_ACCEPTANCE_MATRIX.md` |
-| PRM-16 | pilot exit record | this document |
-| PRM-17 | GA decision record | `11_GA_READINESS_BACKLOG.md` |
+| PRM-16 | pilot exit record — canonical **Phase 4 exit** | this document |
+| PRM-17 | GA decision record — **Phase 5 entry** decision | `11_GA_READINESS_BACKLOG.md` |

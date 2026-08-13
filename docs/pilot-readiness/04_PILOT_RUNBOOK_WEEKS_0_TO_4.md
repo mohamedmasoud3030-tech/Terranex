@@ -8,9 +8,9 @@
 
 ---
 
-## Week 0 — Readiness, import, training
+## Week 0 — Readiness, import, training, staging proof
 
-Gates covered: PRM-01…PRM-09.
+Gates covered: PRM-01…PRM-09B. Week 0 ends with the **real-project staging proof (PRM-09B)**, which is the canonical Phase 3 exit; controlled go-live (PRM-10, Phase 4) is not authorized without it.
 
 ### Environment readiness (days 0–1)
 
@@ -45,9 +45,21 @@ Gates covered: PRM-01…PRM-09.
 ### Initial UAT tasks (day 5)
 
 - [ ] Register the Week 0 UAT subset from `05_UAT_ACCEPTANCE_MATRIX.md` (codes `S7-UAT-*`) and execute them; **do not accept** — acceptance belongs to Weeks 1–4 with live evidence.
-- [ ] Go-live decision (PRM-10) recorded by `<CUSTOMER_APPROVER>`.
 
-**Week 0 exit:** opening position posted and reconciled at zero variance; users trained; go-live decision recorded. Otherwise: fix and repeat; do not start Week 1.
+### Real-project staging proof (days 5–6) — PRM-09B, canonical Phase 3 exit
+
+**A synthetic fixture rehearsal is not this proof.** On the **real selected pilot project's verified data** in a dedicated staging environment, supervised by `<PILOT_OPS_OWNER>`:
+
+- [ ] Staging environment provisioned and migrated to the same release as the pilot target; staging project id recorded.
+- [ ] Full chain exercised where applicable: project/party/agreement → commitment/call/contribution → obligation/payment/reconciliation → Real Estate lifecycle → budget/cost/valuation → disposition/recognition/collection → realized result → allocation → distribution → statement → period close → correction/reversal.
+- [ ] Evidence recorded: source-data references; staging opening import id/checksum; staging checkpoint set at variance = 0; close run id + ten gate results + snapshot; statement independently recalculated at variance 0; original → reversal → replacement chain; zero unresolved critical integrity/security defects.
+- [ ] Any step that cannot be completed on real data blocks the proof; defect routes per PRM-09B remediation; the cycle repeats from the affected step.
+
+### Go-live decision (day 6)
+
+- [ ] Go-live decision (PRM-10) recorded by `<CUSTOMER_APPROVER>` — authorized only with PRM-09B passed.
+
+**Week 0 exit:** opening position posted and reconciled at zero variance (canonical Phase 2 exit evidence); users trained; **real-project staging proof passed (canonical Phase 3 exit evidence)**; go-live decision recorded. Otherwise: fix and repeat; do not start Week 1.
 
 ---
 

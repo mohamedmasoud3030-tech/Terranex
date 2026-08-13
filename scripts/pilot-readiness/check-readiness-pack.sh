@@ -139,9 +139,9 @@ done < .env.example
 # 6. Runbook references in the incident matrix resolve to real runbooks.
 # ---------------------------------------------------------------------------
 echo "-- Runbook references --"
-# Proposed-but-not-yet-written runbooks are documented as gaps in 07 and are
-# the only acceptable unresolved names.
-PROPOSED="CLOSE_RUN_GATE_FAILURE.md"
+# The G-01/G-02 runbooks are now mandatory parts of the runbook set; no
+# proposed-but-unwritten runbook names are allowed in the matrix anymore.
+PROPOSED=""
 # Pack filenames (NN_NAME.md) are stripped first so cross-references to this
 # pack's own documents are not mistaken for runbook references.
 REFS=$(sed -E 's/[0-9]{2}_[A-Z_]+\.md//g' "$PACK/07_INCIDENT_SUPPORT_MATRIX.md" \
@@ -158,7 +158,87 @@ for ref in $REFS; do
 done
 
 # ---------------------------------------------------------------------------
-# 7. UAT task codes match the product pattern ^S7-UAT-[A-Z0-9-]{2,40}$.
+# 7. Canonical delivery gates: technical verification vs delivery exits.
+#    The pack must state the Phase 2/3 exit wording explicitly and must not
+#    let "verified main" imply any canonical delivery exit has passed.
+# ---------------------------------------------------------------------------
+echo "-- Canonical delivery gate wording --"
+if grep -q "## Delivery status (read first)" "$PACK/README.md" \
+   && grep -q "Phase 2 exit" "$PACK/README.md" \
+   && grep -q "Phase 3 exit" "$PACK/README.md" \
+   && grep -q "Not passed" "$PACK/README.md" \
+   && grep -q "Not started" "$PACK/README.md"; then
+  pass "README carries an explicit delivery-status section with Phase 2/3 exits not passed"
+else
+  fail "README delivery-status section missing or no longer marks Phase 2/3 exits as not passed"
+fi
+if grep -q "a real opening project can be imported and every financial balance reproduced" "$PACK/01_PILOT_READINESS_MAP.md"; then
+  pass "map cites the canonical Phase 2 exit wording"
+else
+  fail "map no longer cites the canonical Phase 2 exit wording"
+fi
+if grep -q "in staging" "$PACK/01_PILOT_READINESS_MAP.md" \
+   && grep -q "## PRM-09B" "$PACK/01_PILOT_READINESS_MAP.md"; then
+  pass "map defines the PRM-09B real-project staging gate (canonical Phase 3 exit)"
+else
+  fail "map is missing the PRM-09B real-project staging gate or Phase 3 staging wording"
+fi
+if grep -q "synthetic fixture rehearsal is not" "$PACK/01_PILOT_READINESS_MAP.md" \
+   && grep -q "synthetic fixture rehearsal is not" "$PACK/04_PILOT_RUNBOOK_WEEKS_0_TO_4.md"; then
+  pass "map and runbook state that fixture rehearsals are not real-project staging"
+else
+  fail "fixture-vs-real-staging distinction missing from map or Week 0 runbook"
+fi
+if grep -q "PRM-09B" "$PACK/04_PILOT_RUNBOOK_WEEKS_0_TO_4.md"; then
+  pass "Week 0 runbook requires the real-project staging proof before go-live"
+else
+  fail "Week 0 runbook does not reference the PRM-09B staging proof"
+fi
+
+# ---------------------------------------------------------------------------
+# 8. Phase 5 must stay behind Phase 4 exit.
+# ---------------------------------------------------------------------------
+echo "-- Phase 5 sequencing lock --"
+if grep -q "Phase 4 exit (PRM-16)" "$PACK/11_GA_READINESS_BACKLOG.md" \
+   && grep -q "must not start" "$PACK/11_GA_READINESS_BACKLOG.md" \
+   && grep -q "Do not start WP1" "$PACK/11_GA_READINESS_BACKLOG.md"; then
+  pass "GA backlog keeps every Phase 5 package behind Phase 4 exit"
+else
+  fail "GA backlog no longer pins Phase 5/WP1 behind Phase 4 exit"
+fi
+if grep -q "Safe pre-pilot preparation" "$PACK/11_GA_READINESS_BACKLOG.md" \
+   && grep -q "Phase 4 operational execution" "$PACK/11_GA_READINESS_BACKLOG.md" \
+   && grep -q "Phase 5 productization" "$PACK/11_GA_READINESS_BACKLOG.md"; then
+  pass "GA backlog distinguishes preparation vs pilot execution vs productization"
+else
+  fail "GA backlog lost the preparation/execution/productization distinction"
+fi
+
+# ---------------------------------------------------------------------------
+# 9. No accidentally completed customer/human gates.
+# ---------------------------------------------------------------------------
+echo "-- Human gates still pending --"
+if grep -q 'Status of every scenario below: `PENDING`' "$PACK/05_UAT_ACCEPTANCE_MATRIX.md" \
+   && grep -q -- "— pending —" "$PACK/05_UAT_ACCEPTANCE_MATRIX.md"; then
+  pass "UAT matrix still marks every scenario pending with an empty acceptance summary"
+else
+  fail "UAT matrix appears to mark scenarios passed or lost its pending markers"
+fi
+if grep -rq "production_restore_performed: true" "$PACK"; then
+  fail "pack claims a production restore was performed"
+else
+  pass "no production restore is claimed anywhere in the pack"
+fi
+CLAIM_HITS=$(grep -rniE "deployment occurred|customer onboarding occurred|UAT passed|weekly reconciliation occurred|buyer acceptance obtained|GA readiness (is|has been) achieved" "$PACK" \
+  | grep -viE "not|never|without|no |unless" | wc -l | tr -d ' ')
+if [ "$CLAIM_HITS" -eq 0 ]; then
+  pass "no accidentally completed pilot/customer gate claims found"
+else
+  fail "$CLAIM_HITS line(s) may claim a completed customer gate — review them"
+fi
+
+# ---------------------------------------------------------------------------
+# 10. UAT task codes match the product pattern ^S7-UAT-[A-Z0-9-]{2,40}$.
 # ---------------------------------------------------------------------------
 echo "-- UAT task codes --"
 UAT_CODES=$(grep -oE 'S7-UAT-[A-Z0-9-]+' "$PACK/05_UAT_ACCEPTANCE_MATRIX.md" | sort -u)
