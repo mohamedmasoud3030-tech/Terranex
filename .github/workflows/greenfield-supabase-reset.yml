@@ -1,4 +1,4 @@
-name: Terranex Final Persistent Demo Rollback Gate
+name: Terranex Complete Demo S6 Rollback Gate
 
 on:
   push:
@@ -24,29 +24,32 @@ jobs:
           ref: demo/real-estate-showcase-data
           fetch-depth: 1
 
-      - name: Fetch exact tested S6 bigint migration
+      - name: Fetch exact tested S6 migrations
         shell: bash
         run: |
           set -euo pipefail
           git fetch --depth=1 origin fix/s6-close-bigint-totals:refs/remotes/origin/fix/s6-close-bigint-totals
           git show origin/fix/s6-close-bigint-totals:supabase/migrations/20260813000700_s6_close_bigint_totals.sql > /tmp/s6-bigint.sql
+          git show origin/fix/s6-close-bigint-totals:supabase/migrations/20260813000800_s6_sequential_accounting_periods.sql > /tmp/s6-periods.sql
           test -s /tmp/s6-bigint.sql
+          test -s /tmp/s6-periods.sql
 
-      - name: Execute migration plus full demo under one rollback transaction
+      - name: Execute both migrations plus full demo under rollback
         shell: bash
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-          { echo 'begin;'; cat /tmp/s6-bigint.sql; cat scripts/demo/seed_real_estate_showcase.sql; echo 'rollback;'; } > "$tmp/dry.sql"
+          { echo 'begin;'; cat /tmp/s6-bigint.sql; cat /tmp/s6-periods.sql; cat scripts/demo/seed_real_estate_showcase.sql; echo 'rollback;'; } > "$tmp/dry.sql"
           jq -Rs '{query:.}' < "$tmp/dry.sql" > "$tmp/payload.json"
           http="$(curl -sS -o "$tmp/response.json" -w '%{http_code}' -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H 'Content-Type: application/json' --data-binary @"$tmp/payload.json")"
-          echo "FINAL_DEMO_DRY_RUN_HTTP=$http"
+          echo "COMPLETE_S6_DEMO_DRY_RUN_HTTP=$http"
           if [[ "$http" -ge 200 && "$http" -lt 300 ]]; then
             echo 'S6_BIGINT_HOSTED=PASS'
-            echo 'PERSISTENT_DEMO_FULL_ROLLBACK_GATE=PASS'
+            echo 'S6_SEQUENTIAL_PERIODS_HOSTED=PASS'
+            echo 'PERSISTENT_DEMO_COMPLETE_ROLLBACK_GATE=PASS'
             exit 0
           fi
           jq -c '{code:(.code // .error_code // null),message:(.message // .error // .msg // "unknown database error"),hint:(.hint // null),details:(.details // null)}' "$tmp/response.json" || true
