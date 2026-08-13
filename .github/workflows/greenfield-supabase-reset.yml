@@ -1,4 +1,4 @@
-name: Terranex PR115 Ledger Reconcile
+name: Terranex Migration Ledger Ownership
 
 on:
   push:
@@ -11,64 +11,30 @@ permissions:
   contents: read
 
 jobs:
-  reconcile:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
-      MIGRATION_VERSION: '20260813000400_project_intake_readiness'
-      MIGRATION_NAME: '20260813000400_project_intake_readiness.sql'
     steps:
-      - name: Checkout exact tested PR 115 head
-        uses: actions/checkout@v4
-        with:
-          ref: bb61ebe63039a5596bad9bbbe3215cdfb2d86fa7
-
-      - name: Reconcile deployment ledger only
+      - name: Inspect safe ledger execution identity
         shell: bash
         run: |
           set -euo pipefail
-          checksum="$(sha256sum "supabase/migrations/$MIGRATION_NAME" | awk '{print $1}')"
-          sql="begin;
-          alter table public.terranex_migration_history no force row level security;
-          insert into public.terranex_migration_history(version,name,checksum)
-          values ('$MIGRATION_VERSION','$MIGRATION_NAME','$checksum');
-          alter table public.terranex_migration_history force row level security;
-          commit;"
-          payload="$(jq -n --arg q "$sql" '{query:$q}')"
-          curl --fail-with-body -sS -X POST \
-            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$payload" >/dev/null
-          echo 'LIVE_MIGRATION_LEDGER_RECORDED=true'
-
-      - name: Verify live intake contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          sql="select
-            exists(select 1 from public.terranex_migration_history where version='20260813000400_project_intake_readiness') as ledger_recorded,
-            (select relforcerowsecurity from pg_class where oid='public.terranex_migration_history'::regclass) as ledger_force_rls,
-            (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and c.relname in ('project_intake_declarations','project_intake_section_applicability','project_intake_modelling_gaps','project_intake_evidence_items') and c.relrowsecurity and c.relforcerowsecurity) as forced_rls_count,
-            has_table_privilege('anon','public.project_intake_declarations','SELECT') as anon_select,
-            has_table_privilege('authenticated','public.project_intake_declarations','SELECT') as auth_select,
-            has_function_privilege('anon','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') as anon_command,
-            has_function_privilege('authenticated','public.intake_record_freeze_date(uuid,uuid,date,text)','EXECUTE') as auth_command,
-            has_function_privilege('authenticated','public.intake_require_project(uuid,uuid)','EXECUTE') as helper_exposed;"
+          sql="select current_user,
+            pg_get_userbyid(c.relowner) as ledger_owner,
+            r.rolsuper as current_superuser,
+            r.rolbypassrls as current_bypassrls,
+            has_table_privilege(current_user,'public.terranex_migration_history','INSERT') as can_insert,
+            c.relrowsecurity as rls_enabled,
+            c.relforcerowsecurity as rls_forced
+          from pg_class c join pg_roles r on r.rolname=current_user
+          where c.oid='public.terranex_migration_history'::regclass;"
           payload="$(jq -n --arg q "$sql" '{query:$q}')"
           response="$(curl --fail-with-body -sS -X POST \
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H 'Content-Type: application/json' \
             --data-binary "$payload")"
-          [[ "$(printf '%s' "$response" | jq -r '.[0].ledger_recorded')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].ledger_force_rls')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].forced_rls_count')" == 4 ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].anon_select')" == false ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].auth_select')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].anon_command')" == false ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].auth_command')" == true ]]
-          [[ "$(printf '%s' "$response" | jq -r '.[0].helper_exposed')" == false ]]
-          echo 'LIVE_INTAKE_SECURITY_CONTRACT_VERIFIED=true'
+          printf '%s' "$response" | jq -r '.[0] | "CURRENT_USER=\(.current_user)\nLEDGER_OWNER=\(.ledger_owner)\nCURRENT_SUPERUSER=\(.current_superuser)\nCURRENT_BYPASSRLS=\(.current_bypassrls)\nCAN_INSERT=\(.can_insert)\nRLS_ENABLED=\(.rls_enabled)\nRLS_FORCED=\(.rls_forced)"'
