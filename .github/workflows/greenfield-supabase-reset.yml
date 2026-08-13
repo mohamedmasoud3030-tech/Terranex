@@ -1,4 +1,4 @@
-name: Terranex Security Definer Search Path Probe
+name: Terranex Activation Search Path Patch
 
 on:
   push:
@@ -8,35 +8,27 @@ on:
       - .github/workflows/greenfield-supabase-reset.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  probe:
+  patch:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: nwpyeobuxzbdnnzyfyqw
     steps:
-      - name: List Terranex public SECURITY DEFINER search-path offenders
+      - name: Checkout activation repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/activation-migration-ledger
+
+      - name: Normalize canonical search path comparison
         shell: bash
         run: |
           set -euo pipefail
-          sql="select p.oid::regprocedure::text as signature,
-            coalesce(array_to_string(p.proconfig, ','), '') as config
-          from pg_proc p
-          where p.prosecdef
-            and p.pronamespace='public'::regnamespace
-            and (p.proconfig is null or not exists (
-              select 1 from unnest(p.proconfig) pc
-              where pc like 'search_path=pg_catalog,public'
-            ))
-          order by 1;"
-          payload="$(jq -n --arg q "$sql" '{query:$q}')"
-          response="$(curl --fail-with-body -sS --retry 3 --retry-all-errors --retry-delay 1 \
-            -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            -H 'Content-Type: application/json' \
-            --data-binary "$payload")"
-          echo "OFFENDER_COUNT=$(printf '%s' "$response" | jq 'length')"
-          printf '%s' "$response" | jq -r '.[] | "FUNCTION=\(.signature) CONFIG=\(.config)"'
+          python3 -c "from pathlib import Path; p=Path('.github/pilot-activation/activate.sh'); s=p.read_text(); old=\"pc like 'search_path=pg_catalog,public'\"; new=\"replace(pc,' ','') = 'search_path=pg_catalog,public'\"; assert s.count(old)==1, s.count(old); p.write_text(s.replace(old,new))"
+          bash -n .github/pilot-activation/activate.sh
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/pilot-activation/activate.sh
+          git commit -m 'fix(ops): normalize canonical search path check'
+          git push origin HEAD:fix/activation-migration-ledger
