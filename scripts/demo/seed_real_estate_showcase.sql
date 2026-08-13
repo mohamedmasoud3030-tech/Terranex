@@ -422,6 +422,10 @@ begin
     $$select public.recognize_property_sale(%L,%L,date '2026-07-29','demo-sale-recognize-a')$$,
     v_org, v_disposition));
   select id into v_recognition from public.property_sale_recognitions where disposition_id=v_disposition;
+  perform pg_temp.terranex_demo_run(v_checker, format(
+    $$select public.transition_property_asset(%L,%L,'EXITING','DISPOSED',
+      'اكتمل نقل السيطرة والاعتراف ببيع الأصل','DEMO-SALE-A-2026-01','demo-state-a-disposed')$$,
+    v_org, v_asset_a));
 
   perform pg_temp.terranex_demo_run(v_maker, format(
     $$select public.create_cost_obligation(%L,%L,%L,'عمولة وتسويق وإتمام بيع القطاع A',
