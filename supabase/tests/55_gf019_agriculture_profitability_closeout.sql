@@ -43,14 +43,14 @@ select jl.id as s19_cost_line from public.journal_lines jl join public.semantic_
 where jl.batch_id=:'s19_cost_batch' and sa.role='PROJECT_EXPENSE' \gset
 
 select s19_run('00000000-0000-4000-8000-000000000001',format(
-  $$select public.attribute_crop_cycle_cost('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,%L,
+  $$select public.attribute_crop_cycle_cost('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
     60000,'LABOR','سياسة تكلفة التشغيل 2026','كشف عمالة وحصاد SYNTHETIC','s19-cost-attribute')$$,
   :'s19_project',:'s19_cycle',:'s19_field',:'s19_cost_line')) as s19_attribution \gset
 select 1/case when (select attributed_amount_minor_units=60000 and currency='EGP'
   and source_journal_line_id=:'s19_cost_line'::uuid from public.crop_cycle_cost_attributions where id=:'s19_attribution')
 then 1 else 0 end as s19_valid_source_cost_attribution;
 select 1/case when s19_run('00000000-0000-4000-8000-000000000001',format(
-  $$select public.attribute_crop_cycle_cost('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,%L,
+  $$select public.attribute_crop_cycle_cost('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,
     60000,'LABOR','سياسة تكلفة التشغيل 2026','كشف عمالة وحصاد SYNTHETIC','s19-cost-attribute')$$,
   :'s19_project',:'s19_cycle',:'s19_field',:'s19_cost_line'))=:'s19_attribution'
 then 1 else 0 end as s19_cost_idempotent_replay;
