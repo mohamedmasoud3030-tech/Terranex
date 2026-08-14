@@ -9,12 +9,13 @@ import Link from 'next/link';
  * Internal implementation labels are never exposed here; each section
  * links to the canonical operator page for that business concern.
  *
- * The Agriculture entry is intentional: per ADR 0012 / GF-013 the first
- * bounded agriculture foundation only ships Farm → Field → CropCycle;
- * later bounded agriculture batches will add more sections when the
- * corresponding workflow is implemented and tested. Scaffolding a full
- * multi-section agriculture workspace before the underlying commands
- * exist would fabricate KPIs and would not be honest with the operator.
+ * The Agriculture entries are intentional and grow only with delivered
+ * workflow: ADR 0012 / GF-013 shipped Farm → Field → CropCycle, GF-014
+ * added Field Activity, and GF-015 added Input Item / Input Lot /
+ * Input Application. Navigation stays shallow — every Agriculture entry
+ * targets a section of the single sector workspace rather than a new
+ * page-within-page. Scaffolding a section before its commands exist
+ * would fabricate KPIs and would not be honest with the operator.
  */
 
 export type WorkspaceSector = 'REAL_ESTATE' | 'AGRICULTURE';
@@ -30,7 +31,8 @@ export type WorkspaceSection =
   | 'opening'
   | 'controls'
   | 'agriculture'
-  | 'field-activities';
+  | 'field-activities'
+  | 'field-inputs';
 
 type SectionDef = {
   id: WorkspaceSection;
@@ -54,6 +56,7 @@ const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
   { id: 'field-activities', label: 'أنشطة الحقل', description: 'تسجيل ما حدث في الحقل على تخصيص دورة قائم', href: (p) => `/projects/${p}/agriculture#activities` },
+  { id: 'field-inputs', label: 'المدخلات والتطبيقات', description: 'المدخلات وتشغيلاتها وتطبيقها الفعلي على نشاط حقل قائم', href: (p) => `/projects/${p}/agriculture#inputs` },
 ];
 
 export const REAL_ESTATE_SECTION_IDS = REAL_ESTATE_SECTIONS.map((s) => s.id);

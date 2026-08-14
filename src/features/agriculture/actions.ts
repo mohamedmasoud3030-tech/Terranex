@@ -11,6 +11,9 @@ import {
   farmSchema,
   fieldActivitySchema,
   fieldSchema,
+  inputApplicationSchema,
+  inputItemSchema,
+  inputLotSchema,
 } from './schema';
 
 function fail(error: string): ActionState { return { error }; }
@@ -48,6 +51,29 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('quantity and unit must be provided together')) return fail('الكمية ووحدتها يجب إدخالهما معًا أو تركهما معًا.');
   if (text.includes('quantity must be positive')) return fail('الكمية يجب أن تكون موجبة.');
   if (text.includes('crop cycle field assignment not found')) return fail('الحقل غير مخصص لهذه الدورة. اختر تخصيصًا قائمًا.');
+  // GF-015 — input item, input lot, and input application.
+  if (text.includes('invalid input category')) return fail('فئة المدخل يجب أن تكون تقاوي أو سماد أو مبيد/كيماوي.');
+  if (text.includes('invalid input name')) return fail('اسم المدخل مطلوب (حرفان على الأقل).');
+  if (text.includes('invalid application unit')) return fail('وحدة تطبيق المدخل مطلوبة.');
+  if (text.includes('invalid lot reference')) return fail('مرجع التشغيلة مطلوب.');
+  if (text.includes('input item already exists')) return fail('يوجد مدخل بنفس الاسم والفئة في هذا المشروع.');
+  if (text.includes('input lot reference already exists')) return fail('مرجع التشغيلة مستخدم بالفعل لهذا المدخل.');
+  if (text.includes('manufacture date must not be after the expiry date')) return fail('تاريخ التصنيع يجب ألا يكون بعد تاريخ الانتهاء.');
+  if (text.includes('input item not found')) return fail('المدخل المحدد غير موجود في هذا المشروع.');
+  if (text.includes('input lot not found')) return fail('التشغيلة المحددة غير موجودة لهذا المدخل.');
+  if (text.includes('field activity not found')) return fail('نشاط الحقل المحدد غير موجود في هذه المنظمة.');
+  if (text.includes('does not accept an input application')) return fail('نوع نشاط الحقل المحدد لا يستقبل تطبيق مدخلات. اختر زراعة أو تسميد أو رش.');
+  if (text.includes('requires a PLANT activity')) return fail('التقاوي تُسجَّل على نشاط زراعة فقط.');
+  if (text.includes('requires a FERTILIZE activity')) return fail('السماد يُسجَّل على نشاط تسميد فقط.');
+  if (text.includes('requires a SPRAY activity')) return fail('المبيد/الكيماوي يُسجَّل على نشاط رش فقط.');
+  if (text.includes('expired on')) return fail('التشغيلة منتهية الصلاحية في تاريخ التطبيق ولا يمكن تسجيلها.');
+  if (text.includes('application quantity must be positive')) return fail('كمية التطبيق يجب أن تكون موجبة.');
+  if (text.includes('application unit must be the input item unit')) return fail('وحدة الكمية يجب أن تطابق وحدة تطبيق المدخل.');
+  if (text.includes('applied area must be positive')) return fail('المساحة المعالجة يجب أن تكون موجبة.');
+  if (text.includes('applied area unit must be the assignment area unit')) return fail('وحدة المساحة المعالجة يجب أن تطابق وحدة مساحة التخصيص.');
+  if (text.includes('applied area exceeds the assigned area')) return fail('المساحة المعالجة تتجاوز المساحة المخصصة لهذا التخصيص.');
+  if (text.includes('invalid application date')) return fail('تاريخ التطبيق غير صالح.');
+  if (text.includes('invalid safety note')) return fail('ملاحظة السلامة غير صالحة.');
   return fail(fallback);
 }
 
@@ -199,6 +225,90 @@ export async function createFieldActivity(_: ActionState, form: FormData): Promi
       p_idempotency_key: value.idempotencyKey,
     },
     'تعذر تسجيل نشاط الحقل.',
+    value.projectId,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GF-015 — Field Input Application Foundation.
+//
+// Three commands, all server-authoritative. The browser never supplies
+// the actor, and for an application it never supplies the project,
+// crop cycle, field, or assignment: the server derives all four from
+// the referenced FieldActivity. `projectId` is carried in the form only
+// so the affected workspace paths can be revalidated.
+//
+// GF-015 records the operational fact only. No obligation, payment,
+// journal, investor balance, inventory balance, valuation, or
+// biological-asset accounting fact is created, and CropCycle lifecycle
+// state is never advanced. Available-stock validation begins only when
+// the canonical InventoryMovement slice exists.
+// ---------------------------------------------------------------------------
+
+export async function createInputItem(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(inputItemSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_input_item',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_category: value.category,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_application_unit: value.applicationUnit,
+      p_manufacturer: value.manufacturer,
+      p_notes: value.notes,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل المدخل الزراعي.',
+    value.projectId,
+  );
+}
+
+export async function createInputLot(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(inputLotSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  // The project and the unit are derived server-side from the input
+  // item; they are deliberately not sent from the browser.
+  return rpc(
+    'create_input_lot',
+    {
+      p_organization_id: value.organizationId,
+      p_input_item_id: value.inputItemId,
+      p_lot_reference: value.lotReference,
+      p_supplier_reference: value.supplierReference,
+      p_manufactured_on: value.manufacturedOn ?? null,
+      p_expires_on: value.expiresOn ?? null,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل تشغيلة المدخل.',
+    value.projectId,
+  );
+}
+
+export async function recordInputApplication(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(inputApplicationSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'record_input_application',
+    {
+      p_organization_id: value.organizationId,
+      p_field_activity_id: value.fieldActivityId,
+      p_input_item_id: value.inputItemId,
+      p_input_lot_id: value.inputLotId,
+      p_application_date: value.applicationDate,
+      p_quantity: value.quantity.replace(',', '.'),
+      p_unit: value.unit,
+      p_applied_area_quantity: value.appliedAreaQuantity.replace(',', '.'),
+      p_applied_area_unit: value.appliedAreaUnit,
+      p_notes: value.notes,
+      p_safety_note: value.safetyNote,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل تطبيق المدخل.',
     value.projectId,
   );
 }

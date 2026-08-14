@@ -10,6 +10,9 @@ import {
   getFarms,
   getFieldActivities,
   getFields,
+  getInputApplications,
+  getInputItems,
+  getInputLots,
 } from '@/features/agriculture/queries';
 import {
   AREA_UNIT_LABEL,
@@ -17,6 +20,9 @@ import {
   formatAreaUnit,
   formatDate,
   formatFieldActivityType,
+  formatInputCategory,
+  formatInputQuantity,
+  formatLotExpiryStatus,
   formatQuantity,
 } from '@/features/agriculture/labels';
 import {
@@ -26,6 +32,9 @@ import {
   FarmForm,
   FieldActivityForm,
   FieldForm,
+  InputApplicationForm,
+  InputItemForm,
+  InputLotForm,
   ProfileForm,
 } from './forms';
 
@@ -55,7 +64,10 @@ export default async function AgriculturePage({
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
 
-  const [membership, farms, fields, cycles, assignments, timeline, activities] = await Promise.all([
+  const [
+    membership, farms, fields, cycles, assignments, timeline, activities,
+    inputItems, inputLots, inputApplications,
+  ] = await Promise.all([
     getCurrentMembership(organizationId),
     getFarms(projectId),
     getFields(projectId),
@@ -63,6 +75,9 @@ export default async function AgriculturePage({
     getCropAssignments(projectId),
     getCropCycleTimeline(projectId),
     getFieldActivities(projectId),
+    getInputItems(projectId),
+    getInputLots(projectId),
+    getInputApplications(projectId),
   ]);
 
   if (!membership) {
@@ -114,6 +129,11 @@ export default async function AgriculturePage({
               }).length}
             </strong>
             <small>دورات غير ملغاة على حقول</small>
+          </article>
+          <article className="overview-kpi">
+            <span>تطبيقات المدخلات</span>
+            <strong>{inputApplications.length}</strong>
+            <small>وقائع تطبيق فعلية مسجّلة</small>
           </article>
         </div>
         <p className="muted">
@@ -378,6 +398,215 @@ export default async function AgriculturePage({
           cycles={cycles}
           fields={fields}
         />
+      </section>
+
+      <section className="card stack scroll-target" id="inputs">
+        <h2>المدخلات والتطبيقات</h2>
+        <p className="muted">
+          تعريف المدخلات الزراعية (تقاوي، سماد، مبيد/كيماوي)، وتشغيلاتها القابلة للتتبع،
+          وتسجيل تطبيقها الفعلي على نشاط حقل قائم.
+        </p>
+        <p className="muted">
+          هذه الشريحة تُثبت الهوية والتتبّع والكمية والمساحة والصلاحية واتساق المشروع والتخصيص.
+          لا يوجد رصيد مخزون ولا تحقق من توفر الكمية: يبدأ ذلك مع شريحة حركات المخزون القادمة.
+          التسجيل هنا لا ينشئ التزامًا أو دفعة أو قيدًا محاسبيًا ولا يغيّر حالة دورة المحصول.
+        </p>
+
+        <div className="overview-kpis">
+          <article className="overview-kpi">
+            <span>المدخلات المعرّفة</span>
+            <strong>{inputItems.length}</strong>
+            <small>تقاوي وسماد ومبيدات</small>
+          </article>
+          <article className="overview-kpi">
+            <span>التشغيلات</span>
+            <strong>{inputLots.length}</strong>
+            <small>سجلات تتبّع، وليست مخزونًا</small>
+          </article>
+          <article className="overview-kpi">
+            <span>التطبيقات المسجّلة</span>
+            <strong>{inputApplications.length}</strong>
+            <small>وقائع تشغيلية غير قابلة للتعديل</small>
+          </article>
+          <article className="overview-kpi">
+            <span>تشغيلات منتهية</span>
+            <strong>{inputLots.filter((l) => l.expiry_status === 'EXPIRED').length}</strong>
+            <small>لا تُقبل في تطبيق جديد</small>
+          </article>
+        </div>
+
+        <h3 id="input-applications">أحدث التطبيقات</h3>
+        {inputApplications.length === 0 ? (
+          <div className="card empty">
+            <h4>لا توجد تطبيقات مدخلات بعد</h4>
+            <p className="muted">
+              عرّف مدخلًا، ثم سجّل تشغيلة له، ثم اربط التطبيق بنشاط زراعة أو تسميد أو رش قائم.
+            </p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <caption className="muted">
+                تطبيقات المدخلات مرتبة من الأحدث. المعدل قيمة مشتقة للعرض (الكمية ÷ المساحة المعالجة) ولا تُخزَّن.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">المدخل</th>
+                  <th scope="col">التشغيلة</th>
+                  <th scope="col">النشاط</th>
+                  <th scope="col">الدورة</th>
+                  <th scope="col">الحقل</th>
+                  <th scope="col">الكمية</th>
+                  <th scope="col">المساحة المعالجة</th>
+                  <th scope="col">المعدل</th>
+                  <th scope="col">الصلاحية</th>
+                  <th scope="col">ملاحظات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inputApplications.map((a) => (
+                  <tr key={a.id}>
+                    <td>{d(a.application_date)}</td>
+                    <td>
+                      {a.input_item_name}
+                      <div className="muted">{formatInputCategory(a.input_category)}</div>
+                    </td>
+                    <td>
+                      {a.lot_reference}
+                      {a.expires_on ? <div className="muted">تنتهي {d(a.expires_on)}</div> : null}
+                    </td>
+                    <td>{formatFieldActivityType(a.activity_type)}</td>
+                    <td>{`${a.crop} · ${a.season_reference}`}</td>
+                    <td>{a.field_identifier}</td>
+                    <td>{formatInputQuantity(a.quantity, a.unit)}</td>
+                    <td>{`${a.applied_area_quantity} ${formatAreaUnit(a.applied_area_unit)}`}</td>
+                    <td>{`${a.application_rate} ${a.unit}/${formatAreaUnit(a.applied_area_unit)}`}</td>
+                    <td>
+                      <span className="status">{formatLotExpiryStatus(a.lot_expiry_status)}</span>
+                    </td>
+                    <td>
+                      {a.notes ?? '—'}
+                      {a.safety_note ? <div className="muted">سلامة: {a.safety_note}</div> : null}
+                      {a.evidence_reference ? <div className="muted">دليل: {a.evidence_reference}</div> : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <details open={inputApplications.length === 0 && inputItems.length > 0}>
+          <summary>تسجيل تطبيق مدخل</summary>
+          <InputApplicationForm
+            organizationId={organizationId}
+            projectId={projectId}
+            activities={activities}
+            assignments={assignments}
+            cycles={cycles}
+            fields={fields}
+            items={inputItems}
+            lots={inputLots}
+          />
+        </details>
+
+        <h3 id="input-items">المدخلات المعرّفة</h3>
+        {inputItems.length === 0 ? (
+          <div className="card empty">
+            <h4>لا توجد مدخلات معرّفة</h4>
+            <p className="muted">ابدأ بتعريف مدخل واحد بفئته ووحدة تطبيقه.</p>
+            <InputItemForm organizationId={organizationId} projectId={projectId} />
+          </div>
+        ) : (
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">الفئة</th>
+                    <th scope="col">الاسم</th>
+                    <th scope="col">وحدة التطبيق</th>
+                    <th scope="col">المرجع</th>
+                    <th scope="col">المُصنِّع</th>
+                    <th scope="col">التشغيلات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inputItems.map((i) => (
+                    <tr key={i.id}>
+                      <td>{formatInputCategory(i.category)}</td>
+                      <td>
+                        {i.name}
+                        {i.notes ? <div className="muted">{i.notes}</div> : null}
+                      </td>
+                      <td>{i.application_unit}</td>
+                      <td>{i.internal_reference ?? '—'}</td>
+                      <td>{i.manufacturer ?? '—'}</td>
+                      <td>{inputLots.filter((l) => l.input_item_id === i.id).length}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <details>
+              <summary>تعريف مدخل آخر</summary>
+              <InputItemForm organizationId={organizationId} projectId={projectId} />
+            </details>
+          </>
+        )}
+
+        <h3 id="input-lots">التشغيلات</h3>
+        {inputLots.length === 0 ? (
+          <p className="muted">لا توجد تشغيلات بعد. التشغيلة سجل تتبّع للمدخل، وليست رصيد مخزون.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">المدخل</th>
+                  <th scope="col">مرجع التشغيلة</th>
+                  <th scope="col">الوحدة</th>
+                  <th scope="col">التصنيع</th>
+                  <th scope="col">الانتهاء</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col">المورد / الدليل</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inputLots.map((l) => (
+                  <tr key={l.id}>
+                    <td>
+                      {l.input_item_name}
+                      <div className="muted">{formatInputCategory(l.input_category)}</div>
+                    </td>
+                    <td>{l.lot_reference}</td>
+                    <td>{l.unit}</td>
+                    <td>{d(l.manufactured_on)}</td>
+                    <td>{d(l.expires_on)}</td>
+                    <td>
+                      <span className="status">{formatLotExpiryStatus(l.expiry_status)}</span>
+                    </td>
+                    <td>
+                      {l.supplier_reference ?? '—'}
+                      {l.evidence_reference ? <div className="muted">دليل: {l.evidence_reference}</div> : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {inputItems.length > 0 ? (
+          <details>
+            <summary>تسجيل تشغيلة</summary>
+            <InputLotForm
+              organizationId={organizationId}
+              projectId={projectId}
+              items={inputItems}
+            />
+          </details>
+        ) : null}
       </section>
 
       <section className="card stack scroll-target" id="timeline">

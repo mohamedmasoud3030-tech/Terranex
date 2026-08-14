@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
 import {
   assignCropCycleToField,
@@ -9,20 +9,35 @@ import {
   createFarm,
   createField,
   createFieldActivity,
+  createInputItem,
+  createInputLot,
+  recordInputApplication,
   transitionCropCycle,
 } from '@/features/agriculture/actions';
 import type {
   CropAssignmentRead,
   CropCycleRead,
   FarmRead,
+  FieldActivityRead,
   FieldRead,
+  InputItemRead,
+  InputLotRead,
 } from '@/features/agriculture/queries';
-import { CYCLE_STATES, CYCLE_TRANSITIONS, FIELD_ACTIVITY_TYPES } from '@/features/agriculture/schema';
+import {
+  CYCLE_STATES,
+  CYCLE_TRANSITIONS,
+  FIELD_ACTIVITY_TYPES,
+  INPUT_BEARING_ACTIVITY_TYPES,
+  INPUT_CATEGORIES,
+  inputCategoryForActivity,
+} from '@/features/agriculture/schema';
 import {
   AREA_UNIT_LABEL,
   CYCLE_STATE_LABEL,
   FIELD_ACTIVITY_TYPE_LABEL,
+  INPUT_CATEGORY_LABEL,
   formatCycleState,
+  formatFieldActivityType,
 } from '@/features/agriculture/labels';
 
 const initial: ActionState = { error: undefined };
@@ -434,3 +449,362 @@ export function FieldActivityForm({
 }
 
 export { CYCLE_STATES };
+
+// ---------------------------------------------------------------------------
+// GF-015 — المدخلات والتطبيقات
+//
+// Three forms: define an input, register a traceable lot, and record an
+// application of that lot against an existing field activity.
+//
+// The application form makes invalid combinations hard to select:
+// choosing a FieldActivity fixes the project, crop cycle, field and
+// assignment, and constrains the eligible input category; choosing an
+// input filters the eligible lots and fixes the quantity unit; the
+// treated-area unit is fixed to the assignment's own unit. The server
+// re-derives and re-validates all of it and remains authoritative.
+// ---------------------------------------------------------------------------
+
+export function InputItemForm({
+  organizationId,
+  projectId,
+}: {
+  organizationId: string;
+  projectId: string;
+}) {
+  const [state, action, pending] = useActionState(createInputItem, initial);
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-input-item" />
+      <label>
+        فئة المدخل
+        <select name="category" required defaultValue="FERTILIZER">
+          {INPUT_CATEGORIES.map((c) => (
+            <option key={c} value={c}>{INPUT_CATEGORY_LABEL[c]}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        اسم المدخل
+        <input name="name" required minLength={2} maxLength={160} placeholder="مثال: يوريا 46%" />
+      </label>
+      <label>
+        وحدة التطبيق
+        <input name="applicationUnit" required maxLength={40} placeholder="كجم" />
+      </label>
+      <label>
+        مرجع داخلي <span className="muted">(اختياري)</span>
+        <input name="internalReference" maxLength={80} />
+      </label>
+      <label>
+        المُصنِّع أو العلامة <span className="muted">(اختياري)</span>
+        <input name="manufacturer" maxLength={160} />
+      </label>
+      <label className="full">
+        ملاحظات <span className="muted">(اختياري)</span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        تعريف المدخل لا يتضمن سعرًا أو موردًا محاسبيًا أو رصيد مخزون. هذه الشريحة تُثبت الهوية فقط.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل المدخل" />
+      </div>
+    </form>
+  );
+}
+
+export function InputLotForm({
+  organizationId,
+  projectId,
+  items,
+}: {
+  organizationId: string;
+  projectId: string;
+  items: InputItemRead[];
+}) {
+  const [state, action, pending] = useActionState(createInputLot, initial);
+  const [itemId, setItemId] = useState(items[0]?.id ?? '');
+  if (items.length === 0) {
+    return <p className="muted">سجّل مدخلًا واحدًا على الأقل قبل تسجيل التشغيلات.</p>;
+  }
+  const selected = items.find((i) => i.id === itemId) ?? items[0];
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-input-lot" />
+      <label>
+        المدخل
+        <select
+          name="inputItemId"
+          required
+          value={itemId}
+          onChange={(event) => setItemId(event.target.value)}
+        >
+          {items.map((i) => (
+            <option key={i.id} value={i.id}>
+              {INPUT_CATEGORY_LABEL[i.category]} · {i.name} ({i.application_unit})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        مرجع التشغيلة
+        <input name="lotReference" required minLength={1} maxLength={120} placeholder="LOT-2027-001" />
+      </label>
+      <label>
+        مرجع المورد <span className="muted">(اختياري)</span>
+        <input name="supplierReference" maxLength={200} />
+      </label>
+      <label>
+        تاريخ التصنيع <span className="muted">(اختياري)</span>
+        <input type="date" name="manufacturedOn" />
+      </label>
+      <label>
+        تاريخ الانتهاء <span className="muted">(اختياري)</span>
+        <input type="date" name="expiresOn" />
+      </label>
+      <label>
+        مرجع الدليل <span className="muted">(اختياري)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <p className="muted full">
+        وحدة التشغيلة تُشتق من المدخل: <strong>{selected.application_unit}</strong>.
+        التشغيلة سجل تتبّع وهوية، وليست رصيد مخزون: تسجيلها لا يعني توفر كمية.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل التشغيلة" />
+      </div>
+    </form>
+  );
+}
+
+export function InputApplicationForm({
+  organizationId,
+  projectId,
+  activities,
+  assignments,
+  cycles,
+  fields,
+  items,
+  lots,
+}: {
+  organizationId: string;
+  projectId: string;
+  activities: FieldActivityRead[];
+  assignments: CropAssignmentRead[];
+  cycles: CropCycleRead[];
+  fields: FieldRead[];
+  items: InputItemRead[];
+  lots: InputLotRead[];
+}) {
+  const [state, action, pending] = useActionState(recordInputApplication, initial);
+
+  // Only activities that semantically apply an input are selectable.
+  const eligibleActivities = useMemo(
+    () => activities.filter((a) =>
+      (INPUT_BEARING_ACTIVITY_TYPES as readonly string[]).includes(a.activity_type)),
+    [activities],
+  );
+  const [activityId, setActivityId] = useState(eligibleActivities[0]?.id ?? '');
+  const activity = eligibleActivities.find((a) => a.id === activityId) ?? eligibleActivities[0];
+
+  const requiredCategory = activity ? inputCategoryForActivity(activity.activity_type) : null;
+  const eligibleItems = useMemo(
+    () => items.filter((i) => i.category === requiredCategory),
+    [items, requiredCategory],
+  );
+  const [itemId, setItemId] = useState('');
+  const item = eligibleItems.find((i) => i.id === itemId) ?? eligibleItems[0];
+
+  // Selecting an input filters the eligible lots, and a lot that had
+  // already expired on the activity date is not offered.
+  const eligibleLots = useMemo(
+    () => lots.filter((l) =>
+      l.input_item_id === item?.id
+      && (l.expires_on === null || !activity || l.expires_on >= activity.activity_date)),
+    [lots, item?.id, activity],
+  );
+  const [lotId, setLotId] = useState('');
+  const lot = eligibleLots.find((l) => l.id === lotId) ?? eligibleLots[0];
+
+  const assignment = assignments.find((a) => a.id === activity?.assignment_id);
+  const cycle = cycles.find((c) => c.id === activity?.crop_cycle_id);
+  const field = fields.find((f) => f.id === activity?.field_id);
+
+  if (eligibleActivities.length === 0) {
+    return (
+      <p className="muted">
+        يلزم وجود نشاط حقل من نوع زراعة أو تسميد أو رش قبل تسجيل تطبيق مدخل.
+        أنشطة المعاينة والري والتعشيب لا تستقبل مدخلات.
+      </p>
+    );
+  }
+  // Honest blocked states: keep the activity picker usable so the
+  // operator can switch to an activity they can actually record,
+  // instead of being shown a form that cannot be submitted.
+  const blockedReason = (() => {
+    if (!assignment) {
+      return 'تعذر تحديد تخصيص الدورة-الحقل لهذا النشاط. حدّث الصفحة ثم أعد المحاولة.';
+    }
+    if (eligibleItems.length === 0) {
+      return `النشاط المختار من نوع ${formatFieldActivityType(activity?.activity_type)} ويتطلب مدخلًا من فئة `
+        + `${requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'}. لا يوجد مدخل مسجّل بهذه الفئة بعد.`;
+    }
+    if (eligibleLots.length === 0) {
+      return 'لا توجد تشغيلة سارية لهذا المدخل في تاريخ النشاط. سجّل تشغيلة صالحة أولًا.';
+    }
+    return null;
+  })();
+
+  const activityPicker = (
+    <label className="full">
+      نشاط الحقل
+      <select
+        name={blockedReason ? undefined : 'fieldActivityId'}
+        required={!blockedReason}
+        value={activityId}
+        onChange={(event) => {
+          setActivityId(event.target.value);
+          setItemId('');
+          setLotId('');
+        }}
+      >
+        {eligibleActivities.map((a) => {
+          const c = cycles.find((x) => x.id === a.crop_cycle_id);
+          const f = fields.find((x) => x.id === a.field_id);
+          return (
+            <option key={a.id} value={a.id}>
+              {formatFieldActivityType(a.activity_type)} · {a.activity_date}
+              {c ? ` · ${c.crop} — ${c.season_reference}` : ''}
+              {f ? ` · ${f.identifier}` : ''}
+            </option>
+          );
+        })}
+      </select>
+    </label>
+  );
+
+  if (blockedReason) {
+    return (
+      <div className="form-grid">
+        {activityPicker}
+        {eligibleItems.length > 0 ? (
+          <label>
+            المدخل <span className="muted">({requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'})</span>
+            <select
+              value={item?.id ?? ''}
+              onChange={(event) => {
+                setItemId(event.target.value);
+                setLotId('');
+              }}
+            >
+              {eligibleItems.map((i) => (
+                <option key={i.id} value={i.id}>{i.name} ({i.application_unit})</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <p className="muted full" role="status">{blockedReason}</p>
+      </div>
+    );
+  }
+
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-input-app" />
+      {activityPicker}
+
+      <p className="muted full" aria-live="polite">
+        النشاط يحدد المشروع ودورة المحصول والحقل والتخصيص تلقائيًا:{' '}
+        <strong>{cycle ? `${cycle.crop} — ${cycle.season_reference}` : '—'}</strong> ·{' '}
+        <strong>{field?.identifier ?? '—'}</strong> · المساحة المخصصة{' '}
+        <strong>
+          {assignment ? `${assignment.assigned_area_quantity} ${AREA_UNIT_LABEL[assignment.assigned_area_unit]}` : '—'}
+        </strong>
+        . لا يُطلب منك اختيار هذه المعرّفات يدويًا.
+      </p>
+
+      <label>
+        المدخل <span className="muted">({requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'})</span>
+        <select
+          name="inputItemId"
+          required
+          value={item?.id ?? ''}
+          onChange={(event) => {
+            setItemId(event.target.value);
+            setLotId('');
+          }}
+        >
+          {eligibleItems.map((i) => (
+            <option key={i.id} value={i.id}>{i.name} ({i.application_unit})</option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        التشغيلة
+        <select
+          name="inputLotId"
+          required
+          value={lot?.id ?? ''}
+          onChange={(event) => setLotId(event.target.value)}
+        >
+          {eligibleLots.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.lot_reference}
+              {l.expires_on ? ` · تنتهي ${l.expires_on}` : ' · بدون تاريخ انتهاء'}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        تاريخ التطبيق
+        <input type="date" name="applicationDate" required defaultValue={activity?.activity_date} />
+      </label>
+      <label>
+        الكمية المطبَّقة
+        <input name="quantity" required inputMode="decimal" placeholder="200" />
+      </label>
+      <label>
+        وحدة الكمية <span className="muted">(من المدخل)</span>
+        <input name="unit" required readOnly value={item?.application_unit ?? ''} />
+      </label>
+      <label>
+        المساحة المعالجة
+        <input name="appliedAreaQuantity" required inputMode="decimal" placeholder="4" />
+      </label>
+      <label>
+        وحدة المساحة <span className="muted">(من التخصيص)</span>
+        <input
+          name="appliedAreaUnit"
+          required
+          readOnly
+          value={assignment?.assigned_area_unit ?? ''}
+        />
+      </label>
+      <label className="full">
+        ملاحظات <span className="muted">(اختياري)</span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <label className="full">
+        ملاحظة سلامة أو طقس <span className="muted">(اختياري)</span>
+        <textarea name="safetyNote" maxLength={2000} placeholder="مثال: فترة أمان 7 أيام، رياح خفيفة" />
+      </label>
+      <label className="full">
+        مرجع الدليل <span className="muted">(اختياري)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <p className="muted full">
+        المساحة المعالجة يجب ألا تتجاوز المساحة المخصصة لهذا التخصيص، والتشغيلة يجب أن تكون سارية في تاريخ التطبيق.
+        النظام لا يتحقق من توفر رصيد مخزون: لا توجد حركات مخزون في هذه الشريحة.
+        التسجيل لا يغيّر حالة دورة المحصول ولا ينشئ قيدًا محاسبيًا.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل تطبيق المدخل" />
+      </div>
+    </form>
+  );
+}

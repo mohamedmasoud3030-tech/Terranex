@@ -39,7 +39,7 @@ sed 's/create role authenticated nologin; create role anon nologin;//' \
 # leak into this historical fixture merely because they were added later.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    202608110005*.sql|202608110006*.sql|20260812*.sql|20260813*.sql) continue ;;
+    202608110005*.sql|202608110006*.sql|20260812*.sql|20260813*.sql|20260814*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done

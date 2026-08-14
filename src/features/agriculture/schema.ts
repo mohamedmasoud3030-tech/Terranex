@@ -170,3 +170,98 @@ export const fieldActivitySchema = z.object({
 
 export type CycleTransitionInput = z.infer<typeof cycleTransitionSchema>;
 export type FieldActivityInput = z.infer<typeof fieldActivitySchema>;
+
+// ---------------------------------------------------------------------------
+// GF-015 — Field Input Application Foundation
+//
+// The primary supported input categories for this slice are SEED,
+// FERTILIZER and CHEMICAL. Fuel, packaging and other non-field-applied
+// materials are deferred until an actual workflow needs them.
+//
+// The activity mapping below mirrors the server rule exactly. It exists
+// so the UI can stop an operator from choosing an impossible pair; the
+// server remains authoritative and re-derives the mapping from the
+// referenced FieldActivity in every case.
+// ---------------------------------------------------------------------------
+export const INPUT_CATEGORIES = ['SEED', 'FERTILIZER', 'CHEMICAL'] as const;
+export type InputCategory = typeof INPUT_CATEGORIES[number];
+
+export const INPUT_CATEGORY_ACTIVITY: Record<InputCategory, 'PLANT' | 'FERTILIZE' | 'SPRAY'> = {
+  SEED: 'PLANT',
+  FERTILIZER: 'FERTILIZE',
+  CHEMICAL: 'SPRAY',
+};
+
+export const INPUT_BEARING_ACTIVITY_TYPES = ['PLANT', 'FERTILIZE', 'SPRAY'] as const;
+
+export function inputCategoryForActivity(activityType: string): InputCategory | null {
+  const found = (Object.keys(INPUT_CATEGORY_ACTIVITY) as InputCategory[])
+    .find((category) => INPUT_CATEGORY_ACTIVITY[category] === activityType);
+  return found ?? null;
+}
+
+const positiveDecimal = z.string().trim()
+  .regex(/^(?:[1-9]\d{0,13}|0)(?:\.\d{1,6})?$/, 'أدخل قيمة رقمية موجبة حتى 6 خانات عشرية')
+  .refine((v) => Number(v) > 0, 'أدخل قيمة رقمية موجبة حتى 6 خانات عشرية');
+
+const optionalDate = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'string' && value.trim() === '') return null;
+    return value;
+  },
+  z.string().trim().nullable().optional(),
+);
+
+export const inputItemSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  category: z.enum(INPUT_CATEGORIES, { message: 'فئة المدخل غير صالحة' }),
+  name: z.string().trim().min(2, 'اسم المدخل مطلوب').max(160),
+  internalReference: optionalText(80),
+  applicationUnit: z.string().trim().min(1, 'وحدة التطبيق مطلوبة').max(40),
+  manufacturer: optionalText(160),
+  notes: optionalText(2000),
+  idempotencyKey,
+});
+
+export const inputLotSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  inputItemId: uuid,
+  lotReference: z.string().trim().min(1, 'مرجع التشغيلة مطلوب').max(120),
+  supplierReference: optionalText(200),
+  manufacturedOn: optionalDate,
+  expiresOn: optionalDate,
+  evidenceReference: optionalText(200),
+  idempotencyKey,
+}).superRefine((data, ctx) => {
+  if (data.manufacturedOn && data.expiresOn && data.manufacturedOn > data.expiresOn) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['expiresOn'],
+      message: 'تاريخ التصنيع يجب ألا يكون بعد تاريخ الانتهاء',
+    });
+  }
+});
+
+export const inputApplicationSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  fieldActivityId: uuid,
+  inputItemId: uuid,
+  inputLotId: uuid,
+  applicationDate: dateRequired,
+  quantity: positiveDecimal,
+  unit: z.string().trim().min(1, 'وحدة الكمية مطلوبة').max(40),
+  appliedAreaQuantity: positiveDecimal,
+  appliedAreaUnit: areaUnit,
+  notes: optionalText(2000),
+  safetyNote: optionalText(2000),
+  evidenceReference: optionalText(200),
+  idempotencyKey,
+});
+
+export type InputItemInput = z.infer<typeof inputItemSchema>;
+export type InputLotInput = z.infer<typeof inputLotSchema>;
+export type InputApplicationInput = z.infer<typeof inputApplicationSchema>;

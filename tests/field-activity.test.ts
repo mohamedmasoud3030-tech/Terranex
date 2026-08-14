@@ -115,8 +115,11 @@ describe('GF-014 labels and sector navigation', () => {
   });
 
   it('does not scaffold forbidden agriculture or livestock scope', () => {
+    // The GF-014 migration itself must remain free of every later
+    // primitive. Inputs arrived later in their own GF-015 migration and
+    // are asserted there; harvest, inventory and livestock stay deferred.
     expect(migration).not.toMatch(/create table public\.(input_|harvest_|inventory_|livestock)/i);
-    expect(actions).not.toMatch(/createHarvest|createInput|IAS ?41/i);
+    expect(actions).not.toMatch(/createHarvest|createInventoryMovement|IAS ?41/i);
     expect(page).not.toMatch(/ماشية|حصاد آلي|IAS 41/);
   });
 });

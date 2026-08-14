@@ -38,7 +38,7 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 
 ## Current delivery gate
 
-Current state: **post-GF-011 — Real Estate technically implemented; GF-012 governance closeout active; Agriculture is next**.
+Current state: **Real Estate technically implemented (S0-S7, GF-010/GF-011); GF-012 governance closeout complete; Agriculture is the active sector — GF-013 Agriculture Foundation and GF-014 Field Activity are merged and technically complete, and GF-015 Field Input Application is the active bounded Agriculture slice**.
 
 Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
@@ -46,7 +46,16 @@ Implementation is authorized now. Record decisions just in time for the active s
 
 The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core.
 
-Real Estate has completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Real-customer evidence, buyer UAT, and commercial Phase 2/3 exits remain pending and must never be fabricated. Their absence does not block authorized product construction: the next bounded sector is Agriculture, followed by Livestock after Agriculture reaches its technical gate. No agent may reopen or rebuild the completed Real Estate architecture without a proven defect or an explicit product decision.
+Real Estate has completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Real-customer evidence, buyer UAT, and commercial Phase 2/3 exits remain pending and must never be fabricated. Their absence does not block authorized product construction: Agriculture is the sector under construction now, and Livestock follows after Agriculture reaches its technical gate. No agent may reopen or rebuild the completed Real Estate architecture without a proven defect or an explicit product decision.
+
+Agriculture construction order, and its truthful state:
+
+- `GF-013 — Agriculture Sector Foundation` (`Farm → Field → CropCycle` and CropCycle-Field assignments): **merged, technically complete**.
+- `GF-014 — Field Activity Foundation` (append-only field activity against an existing assignment): **merged through PR #125, technically complete**.
+- `GF-015 — Field Input Application Foundation` (Input Item, Input Lot, Input Application against an existing Field Activity): **active bounded slice**.
+- `GF-016 — Harvest Event & Harvest Lot Foundation`: next expected slice; not authorized to start before GF-015 is reviewed.
+
+Agriculture technical completeness is not commercial validation. No Agriculture slice counts as customer evidence, pilot evidence, or UAT.
 
 ## Target architecture
 
