@@ -188,16 +188,6 @@ select gf20_owner_catch(format($q$
       'SPLIT', current_timestamp - interval '1 hour', 'تقسيم بنوع خاطئ',
       '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage-op', repeat('b',64)
     );
-    insert into public.livestock_quantity_events(
-      organization_id, project_id, cohort_id, event_type, quantity, effective_at,
-      operation_id, recorded_by, idempotency_key, request_hash
-    ) values
-      ('10000000-0000-4000-8000-000000000001', %L, %L, 'SPLIT_OUT', 1,
-       current_timestamp - interval '1 hour', '68000000-0000-4000-8000-000000000001',
-       '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage-out', repeat('c',64)),
-      ('10000000-0000-4000-8000-000000000001', %L, v_destination, 'SPLIT_IN', 1,
-       current_timestamp - interval '1 hour', '68000000-0000-4000-8000-000000000001',
-       '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage-in', repeat('d',64));
     insert into public.livestock_cohort_lineage(
       organization_id, project_id, operation_id, source_cohort_id,
       destination_cohort_id, quantity
@@ -207,8 +197,7 @@ select gf20_owner_catch(format($q$
     );
   END $do$;
 $q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
-     :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_project', :'gf68_asof'))
-  as privileged_cross_species_lineage_error;
+     :'gf68_project', :'gf68_asof')) as privileged_cross_species_lineage_error;
 
 -- ---------------------------------------------------------------------------
 -- Exact SPLIT/MERGE semantic shape under privileged writes.
