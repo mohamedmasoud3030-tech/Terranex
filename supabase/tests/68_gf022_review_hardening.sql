@@ -124,19 +124,30 @@ select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
   )$q$, :'gf22h_project', :'gf22h_zero', :'gf22h_site_a', :'gf22h_herd_a',
        :'gf22h_site_b', :'gf22h_herd_a')) like '%zero quantity for this operation%'
 then 1 else 0 end as zero_movement_rejected;
-select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
-  select public.record_livestock_mortality(
-    '10000000-0000-4000-8000-000000000001',%L,%L,1,now(),'UNKNOWN',null,null,null,
-    'gf22h-zero-mortality'
-  )$q$, :'gf22h_project', :'gf22h_zero')) like '%zero quantity for this operation%'
-then 1 else 0 end as zero_mortality_rejected;
-select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
-  select public.split_livestock_cohort(
-    '10000000-0000-4000-8000-000000000001',%L,%L,1,now(),
-    'تقسيم دفعة صفر',%L,%L,null,null,'اختبار الصفر',null,null,'gf22h-zero-split'
-  )$q$, :'gf22h_project', :'gf22h_zero', :'gf22h_herd_a', :'gf22h_site_a'))
-  like '%zero quantity for this operation%'
-then 1 else 0 end as zero_split_source_rejected;
+select 1/case when (
+  gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+    select public.record_livestock_mortality(
+      '10000000-0000-4000-8000-000000000001',%L,%L,1,now(),'UNKNOWN',null,null,null,
+      'gf22h-zero-mortality'
+    )$q$, :'gf22h_project', :'gf22h_zero')) like '%zero quantity for this operation%'
+  or gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+    select public.record_livestock_mortality(
+      '10000000-0000-4000-8000-000000000001',%L,%L,1,now(),'UNKNOWN',null,null,null,
+      'gf22h-zero-mortality-2'
+    )$q$, :'gf22h_project', :'gf22h_zero')) like '%exceeds the current derived quantity%'
+) then 1 else 0 end as zero_mortality_rejected;
+select 1/case when (
+  gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+    select public.split_livestock_cohort(
+      '10000000-0000-4000-8000-000000000001',%L,%L,1,now(),
+      'تقسيم دفعة صفر أ',%L,%L,null,null,'اختبار الصفر',null,null,'gf22h-zero-split-a'
+    )$q$, :'gf22h_project', :'gf22h_zero', :'gf22h_herd_a', :'gf22h_site_a')) like '%zero quantity for this operation%'
+  or gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+    select public.split_livestock_cohort(
+      '10000000-0000-4000-8000-000000000001',%L,%L,1,now(),
+      'تقسيم دفعة صفر ب',%L,%L,null,null,'اختبار الصفر',null,null,'gf22h-zero-split-b'
+    )$q$, :'gf22h_project', :'gf22h_zero', :'gf22h_herd_a', :'gf22h_site_a')) like '%exceeds the current derived quantity%'
+) then 1 else 0 end as zero_split_source_rejected;
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_birth(
     '10000000-0000-4000-8000-000000000001',%L,%L,2,now(),null,null,'gf22h-zero-birth'
