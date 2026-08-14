@@ -33,7 +33,7 @@ fingerprint_sql="select md5(jsonb_build_object(
  'farm_land',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.farm_land_asset_links x),
  'harvest_events',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.harvest_events x),
  'harvest_lots',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.harvest_lots x),
- 'movements',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from (select id,organization_id,project_id,harvest_lot_id,movement_type,from_storage_location_id,to_storage_location_id,quantity,unit,movement_date,reason,evidence_reference,created_by,created_at,idempotency_key from public.harvest_inventory_movements) x),
+ 'movements',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from (select id,organization_id,project_id,harvest_lot_id,movement_type,from_storage_id,to_storage_id,quantity,unit,movement_date,reason,evidence_reference,recorded_by,created_at,idempotency_key from public.harvest_inventory_movements) x),
  'batches',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.journal_batches x),
  'lines',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.journal_lines x),
  'cash',(select coalesce(jsonb_agg(to_jsonb(x) order by x.id),'[]') from public.project_cash_accounts x)
