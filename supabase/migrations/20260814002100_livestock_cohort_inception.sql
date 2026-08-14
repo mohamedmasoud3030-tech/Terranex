@@ -382,6 +382,26 @@ end $$;
 
 
 
+-- Add a row lock alongside the advisory lock. The row lock is the database
+-- serialization point for sessions that race through the SECURITY DEFINER
+-- commands, while the advisory lock also covers privileged/import validators.
+create or replace function public.gf022_lock_cohort_quantity(p_cohort_id uuid)
+returns integer language plpgsql security definer
+set search_path=pg_catalog,public as $$
+begin
+  perform pg_advisory_xact_lock(hashtextextended(
+    p_cohort_id::text || ':livestock-quantity', 0
+  ));
+  perform 1
+    from public.livestock_cohorts c
+   where c.id = p_cohort_id
+   for update;
+  if not found then
+    raise exception 'livestock cohort not found';
+  end if;
+  return public.livestock_current_cohort_quantity(p_cohort_id);
+end $$;
+
 -- The resolver is used by all existing command bodies, so mortality, split,
 -- merge, and birth now inherit the inception boundary without changing their
 -- public signatures. Weight and movement have dedicated trigger backstops.
