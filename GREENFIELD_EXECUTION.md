@@ -127,8 +127,10 @@ Real Estate status is therefore explicit:
 
 ### GF-014 — Field Activity Foundation
 
-Status: **CODE COMPLETE — DRAFT PR**. Bounded Agriculture operational
-record against an existing CropCycle-to-Field assignment.
+Status: **CODE COMPLETE — CI GREEN**. Bounded Agriculture operational
+record against an existing CropCycle-to-Field assignment. GitHub
+Actions `app` and `database` (PostgreSQL 16 replay, GF-013/GF-014
+suites, two-tenant isolation, forward upgrade) are green on PR #125.
 
 Canonical decision: `docs/decisions/0014_GF014_FIELD_ACTIVITY.md`.
 
