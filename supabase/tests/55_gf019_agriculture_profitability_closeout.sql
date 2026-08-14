@@ -206,7 +206,7 @@ select 1/case when exists(select 1 from pg_trigger where tgname='journal_batches
 then 1 else 0 end as s19_shared_s6_period_controls_reused;
 
 -- Append-only correction must precede shared Finance source reversal.
-select 1/case when s19_owner_catch(format(
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
   $$select public.reverse_journal_batch('10000000-0000-4000-8000-000000000001',%L,'تصحيح المصدر','s19-source-reverse-blocked')$$,
   :'s19_cost_batch'))='reverse active crop cycle cost attributions before reversing the Finance source'
 then 1 else 0 end as s19_source_reversal_requires_attribution_offset;
