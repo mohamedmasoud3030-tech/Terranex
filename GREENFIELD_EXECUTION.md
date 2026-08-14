@@ -388,7 +388,10 @@ Livestock construction order, and its truthful state:
   `current = opening + births + split_in + merge_in − mortality − split_out − merge_out`
   as of `current_timestamp`; future events are scheduled facts and same-time
   events are one atomic bucket. It also stores qualitative weight confidence and
-  constrained mortality disposal state. GF-023 has not started.
+  constrained mortality disposal state. Normal Cohorts do not expose opening
+  quantity before their date-only `origin_date` boundary; operation-derived
+  Cohorts use the exact producing operation `effective_at`, including for future
+  split/merge scheduling. GF-023 has not started.
 
 Real-customer validation remains a separate parallel evidence track. No
 synthetic fixture may impersonate customer, UAT, production or commercial
