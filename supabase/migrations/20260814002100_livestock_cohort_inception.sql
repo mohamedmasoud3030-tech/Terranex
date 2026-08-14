@@ -197,7 +197,7 @@ with (security_invoker=on) as
 select
   c.id, c.organization_id, c.project_id, c.herd_id,
   h.name herd_name, h.internal_reference herd_reference, h.species, h.purpose,
-  h.site_id initial_site_id, s.name initial_site_name,
+  p.site_id initial_site_id, s.name initial_site_name,
   c.cohort_reference, c.origin_type, c.origin_date, c.opening_headcount,
   c.sex_composition,
   coalesce(c.breed_descriptor, h.breed_descriptor) breed_descriptor,
@@ -211,9 +211,12 @@ from public.livestock_cohorts c
 join public.livestock_herds h
   on (h.id, h.organization_id, h.project_id) =
      (c.herd_id, c.organization_id, c.project_id)
+join public.livestock_cohort_initial_placements p
+  on (p.cohort_id, p.organization_id, p.project_id) =
+     (c.id, c.organization_id, c.project_id)
 join public.livestock_sites s
   on (s.id, s.organization_id, s.project_id) =
-     (h.site_id, h.organization_id, h.project_id);
+     (p.site_id, p.organization_id, p.project_id);
 
 revoke all on public.livestock_cohorts_read from public, anon;
 grant select on public.livestock_cohorts_read to authenticated;
