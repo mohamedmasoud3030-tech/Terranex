@@ -240,7 +240,8 @@ select 1/case when gf20_owner_catch(format($q$
        '00000000-0000-4000-8000-000000000001', 'gf68-extra-in', repeat('2',64));
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_asof', :'gf68_asof', :'gf68_backdated', :'gf68_backdated')) like '%exactly one SPLIT_OUT%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_asof',
+     :'gf68_project', :'gf68_backdated')) like '%exactly one SPLIT_OUT%'
 then 1 else 0 end as privileged_extra_split_legs_rejected;
 
 -- Missing lineage is rejected even when the two split legs balance exactly.
@@ -267,7 +268,7 @@ select 1/case when gf20_owner_catch(format($q$
        '00000000-0000-4000-8000-000000000001', 'gf68-no-lineage-in', repeat('5',64));
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_asof', :'gf68_backdated')) like '%exactly one lineage%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_backdated')) like '%exactly one lineage%'
 then 1 else 0 end as privileged_missing_split_lineage_rejected;
 
 -- MERGE_IN must equal the source total; balanced leg counts alone are not enough.
@@ -297,7 +298,8 @@ select 1/case when gf20_owner_catch(format($q$
        '00000000-0000-4000-8000-000000000001', 'gf68-bad-merge-in', repeat('9',64));
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort')) like '%MERGE_IN quantity must equal%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_backdated',
+     :'gf68_project', :'gf68_weight_cohort')) like '%MERGE_IN quantity must equal%'
 then 1 else 0 end as privileged_merge_total_mismatch_rejected;
 
 -- A lineage quantity/source mismatch is rejected independently of conservation.
@@ -334,8 +336,9 @@ select 1/case when gf20_owner_catch(format($q$
        '68000000-0000-0000-8000-000000000005', %L, %L, 1);
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort',
-     :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort')) like '%MERGE lineage does not match%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_backdated',
+     :'gf68_project', :'gf68_weight_cohort', :'gf68_project', :'gf68_asof', :'gf68_weight_cohort',
+     :'gf68_project', :'gf68_backdated', :'gf68_weight_cohort')) like '%MERGE lineage does not match%'
 then 1 else 0 end as privileged_merge_lineage_mismatch_rejected;
 
 -- ---------------------------------------------------------------------------
