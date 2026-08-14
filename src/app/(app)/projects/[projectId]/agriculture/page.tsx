@@ -2,14 +2,18 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership } from '@/features/finance/queries';
+import { getParties } from '@/features/funding/queries';
+import { formatMinorUnits } from '@/shared/money';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import {
+  getAgriculturalLandAssets,
   getCropAssignments,
   getCropCycles,
   getCropCycleTimeline,
   getFarms,
   getFieldActivities,
   getFields,
+  getFarmLandAssetLinks,
   getHarvestEvents,
   getHarvestInventoryByLocation,
   getHarvestInventoryMovements,
@@ -29,14 +33,17 @@ import {
   formatHarvestQuantity,
   formatInputCategory,
   formatInputQuantity,
+  formatLandControlBasis,
   formatLotExpiryStatus,
   formatQuantity,
 } from '@/features/agriculture/labels';
 import {
+  AgriculturalLandAssetForm,
   AssignmentForm,
   CropCycleForm,
   CycleTransitionForm,
   FarmForm,
+  FarmLandAssetLinkForm,
   FieldActivityForm,
   FieldForm,
   HarvestEventForm,
@@ -76,11 +83,15 @@ export default async function AgriculturePage({
   const currency = project.reporting_currency;
 
   const [
-    membership, farms, fields, cycles, assignments, timeline, activities,
+    membership, landAssets, farmLandLinks, parties,
+    farms, fields, cycles, assignments, timeline, activities,
     inputItems, inputLots, inputApplications,
     storages, harvestEvents, harvestLots, inventoryByLocation, inventoryMovements,
   ] = await Promise.all([
     getCurrentMembership(organizationId),
+    getAgriculturalLandAssets(projectId),
+    getFarmLandAssetLinks(projectId),
+    getParties(organizationId),
     getFarms(projectId),
     getFields(projectId),
     getCropCycles(projectId),
@@ -166,6 +177,58 @@ export default async function AgriculturePage({
         ) : (
           <ProfileForm organizationId={organizationId} projectId={projectId} />
         )}
+      </section>
+
+      <section className="card stack scroll-target" id="land-assets">
+        <div className="section-heading">
+          <div>
+            <h2>الأراضي والأصول</h2>
+            <p className="muted">الأرض أصل استثماري/قانوني · المزرعة وحدة تشغيل · الحقل وحدة زراعية.</p>
+          </div>
+          <span className="status">{landAssets.length} أصل</span>
+        </div>
+        {landAssets.length === 0 ? (
+          <div className="card empty stack">
+            <h3>لا توجد أرض استثمارية مسجلة</h3>
+            <p className="muted">المزارع القائمة لن يُنشأ لها أصل وهمي. سجّل السيطرة الحقيقية ثم اربط المزرعة المناسبة.</p>
+            <AgriculturalLandAssetForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} />
+          </div>
+        ) : (
+          <>
+            <div className="asset-grid">
+              {landAssets.map((asset) => (
+                <article className="card stack" key={asset.id}>
+                  <div className="topline"><div><h3>{asset.name}</h3><p className="muted">{asset.internal_reference}</p></div><span className="status">{formatLandControlBasis(asset.control_basis)}</span></div>
+                  <dl className="facts">
+                    <div><dt>المساحة القانونية/التعاقدية</dt><dd>{asset.legal_area_quantity} {formatAreaUnit(asset.area_unit)}</dd></div>
+                    <div><dt>الطرف المقابل</dt><dd>{asset.counterparty_name}</dd></div>
+                    <div><dt>فترة السيطرة</dt><dd>{formatDate(asset.control_start_date)} → {asset.control_end_date ? formatDate(asset.control_end_date) : 'مفتوحة'}</dd></div>
+                    <div><dt>مرجع الاتفاق</dt><dd>{asset.agreement_reference}</dd></div>
+                    <div><dt>مرجع قانوني/حيازي</dt><dd>{asset.legal_reference ?? 'غير مسجل'}</dd></div>
+                    <div><dt>المزارع المرتبطة</dt><dd>{asset.linked_farm_count}</dd></div>
+                  </dl>
+                  {asset.agreed_consideration_minor_units && asset.consideration_currency ? (
+                    <p><strong>المقابل المتفق عليه:</strong> {formatMinorUnits(asset.agreed_consideration_minor_units, asset.consideration_currency)}</p>
+                  ) : <p className="muted">لا يوجد مقابل شراء موثق في هذا السجل.</p>}
+                  <p className="muted">المقابل ليس سدادًا أو قيمة دفترية/تقييمًا، ولا يُحمّل تلقائيًا على دورة محصول. دليل السيطرة: {asset.evidence_reference}</p>
+                </article>
+              ))}
+            </div>
+            <details><summary>تسجيل أرض/أصل آخر</summary><AgriculturalLandAssetForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} /></details>
+          </>
+        )}
+        <div className="card stack">
+          <h3>ربط المزرعة بالأرض الاستثمارية</h3>
+          {farms.length === 0 ? <p className="muted">سجّل مزرعة تشغيلية أولًا.</p> : (
+            <>
+              <div className="table-wrap"><table><thead><tr><th>المزرعة</th><th>الأرض/الأصل</th><th>حالة الربط</th></tr></thead><tbody>{farms.map((farm) => {
+                const link = farmLandLinks.find((item) => item.farm_id === farm.id);
+                return <tr key={farm.id}><td>{farm.name}</td><td>{link?.land_asset_name ?? '—'}</td><td>{link ? 'مرتبط' : 'لا يوجد أصل استثماري مرتبط'}</td></tr>;
+              })}</tbody></table></div>
+              <FarmLandAssetLinkForm organizationId={organizationId} projectId={projectId} landAssets={landAssets} farms={farms} linkedFarmIds={farmLandLinks.map((link) => link.farm_id)} />
+            </>
+          )}
+        </div>
       </section>
 
       <section className="card stack scroll-target" id="farms">

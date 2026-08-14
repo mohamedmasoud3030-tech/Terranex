@@ -121,10 +121,11 @@ operational quantity only.
 * The GF-015 forward-upgrade fixture now excludes the GF-016 family so a
   later migration can never be applied before GF-015's own prerequisites.
 
-## What GF-017 is expected to build next
+## Corrected post-merge sequence
 
-The final Agriculture slice: sale/dispatch → canonical core revenue linkage
-→ cycle profitability → cycle closeout → Agriculture technical hardening.
-It must reuse Terranex's existing finance core rather than inventing
-Agriculture accounting. Livestock does not start before Agriculture reaches
-its technical gate.
+GF-016 is merged. The discovered land-investment gap is addressed next by
+GF-017 Agricultural Land Asset, Acquisition & Control. GF-018 then adds
+sale/dispatch and canonical shared-core revenue/collection. GF-019 is the final
+Agriculture profitability, closeout and technical-hardening gate. Livestock
+does not start before GF-019 passes. This correction changes the roadmap, not
+GF-016's accepted inventory boundary.

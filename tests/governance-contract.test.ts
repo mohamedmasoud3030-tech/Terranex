@@ -27,12 +27,14 @@ describe('GF-012 canonical governance contract', () => {
     expect(decision).toMatch(/never count as customer acceptance/);
   });
 
-  it('sets the next bounded batch to the Agriculture foundation', () => {
+  it('sets the remaining Agriculture phases in their authorized order', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
-    expect(roadmap).toMatch(/GF-013 — Agriculture Sector Foundation/);
-    expect(roadmap).toMatch(/Farm → Field → CropCycle/);
+    expect(roadmap).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control \(active\)/);
+    expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(next\)/);
+    expect(roadmap).toMatch(/GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate/);
     expect(execution).toMatch(/GF-013 — Agriculture Sector Foundation/);
+    expect(execution).toMatch(/Livestock only after GF-019 passes/);
   });
 
   it('states the Agriculture delivery state truthfully across canonical docs', () => {
@@ -40,29 +42,30 @@ describe('GF-012 canonical governance contract', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
 
-    // GF-013, GF-014 and GF-015 are merged; GF-016 is the active slice.
-    expect(policy).toMatch(/GF-013, GF-014 and GF-015 are merged and technically complete/);
-    expect(policy).toMatch(/GF-016 Harvest & Inventory is the active bounded Agriculture slice/);
+    // GF-013 through GF-016 are merged; GF-017 is the active slice.
+    expect(policy).toMatch(/GF-013 through GF-016 are merged and technically complete/);
+    expect(policy).toMatch(/GF-017 Agricultural Land Asset is the active bounded Agriculture slice/);
     expect(policy).not.toMatch(/Agriculture is next\b/);
     expect(execution).toMatch(/GF-014 — Field Activity Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
     expect(execution).toMatch(/GF-015 — Field Input Application Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
-    expect(execution).toMatch(/GF-016 — Harvest & Inventory Flow Foundation/);
-    expect(execution).not.toMatch(/`GF-015 — next bounded Agriculture slice`/);
-    expect(roadmap).toMatch(/Execute `GF-016 — Harvest & Inventory Flow Foundation`/);
-    expect(roadmap).toMatch(/Previous batch \(complete and merged on `main`\): `GF-015/);
+    expect(execution).toMatch(/GF-016 — Harvest & Inventory Flow Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
+    expect(execution).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control\n\nStatus: \*\*ACTIVE BOUNDED SLICE\*\*/);
+    expect(roadmap).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control \(active\)/);
   });
 
   it('keeps the deferred Agriculture scope honest after GF-016', () => {
     const execution = read('GREENFIELD_EXECUTION.md');
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
-    // Harvest and inventory are delivered, so they must no longer be listed as deferred.
+    // Harvest and inventory are delivered, while input stock remains explicitly deferred.
     expect(execution).toMatch(/deferred after GF-016/);
     expect(execution).not.toMatch(/deferred after GF-015: `HarvestEvent`/);
     expect(execution).not.toMatch(/deferred after GF-014: `InputItem`/);
-    // Input-stock, sale, and profitability remain deferred; GF-017 is named, not built.
     expect(execution).toMatch(/input-stock receiving\/balance/);
-    expect(execution).toMatch(/GF-017 — Sale \+ Profitability \+ Cycle Closeout \+ Agriculture Hardening/);
-    expect(roadmap).toMatch(/must not be started inside GF-016/);
+    // Land, sale/revenue, and final profitability/closeout are separate phases.
+    expect(execution).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control/);
+    expect(execution).toMatch(/GF-018 Agriculture Sale, Dispatch & Revenue/);
+    expect(execution).toMatch(/GF-019 Agriculture Profitability, Cycle Closeout & Technical Gate/);
+    expect(roadmap).toMatch(/must remain independently reviewed\/merged phases/);
   });
 
   it('keeps implementation, deployment, and customer evidence separate', () => {

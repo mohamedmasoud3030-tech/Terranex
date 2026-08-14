@@ -382,7 +382,7 @@ describe('GF-016 database verification coverage', () => {
   });
 
   it('constructs the forward-upgrade fixture at the real pre-GF-016 boundary', () => {
-    expect(upgradeTest).toContain('20260814001300*.sql) continue ;;');
+    expect(upgradeTest).toContain('20260814001300*.sql|20260814001400*.sql) continue ;;');
     expect(upgradeTest).toContain('the skip list is too broad');
     expect(upgradeTest).toContain('input_applications where id');
     expect(upgradeTest).toContain("sector = 'REAL_ESTATE'");

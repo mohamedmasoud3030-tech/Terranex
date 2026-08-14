@@ -87,7 +87,8 @@ Crop farming from seasonal plan through field work, input consumption, harvest l
 
 ### Model
 
-- `Farm`: operating location, tenure/control, timezone, map.
+- `AgriculturalLandAsset`: durable investment/legal-control land object, with purchase, lease, approved in-kind contribution, or managed-for-owner basis; distinct from Farm and seasonal cost.
+- `Farm`: operating location, timezone, and descriptive operating context; it may link to an Agricultural Land Asset but is not itself proof of ownership.
 - `Field`: stable land block with area, soil/irrigation attributes.
 - `CropCycle`: crop/variety, fields, season, planned dates, target yield, state.
 - `FieldActivity`: prepare, plant, irrigate, fertilize, spray, scout, weed, harvest, other.

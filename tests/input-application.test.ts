@@ -348,9 +348,9 @@ describe('GF-015 database verification coverage', () => {
 
   it('constructs the forward-upgrade fixture at the real pre-GF-015 boundary', () => {
     // The skip list excludes the GF-015 family and every later family
-    // (GF-016) so a later migration is never applied before GF-015's own
-    // prerequisites.
-    expect(upgradeTest).toContain('20260814001200*.sql|20260814001300*.sql) continue ;;');
+    // (GF-016/GF-017) so a later migration is never applied before GF-015's
+    // own prerequisites.
+    expect(upgradeTest).toContain('20260814001200*.sql|20260814001300*.sql|20260814001400*.sql) continue ;;');
     // Guard against the GF-014 defect: the skip list must not remove a
     // prerequisite, so the fixture asserts a minimum applied count.
     expect(upgradeTest).toContain('the skip list is too broad');

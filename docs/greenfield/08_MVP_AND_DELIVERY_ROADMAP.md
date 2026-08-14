@@ -241,38 +241,27 @@ Coding is authorized. Resolve only the decisions required by the active slice. D
 
 ## 13. Immediate next execution batch
 
-Execute `GF-016 — Harvest & Inventory Flow Foundation` as one working
-vertical slice after the merged GF-013 Farm → Field → CropCycle
-foundation, the merged GF-014 Field Activity foundation, and the merged
-GF-015 Field Input Application foundation:
+Agriculture is executed as three remaining major phases after merged GF-013
+through GF-016:
 
-1. Add a minimal `StorageLocation` (organization, project, name, optional reference/notes) that holds harvested output.
-2. Record an atomic `HarvestEvent` against a CropCycle-Field assignment while the cycle is `HARVESTING`, capturing harvest date, gross/net quantity, unit, optional grade, notes and evidence.
-3. Create exactly one traceable `HarvestLot` per event (initial quantity = net quantity, same unit), and append the lot's initial `HARVEST_RECEIPT` into the selected storage location in the same transaction.
-4. Model append-only harvest-output `InventoryMovement` (`HARVEST_RECEIPT`, `TRANSFER`, `ADJUSTMENT_IN`, `ADJUSTMENT_OUT`, `SPOILAGE`) with derived (never stored) balances and concurrency protection so no location can go negative.
-5. Enforce harvest quantity invariants (gross > 0, net > 0, net ≤ gross), the movement-date-after-harvest rule, the cross-project storage rule, and reason-required adjustments/spoilage server-side.
-6. Keep RLS, idempotent commands, and the existing audit trail; do not advance CropCycle state and do not create sale, valuation, or accounting facts.
-7. Do not retrofit an input-stock balance onto GF-015 input lots and do not implement `SALE_ISSUE`; sale and profitability are the final slice.
+1. **GF-017 — Agricultural Land Asset, Acquisition & Control (active).** Add
+   the sector-specific investment/legal-control object before Farm; preserve
+   purchase, lease, approved in-kind and managed-for-owner bases; link existing
+   Farms only through an explicit genuine command; keep consideration separate
+   from payment, carrying amount, valuation and CropCycle operating cost.
+2. **GF-018 — Agriculture Sale, Dispatch & Revenue (next).** Add physical
+   `SALE_ISSUE`, buyer/control-transfer sale truth, shared-core revenue,
+   receivable and collection with oversell/over-collection concurrency guards.
+3. **GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate
+   (final).** Attribute authoritative shared-core posted cost without a second
+   ledger, disclose cycle result bases and outstanding inventory/receivables,
+   close safely, harden the complete Agriculture path, and decide the input
+   stock boundary from evidence.
 
-Previous batch (complete and merged on `main`): `GF-015 — Field Input Application Foundation`:
+GF-013, GF-014, GF-015 and GF-016 are merged and technically complete. GF-017,
+GF-018 and GF-019 must remain independently reviewed/merged phases. Livestock
+is the next authorized sector only after GF-019 passes. Real Estate stays
+unchanged unless a proved regression requires the smallest forward repair.
 
-1. Agriculture `InputItem` (`SEED | FERTILIZER | CHEMICAL`) and traceable `InputLot`, scoped to one project.
-2. Append-only `InputApplication` deriving project, cycle, field and assignment from a `FieldActivity`, with the activity/category mapping, area cap, unit, and lot expiry enforced server-side.
-3. No CropCycle state change and no inventory, harvest, sale, or accounting facts. Input lots are identity/traceability records, not stock.
-
-Earlier batch (complete and merged on `main`): `GF-014 — Field Activity Foundation`:
-
-1. Append-only field activities against an existing CropCycle-to-Field assignment.
-2. Controlled vocabulary, paired quantity/unit, RLS, idempotent command, and the existing audit trail.
-3. No CropCycle state change and no harvest, inventory, input, or accounting facts.
-
-Earlier batch (complete and merged on `main`): `GF-013 — Agriculture Sector Foundation`:
-
-1. Extend project creation/identity to support the existing `AGRICULTURE` primary-sector value without weakening Real Estate behavior.
-2. Implement only the Agriculture root required for the first workflow: `Farm → Field → CropCycle`.
-3. Enforce organization/project integrity, field-area rules, lifecycle transitions, RLS, idempotent commands, and append-only audit evidence.
-4. Add the Arabic/RTL project workspace entry and responsive create/list/detail flow for farms, fields, and crop cycles.
-5. Reuse the canonical organization, project, authorization, audit, evidence, money, and workspace implementations; do not build Agriculture finance or a generic sector framework.
-6. Verify clean migration replay, upgrade compatibility, two-tenant isolation, lifecycle/invariant tests, application tests, typecheck, lint, and build.
-
-Sale/dispatch, cycle profitability, cycle closeout, Agriculture technical hardening, offline drafts, and Livestock remain later bounded slices. `GF-017 — Sale + Profitability + Cycle Closeout + Agriculture Hardening` is the expected final Agriculture batch after GF-016 is reviewed; it must not be started inside GF-016. The permanent Real Estate showcase remains intact and synthetic; it never counts as customer evidence for Agriculture or Livestock.
+Technical completion never counts as Agriculture customer UAT, a paid pilot,
+commercial validation, or production customer evidence.
