@@ -8,19 +8,25 @@ import {
   createLivestockHerd,
   createLivestockProfile,
   createLivestockSite,
+  mergeLivestockCohorts,
+  recordLivestockBirth,
+  recordLivestockMortality,
   recordLivestockMovement,
   recordLivestockWeightEvent,
+  splitLivestockCohort,
   transitionLivestockCohort,
 } from '@/features/livestock/actions';
 import {
   COHORT_ORIGINS,
   HERD_PURPOSES,
+  MORTALITY_CAUSES,
   SITE_TYPES,
   SPECIES,
   WEIGHT_BASES,
   WEIGHT_METHODS,
 } from '@/features/livestock/schema';
 import {
+  MORTALITY_CAUSE_LABEL,
   ORIGIN_LABEL,
   PURPOSE_LABEL,
   SITE_TYPE_LABEL,
@@ -521,6 +527,314 @@ export function WeightEventForm({
       </p>
       <div className="full">
         <SubmitResult state={state} pending={pending} label="تسجيل حدث الوزن" />
+      </div>
+    </form>
+  );
+}
+
+/** Destination identity shared by the split and merge forms. */
+function DerivedCohortFields({
+  herds,
+  sites,
+}: Readonly<{ herds: readonly HerdRead[]; sites: readonly SiteRead[] }>) {
+  return (
+    <>
+      <label>
+        <span>مرجع الدفعة الناتجة</span>
+        <input name="destinationCohortReference" required maxLength={100} />
+      </label>
+      <label>
+        <span>القطيع الوجهة</span>
+        <select name="destinationHerdId">
+          {herds.map((herd) => (
+            <option key={herd.id} value={herd.id}>
+              {herd.name} · {SPECIES_LABEL[herd.species]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>موقع التشغيل الوجهة</span>
+        <select name="destinationSiteId">
+          {sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>تركيب الجنس للدفعة الناتجة <span className="muted">(اختياري)</span></span>
+        <select name="destinationSexComposition" defaultValue="">
+          <option value="">غير محدد</option>
+          <option value="MALE">ذكور</option>
+          <option value="FEMALE">إناث</option>
+          <option value="MIXED">مختلط</option>
+        </select>
+      </label>
+      <label>
+        <span>السلالة للدفعة الناتجة <span className="muted">(اختياري)</span></span>
+        <input name="destinationBreedDescriptor" maxLength={120} />
+      </label>
+    </>
+  );
+}
+
+/** GF-022 — record births against a Cohort. */
+export function BirthForm({
+  cohorts,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ cohorts: readonly CohortRead[] }>) {
+  const [state, action, pending] = useActionState(recordLivestockBirth, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-birth', state, commandNonce);
+  if (cohorts.length === 0) return <p className="muted">فعّل دفعة أولًا قبل تسجيل الولادات.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>الدفعة</span>
+        <select name="cohortId">
+          {cohorts.map((cohort) => (
+            <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>عدد المواليد</span>
+        <input name="quantity" inputMode="numeric" pattern="[1-9][0-9]*" required />
+      </label>
+      <label>
+        <span>تاريخ ووقت الولادة</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        تُسجَّل واقعة العدد فقط. دورة التكاثر والحمل والفطام خارج نطاق هذه المرحلة.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تسجيل ولادات" />
+      </div>
+    </form>
+  );
+}
+
+/** GF-022 — record mortality against a Cohort. */
+export function MortalityForm({
+  cohorts,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ cohorts: readonly CohortRead[] }>) {
+  const [state, action, pending] = useActionState(recordLivestockMortality, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-mortality', state, commandNonce);
+  if (cohorts.length === 0) return <p className="muted">فعّل دفعة أولًا قبل تسجيل النفوق.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>الدفعة</span>
+        <select name="cohortId">
+          {cohorts.map((cohort) => (
+            <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>عدد النافق</span>
+        <input
+          name="quantity"
+          inputMode="numeric"
+          pattern="[1-9][0-9]*"
+          required
+          aria-describedby="mortality-help"
+        />
+      </label>
+      <p id="mortality-help" className="muted full">
+        لا يمكن أن يتجاوز العدد الرصيد العددي الحالي المشتق للدفعة.
+      </p>
+      <label>
+        <span>تاريخ ووقت الواقعة</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <label>
+        <span>تصنيف السبب</span>
+        <select name="causeCategory">
+          {MORTALITY_CAUSES.map((cause) => (
+            <option key={cause} value={cause}>{MORTALITY_CAUSE_LABEL[cause]}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>تفصيل السبب <span className="muted">(اختياري)</span></span>
+        <input name="causeDetail" maxLength={500} />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        واقعة تشغيلية تقلل العدد المشتق فقط؛ لا ينشأ عنها أي قيد محاسبي أو تكلفة أو تقييم.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تسجيل نفوق" />
+      </div>
+    </form>
+  );
+}
+
+/** GF-022 — split a Cohort into a new Cohort as one atomic operation. */
+export function SplitForm({
+  cohorts,
+  herds,
+  sites,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  cohorts: readonly CohortRead[];
+  herds: readonly HerdRead[];
+  sites: readonly SiteRead[];
+}>) {
+  const [state, action, pending] = useActionState(splitLivestockCohort, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-split', state, commandNonce);
+  if (cohorts.length === 0 || herds.length === 0 || sites.length === 0) {
+    return <p className="muted">فعّل دفعة وأضف قطيعًا وموقعًا قبل التقسيم.</p>;
+  }
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>الدفعة المصدر</span>
+        <select name="sourceCohortId">
+          {cohorts.map((cohort) => (
+            <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>العدد المُقسَّم</span>
+        <input name="quantity" inputMode="numeric" pattern="[1-9][0-9]*" required />
+      </label>
+      <label>
+        <span>تاريخ ووقت التقسيم</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <DerivedCohortFields herds={herds} sites={sites} />
+      <label>
+        <span>سبب التقسيم</span>
+        <input name="reason" required minLength={3} maxLength={500} />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        عملية واحدة ذرية: يخرج العدد من الدفعة المصدر ويدخل بالكامل إلى الدفعة الناتجة.
+        لا يتغير العدد الافتتاحي للمصدر، ولا يُفقد أو يُستحدث أي رأس.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تقسيم الدفعة" />
+      </div>
+    </form>
+  );
+}
+
+/** GF-022 — merge two or more Cohorts into one, as a single atomic operation. */
+export function MergeForm({
+  cohorts,
+  herds,
+  sites,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  cohorts: readonly CohortRead[];
+  herds: readonly HerdRead[];
+  sites: readonly SiteRead[];
+}>) {
+  const [state, action, pending] = useActionState(mergeLivestockCohorts, initialState);
+  const [selected, setSelected] = useState<readonly string[]>([]);
+  const idempotencyKey = useCommandIdempotencyKey('ls-merge', state, commandNonce);
+
+  if (cohorts.length < 2 || herds.length === 0 || sites.length === 0) {
+    return <p className="muted">يلزم وجود دفعتين نشطتين على الأقل لتنفيذ الدمج.</p>;
+  }
+
+  function toggle(cohortId: string, checked: boolean) {
+    setSelected((current) => checked
+      ? [...current, cohortId]
+      : current.filter((id) => id !== cohortId));
+  }
+
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <fieldset className="full">
+        <legend>الدفعات المصدر والعدد المدموج من كل دفعة</legend>
+        {cohorts.map((cohort) => {
+          const checked = selected.includes(cohort.id);
+          return (
+            <div key={cohort.id}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(event) => toggle(cohort.id, event.target.checked)}
+                />{' '}
+                <span>{cohort.cohort_reference}</span>
+              </label>
+              {checked ? (
+                <>
+                  <input type="hidden" name="sourceCohortIds" value={cohort.id} />
+                  <label>
+                    <span>العدد المدموج من {cohort.cohort_reference}</span>
+                    <input
+                      name="quantities"
+                      inputMode="numeric"
+                      pattern="[1-9][0-9]*"
+                      required
+                    />
+                  </label>
+                </>
+              ) : null}
+            </div>
+          );
+        })}
+        <p className="muted">
+          اختر دفعتين مختلفتين على الأقل من النوع الحيواني نفسه. الدمج بين أنواع مختلفة مرفوض.
+        </p>
+      </fieldset>
+      <label>
+        <span>تاريخ ووقت الدمج</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <DerivedCohortFields herds={herds} sites={sites} />
+      <label>
+        <span>سبب الدمج</span>
+        <input name="reason" required minLength={3} maxLength={500} />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        عملية واحدة ذرية: تستهلك الأعداد من الدفعات المصدر وتضيف مجموعها بالضبط إلى الدفعة الناتجة.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="دمج الدفعات" />
       </div>
     </form>
   );

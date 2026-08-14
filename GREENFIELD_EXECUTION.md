@@ -346,7 +346,7 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - partial-property disposition and other sector-specific complexity not required by the current Real Estate vertical slice;
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
-- Agriculture capabilities beyond the completed GF-013–GF-019 investment operating scope, and Livestock capabilities beyond the merged GF-020 foundation and the active GF-021 movement/quantity-foundation/weight slice — specifically births, mortality, split/merge (GF-022), health/medicine/withdrawal, vaccination, reproduction/pregnancy/breeding, individual Animal/RFID identity, feed formulation/inventory/FCR, livestock procurement, sale/receivable/revenue, profitability, closeout, dairy/milk, and IAS 41 or fair-value biological-asset accounting;
+- Agriculture capabilities beyond the completed GF-013–GF-019 investment operating scope, and Livestock capabilities beyond the merged GF-020 foundation and the active GF-021/GF-022 slices — specifically health/medicine/withdrawal, vaccination, reproduction/pregnancy/breeding, individual Animal/RFID identity, feed formulation/inventory/FCR, livestock procurement, sale/receivable/revenue, profitability, closeout, dairy/milk, and IAS 41 or fair-value biological-asset accounting;
 - Agriculture capabilities deferred beyond GF-019: input-stock receiving/balance, purchase orders / procurement / supplier ERP, input/harvest valuation, COGS policy, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit conversion, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
@@ -354,7 +354,7 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 
 Real Estate and Agriculture are **TECHNICALLY IMPLEMENTED** for their authorized
 scopes. `GF-013` through `GF-019` form the completed Agriculture chain.
-**Livestock is the active sector. GF-020 is merged; GF-021 is the active bounded slice.** This status is not permission to
+**Livestock is the active sector. GF-020 is merged; GF-021 and GF-022 are the active bounded slices.** This status is not permission to
 place Livestock schema or runtime inside GF-019, and Real Estate remains closed
 to unrelated changes.
 
@@ -374,7 +374,16 @@ Livestock construction order, and its truthful state:
   method-specific required/forbidden metadata enforced by CHECK constraints.
   Current quantity truthfully equals opening headcount until GF-022.
 - `GF-022 — Livestock Biological Quantity Events, Mortality, Births, Split &
-  Merge`: registers the real quantity classes additively on the GF-021 ledger.
+  Merge`: active bounded slice, additive on the GF-021 ledger. Registers
+  `BIRTH | MORTALITY | SPLIT_OUT | SPLIT_IN | MERGE_OUT | MERGE_IN`; binds both
+  sides of a split/merge to one `livestock_quantity_operations` identity with a
+  deferred conservation trigger proving `sum(out) = sum(in)`; makes a negative
+  derived quantity unreachable through a per-Cohort advisory lock plus a
+  deferred non-negative trigger; gives operation-derived Cohorts a zero opening
+  headcount under the new `SPLIT_FROM_COHORT` / `MERGED_FROM_COHORTS` origins so
+  quantity is never double-counted; and does NOT mutate lifecycle state when a
+  Cohort reaches zero. Rollforward:
+  `current = opening + births + split_in + merge_in − mortality − split_out − merge_out`.
 
 Real-customer validation remains a separate parallel evidence track. No
 synthetic fixture may impersonate customer, UAT, production or commercial

@@ -369,14 +369,23 @@ then 1 else 0 end as placement_chain_intact_after_rollback;
 -- GF-021.C — Quantity rollforward foundation.
 -- ---------------------------------------------------------------------------
 
--- GF-021 registers no quantity event class: the architecture exists, the
--- events do not, and current quantity truthfully equals opening headcount.
+-- GF-021 itself registers no quantity event class: the architecture exists and
+-- the events do not. Later stages register their classes additively, so this
+-- asserts the GF-021 migration text rather than the live registry, which
+-- GF-022 legitimately populates.
+select 1/case when not exists (
+  select 1 from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname in ('record_livestock_movement', 'record_livestock_weight_event')
+    and p.prosrc like '%livestock_quantity_events%'
+) then 1 else 0 end as gf021_commands_write_no_quantity_event;
+
+-- The GF-021 movement Cohort has no quantity event of its own, so its derived
+-- quantity is still exactly its opening headcount.
 select 1/case when (
-  select count(*) = 0 from livestock_quantity_event_types
-) then 1 else 0 end as gf021_registers_no_quantity_event_type;
-select 1/case when (
-  select count(*) = 0 from livestock_quantity_events
-) then 1 else 0 end as gf021_creates_no_quantity_event;
+  select count(*) = 0 from livestock_quantity_events where cohort_id = :'gf21_mover'
+) then 1 else 0 end as gf021_cohort_has_no_quantity_event;
 select 1/case when (
   select opening_headcount = 40 and current_quantity = 40
     and quantity_increase = 0 and quantity_decrease = 0

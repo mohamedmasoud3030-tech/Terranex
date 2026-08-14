@@ -341,7 +341,9 @@ describe('GF-021 operator language', () => {
   });
 
   it('offers the required operator sections', () => {
-    expect(page).toContain('العدد التشغيلي الحالي');
+    // GF-022 renamed this heading to the canonical "الرصيد العددي الحالي"
+    // while keeping the same derived-headcount section.
+    expect(page).toContain('الرصيد العددي الحالي');
     expect(page).toContain('سجل الأوزان');
     expect(page).toContain('تسجيل وزن');
     expect(forms).toContain('تسجيل نقل الدفعة');

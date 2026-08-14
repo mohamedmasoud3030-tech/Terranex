@@ -150,16 +150,68 @@ export type MovementRead = {
   recorded_at: string;
 };
 
-/** GF-021 exact integer quantity rollforward. Never a stored counter. */
+/**
+ * Exact integer quantity rollforward. Never a stored counter.
+ *
+ * GF-021 introduced it with aggregate increase/decrease only; GF-022 added the
+ * per-class breakdown. The invariant the view guarantees is:
+ *   current = opening + births + split_in + merge_in
+ *                     - mortality - split_out - merge_out
+ */
 export type QuantityRollforwardRead = {
   cohort_id: string;
   organization_id: string;
   project_id: string;
   cohort_reference: string;
   opening_headcount: number;
+  births: number;
+  mortality: number;
+  split_in: number;
+  split_out: number;
+  merge_in: number;
+  merge_out: number;
   quantity_increase: number;
   quantity_decrease: number;
   current_quantity: number;
+};
+
+export type QuantityEventRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  cohort_id: string;
+  cohort_reference: string;
+  event_type: string;
+  event_label: string;
+  direction: number;
+  quantity: number;
+  signed_quantity: number;
+  effective_at: string;
+  operation_id: string | null;
+  cause_category: string | null;
+  cause_detail: string | null;
+  evidence_reference: string | null;
+  notes: string | null;
+  recorded_by: string;
+  recorded_at: string;
+};
+
+export type CohortLineageRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  operation_id: string;
+  operation_type: 'SPLIT' | 'MERGE';
+  effective_at: string;
+  reason: string;
+  evidence_reference: string | null;
+  source_cohort_id: string;
+  source_cohort_reference: string;
+  destination_cohort_id: string;
+  destination_cohort_reference: string;
+  quantity: number;
+  performed_by: string;
+  created_at: string;
 };
 
 export type WeightEventRead = {
@@ -200,7 +252,7 @@ export const getLivestockMovements = (projectId: string) => many<MovementRead>(
 export const getLivestockQuantityRollforward = (projectId: string) =>
   many<QuantityRollforwardRead>(
     'livestock_cohort_quantity_rollforward',
-    'cohort_id,organization_id,project_id,cohort_reference,opening_headcount,quantity_increase,quantity_decrease,current_quantity',
+    'cohort_id,organization_id,project_id,cohort_reference,opening_headcount,births,mortality,split_in,split_out,merge_in,merge_out,quantity_increase,quantity_decrease,current_quantity',
     projectId,
     'cohort_reference',
   );
@@ -209,6 +261,22 @@ export const getLivestockWeightEvents = (projectId: string) =>
   many<WeightEventRead>(
     'livestock_weight_events_read',
     'id,organization_id,project_id,cohort_id,cohort_reference,effective_at,method,weight_value,weight_unit,value_meaning,is_estimate,measured_animal_count,sample_size,evidence_reference,notes,recorded_by,recorded_at',
+    projectId,
+    'effective_at',
+  );
+
+export const getLivestockQuantityEvents = (projectId: string) =>
+  many<QuantityEventRead>(
+    'livestock_quantity_events_read',
+    'id,organization_id,project_id,cohort_id,cohort_reference,event_type,event_label,direction,quantity,signed_quantity,effective_at,operation_id,cause_category,cause_detail,evidence_reference,notes,recorded_by,recorded_at',
+    projectId,
+    'effective_at',
+  );
+
+export const getLivestockCohortLineage = (projectId: string) =>
+  many<CohortLineageRead>(
+    'livestock_cohort_lineage_read',
+    'id,organization_id,project_id,operation_id,operation_type,effective_at,reason,evidence_reference,source_cohort_id,source_cohort_reference,destination_cohort_id,destination_cohort_reference,quantity,performed_by,created_at',
     projectId,
     'effective_at',
   );

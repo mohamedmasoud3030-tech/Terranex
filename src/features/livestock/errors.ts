@@ -45,6 +45,21 @@ const ERROR_RULES: readonly ErrorRule[] = [
   { includes: 'invalid livestock weight unit', message: 'وحدة الوزن يجب أن تكون الكيلوجرام.' },
   { includes: 'invalid livestock weight effective time', message: 'تاريخ ووقت القياس مطلوب.' },
   { includes: 'invalid negative livestock derived quantity', message: 'الرصيد العددي المشتق غير صالح. تواصل مع الدعم.' },
+  // GF-022 — births, mortality, split and merge.
+  { includes: 'exceeds the current derived quantity', message: 'العدد المطلوب أكبر من الرصيد العددي الحالي المشتق للدفعة. حدّث الصفحة لقراءة الرصيد الحالي ثم أعد المحاولة.' },
+  { includes: 'cannot go below zero', message: 'لا يمكن أن ينخفض الرصيد العددي عن صفر.' },
+  { includes: 'invalid livestock quantity', message: 'العدد يجب أن يكون عددًا صحيحًا أكبر من صفر.' },
+  { includes: 'invalid livestock mortality cause', message: 'سبب النفوق غير صالح.' },
+  { includes: 'invalid livestock event effective time', message: 'تاريخ ووقت الواقعة مطلوب.' },
+  { includes: 'invalid livestock operation reason', message: 'سبب العملية مطلوب (٣ أحرف على الأقل).' },
+  { includes: 'at least two source cohorts', message: 'الدمج يتطلب دفعتين مصدر على الأقل.' },
+  { includes: 'must match the source cohorts', message: 'عدد الكميات يجب أن يطابق عدد الدفعات المصدر.' },
+  { includes: 'must be distinct', message: 'لا يمكن دمج الدفعة مع نفسها؛ اختر دفعات مختلفة.' },
+  { includes: 'compatible species', message: 'لا يمكن دمج دفعات من أنواع حيوانية مختلفة.' },
+  { includes: 'does not conserve quantity', message: 'العملية لا تحافظ على العدد. لم يُحفظ أي تغيير.' },
+  { includes: 'requires both an outgoing and an incoming leg', message: 'العملية غير مكتملة الطرفين. لم يُحفظ أي تغيير.' },
+  { includes: 'requires an operation identity', message: 'حركة التقسيم أو الدمج يجب أن ترتبط بعملية واحدة.' },
+  { includes: 'requires a cause category', message: 'تصنيف السبب مطلوب لهذه الواقعة.' },
 ];
 
 export function livestockErrorMessage(databaseMessage?: string): string {

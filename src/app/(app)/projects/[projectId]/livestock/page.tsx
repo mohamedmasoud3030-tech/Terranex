@@ -2,8 +2,11 @@ import { notFound } from 'next/navigation';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
   COHORT_STATE_LABEL,
+  MORTALITY_CAUSE_LABEL,
+  OPERATION_TYPE_LABEL,
   ORIGIN_LABEL,
   PLACEMENT_SOURCE_LABEL,
+  QUANTITY_EVENT_LABEL,
   PURPOSE_LABEL,
   SITE_TYPE_LABEL,
   SPECIES_LABEL,
@@ -13,19 +16,23 @@ import {
   movementChangeLabel,
 } from '@/features/livestock/labels';
 import {
+  type CohortLineageRead,
   type CohortRead,
   type CohortTimelineRead,
   type CurrentPlacementRead,
   type HerdRead,
   type MovementRead,
+  type QuantityEventRead,
   type QuantityRollforwardRead,
   type SiteRead,
   type WeightEventRead,
+  getLivestockCohortLineage,
   getLivestockCohortTimeline,
   getLivestockCohorts,
   getLivestockCurrentPlacements,
   getLivestockHerds,
   getLivestockMovements,
+  getLivestockQuantityEvents,
   getLivestockQuantityRollforward,
   getLivestockSites,
   getLivestockWeightEvents,
@@ -35,11 +42,15 @@ import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import { newCommandNonce } from '@/features/livestock/idempotency';
 import {
   ActivateForm,
+  BirthForm,
   CohortForm,
   HerdForm,
+  MergeForm,
+  MortalityForm,
   MovementForm,
   ProfileForm,
   SiteForm,
+  SplitForm,
   WeightEventForm,
 } from './forms';
 
@@ -276,11 +287,13 @@ function Movements({ movements }: Readonly<{ movements: readonly MovementRead[] 
 }
 
 /**
- * GF-021.C — the current operational headcount, derived exactly.
+ * GF-021.C / GF-022.G — the current operational headcount, derived exactly.
  *
- * GF-021 registers no quantity-changing event, so the derived current number
- * still equals the opening headcount. The screen says so truthfully instead of
- * implying a rollforward that has not happened yet.
+ * The rollforward is shown in full so the operator can read the arithmetic:
+ *   عدد افتتاحي + ولادات + وارد من تقسيم/دمج
+ *   − نفوق − صادر إلى تقسيم/دمج = العدد الحالي
+ *
+ * This is an operational headcount, never an inventory valuation.
  */
 function QuantityRollforward({
   rows,
@@ -289,15 +302,20 @@ function QuantityRollforward({
   return (
     <table>
       <caption className="muted">
-        العدد التشغيلي الحالي مشتق بالحساب الدقيق: العدد الافتتاحي + الزيادات − النواقص. ليس تقييمًا ماليًا.
+        العدد الحالي = عدد افتتاحي + ولادات + وارد من تقسيم/دمج − نفوق − صادر إلى تقسيم/دمج.
+        رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
       </caption>
       <thead>
         <tr>
           <th scope="col">الدفعة</th>
-          <th scope="col">العدد الافتتاحي</th>
-          <th scope="col">زيادات مسجلة</th>
-          <th scope="col">نواقص مسجلة</th>
-          <th scope="col">العدد الحالي المشتق</th>
+          <th scope="col">عدد افتتاحي</th>
+          <th scope="col">+ ولادات</th>
+          <th scope="col">+ وارد من تقسيم</th>
+          <th scope="col">+ وارد من دمج</th>
+          <th scope="col">− نفوق</th>
+          <th scope="col">− صادر إلى تقسيم</th>
+          <th scope="col">− صادر إلى دمج</th>
+          <th scope="col">= العدد الحالي المشتق</th>
         </tr>
       </thead>
       <tbody>
@@ -305,13 +323,67 @@ function QuantityRollforward({
           <tr key={row.cohort_id}>
             <th scope="row">{row.cohort_reference}</th>
             <td>{row.opening_headcount}</td>
-            <td>{row.quantity_increase}</td>
-            <td>{row.quantity_decrease}</td>
+            <td>{row.births}</td>
+            <td>{row.split_in}</td>
+            <td>{row.merge_in}</td>
+            <td>{row.mortality}</td>
+            <td>{row.split_out}</td>
+            <td>{row.merge_out}</td>
             <td><strong>{row.current_quantity}</strong></td>
           </tr>
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** GF-022 — the immutable quantity event history. */
+function QuantityEvents({
+  events,
+}: Readonly<{ events: readonly QuantityEventRead[] }>) {
+  if (events.length === 0) {
+    return <p className="muted">لا توجد حركات على العدد بعد.</p>;
+  }
+  return (
+    <ol className="stack">
+      {events.map((event) => (
+        <li key={event.id}>
+          <strong>{event.cohort_reference}</strong> ·{' '}
+          {QUANTITY_EVENT_LABEL[event.event_type] ?? event.event_label}
+          <p>
+            {event.direction > 0 ? '+' : '−'}{event.quantity} رأس ·{' '}
+            <span className="muted">{dateTime(event.effective_at)}</span>
+          </p>
+          {event.cause_category ? (
+            <p className="muted">
+              السبب: {MORTALITY_CAUSE_LABEL[event.cause_category] ?? event.cause_category}
+              {event.cause_detail ? ` — ${event.cause_detail}` : ''}
+            </p>
+          ) : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** GF-022 — split/merge lineage, so the two sides can never be read apart. */
+function Lineage({ lineage }: Readonly<{ lineage: readonly CohortLineageRead[] }>) {
+  if (lineage.length === 0) {
+    return <p className="muted">لا توجد عمليات تقسيم أو دمج بعد.</p>;
+  }
+  return (
+    <ol className="stack">
+      {lineage.map((entry) => (
+        <li key={entry.id}>
+          <strong>{OPERATION_TYPE_LABEL[entry.operation_type]}</strong>
+          <p>
+            {entry.quantity} رأس من {entry.source_cohort_reference} إلى{' '}
+            {entry.destination_cohort_reference}
+          </p>
+          <p className="muted">{dateTime(entry.effective_at)} · {entry.reason}</p>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -359,6 +431,8 @@ export default async function LivestockPage({
     movements,
     quantities,
     weightEvents,
+    quantityEvents,
+    lineage,
   ] = await Promise.all([
     getCurrentMembership(project.organization_id),
     getLivestockSites(projectId),
@@ -369,6 +443,8 @@ export default async function LivestockPage({
     getLivestockMovements(projectId),
     getLivestockQuantityRollforward(projectId),
     getLivestockWeightEvents(projectId),
+    getLivestockQuantityEvents(projectId),
+    getLivestockCohortLineage(projectId),
   ]);
   if (!membership) {
     return (
@@ -380,6 +456,9 @@ export default async function LivestockPage({
   }
 
   const context = { organizationId: project.organization_id, projectId };
+  // Operational events belong to an ACTIVE Cohort; a PLANNED one has not
+  // entered operations yet and the database refuses events against it.
+  const activeCohorts = cohorts.filter((cohort) => cohort.lifecycle_state === 'ACTIVE');
   return (
     <section className="stack">
       <WorkspaceChrome
@@ -433,23 +512,55 @@ export default async function LivestockPage({
         <Movements movements={movements} />
       </section>
       <section className="card stack">
-        <h2>العدد التشغيلي الحالي</h2>
+        <h2>الرصيد العددي الحالي</h2>
         <QuantityRollforward rows={quantities} />
       </section>
       <section className="card stack">
-        <h2>تسجيل وزن</h2>
-        <WeightEventForm
+        <h2>تسجيل ولادات</h2>
+        <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+      </section>
+      <section className="card stack">
+        <h2>تسجيل نفوق</h2>
+        <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+      </section>
+      <section className="card stack">
+        <h2>تقسيم دفعة</h2>
+        <SplitForm
           {...context}
           commandNonce={newCommandNonce()}
-          cohorts={cohorts.filter((cohort) => cohort.lifecycle_state === 'ACTIVE')}
+          cohorts={activeCohorts}
+          herds={herds}
+          sites={sites}
         />
+      </section>
+      <section className="card stack">
+        <h2>دمج دفعات</h2>
+        <MergeForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          cohorts={activeCohorts}
+          herds={herds}
+          sites={sites}
+        />
+      </section>
+      <section className="card stack">
+        <h2>حركة العدد</h2>
+        <QuantityEvents events={quantityEvents} />
+      </section>
+      <section className="card stack">
+        <h2>سلسلة التقسيم والدمج</h2>
+        <Lineage lineage={lineage} />
+      </section>
+      <section className="card stack">
+        <h2>تسجيل وزن</h2>
+        <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
       </section>
       <section className="card stack">
         <h2>سجل الأوزان</h2>
         <WeightLog events={weightEvents} />
       </section>
       <aside className="banner">
-        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو علف أو تكاثر أو بيع أو تقييم محاسبي. الحركة والموقع الحالي والوزن أحداث مسجلة الآن؛ أما الولادات والنفوق والتقسيم والدمج فتأتي في المرحلة التالية، ولذلك يساوي العدد الحالي المشتق العدد الافتتاحي حتى الآن.
+        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو فترات حظر أو تحصين أو علف أو دورة تكاثر أو بيع أو تحصيل أو ربحية أو تقييم محاسبي. الأعداد المعروضة أرصدة تشغيلية مشتقة من أحداث ثابتة، وليست تقييمًا للمخزون ولا أثرًا محاسبيًا.
       </aside>
     </section>
   );

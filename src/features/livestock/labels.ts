@@ -24,6 +24,8 @@ export const ORIGIN_LABEL: Record<string, string> = {
   CONTRIBUTED_IN_KIND: 'مساهمة عينية — دون مساهمة نقدية',
   TRANSFERRED_IN: 'محولة إلى التشغيل',
   OPENING_BALANCE: 'رصيد تشغيلي افتتاحي',
+  SPLIT_FROM_COHORT: 'ناتجة عن تقسيم دفعة — لا يوجد عدد افتتاحي',
+  MERGED_FROM_COHORTS: 'ناتجة عن دمج دفعات — لا يوجد عدد افتتاحي',
 };
 
 export const SEX_LABEL: Record<string, string> = {
@@ -79,3 +81,35 @@ export function movementChangeLabel(
   if (siteChanged) return 'نقل بين مواقع التشغيل';
   return 'إعادة تصنيف بين القطعان';
 }
+
+/** GF-022 quantity event classes. */
+export const QUANTITY_EVENT_LABEL: Record<string, string> = {
+  BIRTH: 'ولادات',
+  MORTALITY: 'نفوق',
+  SPLIT_OUT: 'صادر إلى تقسيم',
+  SPLIT_IN: 'وارد من تقسيم',
+  MERGE_OUT: 'صادر إلى دمج',
+  MERGE_IN: 'وارد من دمج',
+};
+
+/** GF-022 mortality cause categories. */
+export const MORTALITY_CAUSE_LABEL: Record<string, string> = {
+  DISEASE: 'مرض',
+  INJURY: 'إصابة',
+  PREDATION: 'افتراس',
+  WEATHER: 'إجهاد مناخي',
+  BIRTH_COMPLICATION: 'مضاعفات ولادة',
+  UNKNOWN: 'غير معروف',
+  OTHER: 'سبب آخر',
+};
+
+export const OPERATION_TYPE_LABEL: Record<string, string> = {
+  SPLIT: 'تقسيم دفعة',
+  MERGE: 'دمج دفعات',
+};
+
+/** Origins introduced by GF-022 for Cohorts produced by an operation. */
+export const DERIVED_ORIGIN_LABEL: Record<string, string> = {
+  SPLIT_FROM_COHORT: 'ناتجة عن تقسيم دفعة — لا يوجد عدد افتتاحي',
+  MERGED_FROM_COHORTS: 'ناتجة عن دمج دفعات — لا يوجد عدد افتتاحي',
+};

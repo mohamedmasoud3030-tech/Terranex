@@ -7,20 +7,28 @@ import { createClient } from '@/shared/supabase/server';
 import { livestockErrorMessage } from './errors';
 import { commandFailureState, commandSuccessState } from './idempotency';
 import {
+  birthRpcArguments,
   cohortRpcArguments,
   herdRpcArguments,
+  mergeRpcArguments,
+  mortalityRpcArguments,
   movementRpcArguments,
   profileRpcArguments,
   siteRpcArguments,
+  splitRpcArguments,
   transitionRpcArguments,
   weightEventRpcArguments,
 } from './rpc';
 import {
+  livestockBirthSchema,
   livestockCohortSchema,
   livestockHerdSchema,
+  livestockMergeSchema,
+  livestockMortalitySchema,
   livestockMovementSchema,
   livestockProfileSchema,
   livestockSiteSchema,
+  livestockSplitSchema,
   livestockTransitionSchema,
   livestockWeightEventSchema,
 } from './schema';
@@ -126,4 +134,71 @@ export async function recordLivestockWeightEvent(
     'record_livestock_weight_event',
     weightEventRpcArguments,
   );
+}
+
+export async function recordLivestockBirth(
+  prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(prev, livestockBirthSchema, form, 'record_livestock_birth', birthRpcArguments);
+}
+
+export async function recordLivestockMortality(
+  prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    prev,
+    livestockMortalitySchema,
+    form,
+    'record_livestock_mortality',
+    mortalityRpcArguments,
+  );
+}
+
+export async function splitLivestockCohort(
+  prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    prev,
+    livestockSplitSchema,
+    form,
+    'split_livestock_cohort',
+    splitRpcArguments,
+  );
+}
+
+/**
+ * Merge is the only Livestock command with repeated fields: one
+ * `sourceCohortIds` / `quantities` pair per merged Cohort. `Object.fromEntries`
+ * keeps only the last value of a repeated key, so the two array fields are
+ * collected with `getAll` before validation.
+ */
+export async function mergeLivestockCohorts(
+  prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const parsed = livestockMergeSchema.safeParse({
+    ...Object.fromEntries(form),
+    sourceCohortIds: form.getAll('sourceCohortIds'),
+    quantities: form.getAll('quantities'),
+  });
+  if (!parsed.success) {
+    return commandFailureState(
+      prev,
+      parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة',
+    );
+  }
+
+  const { error } = await (await createClient()).rpc(
+    'merge_livestock_cohorts',
+    mergeRpcArguments(parsed.data),
+  );
+  if (error) {
+    return commandFailureState(prev, livestockErrorMessage(error.message));
+  }
+
+  revalidatePath(`/projects/${parsed.data.projectId}/livestock`);
+  return commandSuccessState(prev);
 }

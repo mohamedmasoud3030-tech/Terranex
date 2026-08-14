@@ -227,6 +227,98 @@ export const livestockWeightEventSchema = z.object({
   }
 });
 
+
+/** GF-022 mortality cause categories. */
+export const MORTALITY_CAUSES = [
+  'DISEASE',
+  'INJURY',
+  'PREDATION',
+  'WEATHER',
+  'BIRTH_COMPLICATION',
+  'UNKNOWN',
+  'OTHER',
+] as const;
+
+const positiveCount = (message: string) =>
+  z.string().trim().regex(/^[1-9]\d*$/, message);
+
+export const livestockBirthSchema = z.object({
+  ...context,
+  cohortId: uuid,
+  quantity: positiveCount('عدد الولادات يجب أن يكون عددًا صحيحًا أكبر من صفر'),
+  effectiveAt: z.string().min(1, 'تاريخ ووقت الواقعة مطلوب'),
+  evidenceReference: optionalText(200),
+  notes: optionalText(2000),
+});
+
+export const livestockMortalitySchema = z.object({
+  ...context,
+  cohortId: uuid,
+  quantity: positiveCount('عدد النفوق يجب أن يكون عددًا صحيحًا أكبر من صفر'),
+  effectiveAt: z.string().min(1, 'تاريخ ووقت الواقعة مطلوب'),
+  causeCategory: z.enum(MORTALITY_CAUSES, { message: 'سبب النفوق غير صالح' }),
+  causeDetail: optionalText(500),
+  evidenceReference: optionalText(200),
+  notes: optionalText(2000),
+});
+
+export const livestockSplitSchema = z.object({
+  ...context,
+  sourceCohortId: uuid,
+  quantity: positiveCount('العدد المُقسَّم يجب أن يكون عددًا صحيحًا أكبر من صفر'),
+  effectiveAt: z.string().min(1, 'تاريخ ووقت العملية مطلوب'),
+  destinationCohortReference: z.string().trim().min(1, 'مرجع الدفعة الناتجة مطلوب').max(100),
+  destinationHerdId: uuid,
+  destinationSiteId: uuid,
+  destinationSexComposition: z.preprocess(
+    (value) => value === '' ? null : value,
+    z.enum(SEX_COMPOSITIONS).nullable().optional(),
+  ),
+  destinationBreedDescriptor: optionalText(120),
+  reason: z.string().trim().min(3, 'سبب التقسيم مطلوب').max(500),
+  evidenceReference: optionalText(200),
+  notes: optionalText(2000),
+});
+
+/**
+ * GF-022 merge.
+ *
+ * At least two DISTINCT source Cohorts, each with its own consumed quantity.
+ * The quantities are positional: entry `i` is drawn from source `i`.
+ */
+export const livestockMergeSchema = z.object({
+  ...context,
+  sourceCohortIds: z.array(uuid).min(2, 'اختر دفعتين على الأقل للدمج'),
+  quantities: z.array(positiveCount('كل عدد مدموج يجب أن يكون أكبر من صفر')).min(2),
+  effectiveAt: z.string().min(1, 'تاريخ ووقت العملية مطلوب'),
+  destinationCohortReference: z.string().trim().min(1, 'مرجع الدفعة الناتجة مطلوب').max(100),
+  destinationHerdId: uuid,
+  destinationSiteId: uuid,
+  destinationSexComposition: z.preprocess(
+    (value) => value === '' ? null : value,
+    z.enum(SEX_COMPOSITIONS).nullable().optional(),
+  ),
+  destinationBreedDescriptor: optionalText(120),
+  reason: z.string().trim().min(3, 'سبب الدمج مطلوب').max(500),
+  evidenceReference: optionalText(200),
+  notes: optionalText(2000),
+}).superRefine((data, ctx) => {
+  if (data.sourceCohortIds.length !== data.quantities.length) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['quantities'],
+      message: 'عدد الكميات يجب أن يطابق عدد الدفعات المصدر.',
+    });
+  }
+  if (new Set(data.sourceCohortIds).size !== data.sourceCohortIds.length) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['sourceCohortIds'],
+      message: 'لا يمكن دمج الدفعة مع نفسها؛ اختر دفعات مختلفة.',
+    });
+  }
+});
+
 export const livestockTransitionSchema = z.object({
   ...context,
   cohortId: uuid,
@@ -243,3 +335,7 @@ export type LivestockCohortInput = z.infer<typeof livestockCohortSchema>;
 export type LivestockTransitionInput = z.infer<typeof livestockTransitionSchema>;
 export type LivestockMovementInput = z.infer<typeof livestockMovementSchema>;
 export type LivestockWeightEventInput = z.infer<typeof livestockWeightEventSchema>;
+export type LivestockBirthInput = z.infer<typeof livestockBirthSchema>;
+export type LivestockMortalityInput = z.infer<typeof livestockMortalitySchema>;
+export type LivestockSplitInput = z.infer<typeof livestockSplitSchema>;
+export type LivestockMergeInput = z.infer<typeof livestockMergeSchema>;
