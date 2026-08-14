@@ -15,7 +15,7 @@ export default function LivestockError({
         حدث خطأ أثناء قراءة بيانات المواقع والقطعان والدفعات. تحقق من الاتصال وأعد المحاولة.
       </p>
       <div className="stack" style={{ flexDirection: 'row' }}>
-        <button onClick={reset} className="button">إعادة المحاولة</button>
+        <button type="button" onClick={reset} className="button">إعادة المحاولة</button>
         <Link className="button secondary" href="/">العودة إلى المشاريع</Link>
       </div>
     </section>

@@ -55,7 +55,7 @@ function SubmitResult({
   return (
     <>
       {state.error ? <p className="error" role="alert">{state.error}</p> : null}
-      <button disabled={pending}>{pending ? 'جارٍ الحفظ…' : label}</button>
+      <button type="submit" disabled={pending}>{pending ? 'جارٍ الحفظ…' : label}</button>
     </>
   );
 }
@@ -66,7 +66,7 @@ export function ProfileForm(props: CommandContext) {
     <form action={action} className="form-grid">
       <CommandFields {...props} prefix="ls-profile" />
       <label className="full">
-        ملاحظات تشغيلية <span className="muted">(اختياري)</span>
+        <span>ملاحظات تشغيلية <span className="muted">(اختياري)</span></span>
         <textarea name="notes" maxLength={2000} />
       </label>
       <div className="full">
@@ -82,25 +82,25 @@ export function SiteForm(props: CommandContext) {
     <form action={action} className="form-grid">
       <CommandFields {...props} prefix="ls-site" />
       <label>
-        اسم موقع التشغيل
+        <span>اسم موقع التشغيل</span>
         <input name="name" required minLength={2} maxLength={160} />
       </label>
       <label>
-        المرجع الداخلي
+        <span>المرجع الداخلي</span>
         <input name="internalReference" required maxLength={80} />
       </label>
       <label>
-        نوع الموقع
+        <span>نوع الموقع</span>
         <select name="siteType">
           {SITE_TYPES.map((type) => <option key={type} value={type}>{SITE_TYPE_LABEL[type]}</option>)}
         </select>
       </label>
       <label>
-        وصف الموقع <span className="muted">(اختياري)</span>
+        <span>وصف الموقع <span className="muted">(اختياري)</span></span>
         <input name="locationDescription" maxLength={500} />
       </label>
       <label className="full">
-        ملاحظات <span className="muted">(اختياري)</span>
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
         <textarea name="notes" maxLength={2000} />
       </label>
       <p className="muted full">
@@ -119,15 +119,15 @@ export function HerdForm(props: CommandContext) {
     <form action={action} className="form-grid">
       <CommandFields {...props} prefix="ls-herd" />
       <label>
-        اسم القطيع
+        <span>اسم القطيع</span>
         <input name="name" required minLength={2} maxLength={160} />
       </label>
       <label>
-        مرجع القطيع
+        <span>مرجع القطيع</span>
         <input name="internalReference" required maxLength={80} />
       </label>
       <label>
-        النوع
+        <span>النوع</span>
         <select name="species">
           {SPECIES.map((species) => (
             <option key={species} value={species}>{SPECIES_LABEL[species]}</option>
@@ -135,7 +135,7 @@ export function HerdForm(props: CommandContext) {
         </select>
       </label>
       <label>
-        الغرض
+        <span>الغرض</span>
         <select name="purpose">
           {HERD_PURPOSES.map((purpose) => (
             <option key={purpose} value={purpose}>{PURPOSE_LABEL[purpose]}</option>
@@ -143,7 +143,7 @@ export function HerdForm(props: CommandContext) {
         </select>
       </label>
       <label>
-        السلالة/النوع الوصفي <span className="muted">(اختياري)</span>
+        <span>السلالة/النوع الوصفي <span className="muted">(اختياري)</span></span>
         <input name="breedDescriptor" maxLength={120} />
       </label>
       <p className="muted full">
@@ -161,15 +161,15 @@ function WeightFields() {
     <fieldset className="full form-grid">
       <legend>أساس الوزن الافتتاحي</legend>
       <label>
-        قيمة الوزن
+        <span>قيمة الوزن</span>
         <input name="openingWeightValue" inputMode="decimal" required />
       </label>
       <label>
-        الوحدة
+        <span>الوحدة</span>
         <select name="openingWeightUnit"><option value="KG">كجم</option></select>
       </label>
       <label>
-        الأساس
+        <span>الأساس</span>
         <select name="openingWeightBasis">
           {WEIGHT_BASES.map((basis) => (
             <option key={basis} value={basis}>{WEIGHT_BASIS_LABEL[basis]}</option>
@@ -199,7 +199,7 @@ export function CohortForm({
     <form action={action} className="form-grid">
       <CommandFields {...context} prefix="ls-cohort" />
       <label>
-        القطيع الإداري
+        <span>القطيع الإداري</span>
         <select name="herdId">
           {herds.map((herd) => (
             <option key={herd.id} value={herd.id}>
@@ -209,7 +209,7 @@ export function CohortForm({
         </select>
       </label>
       <label>
-        موقع الوضع الافتتاحي
+        <span>موقع الوضع الافتتاحي</span>
         <select name="initialSiteId">
           {sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}
         </select>
@@ -218,11 +218,11 @@ export function CohortForm({
         هذا موضع افتتاحي ثابت للدفعة. الحركة والموقع الحالي مشتقان لاحقًا من أحداث حركة صريحة.
       </p>
       <label>
-        مرجع الدفعة
+        <span>مرجع الدفعة</span>
         <input name="cohortReference" required maxLength={100} />
       </label>
       <label>
-        مصدر الدفعة
+        <span>مصدر الدفعة</span>
         <select name="originType">
           {COHORT_ORIGINS.map((origin) => (
             <option key={origin} value={origin}>{ORIGIN_LABEL[origin]}</option>
@@ -230,11 +230,11 @@ export function CohortForm({
         </select>
       </label>
       <label>
-        تاريخ دخول الدفعة
+        <span>تاريخ دخول الدفعة</span>
         <input name="originDate" type="date" required />
       </label>
       <label>
-        العدد عند بداية الدفعة
+        <span>العدد عند بداية الدفعة</span>
         <input
           name="openingHeadcount"
           inputMode="numeric"
@@ -247,7 +247,7 @@ export function CohortForm({
         حقيقة افتتاحية ثابتة وليست «المخزون الحالي».
       </p>
       <label>
-        تركيب الجنس <span className="muted">(اختياري)</span>
+        <span>تركيب الجنس <span className="muted">(اختياري)</span></span>
         <select name="sexComposition" defaultValue="">
           <option value="">غير محدد</option>
           <option value="MALE">ذكور</option>
@@ -256,7 +256,7 @@ export function CohortForm({
         </select>
       </label>
       <label>
-        السلالة <span className="muted">(اختياري)</span>
+        <span>السلالة <span className="muted">(اختياري)</span></span>
         <input name="breedDescriptor" maxLength={120} />
       </label>
       <label className="full">
@@ -265,15 +265,15 @@ export function CohortForm({
           checked={includeWeight}
           onChange={(event) => setIncludeWeight(event.target.checked)}
         />{' '}
-        تسجيل أساس وزن افتتاحي موثق (اختياري)
+        <span>تسجيل أساس وزن افتتاحي موثق (اختياري)</span>
       </label>
       {includeWeight ? <WeightFields /> : null}
       <label>
-        مرجع دليل المصدر <span className="muted">(اختياري)</span>
+        <span>مرجع دليل المصدر <span className="muted">(اختياري)</span></span>
         <input name="originEvidenceReference" maxLength={200} />
       </label>
       <label>
-        ملاحظات <span className="muted">(اختياري)</span>
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
         <textarea name="notes" maxLength={2000} />
       </label>
       <p className="muted full">
@@ -301,11 +301,11 @@ export function ActivateForm({
       <input type="hidden" name="expectedState" value="PLANNED" />
       <input type="hidden" name="newState" value="ACTIVE" />
       <label>
-        سبب التفعيل
+        <span>سبب التفعيل</span>
         <input name="reason" required minLength={3} maxLength={500} />
       </label>
       <label>
-        مرجع الدليل <span className="muted">(اختياري)</span>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
         <input name="evidenceReference" maxLength={200} />
       </label>
       <div><SubmitResult state={state} pending={pending} label="تفعيل الدفعة" /></div>

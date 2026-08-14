@@ -167,7 +167,7 @@ export default async function LivestockPage({
 }: Readonly<{ params: Promise<{ projectId: string }> }>) {
   const { projectId } = await params;
   const project = await getProject(projectId);
-  if (!project || project.sector !== 'LIVESTOCK') notFound();
+  if (project?.sector !== 'LIVESTOCK') notFound();
 
   const [membership, sites, herds, cohorts, timeline] = await Promise.all([
     getCurrentMembership(project.organization_id),
