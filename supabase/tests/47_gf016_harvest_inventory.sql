@@ -505,12 +505,23 @@ select 1/case when (
                         'purchase_price','valuation_amount','sale_price')
 ) = 0 then 1 else 0 end as s16_input_tables_have_no_stock_columns;
 
--- No SALE_ISSUE movement type and no sale/valuation table was introduced.
+-- GF-016 itself excludes SALE_ISSUE; a cumulative replay may include the
+-- bounded GF-018 extension. Prove the vocabulary matches that phase boundary.
 select 1/case when (
-  select count(*) from pg_constraint
-  where conname = 'harvest_inventory_movements_movement_type_check'
-    and pg_get_constraintdef(oid) !~* 'SALE_ISSUE'
-) = 1 then 1 else 0 end as s16_no_sale_issue_movement_type;
+  (to_regclass('public.agriculture_sales') is null and exists(
+    select 1 from pg_constraint
+    where conname='harvest_inventory_movements_movement_type_check'
+      and pg_get_constraintdef(oid) !~* 'SALE_ISSUE'
+  )) or
+  (to_regclass('public.agriculture_sales') is not null and exists(
+    select 1 from pg_constraint
+    where conname='harvest_inventory_movements_movement_type_check'
+      and pg_get_constraintdef(oid) ~* 'SALE_ISSUE'
+  ) and exists(
+    select 1 from information_schema.columns where table_schema='public'
+      and table_name='harvest_inventory_movements' and column_name='agriculture_sale_line_id'
+  ))
+) then 1 else 0 end as s16_sale_issue_phase_boundary_respected;
 
 select 1/case when (
   select count(*) from information_schema.tables

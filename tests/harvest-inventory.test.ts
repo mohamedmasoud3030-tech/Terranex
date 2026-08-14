@@ -359,7 +359,7 @@ describe('GF-016 database verification coverage', () => {
       's16_harvest_delete_rejected',
       's16_no_journal_batch',
       's16_input_tables_have_no_stock_columns',
-      's16_no_sale_issue_movement_type',
+      's16_sale_issue_phase_boundary_respected',
       's16_tenant_b_cannot_read_harvest_events',
       's16_harvest_replay_after_close',
       's16_transfer_replay_after_balance_change',
