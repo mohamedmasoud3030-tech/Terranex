@@ -308,7 +308,8 @@ left join lateral (
 ) e on true;
 
 create or replace function public.gf022_validate_non_negative_quantity() returns trigger
-language plpgsql set search_path=pg_catalog,public as $$
+language plpgsql security definer
+set search_path=pg_catalog,public as $$
 declare
   v_balance bigint;
   v_delta bigint;
@@ -353,7 +354,8 @@ end $$;
 
 
 create or replace function public.gf021_validate_weight_population() returns trigger
-language plpgsql set search_path=pg_catalog,public as $$
+language plpgsql security definer
+set search_path=pg_catalog,public as $$
 declare
   v_current integer;
   v_inception_at timestamptz;
