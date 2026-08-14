@@ -361,6 +361,28 @@ select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
     'gf68-exhaust-over'
   )$q$, :'gf68_project', :'gf68_asof')) like '%exceeds the current derived quantity%'
 then 1 else 0 end as exhausted_mortality_rejected;
+select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+  select public.split_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, 1, current_timestamp,
+    'تقسيم دفعة مستنفدة', %L, %L, null, null, 'مرفوض', null, null,
+    'gf68-exhaust-split'
+  )$q$, :'gf68_project', :'gf68_asof', :'gf68_herd_a', :'gf68_site')) like '%exceeds the current derived quantity%'
+then 1 else 0 end as exhausted_split_rejected;
+select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+  select public.merge_livestock_cohorts(
+    '10000000-0000-4000-8000-000000000001', %L,
+    array[%L,%L]::uuid[], array[1,1]::integer[], current_timestamp,
+    'دمج دفعة مستنفدة', %L, %L, null, null, 'مرفوض', null, null,
+    'gf68-exhaust-merge'
+  )$q$, :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_herd_a', :'gf68_site')) like '%exceeds the current derived quantity%'
+then 1 else 0 end as exhausted_merge_rejected;
+select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
+  select public.record_livestock_weight_event(
+    '10000000-0000-4000-8000-000000000001', %L, %L, current_timestamp,
+    'COHORT_TOTAL', 220, 'KG', null, null, null, 'UNASSESSED', null,
+    'gf68-exhaust-weight'
+  )$q$, :'gf68_project', :'gf68_asof')) like '%no positive quantity%'
+then 1 else 0 end as exhausted_weight_rejected;
 select 1/case when (
   select disposal_method = 'BURIAL' from livestock_quantity_events
   where id = :'gf68_future_mortality'
