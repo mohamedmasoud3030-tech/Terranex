@@ -345,33 +345,46 @@ then 1 else 0 end as privileged_merge_lineage_mismatch_rejected;
 -- Lifecycle, quality and disposal boundaries.
 -- ---------------------------------------------------------------------------
 -- A zero ACTIVE Cohort remains visible but consuming/measurement commands are
--- not accepted; no implicit CLOSED/LOST state is manufactured.
+-- not accepted; no implicit CLOSED/LOST state is manufactured. Keep this
+-- fixture separate from the earlier Cohort carrying scheduled future events,
+-- so exhausting it cannot create a negative later timeline.
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.create_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, %L,
+    'دفعة اختبار استنفاد مستقلة', 'PURCHASED', current_date, 5, 'MIXED', null,
+    null, null, null, null, null, 'gf68-exhausted-cohort'
+  )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_exhausted \gset
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.transition_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, 'PLANNED', 'ACTIVE',
+    'تفعيل دفعة الاستنفاد المستقلة', null, 'gf68-exhausted-active'
+  )$q$, :'gf68_project', :'gf68_exhausted')) gf68_exhausted_active \gset
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_mortality(
-    '10000000-0000-4000-8000-000000000001', %L, %L, 50,
+    '10000000-0000-4000-8000-000000000001', %L, %L, 5,
     current_timestamp, 'UNKNOWN', null, null, 'PENDING', null,
     'gf68-exhaust-main'
-  )$q$, :'gf68_project', :'gf68_asof')) gf68_exhaust_event \gset
+  )$q$, :'gf68_project', :'gf68_exhausted')) gf68_exhaust_event \gset
 select 1/case when (
   select current_quantity = 0 from livestock_cohort_quantity_rollforward
-  where cohort_id = :'gf68_asof'
+  where cohort_id = :'gf68_exhausted'
 ) and (
   select lifecycle_state = 'ACTIVE' from livestock_cohorts_read
-  where id = :'gf68_asof'
+  where id = :'gf68_exhausted'
 ) then 1 else 0 end as exhausted_cohort_stays_active;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_mortality(
     '10000000-0000-4000-8000-000000000001', %L, %L, 1,
     current_timestamp, 'UNKNOWN', null, null, 'PENDING', null,
     'gf68-exhaust-over'
-  )$q$, :'gf68_project', :'gf68_asof')) like '%exceeds the current derived quantity%'
+  )$q$, :'gf68_project', :'gf68_exhausted')) like '%exceeds the current derived quantity%'
 then 1 else 0 end as exhausted_mortality_rejected;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
   select public.split_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, 1, current_timestamp,
     'تقسيم دفعة مستنفدة', %L, %L, null, null, 'مرفوض', null, null,
     'gf68-exhaust-split'
-  )$q$, :'gf68_project', :'gf68_asof', :'gf68_herd_a', :'gf68_site')) like '%exceeds the current derived quantity%'
+  )$q$, :'gf68_project', :'gf68_exhausted', :'gf68_herd_a', :'gf68_site')) like '%exceeds the current derived quantity%'
 then 1 else 0 end as exhausted_split_rejected;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
   select public.merge_livestock_cohorts(
@@ -379,14 +392,14 @@ select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
     array[%L,%L]::uuid[], array[1,1]::integer[], current_timestamp,
     'دمج دفعة مستنفدة', %L, %L, null, null, 'مرفوض', null, null,
     'gf68-exhaust-merge'
-  )$q$, :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_herd_a', :'gf68_site')) like '%exceeds the current derived quantity%'
+  )$q$, :'gf68_project', :'gf68_exhausted', :'gf68_backdated', :'gf68_herd_a', :'gf68_site')) like '%exceeds the current derived quantity%'
 then 1 else 0 end as exhausted_merge_rejected;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_weight_event(
     '10000000-0000-4000-8000-000000000001', %L, %L, current_timestamp,
     'COHORT_TOTAL', 220, 'KG', null, null, null, 'UNASSESSED', null,
     'gf68-exhaust-weight'
-  )$q$, :'gf68_project', :'gf68_asof')) like '%no positive quantity%'
+  )$q$, :'gf68_project', :'gf68_exhausted')) like '%no positive quantity%'
 then 1 else 0 end as exhausted_weight_rejected;
 select 1/case when (
   select disposal_method = 'BURIAL' from livestock_quantity_events
