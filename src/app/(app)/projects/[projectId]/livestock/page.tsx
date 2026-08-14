@@ -1,9 +1,229 @@
 import { notFound } from 'next/navigation';
-import { getProject } from '@/features/projects/queries';
-import { ForbiddenCard,WorkspaceChrome } from '@/features/workspace/chrome';
 import { getCurrentMembership } from '@/features/finance/queries';
-import { getLivestockCohorts,getLivestockCohortTimeline,getLivestockHerds,getLivestockSites } from '@/features/livestock/queries';
-import { COHORT_STATE_LABEL,ORIGIN_LABEL,PURPOSE_LABEL,SITE_TYPE_LABEL,SPECIES_LABEL,WEIGHT_BASIS_LABEL } from '@/features/livestock/labels';
-import { ActivateForm,CohortForm,HerdForm,ProfileForm,SiteForm } from './forms';
-export const dynamic='force-dynamic';
-export default async function LivestockPage({params}:{params:Promise<{projectId:string}>}){const{projectId}=await params;const project=await getProject(projectId);if(!project)notFound();if(project.sector!=='LIVESTOCK')notFound();const[member,sites,herds,cohorts,timeline]=await Promise.all([getCurrentMembership(project.organization_id),getLivestockSites(projectId),getLivestockHerds(projectId),getLivestockCohorts(projectId),getLivestockCohortTimeline(projectId)]);if(!member)return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة مساحة الثروة الحيوانية."/>;return <section className="stack"><WorkspaceChrome projectId={projectId} active="livestock" sector="LIVESTOCK" title="الثروة الحيوانية" subtitle={`${project.name} · المواقع والقطعان`} internalReference={project.internal_reference}/><section className="stack"><header className="card"><h1>الثروة الحيوانية</h1><p className="muted">المواقع والقطعان والدفعات · تتبع جماعي قابل للعد دون افتراض سجل فردي لكل حيوان.</p></header><section className="card stack"><h2>تهيئة القطاع</h2><ProfileForm organizationId={project.organization_id} projectId={projectId}/></section><section className="card stack"><h2>مواقع التشغيل</h2><SiteForm organizationId={project.organization_id} projectId={projectId}/>{sites.length===0?<p className="muted">لا توجد مواقع تشغيل بعد.</p>:<div className="responsive-grid">{sites.map(s=><article className="card" key={s.id}><h3>{s.name}</h3><p>{s.internal_reference} · {SITE_TYPE_LABEL[s.site_type]}</p><p className="muted">{s.location_description??'لم يسجل وصف موقع'}</p><small>موقع تشغيل لا يثبت ملكية الأرض.</small></article>)}</div>}</section><section className="card stack"><h2>القطعان (المجموعات الإدارية)</h2><HerdForm organizationId={project.organization_id} projectId={projectId} sites={sites}/>{herds.length===0?<p className="muted">لا توجد قطعان بعد.</p>:<div className="responsive-grid">{herds.map(h=><article className="card" key={h.id}><h3>{h.name}</h3><p>{h.internal_reference} · {SPECIES_LABEL[h.species]} · {PURPOSE_LABEL[h.purpose]}</p><small>الموقع: {h.site_name}</small></article>)}</div>}</section><section className="card stack"><h2>الدفعات الحيوانية القابلة للعد</h2><CohortForm organizationId={project.organization_id} projectId={projectId} herds={herds}/>{cohorts.length===0?<p className="muted">لا توجد دفعات بعد. أنشئ دفعة لتسجيل حقيقة العدد الافتتاحي.</p>:<div className="responsive-grid">{cohorts.map(c=><article className="card stack" key={c.id}><div><h3>{c.cohort_reference}</h3><span className="status">{COHORT_STATE_LABEL[c.lifecycle_state]}</span></div><dl className="facts"><div><dt>القطيع</dt><dd>{c.herd_name}</dd></div><div><dt>موقع التشغيل</dt><dd>{c.site_name}</dd></div><div><dt>النوع والغرض</dt><dd>{SPECIES_LABEL[c.species]} · {PURPOSE_LABEL[c.purpose]}</dd></div><div><dt>مصدر الدفعة</dt><dd>{ORIGIN_LABEL[c.origin_type]}</dd></div><div><dt>تاريخ المصدر</dt><dd>{new Date(c.origin_date).toLocaleDateString('ar-EG')}</dd></div><div><dt>العدد عند بداية الدفعة</dt><dd>{c.opening_headcount}</dd></div><div><dt>أساس الوزن الافتتاحي</dt><dd>{c.opening_weight_value?`${c.opening_weight_value} كجم · ${WEIGHT_BASIS_LABEL[c.opening_weight_basis??'']}`:'غير مسجل'}</dd></div></dl>{c.lifecycle_state==='PLANNED'&&<ActivateForm organizationId={project.organization_id} projectId={projectId} cohort={c}/>}<details><summary>سجل دورة الحياة</summary><ol>{timeline.filter(t=>t.cohort_id===c.id).reverse().map(t=><li key={t.id}>{COHORT_STATE_LABEL[t.new_state]} · {t.reason}</li>)}</ol></details></article>)}</div>}</section><aside className="banner"><strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علف أو نفوق أو حركة أو بيع أو تقييم محاسبي. العدد المعروض هو عدد بداية الدفعة، وليس رصيدًا حاليًا.</aside></section></section>}
+import {
+  COHORT_STATE_LABEL,
+  ORIGIN_LABEL,
+  PURPOSE_LABEL,
+  SITE_TYPE_LABEL,
+  SPECIES_LABEL,
+  WEIGHT_BASIS_LABEL,
+} from '@/features/livestock/labels';
+import {
+  type CohortRead,
+  type CohortTimelineRead,
+  type HerdRead,
+  type SiteRead,
+  getLivestockCohorts,
+  getLivestockCohortTimeline,
+  getLivestockHerds,
+  getLivestockSites,
+} from '@/features/livestock/queries';
+import { getProject } from '@/features/projects/queries';
+import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
+import { ActivateForm, CohortForm, HerdForm, ProfileForm, SiteForm } from './forms';
+
+export const dynamic = 'force-dynamic';
+
+const NO_LOCATION_DESCRIPTION = 'لم يسجل وصف موقع';
+
+function Sites({ sites }: Readonly<{ sites: readonly SiteRead[] }>) {
+  if (sites.length === 0) return <p className="muted">لا توجد مواقع تشغيل بعد.</p>;
+  return (
+    <div className="responsive-grid">
+      {sites.map((site) => (
+        <article className="card" key={site.id}>
+          <h3>{site.name}</h3>
+          <p>{site.internal_reference} · {SITE_TYPE_LABEL[site.site_type]}</p>
+          <p className="muted">{site.location_description ?? NO_LOCATION_DESCRIPTION}</p>
+          <small>موقع تشغيل لا يثبت ملكية الأرض.</small>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function Herds({ herds }: Readonly<{ herds: readonly HerdRead[] }>) {
+  if (herds.length === 0) return <p className="muted">لا توجد قطعان بعد.</p>;
+  return (
+    <div className="responsive-grid">
+      {herds.map((herd) => (
+        <article className="card" key={herd.id}>
+          <h3>{herd.name}</h3>
+          <p>
+            {herd.internal_reference} · {SPECIES_LABEL[herd.species]} ·{' '}
+            {PURPOSE_LABEL[herd.purpose]}
+          </p>
+          <small>مجموعة إدارية غير مرتبطة دائمًا بموقع.</small>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function OpeningWeight({ cohort }: Readonly<{ cohort: CohortRead }>) {
+  if (!cohort.opening_weight_value) return <>غير مسجل</>;
+  return (
+    <>
+      {cohort.opening_weight_value} كجم ·{' '}
+      {WEIGHT_BASIS_LABEL[cohort.opening_weight_basis ?? '']}
+    </>
+  );
+}
+
+function CohortTimeline({
+  cohortId,
+  timeline,
+}: Readonly<{ cohortId: string; timeline: readonly CohortTimelineRead[] }>) {
+  const entries = [...timeline]
+    .filter((entry) => entry.cohort_id === cohortId)
+    .reverse();
+  return (
+    <details>
+      <summary>سجل دورة الحياة</summary>
+      <ol>
+        {entries.map((entry) => (
+          <li key={entry.id}>{COHORT_STATE_LABEL[entry.new_state]} · {entry.reason}</li>
+        ))}
+      </ol>
+    </details>
+  );
+}
+
+function CohortCard({
+  cohort,
+  timeline,
+  organizationId,
+  projectId,
+}: Readonly<{
+  cohort: CohortRead;
+  timeline: readonly CohortTimelineRead[];
+  organizationId: string;
+  projectId: string;
+}>) {
+  return (
+    <article className="card stack">
+      <div>
+        <h3>{cohort.cohort_reference}</h3>
+        <span className="status">{COHORT_STATE_LABEL[cohort.lifecycle_state]}</span>
+      </div>
+      <dl className="facts">
+        <div><dt>القطيع الإداري</dt><dd>{cohort.herd_name}</dd></div>
+        <div><dt>موقع الوضع الافتتاحي</dt><dd>{cohort.initial_site_name}</dd></div>
+        <div>
+          <dt>النوع والغرض</dt>
+          <dd>{SPECIES_LABEL[cohort.species]} · {PURPOSE_LABEL[cohort.purpose]}</dd>
+        </div>
+        <div><dt>مصدر الدفعة</dt><dd>{ORIGIN_LABEL[cohort.origin_type]}</dd></div>
+        <div>
+          <dt>تاريخ المصدر</dt>
+          <dd>{new Date(cohort.origin_date).toLocaleDateString('ar-EG')}</dd>
+        </div>
+        <div><dt>العدد عند بداية الدفعة</dt><dd>{cohort.opening_headcount}</dd></div>
+        <div><dt>أساس الوزن الافتتاحي</dt><dd><OpeningWeight cohort={cohort} /></dd></div>
+      </dl>
+      {cohort.lifecycle_state === 'PLANNED' ? (
+        <ActivateForm
+          organizationId={organizationId}
+          projectId={projectId}
+          cohort={cohort}
+        />
+      ) : null}
+      <CohortTimeline cohortId={cohort.id} timeline={timeline} />
+    </article>
+  );
+}
+
+function Cohorts({
+  cohorts,
+  timeline,
+  organizationId,
+  projectId,
+}: Readonly<{
+  cohorts: readonly CohortRead[];
+  timeline: readonly CohortTimelineRead[];
+  organizationId: string;
+  projectId: string;
+}>) {
+  if (cohorts.length === 0) {
+    return <p className="muted">لا توجد دفعات بعد. أنشئ دفعة لتسجيل حقيقة العدد الافتتاحي.</p>;
+  }
+  return (
+    <div className="responsive-grid">
+      {cohorts.map((cohort) => (
+        <CohortCard
+          key={cohort.id}
+          cohort={cohort}
+          timeline={timeline}
+          organizationId={organizationId}
+          projectId={projectId}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default async function LivestockPage({
+  params,
+}: Readonly<{ params: Promise<{ projectId: string }> }>) {
+  const { projectId } = await params;
+  const project = await getProject(projectId);
+  if (!project || project.sector !== 'LIVESTOCK') notFound();
+
+  const [membership, sites, herds, cohorts, timeline] = await Promise.all([
+    getCurrentMembership(project.organization_id),
+    getLivestockSites(projectId),
+    getLivestockHerds(projectId),
+    getLivestockCohorts(projectId),
+    getLivestockCohortTimeline(projectId),
+  ]);
+  if (!membership) {
+    return (
+      <ForbiddenCard
+        projectId={projectId}
+        message="عضويتك الحالية لا تسمح بقراءة مساحة الثروة الحيوانية."
+      />
+    );
+  }
+
+  const context = { organizationId: project.organization_id, projectId };
+  return (
+    <section className="stack">
+      <WorkspaceChrome
+        projectId={projectId}
+        active="livestock"
+        sector="LIVESTOCK"
+        title="الثروة الحيوانية"
+        subtitle={`${project.name} · المواقع والقطعان`}
+        internalReference={project.internal_reference}
+      />
+      <header className="card">
+        <h1>الثروة الحيوانية</h1>
+        <p className="muted">
+          المواقع والقطعان والدفعات · تتبع جماعي قابل للعد دون افتراض سجل فردي لكل حيوان.
+        </p>
+      </header>
+      <section className="card stack">
+        <h2>تهيئة القطاع</h2>
+        <ProfileForm {...context} />
+      </section>
+      <section className="card stack">
+        <h2>مواقع التشغيل</h2>
+        <SiteForm {...context} />
+        <Sites sites={sites} />
+      </section>
+      <section className="card stack">
+        <h2>القطعان (المجموعات الإدارية)</h2>
+        <HerdForm {...context} />
+        <Herds herds={herds} />
+      </section>
+      <section className="card stack">
+        <h2>الدفعات الحيوانية القابلة للعد</h2>
+        <CohortForm {...context} herds={herds} sites={sites} />
+        <Cohorts {...context} cohorts={cohorts} timeline={timeline} />
+      </section>
+      <aside className="banner">
+        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علف أو نفوق أو حركة أو بيع أو تقييم محاسبي. العدد المعروض هو عدد بداية الدفعة، وليس رصيدًا حاليًا. الموقع المعروض هو الوضع الافتتاحي وليس ادعاءً بالموقع الحالي.
+      </aside>
+    </section>
+  );
+}

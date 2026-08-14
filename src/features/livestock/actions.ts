@@ -1,15 +1,95 @@
 'use server';
+
 import { revalidatePath } from 'next/cache';
 import type { ZodType } from 'zod';
 import type { ActionState } from '@/features/auth/actions';
 import { createClient } from '@/shared/supabase/server';
-import { livestockCohortSchema,livestockHerdSchema,livestockProfileSchema,livestockSiteSchema,livestockTransitionSchema } from './schema';
-function fail(error:string):ActionState{return{error};}
-function message(text:string|undefined){const m=text??'';if(m.includes('idempotency key payload mismatch'))return'مفتاح العملية استُخدم لبيانات مختلفة. حدّث الصفحة وأعد المحاولة.';if(m.includes('forbidden'))return'لا تملك صلاحية تنفيذ هذا الإجراء.';if(m.includes('livestock project not found'))return'مشروع الثروة الحيوانية غير موجود أو لا ينتمي إلى هذه المنظمة.';if(m.includes('livestock site not found'))return'موقع التشغيل غير موجود في هذا المشروع.';if(m.includes('livestock herd not found'))return'القطيع غير موجود في هذا المشروع.';if(m.includes('livestock cohort not found'))return'الدفعة الحيوانية غير موجودة في هذا المشروع.';if(m.includes('invalid livestock species'))return'نوع الحيوان غير صالح.';if(m.includes('invalid livestock purpose'))return'غرض القطيع غير صالح.';if(m.includes('invalid livestock cohort origin'))return'مصدر الدفعة غير صالح.';if(m.includes('invalid livestock opening headcount'))return'العدد عند بداية الدفعة يجب أن يكون عددًا صحيحًا أكبر من صفر.';if(m.includes('invalid livestock opening weight'))return'بيانات الوزن الافتتاحي غير صالحة أو غير مكتملة.';if(m.includes('livestock site reference already exists'))return'مرجع موقع التشغيل مستخدم بالفعل في هذا المشروع.';if(m.includes('livestock herd reference already exists'))return'مرجع القطيع مستخدم بالفعل في هذا المشروع.';if(m.includes('livestock cohort reference already exists'))return'مرجع الدفعة مستخدم بالفعل في هذا المشروع.';if(m.includes('expected livestock cohort state mismatch'))return'تغيّرت حالة الدفعة. حدّث الصفحة قبل إعادة المحاولة.';if(m.includes('invalid livestock cohort transition'))return'انتقال حالة الدفعة غير مسموح.';if(m.includes('authentication required'))return'انتهت جلسة الدخول. سجّل الدخول ثم أعد المحاولة.';return'تعذر حفظ بيانات الثروة الحيوانية. راجع البيانات والصلاحيات وحاول مجددًا.';}
-async function invoke<T extends {projectId:string}>(schema:ZodType<T>,form:FormData,rpc:string,map:(p:T)=>Record<string,unknown>):Promise<ActionState>{const parsed=schema.safeParse(Object.fromEntries(form));if(!parsed.success)return fail(parsed.error.issues[0]?.message??'البيانات غير صحيحة');const p=parsed.data;const s=await createClient();const{error}=await s.rpc(rpc,map(p));if(error)return fail(message(error.message));revalidatePath(`/projects/${p.projectId}/livestock`);return{};}
-const base=<T extends {organizationId:string;projectId:string;idempotencyKey:string}>(p:T)=>({p_organization_id:p.organizationId,p_project_id:p.projectId,p_idempotency_key:p.idempotencyKey});
-export async function createLivestockProfile(_:ActionState,f:FormData){return invoke(livestockProfileSchema,f,'create_livestock_profile',p=>({...base(p),p_notes:p.notes??null}));}
-export async function createLivestockSite(_:ActionState,f:FormData){return invoke(livestockSiteSchema,f,'create_livestock_site',p=>({...base(p),p_name:p.name,p_internal_reference:p.internalReference,p_site_type:p.siteType,p_location_description:p.locationDescription??null,p_notes:p.notes??null}));}
-export async function createLivestockHerd(_:ActionState,f:FormData){return invoke(livestockHerdSchema,f,'create_livestock_herd',p=>({...base(p),p_site_id:p.siteId,p_name:p.name,p_internal_reference:p.internalReference,p_species:p.species,p_purpose:p.purpose,p_breed_descriptor:p.breedDescriptor??null}));}
-export async function createLivestockCohort(_:ActionState,f:FormData){return invoke(livestockCohortSchema,f,'create_livestock_cohort',p=>({...base(p),p_herd_id:p.herdId,p_cohort_reference:p.cohortReference,p_origin_type:p.originType,p_origin_date:p.originDate,p_opening_headcount:Number(p.openingHeadcount),p_sex_composition:p.sexComposition??null,p_breed_descriptor:p.breedDescriptor??null,p_opening_weight_value:p.openingWeightValue??null,p_opening_weight_unit:p.openingWeightUnit??null,p_opening_weight_basis:p.openingWeightBasis??null,p_origin_evidence_reference:p.originEvidenceReference??null,p_notes:p.notes??null}));}
-export async function transitionLivestockCohort(_:ActionState,f:FormData){return invoke(livestockTransitionSchema,f,'transition_livestock_cohort',p=>({...base(p),p_cohort_id:p.cohortId,p_expected_state:p.expectedState,p_new_state:p.newState,p_reason:p.reason,p_evidence_reference:p.evidenceReference??null}));}
+import { livestockErrorMessage } from './errors';
+import {
+  cohortRpcArguments,
+  herdRpcArguments,
+  profileRpcArguments,
+  siteRpcArguments,
+  transitionRpcArguments,
+} from './rpc';
+import {
+  livestockCohortSchema,
+  livestockHerdSchema,
+  livestockProfileSchema,
+  livestockSiteSchema,
+  livestockTransitionSchema,
+} from './schema';
+
+function failed(error: string): ActionState {
+  return { error };
+}
+
+async function invoke<T extends { projectId: string }>(
+  schema: ZodType<T>,
+  form: FormData,
+  rpc: string,
+  argumentsFor: (input: T) => Record<string, unknown>,
+): Promise<ActionState> {
+  const parsed = schema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) {
+    return failed(parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة');
+  }
+
+  const { error } = await (await createClient()).rpc(rpc, argumentsFor(parsed.data));
+  if (error) {
+    return failed(livestockErrorMessage(error.message));
+  }
+
+  revalidatePath(`/projects/${parsed.data.projectId}/livestock`);
+  return {};
+}
+
+export async function createLivestockProfile(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    livestockProfileSchema,
+    form,
+    'create_livestock_profile',
+    profileRpcArguments,
+  );
+}
+
+export async function createLivestockSite(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(livestockSiteSchema, form, 'create_livestock_site', siteRpcArguments);
+}
+
+export async function createLivestockHerd(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(livestockHerdSchema, form, 'create_livestock_herd', herdRpcArguments);
+}
+
+export async function createLivestockCohort(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    livestockCohortSchema,
+    form,
+    'create_livestock_cohort',
+    cohortRpcArguments,
+  );
+}
+
+export async function transitionLivestockCohort(
+  _: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    livestockTransitionSchema,
+    form,
+    'transition_livestock_cohort',
+    transitionRpcArguments,
+  );
+}

@@ -1,11 +1,109 @@
 import { createClient } from '@/shared/supabase/server';
 import { throwOperatorQuery } from '@/shared/supabase/errors';
-export type SiteRead={id:string;organization_id:string;project_id:string;name:string;internal_reference:string;site_type:string;location_description:string|null;notes:string|null;created_by:string;created_at:string};
-export type HerdRead={id:string;organization_id:string;project_id:string;site_id:string;site_name:string;name:string;internal_reference:string;species:string;purpose:string;breed_descriptor:string|null;created_by:string;created_at:string};
-export type CohortRead={id:string;organization_id:string;project_id:string;herd_id:string;herd_name:string;herd_reference:string;species:string;purpose:string;site_id:string;site_name:string;cohort_reference:string;origin_type:string;origin_date:string;opening_headcount:number;sex_composition:string|null;breed_descriptor:string|null;opening_weight_value:string|null;opening_weight_unit:string|null;opening_weight_basis:string|null;origin_evidence_reference:string|null;notes:string|null;created_by:string;created_at:string;lifecycle_state:string};
-export type CohortTimelineRead={id:string;organization_id:string;project_id:string;cohort_id:string;previous_state:string|null;new_state:string;reason:string;evidence_reference:string|null;changed_by:string;changed_at:string};
-async function many<T>(view:string,columns:string,projectId:string,order='created_at'){const s=await createClient();const {data,error}=await s.from(view).select(columns).eq('project_id',projectId).order(order,{ascending:false});if(error)throwOperatorQuery(error);return(data??[])as unknown as T[];}
-export const getLivestockSites=(p:string)=>many<SiteRead>('livestock_sites_read','id,organization_id,project_id,name,internal_reference,site_type,location_description,notes,created_by,created_at',p);
-export const getLivestockHerds=(p:string)=>many<HerdRead>('livestock_herds_read','id,organization_id,project_id,site_id,site_name,name,internal_reference,species,purpose,breed_descriptor,created_by,created_at',p);
-export const getLivestockCohorts=(p:string)=>many<CohortRead>('livestock_cohorts_read','id,organization_id,project_id,herd_id,herd_name,herd_reference,species,purpose,site_id,site_name,cohort_reference,origin_type,origin_date,opening_headcount,sex_composition,breed_descriptor,opening_weight_value,opening_weight_unit,opening_weight_basis,origin_evidence_reference,notes,created_by,created_at,lifecycle_state',p);
-export const getLivestockCohortTimeline=(p:string)=>many<CohortTimelineRead>('livestock_cohort_timeline_read','id,organization_id,project_id,cohort_id,previous_state,new_state,reason,evidence_reference,changed_by,changed_at',p,'changed_at');
+
+export type SiteRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  name: string;
+  internal_reference: string;
+  site_type: string;
+  location_description: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type HerdRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  name: string;
+  internal_reference: string;
+  species: string;
+  purpose: string;
+  breed_descriptor: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type CohortRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  herd_id: string;
+  herd_name: string;
+  herd_reference: string;
+  species: string;
+  purpose: string;
+  initial_site_id: string;
+  initial_site_name: string;
+  cohort_reference: string;
+  origin_type: string;
+  origin_date: string;
+  opening_headcount: number;
+  sex_composition: string | null;
+  breed_descriptor: string | null;
+  opening_weight_value: string | null;
+  opening_weight_unit: string | null;
+  opening_weight_basis: string | null;
+  origin_evidence_reference: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  lifecycle_state: string;
+};
+
+export type CohortTimelineRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  cohort_id: string;
+  previous_state: string | null;
+  new_state: string;
+  reason: string;
+  evidence_reference: string | null;
+  changed_by: string;
+  changed_at: string;
+};
+
+async function many<T>(
+  view: string,
+  columns: string,
+  projectId: string,
+  order = 'created_at',
+): Promise<T[]> {
+  const client = await createClient();
+  const { data, error } = await client
+    .from(view)
+    .select(columns)
+    .eq('project_id', projectId)
+    .order(order, { ascending: false });
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as unknown as T[];
+}
+
+export const getLivestockSites = (projectId: string) => many<SiteRead>(
+  'livestock_sites_read',
+  'id,organization_id,project_id,name,internal_reference,site_type,location_description,notes,created_by,created_at',
+  projectId,
+);
+
+export const getLivestockHerds = (projectId: string) => many<HerdRead>(
+  'livestock_herds_read',
+  'id,organization_id,project_id,name,internal_reference,species,purpose,breed_descriptor,created_by,created_at',
+  projectId,
+);
+
+export const getLivestockCohorts = (projectId: string) => many<CohortRead>(
+  'livestock_cohorts_read',
+  'id,organization_id,project_id,herd_id,herd_name,herd_reference,species,purpose,initial_site_id,initial_site_name,cohort_reference,origin_type,origin_date,opening_headcount,sex_composition,breed_descriptor,opening_weight_value,opening_weight_unit,opening_weight_basis,origin_evidence_reference,notes,created_by,created_at,lifecycle_state',
+  projectId,
+);
+
+export const getLivestockCohortTimeline = (projectId: string) => many<CohortTimelineRead>(
+  'livestock_cohort_timeline_read',
+  'id,organization_id,project_id,cohort_id,previous_state,new_state,reason,evidence_reference,changed_by,changed_at',
+  projectId,
+  'changed_at',
+);
