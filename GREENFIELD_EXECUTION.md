@@ -125,20 +125,73 @@ Real Estate status is therefore explicit:
 - latest hosted deployment verification: pending until the production alias SHA is proved;
 - real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
 
+### GF-015 — Field Input Application Foundation
+
+Status: **ACTIVE BOUNDED SLICE — draft PR under review**. Bounded
+Agriculture slice completing the chain
+`Farm → Field → CropCycle → assignment → Field Activity → Input Item →
+Input Lot → Input Application`.
+
+Delivered in this slice:
+
+1. `input_items` — a controlled Agriculture input definition
+   (`SEED | FERTILIZER | CHEMICAL`) scoped to one Agriculture project.
+   No price, supplier, accounting mapping, stock balance or valuation.
+2. `input_lots` — a traceable lot/batch of an Input Item. **An
+   identity/traceability record, not inventory.** The lot unit is
+   derived from its Input Item and held coherent by a composite
+   foreign key.
+3. `input_applications` — the immutable operational fact. Project,
+   crop cycle, field and assignment are derived server-side from the
+   referenced `field_activities` row; the browser never asserts them.
+4. Server-enforced activity/category mapping: `SEED → PLANT`,
+   `FERTILIZER → FERTILIZE`, `CHEMICAL → SPRAY`. `SCOUT`, `IRRIGATE`,
+   `WEED`, `PREPARE` and `OTHER` can never consume an input
+   application.
+5. Area rule: the treated area is positive, uses the assignment's own
+   area unit, and never exceeds the assigned area. Exact compatible
+   units are required; no unit conversion is performed.
+6. Lot expiry rule: `application_date <= expires_on`, and
+   `manufactured_on <= expires_on` when both are supplied. Enforced in
+   the command and again in a `BEFORE INSERT` trigger.
+7. Three idempotent, audited commands — `create_input_item`,
+   `create_input_lot`, `record_input_application` — writing
+   `INPUT_ITEM_CREATED`, `INPUT_LOT_CREATED` and
+   `INPUT_APPLICATION_RECORDED` to the existing `audit_events` table.
+   Numerics are normalized to the stored `numeric(20,6)` precision
+   before hashing, so presentation formatting is not a false payload
+   mismatch.
+8. Arabic/RTL `المدخلات والتطبيقات` area inside the existing
+   Agriculture workspace, with selection constrained so invalid
+   combinations are hard to choose while the server stays
+   authoritative.
+
+**Intentional boundary — not missing implementation:** GF-015 proves
+identity, lot traceability, field/application quantity, expiry, and
+project/assignment coherence. Available-stock validation begins only
+when the canonical `InventoryMovement` slice exists. No
+`available_stock`, `current_quantity`, `remaining_quantity` or
+`lot_balance` column exists, and no accounting, inventory-valuation,
+or CropCycle-lifecycle side effect is created.
+
+Canonical decision: `docs/decisions/0015_GF015_INPUT_APPLICATION.md`.
+
 ### GF-014 — Field Activity Foundation
 
-Status: **CODE COMPLETE — CI GREEN**. Bounded Agriculture operational
-record against an existing CropCycle-to-Field assignment. GitHub
-Actions `app` and `database` (PostgreSQL 16 replay, GF-013/GF-014
-suites, two-tenant isolation, forward upgrade) are green on PR #125.
+Status: **MERGED — TECHNICALLY COMPLETE**. Merged into `main` through
+PR #125 (merge commit `e8e94cfdbb3daeeb80e9e7d8c5ef5f13948e2ad6`).
+Bounded Agriculture operational record against an existing
+CropCycle-to-Field assignment. GitHub Actions `app` and `database`
+(PostgreSQL 16 replay, GF-013/GF-014 suites, two-tenant isolation,
+forward upgrade) were green on the merged head.
 
 Canonical decision: `docs/decisions/0014_GF014_FIELD_ACTIVITY.md`.
 
 ### GF-013 — Agriculture Sector Foundation (Farm → Field → CropCycle)
 
-Status: **CODE COMPLETE — DRAFT PR OPEN**. Branch
-`agent/gf-013-agriculture-foundation`, base SHA
-`b1c8f7c8855fb8339459b67b5ede1f01a74904b1` (zero behind origin/main).
+Status: **MERGED — TECHNICALLY COMPLETE**. Integrated into `main`
+ahead of GF-014. The record below describes what that slice delivered
+and verified at the time it was reviewed.
 
 Delivered and verified in this slice:
 
@@ -229,13 +282,25 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
 - Agriculture capabilities beyond the active bounded slice and all Livestock runtime modules;
-- Agriculture operational entities deferred after GF-014: `InputItem`, `InputLot`, `InputApplication`, `HarvestEvent`, `HarvestLot`, `StorageLocation`, `InventoryMovement`, `AgronomyObservation`, agriculture-side sales/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
+- Agriculture operational entities deferred after GF-015: `HarvestEvent`, `HarvestLot`, crop output inventory, `StorageLocation`, `InventoryMovement`, stock-on-hand and warehouse balances, purchase orders / procurement / receiving / supplier accounting, input costing and valuation, `AgronomyObservation`, agriculture-side sales/dispatch/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit-conversion engines, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
 ## Next active batch
 
-`GF-015 — next bounded Agriculture slice` after Field Activity
-(inputs, harvest, or another documented operator workflow). Do not
+`GF-015 — Field Input Application Foundation` is the active bounded
+Agriculture slice; GF-013 and GF-014 are merged and technically
+complete.
+
+The expected slice after GF-015 is reviewed is
+`GF-016 — Harvest Event & Harvest Lot Foundation`. It must not be
+started inside GF-015. The intended Agriculture progression is
+
+```
+field work → input application → harvest event → harvest lot
+           → storage/inventory movement → sale → cycle profitability
+```
+
+and it must be reachable without rewriting the Agriculture core. Do not
 reopen Real Estate or scaffold livestock.
 
 Real-customer validation remains a separate parallel evidence track.

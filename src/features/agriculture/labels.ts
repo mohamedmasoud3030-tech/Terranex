@@ -39,6 +39,40 @@ export function formatFieldActivityType(type: string | null | undefined): string
   return FIELD_ACTIVITY_TYPE_LABEL[type] ?? type;
 }
 
+// GF-015 — Field Input Application. Only the three field-applied
+// categories this slice supports are labelled; fuel/packaging are not
+// modelled and must not appear as if they were.
+export const INPUT_CATEGORY_LABEL: Record<string, string> = {
+  SEED: 'تقاوي',
+  FERTILIZER: 'سماد',
+  CHEMICAL: 'مبيد/كيماوي',
+};
+
+export const LOT_EXPIRY_STATUS_LABEL: Record<string, string> = {
+  VALID: 'سارية',
+  EXPIRED: 'منتهية',
+  NO_EXPIRY: 'بدون تاريخ انتهاء',
+};
+
+export function formatInputCategory(category: string | null | undefined): string {
+  if (!category) return '—';
+  return INPUT_CATEGORY_LABEL[category] ?? category;
+}
+
+export function formatLotExpiryStatus(status: string | null | undefined): string {
+  if (!status) return '—';
+  return LOT_EXPIRY_STATUS_LABEL[status] ?? status;
+}
+
+/** Quantity plus a free-text input unit (كجم، لتر…), not an area unit. */
+export function formatInputQuantity(
+  value: string | null | undefined,
+  unit: string | null | undefined,
+): string {
+  if (!value) return '—';
+  return `${value} ${unit ?? ''}`.trim();
+}
+
 export function formatCycleState(state: string | null | undefined): string {
   if (!state) return '—';
   return CYCLE_STATE_LABEL[state] ?? state;

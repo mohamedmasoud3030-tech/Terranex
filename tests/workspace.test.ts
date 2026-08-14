@@ -61,7 +61,7 @@ describe('GF-010 workspace navigation contract', () => {
       agriBlock![0].matchAll(/id: '([a-z-]+)'/g),
       (match) => match[1],
     );
-    expect(ids).toEqual(['agriculture', 'field-activities']);
+    expect(ids).toEqual(['agriculture', 'field-activities', 'field-inputs']);
     expect(agriBlock![0]).not.toMatch(/الأصول العقارية/);
   });
 

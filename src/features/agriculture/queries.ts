@@ -76,6 +76,71 @@ export type FieldActivityRead = {
   created_at: string;
 };
 
+export type InputItemRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  category: 'SEED' | 'FERTILIZER' | 'CHEMICAL';
+  name: string;
+  internal_reference: string | null;
+  application_unit: string;
+  manufacturer: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type InputLotRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  input_item_id: string;
+  input_item_name: string;
+  input_category: 'SEED' | 'FERTILIZER' | 'CHEMICAL';
+  lot_reference: string;
+  supplier_reference: string | null;
+  manufactured_on: string | null;
+  expires_on: string | null;
+  unit: string;
+  evidence_reference: string | null;
+  expiry_status: 'VALID' | 'EXPIRED' | 'NO_EXPIRY';
+  created_by: string;
+  created_at: string;
+};
+
+export type InputApplicationRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  crop_cycle_id: string;
+  field_id: string;
+  assignment_id: string;
+  field_activity_id: string;
+  input_item_id: string;
+  input_lot_id: string;
+  input_category: 'SEED' | 'FERTILIZER' | 'CHEMICAL';
+  activity_type: 'PLANT' | 'FERTILIZE' | 'SPRAY';
+  application_date: string;
+  quantity: string;
+  unit: string;
+  applied_area_quantity: string;
+  applied_area_unit: 'M2' | 'HECTARE' | 'FEDDAN';
+  /** Derived for display only (quantity / applied area); never stored twice. */
+  application_rate: string;
+  input_item_name: string;
+  lot_reference: string;
+  expires_on: string | null;
+  lot_expiry_status: 'VALID' | 'EXPIRED' | 'NO_EXPIRY';
+  field_identifier: string;
+  crop: string;
+  season_reference: string;
+  notes: string | null;
+  safety_note: string | null;
+  evidence_reference: string | null;
+  recorded_by: string;
+  created_at: string;
+};
+
 export type CropCycleTimelineEntry = {
   id: string;
   organization_id: string;
@@ -143,6 +208,30 @@ export const getFieldActivities = (projectId: string) =>
     'id,organization_id,project_id,crop_cycle_id,field_id,assignment_id,activity_date,activity_type,quantity,unit,notes,evidence_reference,recorded_by,created_at',
     projectId,
     'activity_date',
+  );
+
+export const getInputItems = (projectId: string) =>
+  many<InputItemRead>(
+    'input_items_read',
+    'id,organization_id,project_id,category,name,internal_reference,application_unit,manufacturer,notes,created_by,created_at',
+    projectId,
+    'created_at',
+  );
+
+export const getInputLots = (projectId: string) =>
+  many<InputLotRead>(
+    'input_lots_read',
+    'id,organization_id,project_id,input_item_id,input_item_name,input_category,lot_reference,supplier_reference,manufactured_on,expires_on,unit,evidence_reference,expiry_status,created_by,created_at',
+    projectId,
+    'created_at',
+  );
+
+export const getInputApplications = (projectId: string) =>
+  many<InputApplicationRead>(
+    'input_applications_read',
+    'id,organization_id,project_id,crop_cycle_id,field_id,assignment_id,field_activity_id,input_item_id,input_lot_id,input_category,activity_type,application_date,quantity,unit,applied_area_quantity,applied_area_unit,application_rate,input_item_name,lot_reference,expires_on,lot_expiry_status,field_identifier,crop,season_reference,notes,safety_note,evidence_reference,recorded_by,created_at',
+    projectId,
+    'application_date',
   );
 
 export const getCropCycleTimeline = (projectId: string) =>

@@ -241,14 +241,23 @@ Coding is authorized. Resolve only the decisions required by the active slice. D
 
 ## 13. Immediate next execution batch
 
-Execute `GF-014 — Field Activity Foundation` as one working vertical slice
-after the merged GF-013 Farm → Field → CropCycle foundation:
+Execute `GF-015 — Field Input Application Foundation` as one working
+vertical slice after the merged GF-013 Farm → Field → CropCycle
+foundation and the merged GF-014 Field Activity foundation:
 
-1. Record append-only field activities against an existing CropCycle-to-Field assignment.
-2. Keep the controlled vocabulary, paired quantity/unit, RLS, idempotent command, and existing audit trail.
-3. Do not advance CropCycle state and do not create harvest, inventory, inputs, or accounting facts.
+1. Define an Agriculture `InputItem` (`SEED | FERTILIZER | CHEMICAL`) and a traceable `InputLot`, both scoped to one Agriculture project.
+2. Record an append-only `InputApplication` proving a specific lot was applied through an existing `FieldActivity`, deriving project, crop cycle, field and assignment from that activity.
+3. Enforce the activity/category mapping (`SEED → PLANT`, `FERTILIZER → FERTILIZE`, `CHEMICAL → SPRAY`), the assignment area cap in the assignment's own unit, the input item application unit, and the lot expiry rule server-side.
+4. Keep RLS, idempotent commands, and the existing audit trail; do not advance CropCycle state and do not create inventory, harvest, or accounting facts.
+5. Do not model stock-on-hand. Available-stock validation begins only when the canonical `InventoryMovement` slice exists; this is a recorded boundary, not missing implementation.
 
-Previous batch (complete on `main`): `GF-013 — Agriculture Sector Foundation`:
+Previous batch (complete and merged on `main`): `GF-014 — Field Activity Foundation`:
+
+1. Append-only field activities against an existing CropCycle-to-Field assignment.
+2. Controlled vocabulary, paired quantity/unit, RLS, idempotent command, and the existing audit trail.
+3. No CropCycle state change and no harvest, inventory, input, or accounting facts.
+
+Earlier batch (complete and merged on `main`): `GF-013 — Agriculture Sector Foundation`:
 
 1. Extend project creation/identity to support the existing `AGRICULTURE` primary-sector value without weakening Real Estate behavior.
 2. Implement only the Agriculture root required for the first workflow: `Farm → Field → CropCycle`.
@@ -257,4 +266,4 @@ Previous batch (complete on `main`): `GF-013 — Agriculture Sector Foundation`:
 5. Reuse the canonical organization, project, authorization, audit, evidence, money, and workspace implementations; do not build Agriculture finance or a generic sector framework.
 6. Verify clean migration replay, upgrade compatibility, two-tenant isolation, lifecycle/invariant tests, application tests, typecheck, lint, and build.
 
-Inputs, activities, harvest lots, inventory movements, sale, profitability, offline drafts, and Livestock remain later bounded slices. The permanent Real Estate showcase remains intact and synthetic; it never counts as customer evidence for Agriculture or Livestock.
+Harvest events, harvest lots, storage locations, inventory movements, sale/dispatch, cycle profitability, offline drafts, and Livestock remain later bounded slices. `GF-016 — Harvest Event & Harvest Lot Foundation` is the expected next batch after GF-015 is reviewed; it must not be started inside GF-015. The permanent Real Estate showcase remains intact and synthetic; it never counts as customer evidence for Agriculture or Livestock.
