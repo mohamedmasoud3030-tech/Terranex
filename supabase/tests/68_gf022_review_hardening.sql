@@ -359,6 +359,10 @@ select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
     '10000000-0000-4000-8000-000000000001', %L, %L, 'PLANNED', 'ACTIVE',
     'تفعيل دفعة الاستنفاد المستقلة', null, 'gf68-exhausted-active'
   )$q$, :'gf68_project', :'gf68_exhausted')) gf68_exhausted_active \gset
+select :'gf68_asof' as gf68_asof_id, :'gf68_exhausted' as gf68_exhausted_id;
+select c.cohort_reference, c.opening_headcount,
+       (select coalesce(sum(q.quantity),0) from livestock_quantity_events q where q.cohort_id=c.id) as event_magnitudes
+from livestock_cohorts c where c.id in (:'gf68_asof', :'gf68_exhausted');
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_mortality(
     '10000000-0000-4000-8000-000000000001', %L, %L, 5,
