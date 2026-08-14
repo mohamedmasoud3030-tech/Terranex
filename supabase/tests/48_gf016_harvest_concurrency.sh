@@ -60,9 +60,9 @@ if [[ -z "$CYCLE" ]]; then
     select public.create_crop_cycle('$ORG','$PROJECT','ذرة','هجين','موسم 2027-CONC',date '2027-05-01',date '2027-09-01',null,null,'s16-conc-cycle');"
   CYCLE="$(psql_value "select id from public.crop_cycles where organization_id='$ORG' and season_reference='موسم 2027-CONC' limit 1")"
   psql_sql "set request.jwt.claim.sub='$USER'; set role authenticated;
-    select public.transition_crop_cycle('$ORG','$CYCLE','PLANNED','ESTABLISHED','تجهيز سباق','e1','s16-conc-e1');
-    select public.transition_crop_cycle('$ORG','$CYCLE','ESTABLISHED','GROWING','نمو سباق','e2','s16-conc-e2');
-    select public.transition_crop_cycle('$ORG','$CYCLE','GROWING','HARVESTING','حصاد سباق','e3','s16-conc-e3');"
+    select public.transition_crop_cycle('$ORG','$CYCLE','PLANNED','ESTABLISHED','تجهيز سباق','ev1','s16-conc-e1');
+    select public.transition_crop_cycle('$ORG','$CYCLE','ESTABLISHED','GROWING','نمو سباق','ev2','s16-conc-e2');
+    select public.transition_crop_cycle('$ORG','$CYCLE','GROWING','HARVESTING','حصاد سباق','ev3','s16-conc-e3');"
 fi
 if [[ -z "$CYCLE" ]]; then
   echo 'ERROR: could not provision the GF-016 concurrency cycle.' >&2

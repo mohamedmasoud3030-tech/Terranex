@@ -218,9 +218,9 @@ NEW_CYCLE=$(psql_cmd "$UPGRADE_DB" "select id from public.crop_cycles where seas
 psql_cmd "$UPGRADE_DB" "
   select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000099',false);
   set role authenticated;
-  select public.transition_crop_cycle('10000000-0000-4000-8000-000000000099','$NEW_CYCLE','PLANNED','ESTABLISHED','تجهيز','u1','gf016-upgrade-e1');
-  select public.transition_crop_cycle('10000000-0000-4000-8000-000000000099','$NEW_CYCLE','ESTABLISHED','GROWING','نمو','u2','gf016-upgrade-e2');
-  select public.transition_crop_cycle('10000000-0000-4000-8000-000000000099','$NEW_CYCLE','GROWING','HARVESTING','حصاد','u3','gf016-upgrade-e3');
+  select public.transition_crop_cycle('10000000-0000-4000-8000-000000000099','$NEW_CYCLE','PLANNED','ESTABLISHED','تجهيز','ev1','gf016-upgrade-e1');
+  select public.transition_crop_cycle('10000000-0000-4000-8000-000000000099','$NEW_CYCLE','ESTABLISHED','GROWING','نمو','ev2','gf016-upgrade-e2');
+  select public.transition_crop_cycle('10000000-0000-4000-8000-000000000099','$NEW_CYCLE','GROWING','HARVESTING','حصاد','ev3','gf016-upgrade-e3');
   select public.assign_crop_cycle_to_field('10000000-0000-4000-8000-000000000099','50000000-0000-4000-8000-000000000002','$NEW_CYCLE','50000000-0000-4000-8000-000000000012','4','FEDDAN',date '2028-11-01',date '2029-05-01','gf016-upgrade-assign-new');
   select public.create_storage_location('10000000-0000-4000-8000-000000000099','50000000-0000-4000-8000-000000000002','مخزن الترقية','UPG16-STORE',null,'gf016-upgrade-storage');
 " >/dev/null
