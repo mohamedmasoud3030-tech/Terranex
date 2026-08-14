@@ -200,12 +200,48 @@ $q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
      :'gf68_project', :'gf68_asof')) as privileged_cross_species_lineage_error;
 
 -- ---------------------------------------------------------------------------
+-- Dedicated no-future-event Cohorts keep shape tests focused on operation
+-- semantics rather than the temporal backstop for scheduled events.
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.create_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, %L,
+    'دفعة اختبار شكل أ', 'PURCHASED', current_date, 20, 'MIXED', null,
+    null, null, null, null, null, 'gf68-shape-a'
+  )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_shape_a \gset
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.transition_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, 'PLANNED', 'ACTIVE',
+    'تفعيل شكل أ', null, 'gf68-shape-a-active'
+  )$q$, :'gf68_project', :'gf68_shape_a')) gf68_shape_a_active \gset
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.create_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, %L,
+    'دفعة اختبار شكل ب', 'PURCHASED', current_date, 20, 'MIXED', null,
+    null, null, null, null, null, 'gf68-shape-b'
+  )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_shape_b \gset
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.transition_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, 'PLANNED', 'ACTIVE',
+    'تفعيل شكل ب', null, 'gf68-shape-b-active'
+  )$q$, :'gf68_project', :'gf68_shape_b')) gf68_shape_b_active \gset
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.create_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, %L,
+    'دفعة اختبار شكل وجهة', 'PURCHASED', current_date, 20, 'MIXED', null,
+    null, null, null, null, null, 'gf68-shape-dest'
+  )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_shape_dest \gset
+select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
+  select public.transition_livestock_cohort(
+    '10000000-0000-4000-8000-000000000001', %L, %L, 'PLANNED', 'ACTIVE',
+    'تفعيل شكل الوجهة', null, 'gf68-shape-dest-active'
+  )$q$, :'gf68_project', :'gf68_shape_dest')) gf68_shape_dest_active \gset
+
 -- Exact SPLIT/MERGE semantic shape under privileged writes.
 -- ---------------------------------------------------------------------------
 select 'GF68_PRE_SHAPE_DIAGNOSTIC' as diagnostic, c.id, c.cohort_reference,
        c.opening_headcount
 from livestock_cohorts c
-where c.id in (:'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort');
+where c.id in (:'gf68_shape_a', :'gf68_shape_b', :'gf68_shape_dest');
 -- Extra balanced SPLIT legs are rejected, even though sum(out) = sum(in).
 select gf20_owner_catch(format($q$
   DO $do$
@@ -233,8 +269,8 @@ select gf20_owner_catch(format($q$
        '00000000-0000-4000-8000-000000000001', 'gf68-extra-in', repeat('2',64));
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_asof',
-     :'gf68_project', :'gf68_backdated')) as privileged_extra_split_error;
+$q$, :'gf68_project', :'gf68_project', :'gf68_shape_a', :'gf68_project', :'gf68_shape_a',
+     :'gf68_project', :'gf68_shape_b')) as privileged_extra_split_error;
 
 
 -- Missing lineage is rejected even when the two split legs balance exactly.
@@ -261,7 +297,7 @@ select 1/case when gf20_owner_catch(format($q$
        '00000000-0000-4000-8000-000000000001', 'gf68-no-lineage-in', repeat('5',64));
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_backdated')) like '%exactly one lineage%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_shape_a', :'gf68_project', :'gf68_shape_b')) like '%exactly one lineage%'
 then 1 else 0 end as privileged_missing_split_lineage_rejected;
 
 -- MERGE_IN must equal the source total; balanced leg counts alone are not enough.
@@ -291,8 +327,8 @@ select 1/case when gf20_owner_catch(format($q$
        '00000000-0000-4000-8000-000000000001', 'gf68-bad-merge-in', repeat('9',64));
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_backdated',
-     :'gf68_project', :'gf68_weight_cohort')) like '%MERGE_IN quantity must equal%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_shape_a', :'gf68_project', :'gf68_shape_b',
+     :'gf68_project', :'gf68_shape_dest')) like '%MERGE_IN quantity must equal%'
 then 1 else 0 end as privileged_merge_total_mismatch_rejected;
 
 -- A lineage quantity/source mismatch is rejected independently of conservation.
@@ -329,9 +365,9 @@ select 1/case when gf20_owner_catch(format($q$
        '68000000-0000-0000-8000-000000000005', %L, %L, 1);
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
-$q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_backdated',
-     :'gf68_project', :'gf68_weight_cohort', :'gf68_project', :'gf68_asof', :'gf68_weight_cohort',
-     :'gf68_project', :'gf68_backdated', :'gf68_weight_cohort')) like '%MERGE lineage does not match%'
+$q$, :'gf68_project', :'gf68_project', :'gf68_shape_a', :'gf68_project', :'gf68_shape_b',
+     :'gf68_project', :'gf68_shape_dest', :'gf68_project', :'gf68_shape_a', :'gf68_shape_dest',
+     :'gf68_project', :'gf68_shape_b', :'gf68_shape_dest')) like '%MERGE lineage does not match%'
 then 1 else 0 end as privileged_merge_lineage_mismatch_rejected;
 
 -- ---------------------------------------------------------------------------
