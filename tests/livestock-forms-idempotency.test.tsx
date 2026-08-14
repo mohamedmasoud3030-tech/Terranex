@@ -27,7 +27,11 @@ vi.mock('@/features/livestock/actions', () => ({
 const context = {
   organizationId: '00000000-0000-4000-8000-000000000001',
   projectId: '00000000-0000-4000-8000-000000000002',
+  commandNonce: '11111111-2222-4333-8444-555555555555',
 };
+
+/** The deterministic key the SiteForm must derive from the server nonce. */
+const keyAt = (successCount: number) => `ls-site-${context.commandNonce}-${successCount}`;
 
 function formElement(container: HTMLElement): HTMLFormElement {
   const form = container.querySelector('form');
@@ -78,7 +82,7 @@ describe('GF-020 idempotency-key lifecycle (SiteForm integration)', () => {
 
     const { container } = render(<SiteForm {...context} />);
     const firstKey = currentKey(container);
-    expect(firstKey).not.toBe('');
+    expect(firstKey).toBe(keyAt(0));
 
     fillSite(container, 'مزرعة التسمين', 'SITE-A');
     await submitAndSettle(container);
@@ -112,7 +116,7 @@ describe('GF-020 idempotency-key lifecycle (SiteForm integration)', () => {
     expect(submitted[0]).toBe(firstKey);
 
     const nextKey = currentKey(container);
-    expect(nextKey).not.toBe('');
+    expect(nextKey).toBe(keyAt(1));
     expect(nextKey).not.toBe(firstKey);
   });
 
@@ -142,7 +146,7 @@ describe('GF-020 idempotency-key lifecycle (SiteForm integration)', () => {
     expect(submitted[1]).not.toBe(firstKey);
 
     const thirdKey = currentKey(container);
-    expect(thirdKey).not.toBe(secondKey);
+    expect(thirdKey).toBe(keyAt(2));
   });
 
   it('CASE D: a pending submit does not rotate the key before confirmed success', async () => {
@@ -170,7 +174,7 @@ describe('GF-020 idempotency-key lifecycle (SiteForm integration)', () => {
     await act(async () => {
       resolveAction(commandSuccessState({}));
     });
-    await waitFor(() => expect(currentKey(container)).not.toBe(firstKey));
+    await waitFor(() => expect(currentKey(container)).toBe(keyAt(1)));
   });
 
   it('CASE E: repeated failures of the same command keep the same key', async () => {
@@ -182,6 +186,7 @@ describe('GF-020 idempotency-key lifecycle (SiteForm integration)', () => {
 
     const { container } = render(<SiteForm {...context} />);
     const firstKey = currentKey(container);
+    expect(firstKey).toBe(keyAt(0));
 
     fillSite(container, 'مزرعة التسمين', 'SITE-A');
     await submitAndSettle(container);

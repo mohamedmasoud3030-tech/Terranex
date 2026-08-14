@@ -17,9 +17,14 @@ import type { ActionState } from '@/features/auth/actions';
  * action state rather than through the absence of an error, which would be
  * ambiguous with the initial state. A failure carries the previous count
  * forward (same key); a confirmed success increments it (fresh key).
+ *
+ * The per-mount nonce is generated in the owning Server Component and passed
+ * into the Client Component as a serializable prop. It is never produced
+ * during a client render, so the server-rendered HTML and the hydrated client
+ * derive the exact same key for the first submit.
  */
 
-/** Generates a stable per-mount nonce so keys never collide across remounts. */
+/** Generates a per-mount nonce. Call this only from a Server Component. */
 export function newCommandNonce(): string {
   return crypto.randomUUID();
 }

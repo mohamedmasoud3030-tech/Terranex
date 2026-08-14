@@ -20,6 +20,7 @@ import {
 } from '@/features/livestock/queries';
 import { getProject } from '@/features/projects/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
+import { newCommandNonce } from '@/features/livestock/idempotency';
 import { ActivateForm, CohortForm, HerdForm, ProfileForm, SiteForm } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -94,11 +95,13 @@ function CohortCard({
   timeline,
   organizationId,
   projectId,
+  commandNonce,
 }: Readonly<{
   cohort: CohortRead;
   timeline: readonly CohortTimelineRead[];
   organizationId: string;
   projectId: string;
+  commandNonce: string;
 }>) {
   return (
     <article className="card stack">
@@ -125,6 +128,7 @@ function CohortCard({
         <ActivateForm
           organizationId={organizationId}
           projectId={projectId}
+          commandNonce={commandNonce}
           cohort={cohort}
         />
       ) : null}
@@ -156,6 +160,7 @@ function Cohorts({
           timeline={timeline}
           organizationId={organizationId}
           projectId={projectId}
+          commandNonce={newCommandNonce()}
         />
       ))}
     </div>
@@ -204,21 +209,21 @@ export default async function LivestockPage({
       </header>
       <section className="card stack">
         <h2>تهيئة القطاع</h2>
-        <ProfileForm {...context} />
+        <ProfileForm {...context} commandNonce={newCommandNonce()} />
       </section>
       <section className="card stack">
         <h2>مواقع التشغيل</h2>
-        <SiteForm {...context} />
+        <SiteForm {...context} commandNonce={newCommandNonce()} />
         <Sites sites={sites} />
       </section>
       <section className="card stack">
         <h2>القطعان (المجموعات الإدارية)</h2>
-        <HerdForm {...context} />
+        <HerdForm {...context} commandNonce={newCommandNonce()} />
         <Herds herds={herds} />
       </section>
       <section className="card stack">
         <h2>الدفعات الحيوانية القابلة للعد</h2>
-        <CohortForm {...context} herds={herds} sites={sites} />
+        <CohortForm {...context} herds={herds} sites={sites} commandNonce={newCommandNonce()} />
         <Cohorts {...context} cohorts={cohorts} timeline={timeline} />
       </section>
       <aside className="banner">

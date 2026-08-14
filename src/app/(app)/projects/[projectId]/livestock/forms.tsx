@@ -31,13 +31,15 @@ const initialState: ActionState = {};
 type CommandContext = Readonly<{
   organizationId: string;
   projectId: string;
+  /** Per-mount nonce generated in the Server Component (hydration-safe). */
+  commandNonce: string;
 }>;
 
 function CommandFields({
   organizationId,
   projectId,
   idempotencyKey,
-}: CommandContext & Readonly<{ idempotencyKey: string }>) {
+}: Readonly<{ organizationId: string; projectId: string; idempotencyKey: string }>) {
   return (
     <>
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -60,12 +62,12 @@ function SubmitResult({
   );
 }
 
-export function ProfileForm(props: CommandContext) {
+export function ProfileForm({ commandNonce, ...context }: CommandContext) {
   const [state, action, pending] = useActionState(createLivestockProfile, initialState);
-  const idempotencyKey = useCommandIdempotencyKey('ls-profile', state);
+  const idempotencyKey = useCommandIdempotencyKey('ls-profile', state, commandNonce);
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...props} idempotencyKey={idempotencyKey} />
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
       <label className="full">
         <span>ملاحظات تشغيلية <span className="muted">(اختياري)</span></span>
         <textarea name="notes" maxLength={2000} />
@@ -77,12 +79,12 @@ export function ProfileForm(props: CommandContext) {
   );
 }
 
-export function SiteForm(props: CommandContext) {
+export function SiteForm({ commandNonce, ...context }: CommandContext) {
   const [state, action, pending] = useActionState(createLivestockSite, initialState);
-  const idempotencyKey = useCommandIdempotencyKey('ls-site', state);
+  const idempotencyKey = useCommandIdempotencyKey('ls-site', state, commandNonce);
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...props} idempotencyKey={idempotencyKey} />
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
       <label>
         <span>اسم موقع التشغيل</span>
         <input name="name" required minLength={2} maxLength={160} />
@@ -115,12 +117,12 @@ export function SiteForm(props: CommandContext) {
   );
 }
 
-export function HerdForm(props: CommandContext) {
+export function HerdForm({ commandNonce, ...context }: CommandContext) {
   const [state, action, pending] = useActionState(createLivestockHerd, initialState);
-  const idempotencyKey = useCommandIdempotencyKey('ls-herd', state);
+  const idempotencyKey = useCommandIdempotencyKey('ls-herd', state, commandNonce);
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...props} idempotencyKey={idempotencyKey} />
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
       <label>
         <span>اسم القطيع</span>
         <input name="name" required minLength={2} maxLength={160} />
@@ -189,11 +191,12 @@ function WeightFields() {
 export function CohortForm({
   herds,
   sites,
+  commandNonce,
   ...context
 }: CommandContext & Readonly<{ herds: readonly HerdRead[]; sites: readonly SiteRead[] }>) {
   const [state, action, pending] = useActionState(createLivestockCohort, initialState);
   const [includeWeight, setIncludeWeight] = useState(false);
-  const idempotencyKey = useCommandIdempotencyKey('ls-cohort', state);
+  const idempotencyKey = useCommandIdempotencyKey('ls-cohort', state, commandNonce);
 
   if (herds.length === 0 || sites.length === 0) {
     return <p className="muted">أضف قطيعًا وموقع تشغيل قبل إنشاء الدفعة.</p>;
@@ -292,13 +295,14 @@ export function CohortForm({
 
 export function ActivateForm({
   cohort,
+  commandNonce,
   ...context
 }: CommandContext & Readonly<{ cohort: CohortRead }>) {
   const [state, action, pending] = useActionState(
     transitionLivestockCohort,
     initialState,
   );
-  const idempotencyKey = useCommandIdempotencyKey('ls-activate', state);
+  const idempotencyKey = useCommandIdempotencyKey('ls-activate', state, commandNonce);
   return (
     <form action={action} className="form-grid compact">
       <CommandFields {...context} idempotencyKey={idempotencyKey} />
