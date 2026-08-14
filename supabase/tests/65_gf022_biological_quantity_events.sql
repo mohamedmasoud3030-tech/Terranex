@@ -340,7 +340,7 @@ select 1/case when (
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.create_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, %L,
-    'دفعة الدمج ب', 'PURCHASED', date '2026-08-15', 40, 'MIXED', null,
+    'دفعة الدمج ب', 'PURCHASED', date '2026-08-01', 40, 'MIXED', null,
     null, null, null, null, null, 'gf22-cohort-merge-b'
   )$q$, :'gf22_project', :'gf22_herd_a', :'gf22_site_a')) gf22_merge_b \gset
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
