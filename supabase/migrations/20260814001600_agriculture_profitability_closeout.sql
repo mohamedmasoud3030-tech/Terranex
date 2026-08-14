@@ -410,11 +410,12 @@ with assignment_summary as (
     case when count(distinct l.quantity_unit)=1 then sum(public.harvest_lot_total_balance(l.id)) end as remaining_inventory
   from public.harvest_lots l group by l.crop_cycle_id
 ), sale_cycle_amounts as (
-  select sl.sale_id,sl.crop_cycle_id,sum(sl.line_amount_minor_units)::bigint as cycle_amount,
+  select sl.sale_id,l.crop_cycle_id,sum(sl.line_amount_minor_units)::bigint as cycle_amount,
     sum(sum(sl.line_amount_minor_units)) over(partition by sl.sale_id)::bigint as sale_amount
   from public.agriculture_sale_lines sl
+  join public.harvest_lots l on l.id=sl.harvest_lot_id
   join public.agriculture_sale_recognitions r on r.sale_id=sl.sale_id
-  group by sl.sale_id,sl.crop_cycle_id
+  group by sl.sale_id,l.crop_cycle_id
 ), collection_totals as (
   select r.sale_id,coalesce(sum(c.amount_minor_units),0)::bigint as collected
   from public.agriculture_sale_recognitions r
@@ -541,21 +542,27 @@ from public.harvest_lots l where (select count(*) from public.harvest_inventory_
   or (select coalesce(sum(m.quantity),0) from public.harvest_inventory_movements m
       where m.harvest_lot_id=l.id and m.movement_type='HARVEST_RECEIPT')<>l.initial_quantity
 union all
-select sl.organization_id,sl.project_id,sl.crop_cycle_id,'BROKEN_SALE_ISSUE','HARD','كمية البيع لا تتطابق مع حركة صرف SALE_ISSUE.'
-from public.agriculture_sale_lines sl join public.agriculture_sale_recognitions r on r.sale_id=sl.sale_id
+select sl.organization_id,sl.project_id,l.crop_cycle_id,'BROKEN_SALE_ISSUE','HARD','كمية البيع لا تتطابق مع حركة صرف SALE_ISSUE.'
+from public.agriculture_sale_lines sl
+join public.harvest_lots l on l.id=sl.harvest_lot_id
+join public.agriculture_sale_recognitions r on r.sale_id=sl.sale_id
 where (select count(*) from public.harvest_inventory_movements m where m.agriculture_sale_line_id=sl.id)<>1
    or not exists(select 1 from public.harvest_inventory_movements m where m.agriculture_sale_line_id=sl.id
       and m.movement_type='SALE_ISSUE' and m.quantity=sl.quantity and m.unit=sl.unit
       and m.from_storage_id=sl.source_storage_id)
 union all
-select r.organization_id,r.project_id,sl.crop_cycle_id,'BROKEN_REVENUE_SOURCE','HARD','الإيراد المعترف به لا يطابق سطور البيع أو القيد المشترك.'
-from public.agriculture_sale_recognitions r join public.agriculture_sale_lines sl on sl.sale_id=r.sale_id
+select r.organization_id,r.project_id,l.crop_cycle_id,'BROKEN_REVENUE_SOURCE','HARD','الإيراد المعترف به لا يطابق سطور البيع أو القيد المشترك.'
+from public.agriculture_sale_recognitions r
+join public.agriculture_sale_lines sl on sl.sale_id=r.sale_id
+join public.harvest_lots l on l.id=sl.harvest_lot_id
 where r.recognized_revenue_minor_units<>(select sum(x.line_amount_minor_units) from public.agriculture_sale_lines x where x.sale_id=r.sale_id)
    or not exists(select 1 from public.journal_batches jb where jb.id=r.journal_batch_id
      and jb.source_type='AGRICULTURE_SALE_RECOGNITION' and jb.source_id=r.id)
 union all
-select r.organization_id,r.project_id,sl.crop_cycle_id,'COLLECTION_CEILING_BROKEN','HARD','التحصيل يتجاوز الذمة المعترف بها.'
-from public.agriculture_sale_recognitions r join public.agriculture_sale_lines sl on sl.sale_id=r.sale_id
+select r.organization_id,r.project_id,l.crop_cycle_id,'COLLECTION_CEILING_BROKEN','HARD','التحصيل يتجاوز الذمة المعترف بها.'
+from public.agriculture_sale_recognitions r
+join public.agriculture_sale_lines sl on sl.sale_id=r.sale_id
+join public.harvest_lots l on l.id=sl.harvest_lot_id
 where (select coalesce(sum(c.amount_minor_units),0) from public.agriculture_sale_collections c where c.recognition_id=r.id)>r.recognized_revenue_minor_units
 union all
 select a.organization_id,a.project_id,a.crop_cycle_id,'COST_ATTRIBUTION_CEILING_BROKEN','HARD','توزيع تكلفة التشغيل يتجاوز مصدره المالي المعتمد.'
@@ -569,15 +576,19 @@ select l.organization_id,l.project_id,l.crop_cycle_id,'OPEN_INVENTORY','WARN','�
 from public.harvest_lots l group by l.organization_id,l.project_id,l.crop_cycle_id
 having sum(public.harvest_lot_total_balance(l.id))>0
 union all
-select s.organization_id,s.project_id,sl.crop_cycle_id,'OPEN_RECEIVABLE','WARN','توجد ذمة بيع متبقية للتحصيل.'
-from public.agriculture_sales_read s join public.agriculture_sale_lines sl on sl.sale_id=s.sale_id
+select s.organization_id,s.project_id,l.crop_cycle_id,'OPEN_RECEIVABLE','WARN','توجد ذمة بيع متبقية للتحصيل.'
+from public.agriculture_sales_read s
+join public.agriculture_sale_lines sl on sl.sale_id=s.sale_id
+join public.harvest_lots l on l.id=sl.harvest_lot_id
 where s.recognition_id is not null and s.outstanding_receivable_minor_units::bigint>0
-group by s.organization_id,s.project_id,sl.crop_cycle_id
+group by s.organization_id,s.project_id,l.crop_cycle_id
 union all
-select s.organization_id,s.project_id,sl.crop_cycle_id,'OPEN_SALE','WARN','توجد مسودة/عملية بيع معتمدة لم تنتقل السيطرة فيها بعد.'
-from public.agriculture_sales s join public.agriculture_sale_lines sl on sl.sale_id=s.id
+select s.organization_id,s.project_id,l.crop_cycle_id,'OPEN_SALE','WARN','توجد مسودة/عملية بيع معتمدة لم تنتقل السيطرة فيها بعد.'
+from public.agriculture_sales s
+join public.agriculture_sale_lines sl on sl.sale_id=s.id
+join public.harvest_lots l on l.id=sl.harvest_lot_id
 where s.status in ('DRAFT','APPROVED')
-group by s.organization_id,s.project_id,sl.crop_cycle_id;
+group by s.organization_id,s.project_id,l.crop_cycle_id;
 
 -- PostgreSQL resolves view dependencies at creation. The result projection
 -- above refers to the issue view, so rebuild it now that the issue view exists.
