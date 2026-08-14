@@ -254,14 +254,14 @@ merged GF-013 through GF-016:
    receivable and collection with oversell/over-collection concurrency guards.
    It does not guess harvest inventory value or COGS.
 3. **GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate
-   (active and final).** Attribute authoritative shared-core posted cost without a
+   (technically implemented).** Attribute authoritative shared-core posted cost without a
    second ledger, disclose cycle result bases and outstanding inventory/
    receivables, close safely, harden the complete Agriculture path, and decide
    the input-stock boundary from evidence.
 
-GF-013 through GF-018 are merged and technically complete. GF-019 is the
-independent active final Agriculture phase. Livestock is the next authorized
-sector only after GF-019 passes. Real Estate stays
+GF-013 through GF-019 are technically implemented. Real Estate and Agriculture
+are technically implemented for their authorized scopes. Livestock is the next
+authorized sector. Real Estate stays
 unchanged unless a proved regression requires the smallest forward repair.
 
 Technical completion never counts as Agriculture customer UAT, a paid pilot,

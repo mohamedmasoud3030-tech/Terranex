@@ -127,7 +127,7 @@ Real Estate status is therefore explicit:
 
 ### GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate
 
-Status: **ACTIVE FINAL AGRICULTURE PHASE**. GF-018 is merged through PR #129 and technically complete. GF-019 dimensions active posted Finance Core `PROJECT_EXPENSE` lines to CropCycle without a second expense ledger, derives the cycle quantity/commercial/operating result, keeps Land Asset investment and unvalued physical inventory separate, and validates the canonical `HARVESTING → CLOSED` transition while allowing inventory and receivables to remain open.
+Status: **TECHNICALLY IMPLEMENTED**. GF-018 is merged through PR #129 and technically complete. GF-019 dimensions active posted Finance Core `PROJECT_EXPENSE` lines to CropCycle without a second expense ledger, derives the cycle quantity/commercial/operating result, keeps Land Asset investment and unvalued physical inventory separate, and validates the canonical `HARVESTING → CLOSED` transition while allowing inventory and receivables to remain open.
 
 Input-stock decision: traceability stays in scope; procurement/receipt/opening-stock and availability remain deferred farm-ERP scope because no authoritative stock source exists. Shared S6 periods/corrections and S5 allocation/distribution remain authoritative; CropCycle close never auto-distributes. Canonical decision: `docs/decisions/0019_GF019_AGRICULTURE_PROFITABILITY_CLOSEOUT_GATE.md`.
 
@@ -352,12 +352,11 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 
 ## Next active batch
 
-`GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate` is the
-active final Agriculture phase; GF-013 through GF-018 are merged and technically
-complete. After GF-019 genuinely passes and merges, Agriculture is technically
-implemented and Livestock becomes the next authorized sector. Do not implement
-or scaffold Livestock inside GF-019, and do not reopen Real Estate without a
-proved regression.
+Real Estate and Agriculture are **TECHNICALLY IMPLEMENTED** for their authorized
+scopes. `GF-013` through `GF-019` form the completed Agriculture chain.
+**Livestock is the next authorized sector.** This status is not permission to
+place Livestock schema or runtime inside GF-019, and Real Estate remains closed
+to unrelated changes.
 
 Real-customer validation remains a separate parallel evidence track. No
 synthetic fixture may impersonate customer, UAT, production or commercial

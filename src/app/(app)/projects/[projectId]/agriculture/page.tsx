@@ -1031,6 +1031,10 @@ export default async function AgriculturePage({
                 : 'راجع الحقول — لا يوجد جمع بين وحدات مختلفة';
               const quantity = (value: string | null) => value && result.quantity_unit
                 ? `${value} ${result.quantity_unit}` : 'غير متاح';
+              const landBasis = result.land_control_bases
+                ?.split('، ')
+                .map((basis) => formatLandControlBasis(basis))
+                .join(' · ');
               return (
                 <article className="card stack" key={result.crop_cycle_id} aria-labelledby={`result-${result.crop_cycle_id}`}>
                   <header className="topline">
@@ -1039,6 +1043,8 @@ export default async function AgriculturePage({
                   </header>
                   <dl className="facts">
                     <div><dt>المساحة المزروعة/المشغلة</dt><dd>{area}</dd></div>
+                    <div><dt>أنشطة الحقل المسجلة</dt><dd>{result.activity_count}</dd></div>
+                    <div><dt>تطبيقات المدخلات المسجلة</dt><dd>{result.input_application_count}</dd></div>
                     <div><dt>إجمالي الحصاد</dt><dd>{quantity(result.gross_harvest_quantity)}</dd></div>
                     <div><dt>صافي الحصاد المقبول</dt><dd>{quantity(result.net_accepted_harvest_quantity)}</dd></div>
                     <div><dt>فاقد الحصاد</dt><dd>{quantity(result.harvest_loss)}</dd></div>
@@ -1059,7 +1065,7 @@ export default async function AgriculturePage({
                   </dl>
                   <div className="card stack">
                     <h4>الأرض كأصل استثماري</h4>
-                    <p>{result.land_asset_names ?? 'لا يوجد أصل أرض مرتبط بالمزرعة'}{result.land_control_bases ? ` · ${result.land_control_bases}` : ''}</p>
+                    <p>{result.land_asset_names ?? 'لا يوجد أصل أرض مرتبط بالمزرعة'}{landBasis ? ` · ${landBasis}` : ''}</p>
                     {BigInt(result.land_consideration_minor_units) > 0n ? <p>مقابل شراء الأرض المنفصل: {formatMinorUnits(result.land_consideration_minor_units, result.currency)}</p> : null}
                     <p className="muted">هذا المركز منفصل دائمًا عن تكلفة تشغيل دورة المحصول؛ لا إهلاك أو استهلاك أو قيمة عادلة تلقائية.</p>
                   </div>

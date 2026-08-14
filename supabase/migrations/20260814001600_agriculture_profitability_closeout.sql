@@ -114,7 +114,7 @@ begin
     select 1 from public.agricultural_land_assets a
     where a.organization_id=new.organization_id and a.project_id=new.project_id
       and a.control_basis='PURCHASED'
-      and a.consideration_obligation_id=v_line.obligation_id
+      and a.consideration_obligation_id=v_batch.source_id
   ) then
     raise exception 'land acquisition consideration is not eligible for crop cycle operating cost';
   end if;
@@ -353,7 +353,7 @@ where jb.source_type='COST_OBLIGATION' and jl.debit_minor_units>0 and jl.credit_
   and not exists(select 1 from public.journal_batches r where r.reversal_of_batch_id=jb.id)
   and not exists(select 1 from public.agricultural_land_assets la
     where la.organization_id=jl.organization_id and la.project_id=jl.project_id
-      and la.control_basis='PURCHASED' and la.consideration_obligation_id=jl.obligation_id);
+      and la.control_basis='PURCHASED' and la.consideration_obligation_id=jb.source_id);
 
 create or replace view public.crop_cycle_cost_attributions_read with (security_invoker=on) as
 select a.id,a.organization_id,a.project_id,a.crop_cycle_id,a.field_id,
