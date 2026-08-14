@@ -47,9 +47,22 @@ ORG='10000000-0000-4000-8000-000000000001'
 USER='00000000-0000-4000-8000-000000000001'
 
 PROJECT="$(psql_value "select id from public.investment_projects where organization_id='$ORG' and internal_reference='GF013-AG-A' limit 1")"
-FIELD="$(psql_value "select id from public.fields where organization_id='$ORG' and identifier='حقل شمال' limit 1")"
-if [[ -z "$PROJECT" || -z "$FIELD" ]]; then
-  echo 'ERROR: GF-016 concurrency fixture prerequisites missing (GF013-AG-A project / field).' >&2
+FARM="$(psql_value "select id from public.farms where organization_id='$ORG' and internal_reference='FARM-A' limit 1")"
+if [[ -z "$PROJECT" || -z "$FARM" ]]; then
+  echo 'ERROR: GF-016 concurrency fixture prerequisites missing (GF013-AG-A project / farm).' >&2
+  exit 1
+fi
+
+# A dedicated field for the race avoids colliding with the area already
+# assigned by earlier suites to the shared field.
+FIELD="$(psql_value "select id from public.fields where organization_id='$ORG' and identifier='حقل سباق' limit 1")"
+if [[ -z "$FIELD" ]]; then
+  psql_sql "set request.jwt.claim.sub='$USER'; set role authenticated;
+    select public.create_field('$ORG','$PROJECT','$FARM','حقل سباق','9','FEDDAN',null,null,'s16-conc-field');"
+  FIELD="$(psql_value "select id from public.fields where organization_id='$ORG' and identifier='حقل سباق' limit 1")"
+fi
+if [[ -z "$FIELD" ]]; then
+  echo 'ERROR: could not provision the GF-016 concurrency field.' >&2
   exit 1
 fi
 
