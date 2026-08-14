@@ -143,11 +143,11 @@ describe('GF-016 movement schemas', () => {
     }).success).toBe(true);
   });
 
-  it('restricts movement types to the canonical five and excludes SALE_ISSUE', () => {
+  it('keeps the GF-016 movement vocabulary and accepts the bounded GF-018 sale issue extension', () => {
     expect(HARVEST_MOVEMENT_TYPES).toEqual([
       'HARVEST_RECEIPT', 'TRANSFER', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'SPOILAGE',
+      'SALE_ISSUE',
     ]);
-    expect(HARVEST_MOVEMENT_TYPES).not.toContain('SALE_ISSUE');
   });
 });
 
@@ -431,15 +431,16 @@ describe('GF-016 application layer', () => {
     expect(actions).toContain('سبب التعديل مطلوب.');
   });
 
-  it('labels movement types in Arabic without inventing sale or valuation terms', () => {
+  it('labels all current physical movement types in Arabic without inventing valuation terms', () => {
     expect(formatHarvestMovementType('HARVEST_RECEIPT')).toBe('استلام حصاد');
     expect(formatHarvestMovementType('TRANSFER')).toBe('تحويل');
     expect(formatHarvestMovementType('ADJUSTMENT_IN')).toBe('تعديل زيادة');
     expect(formatHarvestMovementType('ADJUSTMENT_OUT')).toBe('تعديل نقص');
     expect(formatHarvestMovementType('SPOILAGE')).toBe('تالف/هالك');
+    expect(formatHarvestMovementType('SALE_ISSUE')).toBe('صرف بيع/تسليم');
     expect(formatHarvestQuantity('95', 'كجم')).toBe('95 كجم');
     expect(formatHarvestQuantity(null, 'كجم')).toBe('—');
-    expect(labels).not.toMatch(/بيع|إيراد|هامش|تكلفة|تقييم/);
+    expect(labels).not.toMatch(/قيمة المخزون|تكلفة البضاعة|تقييم/);
   });
 });
 
@@ -470,11 +471,11 @@ describe('GF-016 workspace UI', () => {
     expect(queries).toContain('Derived for display only');
   });
 
-  it('states the sale/accounting and input-stock boundaries honestly', () => {
-    expect(page).toContain('لا بيع');
-    expect(page).toContain('لا قيد محاسبي');
-    expect(page).toContain('لا رصيد مخزون للمدخلات الزراعية');
-    expect(page).not.toMatch(/سعر بيع|فاتورة|مشترٍ|قيمة المخزون|تكلفة البضاعة/);
+  it('keeps harvest quantity, sale dispatch, valuation and input-stock boundaries honest', () => {
+    expect(page).toContain('صرف البيع يخصم الكمية عبر حركة موثقة');
+    expect(page).toContain('لا تُخمن قيمة للمخزون أو تكلفة بضاعة');
+    expect(page).toContain('لا يوجد رصيد مخزون للمدخلات الزراعية');
+    expect(page).not.toMatch(/قيمة المخزون المُقدرة|تكلفة بضاعة مُقدرة/);
   });
 
   it('does not redesign or reference unrelated Real Estate screens', () => {

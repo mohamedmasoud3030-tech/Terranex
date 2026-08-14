@@ -275,11 +275,12 @@ export type InputApplicationInput = z.infer<typeof inputApplicationSchema>;
 // event and its lot share it; movement quantities always use the lot's own
 // unit (derived server-side, never asserted by the browser).
 //
-// No SALE_ISSUE movement, no sale/valuation/accounting field, and no input
-// stock balance is modelled here.
+// GF-018 extends this bounded movement vocabulary with physical SALE_ISSUE.
+// Valuation and input-stock balances remain outside this movement contract.
 // ---------------------------------------------------------------------------
 export const HARVEST_MOVEMENT_TYPES = [
   'HARVEST_RECEIPT', 'TRANSFER', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'SPOILAGE',
+  'SALE_ISSUE',
 ] as const;
 export type HarvestMovementType = typeof HARVEST_MOVEMENT_TYPES[number];
 
@@ -443,3 +444,71 @@ export const farmLandAssetLinkSchema = z.object({
 
 export type AgriculturalLandAssetInput = z.infer<typeof agriculturalLandAssetSchema>;
 export type FarmLandAssetLinkInput = z.infer<typeof farmLandAssetLinkSchema>;
+
+// ---------------------------------------------------------------------------
+// GF-018 — Agriculture Sale, Dispatch & Revenue.
+// ---------------------------------------------------------------------------
+const saleLineInputSchema = z.object({
+  harvestLotId: uuid,
+  sourceStorageId: uuid,
+  quantity: positiveDecimal,
+  unitPrice: z.string().trim().refine(
+    (value) => isValidMajorMoney(value, 'EGP'),
+    'أدخل سعر وحدة موجبًا بدقة العملة',
+  ),
+});
+
+const saleLinesJson = z.string().transform((value, ctx) => {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    ctx.addIssue({ code: 'custom', message: 'سطور البيع غير صالحة' });
+    return z.NEVER;
+  }
+}).pipe(z.array(saleLineInputSchema).min(1, 'أضف سطر بيع واحدًا على الأقل').max(50));
+
+export const agricultureSaleSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  buyerPartyId: uuid,
+  saleReference: z.string().trim().min(1, 'مرجع البيع مطلوب').max(120),
+  agreementReference: optionalText(200),
+  saleDate: dateRequired,
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  terms: optionalText(1000),
+  evidenceReference: optionalText(200),
+  linesJson: saleLinesJson,
+  idempotencyKey,
+});
+
+export const agricultureSaleApprovalSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  saleId: uuid,
+  idempotencyKey,
+});
+
+export const agricultureSaleRecognitionSchema = agricultureSaleApprovalSchema.extend({
+  controlTransferDate: dateRequired,
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل التسليم مطلوب').max(200),
+});
+
+export const agricultureSaleCollectionSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  recognitionId: uuid,
+  cashAccountId: uuid,
+  amount: z.string().trim().refine(
+    (value) => isValidMajorMoney(value, 'EGP'),
+    'أدخل مبلغ تحصيل موجبًا بدقة العملة',
+  ),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  collectionDate: dateRequired,
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل التحصيل مطلوب').max(200),
+  idempotencyKey,
+});
+
+export type AgricultureSaleInput = z.infer<typeof agricultureSaleSchema>;
+export type AgricultureSaleApprovalInput = z.infer<typeof agricultureSaleApprovalSchema>;
+export type AgricultureSaleRecognitionInput = z.infer<typeof agricultureSaleRecognitionSchema>;
+export type AgricultureSaleCollectionInput = z.infer<typeof agricultureSaleCollectionSchema>;

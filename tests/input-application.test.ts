@@ -473,10 +473,10 @@ describe('GF-015 workspace UI', () => {
     expect(forms).not.toContain('name="cropCycleId"\n          required');
   });
 
-  it('states the stock boundary honestly in the operator UI', () => {
-    expect(page).toContain('لا يوجد رصيد مخزون ولا تحقق من توفر الكمية');
+  it('states the input-stock boundary honestly in the evolved operator UI', () => {
+    expect(page).toContain('لا يوجد رصيد مخزون للمدخلات ولا تحقق من توفر كمياتها');
     expect(forms).toContain('النظام لا يتحقق من توفر رصيد مخزون');
-    expect(page).not.toMatch(/الرصيد المتاح|الكمية المتبقية|قيمة المخزون/);
+    expect(page).not.toMatch(/رصيد مخزون المدخلات المتاح|قيمة مخزون المدخلات/);
   });
 
   it('shows the derived rate as derived, not as a stored authoritative value', () => {
@@ -489,17 +489,17 @@ describe('GF-015 workspace UI', () => {
     expect(forms).not.toContain('property_assets');
   });
 
-  it('scaffolds GF-016 harvest/inventory but not sale, livestock or warehouse ERP', () => {
-    // GF-016 legitimately delivers harvest/inventory in this workspace.
+  it('preserves GF-015 inputs while later bounded harvest and sale slices evolve the workspace', () => {
     expect(page).toContain('الحصاد والمخزون');
+    expect(page).toContain('المبيعات والتحصيل');
     expect(forms).toMatch(/HarvestEventForm/);
-    expect(forms).toMatch(/StorageLocationForm/);
-    expect(actions).toMatch(/createStorageLocation/);
+    expect(forms).toMatch(/AgricultureSaleForm/);
     expect(actions).toMatch(/recordHarvestEvent/);
-    // Sale, livestock and warehouse ERP remain deferred.
-    expect(page).not.toMatch(/ماشية|IAS 41|أمر شراء|مستودع|فاتورة|مشترٍ|سعر بيع/);
-    expect(forms).not.toMatch(/livestock|warehouse|purchaseOrder|saleOrder|invoice|buyer/i);
-    expect(actions).not.toMatch(/recordSale|createInvoice|createBuyer|createPurchaseOrder|sale_issue/i);
+    expect(actions).toMatch(/createAgricultureSale/);
+    // Livestock, purchasing and warehouse ERP remain outside Agriculture scope.
+    expect(page).not.toMatch(/ماشية|IAS 41|أمر شراء|إدارة مستودعات/);
+    expect(forms).not.toMatch(/livestock|warehouse|purchaseOrder|createInvoice/i);
+    expect(actions).not.toMatch(/createInvoice|createBuyer|createPurchaseOrder/i);
   });
 });
 

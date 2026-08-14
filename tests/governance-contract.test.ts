@@ -30,8 +30,8 @@ describe('GF-012 canonical governance contract', () => {
   it('sets the remaining Agriculture phases in their authorized order', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
-    expect(roadmap).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control \(active\)/);
-    expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(next\)/);
+    expect(roadmap).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control \(merged\)/);
+    expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(active\)/);
     expect(roadmap).toMatch(/GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate/);
     expect(execution).toMatch(/GF-013 — Agriculture Sector Foundation/);
     expect(execution).toMatch(/Livestock only after GF-019 passes/);
@@ -42,22 +42,23 @@ describe('GF-012 canonical governance contract', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
 
-    // GF-013 through GF-016 are merged; GF-017 is the active slice.
-    expect(policy).toMatch(/GF-013 through GF-016 are merged and technically complete/);
-    expect(policy).toMatch(/GF-017 Agricultural Land Asset is the active bounded Agriculture slice/);
+    // GF-013 through GF-017 are merged; GF-018 is the active slice.
+    expect(policy).toMatch(/GF-013 through GF-017 are merged and technically complete/);
+    expect(policy).toMatch(/GF-018 Agriculture Sale, Dispatch & Revenue is the active bounded Agriculture slice/);
     expect(policy).not.toMatch(/Agriculture is next\b/);
     expect(execution).toMatch(/GF-014 — Field Activity Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
     expect(execution).toMatch(/GF-015 — Field Input Application Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
     expect(execution).toMatch(/GF-016 — Harvest & Inventory Flow Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
-    expect(execution).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control\n\nStatus: \*\*ACTIVE BOUNDED SLICE\*\*/);
-    expect(roadmap).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control \(active\)/);
+    expect(execution).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
+    expect(execution).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue\n\nStatus: \*\*ACTIVE BOUNDED SLICE\*\*/);
+    expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(active\)/);
   });
 
-  it('keeps the deferred Agriculture scope honest after GF-016', () => {
+  it('keeps the deferred Agriculture scope honest during GF-018', () => {
     const execution = read('GREENFIELD_EXECUTION.md');
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
-    // Harvest and inventory are delivered, while input stock remains explicitly deferred.
-    expect(execution).toMatch(/deferred after GF-016/);
+    // Harvest/sale flow is delivered or active, while input stock remains explicitly deferred.
+    expect(execution).toMatch(/deferred beyond GF-018/);
     expect(execution).not.toMatch(/deferred after GF-015: `HarvestEvent`/);
     expect(execution).not.toMatch(/deferred after GF-014: `InputItem`/);
     expect(execution).toMatch(/input-stock receiving\/balance/);
@@ -65,7 +66,7 @@ describe('GF-012 canonical governance contract', () => {
     expect(execution).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control/);
     expect(execution).toMatch(/GF-018 Agriculture Sale, Dispatch & Revenue/);
     expect(execution).toMatch(/GF-019 Agriculture Profitability, Cycle Closeout & Technical Gate/);
-    expect(roadmap).toMatch(/must remain independently reviewed\/merged phases/);
+    expect(roadmap).toMatch(/three independently reviewed major phases/);
   });
 
   it('keeps implementation, deployment, and customer evidence separate', () => {

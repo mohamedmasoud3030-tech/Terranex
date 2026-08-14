@@ -36,7 +36,8 @@ export type WorkspaceSection =
   | 'land-assets'
   | 'field-activities'
   | 'field-inputs'
-  | 'harvest-inventory';
+  | 'harvest-inventory'
+  | 'agriculture-sales';
 
 type SectionDef = {
   id: WorkspaceSection;
@@ -63,6 +64,7 @@ const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'field-activities', label: 'أنشطة الحقل', description: 'تسجيل ما حدث في الحقل على تخصيص دورة قائم', href: (p) => `/projects/${p}/agriculture#activities` },
   { id: 'field-inputs', label: 'المدخلات والتطبيقات', description: 'المدخلات وتشغيلاتها وتطبيقها الفعلي على نشاط حقل قائم', href: (p) => `/projects/${p}/agriculture#inputs` },
   { id: 'harvest-inventory', label: 'الحصاد والمخزون', description: 'أحداث الحصاد، تشغيلات المحصول، مواقع التخزين، وحركات المخزون', href: (p) => `/projects/${p}/agriculture#harvest` },
+  { id: 'agriculture-sales', label: 'المبيعات والتحصيل', description: 'المشتري، صرف البيع، الإيراد، الذمم والتحصيلات', href: (p) => `/projects/${p}/agriculture#sales` },
 ];
 
 export const REAL_ESTATE_SECTION_IDS = REAL_ESTATE_SECTIONS.map((s) => s.id);

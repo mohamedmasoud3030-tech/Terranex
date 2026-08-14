@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership } from '@/features/finance/queries';
+import { getCashAccountPositions, getCurrentMembership } from '@/features/finance/queries';
 import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import {
   getAgriculturalLandAssets,
+  getAgricultureSaleCollections,
+  getAgricultureSaleLines,
+  getAgricultureSales,
   getCropAssignments,
   getCropCycles,
   getCropCycleTimeline,
@@ -18,6 +21,7 @@ import {
   getHarvestInventoryByLocation,
   getHarvestInventoryMovements,
   getHarvestLots,
+  getHarvestLotSaleTraceability,
   getInputApplications,
   getInputItems,
   getInputLots,
@@ -26,6 +30,7 @@ import {
 import {
   AREA_UNIT_LABEL,
   CYCLE_STATE_LABEL,
+  formatAgricultureSaleState,
   formatAreaUnit,
   formatDate,
   formatFieldActivityType,
@@ -39,6 +44,9 @@ import {
 } from '@/features/agriculture/labels';
 import {
   AgriculturalLandAssetForm,
+  AgricultureSaleCollectionForm,
+  AgricultureSaleForm,
+  ApproveAgricultureSaleForm,
   AssignmentForm,
   CropCycleForm,
   CycleTransitionForm,
@@ -52,6 +60,7 @@ import {
   InputItemForm,
   InputLotForm,
   ProfileForm,
+  RecognizeAgricultureSaleForm,
   StorageLocationForm,
   TransferHarvestInventoryForm,
 } from './forms';
@@ -83,15 +92,17 @@ export default async function AgriculturePage({
   const currency = project.reporting_currency;
 
   const [
-    membership, landAssets, farmLandLinks, parties,
+    membership, landAssets, farmLandLinks, parties, cashAccounts,
     farms, fields, cycles, assignments, timeline, activities,
     inputItems, inputLots, inputApplications,
     storages, harvestEvents, harvestLots, inventoryByLocation, inventoryMovements,
+    sales, saleLines, saleCollections, lotSaleTraceability,
   ] = await Promise.all([
     getCurrentMembership(organizationId),
     getAgriculturalLandAssets(projectId),
     getFarmLandAssetLinks(projectId),
     getParties(organizationId),
+    getCashAccountPositions(projectId),
     getFarms(projectId),
     getFields(projectId),
     getCropCycles(projectId),
@@ -106,6 +117,10 @@ export default async function AgriculturePage({
     getHarvestLots(projectId),
     getHarvestInventoryByLocation(projectId),
     getHarvestInventoryMovements(projectId),
+    getAgricultureSales(projectId),
+    getAgricultureSaleLines(projectId),
+    getAgricultureSaleCollections(projectId),
+    getHarvestLotSaleTraceability(projectId),
   ]);
 
   if (!membership) {
@@ -115,6 +130,7 @@ export default async function AgriculturePage({
   const farmById = new Map(farms.map((f) => [f.id, f]));
   const fieldById = new Map(fields.map((f) => [f.id, f]));
   const cycleById = new Map(cycles.map((c) => [c.id, c]));
+  const canPostSales = membership.role === 'OWNER';
 
   // No fabricated finance. We surface only the shared-core information
   // (project name, currency) plus truthful Farm / Field / CropCycle
@@ -488,7 +504,7 @@ export default async function AgriculturePage({
         </p>
         <p className="muted">
           هذه الشريحة تُثبت الهوية والتتبّع والكمية والمساحة والصلاحية واتساق المشروع والتخصيص.
-          لا يوجد رصيد مخزون ولا تحقق من توفر الكمية: يبدأ ذلك مع شريحة حركات المخزون القادمة.
+          لا يوجد رصيد مخزون للمدخلات ولا تحقق من توفر كمياتها؛ رصيد المخزون أدناه يخص محصول الحصاد فقط.
           التسجيل هنا لا ينشئ التزامًا أو دفعة أو قيدًا محاسبيًا ولا يغيّر حالة دورة المحصول.
         </p>
 
@@ -696,8 +712,8 @@ export default async function AgriculturePage({
           الرصيد الحالي لكل تشغيلة/موقع يُشتق من حركات المخزون ولا يُخزَّن أو يُدخَل يدويًا.
         </p>
         <p className="muted">
-          هذه الشريحة تتعقب كمية محصول الحصاد التشغيلية فقط. لا بيع، لا تقييم، لا قيد محاسبي،
-          ولا رصيد مخزون للمدخلات الزراعية هنا. البيع والربحية مؤجلان للشريحة النهائية.
+          هذه الشريحة تتعقب كمية محصول الحصاد التشغيلية. صرف البيع يخصم الكمية عبر حركة موثقة أدناه،
+          لكن لا تُخمن قيمة للمخزون أو تكلفة بضاعة، ولا يوجد رصيد مخزون للمدخلات الزراعية هنا.
         </p>
 
         <div className="overview-kpis">
@@ -933,6 +949,52 @@ export default async function AgriculturePage({
           lots={harvestLots}
           inventory={inventoryByLocation}
         />
+      </section>
+
+      <section className="card stack scroll-target" id="sales">
+        <div className="section-heading">
+          <div><h2>المبيعات والتحصيل</h2><p className="muted">البيع والتسليم والإيراد والتحصيل وقائع مستقلة. النقد المحصل ليس هو الإيراد.</p></div>
+          <span className="status">{sales.length} عملية بيع</span>
+        </div>
+        {sales.length === 0 ? (
+          <div className="card empty stack"><h3>لا توجد مبيعات بعد</h3><p className="muted">اختر مشتريًا ورصيد تشغيلة حصاد متاحًا لإنشاء مسودة.</p><AgricultureSaleForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} inventory={inventoryByLocation} /></div>
+        ) : (
+          <>
+            <div className="stack">
+              {sales.map((sale) => {
+                const lines = saleLines.filter((line) => line.sale_id === sale.sale_id);
+                const collections = saleCollections.filter((collection) => collection.sale_id === sale.sale_id);
+                return (
+                  <article className="card stack" key={sale.sale_id}>
+                    <header className="topline"><div><h3>{sale.sale_reference} · {sale.buyer_name}</h3><p className="muted">{d(sale.sale_date)} · {sale.line_count} سطر</p></div><span className="status">{formatAgricultureSaleState(sale.state)}</span></header>
+                    {(sale.agreement_reference || sale.evidence_reference || sale.control_transfer_evidence_reference) ? <p className="muted">{sale.agreement_reference ? `العقد/الطلب: ${sale.agreement_reference}` : ''}{sale.evidence_reference ? ` · دليل الاتفاق: ${sale.evidence_reference}` : ''}{sale.control_transfer_evidence_reference ? ` · دليل التسليم: ${sale.control_transfer_evidence_reference}` : ''}</p> : null}
+                    <dl className="facts">
+                      <div><dt>القيمة المتفق عليها</dt><dd>{formatMinorUnits(sale.agreed_total_minor_units, sale.currency)}</dd></div>
+                      <div><dt>الإيراد المعترف به</dt><dd>{formatMinorUnits(sale.recognized_revenue_minor_units, sale.currency)}</dd></div>
+                      <div><dt>النقد المحصل</dt><dd>{formatMinorUnits(sale.collected_minor_units, sale.currency)}</dd></div>
+                      <div><dt>الذمة المتبقية</dt><dd>{formatMinorUnits(sale.outstanding_receivable_minor_units, sale.currency)}</dd></div>
+                      <div><dt>الكمية</dt><dd>{sale.aggregate_quantity ? `${sale.aggregate_quantity} ${sale.quantity_unit}` : 'وحدات متعددة — راجع السطور'}</dd></div>
+                      <div><dt>تاريخ التسليم</dt><dd>{d(sale.control_transfer_date)}</dd></div>
+                    </dl>
+                    <div className="table-wrap"><table><thead><tr><th>التشغيلة</th><th>موقع المصدر</th><th>الكمية</th><th>سعر الوحدة</th><th>قيمة السطر</th><th>الصرف</th></tr></thead><tbody>{lines.map((line) => <tr key={line.sale_line_id}><td>{line.lot_reference}</td><td>{line.source_storage_name}</td><td>{formatHarvestQuantity(line.quantity, line.unit)}</td><td>{formatMinorUnits(line.unit_price_minor_units, sale.currency)}</td><td>{formatMinorUnits(line.line_amount_minor_units, sale.currency)}</td><td>{line.sale_issue_movement_id ? `تم ${d(line.dispatch_date)}` : 'لم يتم'}</td></tr>)}</tbody></table></div>
+                    {sale.state === 'DRAFT' && canPostSales ? <ApproveAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
+                    {sale.state === 'APPROVED' && canPostSales ? <RecognizeAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
+                    {!canPostSales && (sale.state === 'DRAFT' || sale.state === 'APPROVED') ? <p className="muted">الاعتماد والتسليم/الترحيل المالي يتطلبان صلاحية مالك المنظمة.</p> : null}
+                    {sale.recognition_id ? <p className="muted">الإيراد والذمة موثقان في القيد المشترك. لا توجد تكلفة بضاعة/مخزون مخمّنة لأن سياسة قيمة الحصاد غير معتمدة.</p> : <p className="muted">المسودة/الاعتماد لا يثبتان إيرادًا أو ذمة ولا يصرفان مخزونًا.</p>}
+                    {collections.length > 0 ? <div><h4>التحصيلات</h4><ul>{collections.map((collection) => <li key={collection.collection_id}>{d(collection.collection_date)} · {formatMinorUnits(collection.amount_minor_units, collection.currency)} · {collection.cash_account_name} · دليل: {collection.evidence_reference}</li>)}</ul></div> : null}
+                    {canPostSales ? <AgricultureSaleCollectionForm organizationId={organizationId} projectId={projectId} sale={sale} cashAccounts={cashAccounts} /> : null}
+                  </article>
+                );
+              })}
+            </div>
+            <details><summary>إنشاء مسودة بيع جديدة</summary><AgricultureSaleForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} inventory={inventoryByLocation} /></details>
+          </>
+        )}
+        <div className="card stack">
+          <h3>تتبّع تشغيلة الحصاد إلى البيع</h3>
+          <p className="muted">خطوة واحدة للأمام من التشغيلة إلى موقع الصرف والمشتري والتسليم وقيد الإيراد.</p>
+          <div className="table-wrap"><table><thead><tr><th>التشغيلة</th><th>البيع</th><th>المشتري</th><th>المصدر</th><th>الكمية المباعة</th><th>الإيراد</th></tr></thead><tbody>{lotSaleTraceability.map((trace, index) => <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}><td>{trace.lot_reference}</td><td>{trace.sale_reference ?? 'لم تُبع'}</td><td>{trace.buyer_name ?? '—'}</td><td>{trace.source_storage_name ?? '—'}</td><td>{trace.sold_quantity ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit) : '—'}</td><td>{trace.revenue_journal_batch_id ? 'معترف به' : '—'}</td></tr>)}</tbody></table></div>
+        </div>
       </section>
 
       <section className="card stack scroll-target" id="timeline">

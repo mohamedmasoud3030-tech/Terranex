@@ -97,6 +97,8 @@ Crop farming from seasonal plan through field work, input consumption, harvest l
 - `HarvestEvent`: field/cycle, date, gross/net quantity, grade, loss, destination.
 - `HarvestLot`: traceable output lot created at harvest.
 - `StorageLocation` / `InventoryMovement`: receipt, transfer, adjustment, sale issue, spoilage.
+- `AgricultureSale` / `AgricultureSaleLine`: buyer agreement against one or more Harvest Lots and source Storage Locations; draft and approval do not move inventory or post revenue.
+- `AgricultureSaleRecognition` / `AgricultureSaleCollection`: control-transfer dispatch and shared-core revenue/receivable recognition, followed by immutable partial/multiple cash collections.
 - `AgronomyObservation`: pest/disease/growth/soil/weather note; no automated diagnosis in v1.
 
 ### Lifecycle
@@ -138,6 +140,8 @@ Use one-step-back/one-step-forward capable lot records: field/cycle, inputs and 
 ### Accounting policy hooks
 
 IAS 41 addresses biological assets during transformation and agricultural produce at harvest; subsequent processing/inventory is outside its agricultural-produce scope and may fall under IAS 2. Terranex captures quantities, fair-value inputs, harvest point, and costs; the customer’s approved accounting policy determines posting.
+
+GF-018 implements sale agreement, physical `SALE_ISSUE`, control-transfer revenue/receivable, collection, and lot-to-buyer traceability through the shared Finance Core. It deliberately does not estimate harvest inventory value or COGS. Authoritative CropCycle cost attribution, profitability, and closeout remain the GF-019 decision; Agricultural Land Asset consideration/value remains separate from seasonal operating result.
 
 ## 4. Livestock context
 

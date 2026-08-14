@@ -38,7 +38,7 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 
 ## Current delivery gate
 
-Current state: **Real Estate technically implemented (S0-S7, GF-010/GF-011); GF-012 governance closeout complete; Agriculture is the active sector — GF-013 through GF-016 are merged and technically complete, and GF-017 Agricultural Land Asset is the active bounded Agriculture slice**.
+Current state: **Real Estate technically implemented (S0-S7, GF-010/GF-011); GF-012 governance closeout complete; Agriculture is the active sector — GF-013 through GF-017 are merged and technically complete, and GF-018 Agriculture Sale, Dispatch & Revenue is the active bounded Agriculture slice**.
 
 Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
@@ -54,9 +54,9 @@ Agriculture construction order, and its truthful state:
 - `GF-014 — Field Activity Foundation` (append-only field activity against an existing assignment): **merged through PR #125, technically complete**.
 - `GF-015 — Field Input Application Foundation` (Input Item, Input Lot, Input Application against an existing Field Activity): **merged, technically complete**.
 - `GF-016 — Harvest & Inventory Flow Foundation` (Harvest Event, Harvest Lot, Storage Location, append-only Inventory Movement): **merged, technically complete**.
-- `GF-017 — Agricultural Land Asset, Acquisition & Control`: **active bounded slice**.
-- `GF-018 — Agriculture Sale, Dispatch & Revenue`: next after GF-017 is merged.
-- `GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate`: final Agriculture phase; Livestock follows only after it passes.
+- `GF-017 — Agricultural Land Asset, Acquisition & Control`: **merged through PR #128, technically complete**.
+- `GF-018 — Agriculture Sale, Dispatch & Revenue`: **active bounded slice**.
+- `GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate`: next and final Agriculture phase; Livestock follows only after it passes.
 
 Agriculture technical completeness is not commercial validation. No Agriculture slice counts as customer evidence, pilot evidence, or UAT.
 

@@ -201,12 +201,12 @@ describe('GF-013 agriculture database contract', () => {
 });
 
 describe('GF-013 agriculture operator workflow', () => {
-  it('uses Arabic truthful labels and never fabricates financial KPIs', () => {
+  it('preserves truthful Arabic foundation labels as later bounded slices add operational terms', () => {
     expect(labels).toContain("'عقارات'");
     expect(labels).toContain("'زراعة'");
     expect(labels).toContain("'مخططة'");
     expect(labels).toContain("'فشلت'");
-    expect(labels).not.toMatch(/ربح|إيراد|هامش|مخزون/);
+    expect(labels).not.toMatch(/ربح مقدر|هامش مقدر|قيمة مخزون مقدرة/);
   });
 
   it('renders Farm, Field, CropCycle, and lifecycle transitions in the agriculture page', () => {
