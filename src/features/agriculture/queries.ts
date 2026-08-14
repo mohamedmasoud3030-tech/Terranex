@@ -328,7 +328,7 @@ export type HarvestInventoryMovementRead = {
   organization_id: string;
   project_id: string;
   harvest_lot_id: string;
-  movement_type: 'HARVEST_RECEIPT' | 'TRANSFER' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT' | 'SPOILAGE';
+  movement_type: 'HARVEST_RECEIPT' | 'TRANSFER' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT' | 'SPOILAGE' | 'SALE_ISSUE';
   movement_date: string;
   quantity: string;
   unit: string;
@@ -341,6 +341,9 @@ export type HarvestInventoryMovementRead = {
   recorded_by: string;
   created_at: string;
   lot_reference: string;
+  agriculture_sale_line_id: string | null;
+  sale_id: string | null;
+  sale_reference: string | null;
 };
 
 export const getStorageLocations = (projectId: string) =>
@@ -378,7 +381,7 @@ export const getHarvestInventoryByLocation = (projectId: string) =>
 export const getHarvestInventoryMovements = (projectId: string) =>
   many<HarvestInventoryMovementRead>(
     'harvest_inventory_movements_read',
-    'id,organization_id,project_id,harvest_lot_id,movement_type,movement_date,quantity,unit,from_storage_id,to_storage_id,from_storage_name,to_storage_name,reason,evidence_reference,recorded_by,created_at,lot_reference',
+    'id,organization_id,project_id,harvest_lot_id,movement_type,movement_date,quantity,unit,from_storage_id,to_storage_id,from_storage_name,to_storage_name,reason,evidence_reference,recorded_by,created_at,lot_reference,agriculture_sale_line_id,sale_id,sale_reference',
     projectId,
     'movement_date',
   );
@@ -441,4 +444,138 @@ export const getFarmLandAssetLinks = (projectId: string) =>
     'id,organization_id,project_id,land_asset_id,farm_id,land_asset_name,land_asset_reference,control_basis,legal_area_quantity,area_unit,farm_name,linked_by,linked_at',
     projectId,
     'linked_at',
+  );
+
+// ---------------------------------------------------------------------------
+// GF-018 — Agriculture Sale, Dispatch & Revenue read models.
+// ---------------------------------------------------------------------------
+export type AgricultureSaleRead = {
+  sale_id: string;
+  organization_id: string;
+  project_id: string;
+  buyer_party_id: string;
+  buyer_name: string;
+  sale_reference: string;
+  agreement_reference: string | null;
+  sale_date: string;
+  currency: string;
+  terms: string | null;
+  evidence_reference: string | null;
+  state: 'DRAFT' | 'APPROVED' | 'CONTROL_TRANSFERRED' | 'SETTLED';
+  control_state: 'DRAFT' | 'APPROVED' | 'CONTROL_TRANSFERRED';
+  prepared_by: string;
+  prepared_at: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  control_transfer_date: string | null;
+  control_transfer_evidence_reference: string | null;
+  control_transferred_by: string | null;
+  control_transferred_at: string | null;
+  line_count: number;
+  aggregate_quantity: string | null;
+  quantity_unit: string | null;
+  agreed_total_minor_units: string;
+  recognition_id: string | null;
+  recognition_date: string | null;
+  revenue_journal_batch_id: string | null;
+  recognized_revenue_minor_units: string;
+  collected_minor_units: string;
+  outstanding_receivable_minor_units: string;
+};
+
+export type AgricultureSaleLineRead = {
+  sale_line_id: string;
+  organization_id: string;
+  project_id: string;
+  sale_id: string;
+  line_no: number;
+  harvest_lot_id: string;
+  lot_reference: string;
+  crop_cycle_id: string;
+  field_id: string;
+  harvest_date: string;
+  source_storage_id: string;
+  source_storage_name: string;
+  quantity: string;
+  unit: string;
+  unit_price_minor_units: string;
+  line_amount_minor_units: string;
+  sale_issue_movement_id: string | null;
+  dispatch_date: string | null;
+};
+
+export type AgricultureSaleCollectionRead = {
+  collection_id: string;
+  organization_id: string;
+  project_id: string;
+  recognition_id: string;
+  sale_id: string;
+  cash_account_id: string;
+  cash_account_name: string;
+  amount_minor_units: string;
+  currency: string;
+  collection_date: string;
+  evidence_reference: string;
+  journal_batch_id: string;
+  collected_by: string;
+  collected_at: string;
+};
+
+export type HarvestLotSaleTraceabilityRead = {
+  harvest_lot_id: string;
+  organization_id: string;
+  project_id: string;
+  lot_reference: string;
+  crop_cycle_id: string;
+  field_id: string;
+  harvest_event_id: string;
+  harvest_date: string;
+  initial_quantity: string;
+  quantity_unit: string;
+  sale_line_id: string | null;
+  sale_id: string | null;
+  sale_reference: string | null;
+  buyer_party_id: string | null;
+  buyer_name: string | null;
+  source_storage_id: string | null;
+  source_storage_name: string | null;
+  sold_quantity: string | null;
+  unit_price_minor_units: string | null;
+  line_amount_minor_units: string | null;
+  sale_issue_movement_id: string | null;
+  dispatch_date: string | null;
+  recognition_id: string | null;
+  revenue_journal_batch_id: string | null;
+};
+
+export const getAgricultureSales = (projectId: string) =>
+  many<AgricultureSaleRead>(
+    'agriculture_sales_read',
+    'sale_id,organization_id,project_id,buyer_party_id,buyer_name,sale_reference,agreement_reference,sale_date,currency,terms,evidence_reference,state,control_state,prepared_by,prepared_at,approved_by,approved_at,control_transfer_date,control_transfer_evidence_reference,control_transferred_by,control_transferred_at,line_count,aggregate_quantity,quantity_unit,agreed_total_minor_units,recognition_id,recognition_date,revenue_journal_batch_id,recognized_revenue_minor_units,collected_minor_units,outstanding_receivable_minor_units',
+    projectId,
+    'sale_date',
+  );
+
+export const getAgricultureSaleLines = (projectId: string) =>
+  many<AgricultureSaleLineRead>(
+    'agriculture_sale_lines_read',
+    'sale_line_id,organization_id,project_id,sale_id,line_no,harvest_lot_id,lot_reference,crop_cycle_id,field_id,harvest_date,source_storage_id,source_storage_name,quantity,unit,unit_price_minor_units,line_amount_minor_units,sale_issue_movement_id,dispatch_date',
+    projectId,
+    'line_no',
+  );
+
+export const getAgricultureSaleCollections = (projectId: string) =>
+  many<AgricultureSaleCollectionRead>(
+    'agriculture_sale_collections_read',
+    'collection_id,organization_id,project_id,recognition_id,sale_id,cash_account_id,cash_account_name,amount_minor_units,currency,collection_date,evidence_reference,journal_batch_id,collected_by,collected_at',
+    projectId,
+    'collection_date',
+  );
+
+export const getHarvestLotSaleTraceability = (projectId: string) =>
+  many<HarvestLotSaleTraceabilityRead>(
+    'harvest_lot_sale_traceability_read',
+    'harvest_lot_id,organization_id,project_id,lot_reference,crop_cycle_id,field_id,harvest_event_id,harvest_date,initial_quantity,quantity_unit,sale_line_id,sale_id,sale_reference,buyer_party_id,buyer_name,source_storage_id,source_storage_name,sold_quantity,unit_price_minor_units,line_amount_minor_units,sale_issue_movement_id,dispatch_date,recognition_id,revenue_journal_batch_id',
+    projectId,
+    'harvest_date',
   );

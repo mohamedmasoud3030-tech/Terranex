@@ -241,26 +241,27 @@ Coding is authorized. Resolve only the decisions required by the active slice. D
 
 ## 13. Immediate next execution batch
 
-Agriculture is executed as three remaining major phases after merged GF-013
-through GF-016:
+Agriculture is executed through three independently reviewed major phases after
+merged GF-013 through GF-016:
 
-1. **GF-017 — Agricultural Land Asset, Acquisition & Control (active).** Add
-   the sector-specific investment/legal-control object before Farm; preserve
-   purchase, lease, approved in-kind and managed-for-owner bases; link existing
-   Farms only through an explicit genuine command; keep consideration separate
+1. **GF-017 — Agricultural Land Asset, Acquisition & Control (merged).** Adds
+   the sector-specific investment/legal-control object before Farm; preserves
+   purchase, lease, approved in-kind and managed-for-owner bases; links existing
+   Farms only through an explicit genuine command; keeps consideration separate
    from payment, carrying amount, valuation and CropCycle operating cost.
-2. **GF-018 — Agriculture Sale, Dispatch & Revenue (next).** Add physical
+2. **GF-018 — Agriculture Sale, Dispatch & Revenue (active).** Adds physical
    `SALE_ISSUE`, buyer/control-transfer sale truth, shared-core revenue,
    receivable and collection with oversell/over-collection concurrency guards.
+   It does not guess harvest inventory value or COGS.
 3. **GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate
-   (final).** Attribute authoritative shared-core posted cost without a second
-   ledger, disclose cycle result bases and outstanding inventory/receivables,
-   close safely, harden the complete Agriculture path, and decide the input
-   stock boundary from evidence.
+   (next and final).** Attribute authoritative shared-core posted cost without a
+   second ledger, disclose cycle result bases and outstanding inventory/
+   receivables, close safely, harden the complete Agriculture path, and decide
+   the input-stock boundary from evidence.
 
-GF-013, GF-014, GF-015 and GF-016 are merged and technically complete. GF-017,
-GF-018 and GF-019 must remain independently reviewed/merged phases. Livestock
-is the next authorized sector only after GF-019 passes. Real Estate stays
+GF-013 through GF-017 are merged and technically complete. GF-018 remains an
+independent active phase and GF-019 may start only after GF-018 is reviewed and
+merged. Livestock is the next authorized sector only after GF-019 passes. Real Estate stays
 unchanged unless a proved regression requires the smallest forward repair.
 
 Technical completion never counts as Agriculture customer UAT, a paid pilot,

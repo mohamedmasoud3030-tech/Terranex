@@ -125,11 +125,17 @@ Real Estate status is therefore explicit:
 - latest hosted deployment verification: pending until the production alias SHA is proved;
 - real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
 
+### GF-018 — Agriculture Sale, Dispatch & Revenue
+
+Status: **ACTIVE BOUNDED SLICE**. Adds buyer-backed Agriculture Sale headers and immutable Harvest Lot lines, explicit draft/approval/control-transfer states, atomic physical `SALE_ISSUE` plus shared Finance Core revenue/receivable recognition, and append-only partial/multiple collections protected by a concurrent ceiling. Sale units are derived from Harvest Lot truth. Lot-to-buyer dispatch and revenue lineage is exposed in Arabic/RTL under `المبيعات والتحصيل`.
+
+GF-018 reuses `CUSTOMER_RECEIVABLE`, `BANK_CASH`, shared journal batches/lines, project cash accounts, S6 posting-period guards, audit, membership and idempotency controls. It adds only `AGRICULTURE_SALE_REVENUE`; it does not create a sector ledger, mutable receivable balance, inventory valuation, COGS, profit or margin. Canonical decision: `docs/decisions/0018_GF018_AGRICULTURE_SALE_DISPATCH_REVENUE.md`.
+
+GF-019 Profitability, Cycle Closeout & Technical Gate follows only after GF-018 is independently reviewed and merged. Livestock follows only after GF-019 passes.
+
 ### GF-017 — Agricultural Land Asset, Acquisition & Control
 
-Status: **ACTIVE BOUNDED SLICE**. Adds the durable Agriculture investment/legal-control object before Farm, with `PURCHASED | LEASED | CONTRIBUTED_IN_KIND | MANAGED_FOR_OWNER`, exact legal/contract area, Party/agreement/evidence, optional purchase consideration, and an append-only Farm link. It does not fabricate assets for existing Farms and does not create payment, Contribution, journal, valuation, carrying amount, or CropCycle cost. Real Estate alignment passed without a Real Estate change. Canonical decision: `docs/decisions/0017_GF017_AGRICULTURAL_LAND_ASSET.md`.
-
-GF-018 Agriculture Sale, Dispatch & Revenue follows only after GF-017 merges. GF-019 Profitability, Cycle Closeout & Technical Gate is the final Agriculture phase; Livestock follows GF-019.
+Status: **MERGED — TECHNICALLY COMPLETE** through PR #128. Adds the durable Agriculture investment/legal-control object before Farm, with `PURCHASED | LEASED | CONTRIBUTED_IN_KIND | MANAGED_FOR_OWNER`, exact legal/contract area, Party/agreement/evidence, optional purchase consideration, and an append-only Farm link. It does not fabricate assets for existing Farms and does not create payment, Contribution, journal, valuation, carrying amount, or CropCycle cost. Real Estate alignment passed without a Real Estate change. Canonical decision: `docs/decisions/0017_GF017_AGRICULTURAL_LAND_ASSET.md`.
 
 ### GF-016 — Harvest & Inventory Flow Foundation
 
@@ -336,19 +342,18 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
 - Agriculture capabilities beyond the active bounded slice and all Livestock runtime modules;
-- Agriculture operational entities deferred after GF-016: input-stock receiving/balance, purchase orders / procurement / receiving / supplier accounting, input costing and valuation, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, agriculture-side sales/dispatch/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit-conversion engines, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
+- Agriculture capabilities deferred beyond GF-018: input-stock receiving/balance, purchase orders / procurement / receiving / supplier accounting, input costing and valuation, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, harvest inventory valuation, COGS, CropCycle profitability and closeout, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit-conversion engines, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
 ## Next active batch
 
-`GF-017 — Agricultural Land Asset, Acquisition & Control` is active; GF-013
-through GF-016 are merged and technically complete. The remaining authorized
-sequence is exact:
+`GF-018 — Agriculture Sale, Dispatch & Revenue` is active; GF-013 through
+GF-017 are merged and technically complete. The remaining authorized sequence
+is exact:
 
-1. GF-017 Agricultural Land Asset;
-2. GF-018 Agriculture Sale, Dispatch & Revenue;
-3. GF-019 Agriculture Profitability, Cycle Closeout & Technical Gate;
-4. Livestock only after GF-019 passes.
+1. complete and merge GF-018 Agriculture Sale, Dispatch & Revenue;
+2. GF-019 Agriculture Profitability, Cycle Closeout & Technical Gate;
+3. Livestock only after GF-019 passes.
 
 Each phase starts from the preceding merged main. Do not reopen Real Estate,
 combine the remaining Agriculture phases, or scaffold Livestock.

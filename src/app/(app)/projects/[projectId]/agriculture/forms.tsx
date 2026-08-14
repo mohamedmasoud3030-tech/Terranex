@@ -3,8 +3,11 @@
 import { useActionState, useMemo, useState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
 import {
+  approveAgricultureSale,
   assignCropCycleToField,
+  collectAgricultureSaleReceivable,
   createAgriculturalLandAsset,
+  createAgricultureSale,
   createAgricultureProfile,
   createCropCycle,
   createFarm,
@@ -17,12 +20,15 @@ import {
   recordHarvestEvent,
   recordHarvestInventoryAdjustment,
   recordInputApplication,
+  recognizeAgricultureSale,
   transferHarvestInventory,
   transitionCropCycle,
 } from '@/features/agriculture/actions';
 import type { Party } from '@/features/funding/queries';
+import type { CashAccountPosition } from '@/features/finance/queries';
 import type {
   AgriculturalLandAssetRead,
+  AgricultureSaleRead,
   CropAssignmentRead,
   CropCycleRead,
   FarmRead,
@@ -1321,4 +1327,92 @@ export function HarvestInventoryAdjustmentForm({
       </div>
     </form>
   );
+}
+
+// ---------------------------------------------------------------------------
+// GF-018 — Agriculture sale / dispatch / revenue / collection.
+// ---------------------------------------------------------------------------
+type SaleDraftRow = { key: string; inventoryKey: string; quantity: string; unitPrice: string };
+
+export function AgricultureSaleForm({
+  organizationId,
+  projectId,
+  currency,
+  parties,
+  inventory,
+}: {
+  organizationId: string;
+  projectId: string;
+  currency: string;
+  parties: Party[];
+  inventory: HarvestInventoryByLocationRead[];
+}) {
+  const available = inventory.filter((item) => Number(item.current_balance) > 0);
+  const firstKey = available[0] ? `${available[0].harvest_lot_id}::${available[0].storage_id}` : '';
+  const [rows, setRows] = useState<SaleDraftRow[]>([
+    { key: 'line-1', inventoryKey: firstKey, quantity: '', unitPrice: '' },
+  ]);
+  const [state, action, pending] = useActionState(createAgricultureSale, initial);
+  const linesJson = JSON.stringify(rows.map((row) => {
+    const [harvestLotId, sourceStorageId] = row.inventoryKey.split('::');
+    return { harvestLotId, sourceStorageId, quantity: row.quantity, unitPrice: row.unitPrice };
+  }));
+  if (parties.length === 0) return <p className="muted">سجّل المشتري كطرف في قسم الشروط أولًا.</p>;
+  if (available.length === 0) return <p className="muted">لا يوجد رصيد حصاد متاح للبيع في أي موقع تخزين.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-sale-draft" />
+      <input type="hidden" name="currency" value={currency} />
+      <input type="hidden" name="linesJson" value={linesJson} />
+      <label>المشتري<select name="buyerPartyId" required><option value="">اختر المشتري</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.legal_name}</option>)}</select></label>
+      <label>مرجع البيع<input name="saleReference" required maxLength={120} /></label>
+      <label>تاريخ البيع<input type="date" name="saleDate" required /></label>
+      <label>مرجع العقد/الطلب <span className="muted">(اختياري)</span><input name="agreementReference" maxLength={200} /></label>
+      <label className="full">الشروط <span className="muted">(اختياري)</span><textarea name="terms" maxLength={1000} /></label>
+      <label className="full">مرجع دليل الاتفاق <span className="muted">(اختياري للمسودة)</span><input name="evidenceReference" maxLength={200} /></label>
+      <fieldset className="full stack">
+        <legend>سطور تشغيلات الحصاد</legend>
+        {rows.map((row, index) => (
+          <div className="form-grid compact" key={row.key}>
+            <label>التشغيلة وموقع المصدر<select value={row.inventoryKey} onChange={(event) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, inventoryKey: event.target.value } : item))}>{available.map((item) => <option key={`${item.harvest_lot_id}-${item.storage_id}`} value={`${item.harvest_lot_id}::${item.storage_id}`}>{item.lot_reference} · {item.storage_name} · متاح {item.current_balance} {item.quantity_unit}</option>)}</select></label>
+            <label>الكمية<input value={row.quantity} onChange={(event) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, quantity: event.target.value } : item))} inputMode="decimal" required aria-label={`كمية سطر البيع ${index + 1}`} /></label>
+            <label>سعر الوحدة ({currency})<input value={row.unitPrice} onChange={(event) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, unitPrice: event.target.value } : item))} inputMode="decimal" required aria-label={`سعر وحدة سطر البيع ${index + 1}`} /></label>
+            {rows.length > 1 ? <button type="button" className="secondary" onClick={() => setRows((current) => current.filter((item) => item.key !== row.key))}>حذف السطر</button> : null}
+          </div>
+        ))}
+        <button type="button" className="secondary" onClick={() => setRows((current) => [...current, { key: crypto.randomUUID(), inventoryKey: firstKey, quantity: '', unitPrice: '' }])}>إضافة سطر حصاد</button>
+      </fieldset>
+      <p className="muted full">حفظ المسودة لا يصرف مخزونًا ولا يعترف بإيراد. وحدة البيع تأتي من تشغيلة الحصاد ولا يمكن للمتصفح تغييرها.</p>
+      <div className="full"><Result state={state} pending={pending} label="حفظ مسودة البيع" /></div>
+    </form>
+  );
+}
+
+export function ApproveAgricultureSaleForm({ organizationId, projectId, saleId }: { organizationId: string; projectId: string; saleId: string }) {
+  const [state, action, pending] = useActionState(approveAgricultureSale, initial);
+  return <form action={action}><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-approve" /><input type="hidden" name="saleId" value={saleId} /><Result state={state} pending={pending} label="اعتماد البيع" pendingLabel="جارٍ الاعتماد…" /></form>;
+}
+
+export function RecognizeAgricultureSaleForm({ organizationId, projectId, saleId }: { organizationId: string; projectId: string; saleId: string }) {
+  const [state, action, pending] = useActionState(recognizeAgricultureSale, initial);
+  return <form action={action} className="form-grid compact"><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-recognize" /><input type="hidden" name="saleId" value={saleId} /><label>تاريخ التسليم/انتقال السيطرة<input type="date" name="controlTransferDate" required /></label><label>مرجع دليل التسليم<input name="evidenceReference" required minLength={3} maxLength={200} /></label><div><Result state={state} pending={pending} label="تسجيل التسليم والإيراد" pendingLabel="جارٍ الصرف والترحيل…" /></div><p className="muted full">عملية ذرية: صرف SALE_ISSUE من المخزون + إثبات البيع + إيراد وذمة مدينة. لا تُسجّل تكلفة مخزون تخمينية.</p></form>;
+}
+
+export function AgricultureSaleCollectionForm({
+  organizationId,
+  projectId,
+  sale,
+  cashAccounts,
+}: {
+  organizationId: string;
+  projectId: string;
+  sale: AgricultureSaleRead;
+  cashAccounts: CashAccountPosition[];
+}) {
+  const [state, action, pending] = useActionState(collectAgricultureSaleReceivable, initial);
+  if (!sale.recognition_id || BigInt(sale.outstanding_receivable_minor_units) <= 0n) return null;
+  const accounts = cashAccounts.filter((account) => account.currency === sale.currency);
+  if (accounts.length === 0) return <p className="muted">لا يوجد حساب نقدية للمشروع بنفس عملة البيع.</p>;
+  return <form action={action} className="form-grid compact"><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-collection" /><input type="hidden" name="recognitionId" value={sale.recognition_id} /><input type="hidden" name="currency" value={sale.currency} /><label>حساب النقدية<select name="cashAccountId" required>{accounts.map((account) => <option key={account.cash_account_id} value={account.cash_account_id}>{account.name}</option>)}</select></label><label>مبلغ التحصيل<input name="amount" inputMode="decimal" required /></label><label>تاريخ التحصيل<input type="date" name="collectionDate" required /></label><label>مرجع دليل التحصيل<input name="evidenceReference" required minLength={3} maxLength={200} /></label><div><Result state={state} pending={pending} label="تسجيل التحصيل" /></div><p className="muted full">التحصيل يخفض الذمة المدينة فقط ولا يعيد الاعتراف بالإيراد. يمكن تسجيل تحصيلات جزئية ومتعددة دون تجاوز المتبقي.</p></form>;
 }

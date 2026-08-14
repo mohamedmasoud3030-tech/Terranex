@@ -93,15 +93,15 @@ export function formatDate(value: string | null | undefined): string {
   return new Date(value).toLocaleDateString('ar-EG');
 }
 
-// GF-016 — Harvest & Inventory movement labels. These describe physical
-// harvest-output movement types only; there is no sale issue and no
-// fabricated financial or valuation term.
+// GF-016 — Harvest & Inventory movement labels, extended by GF-018 with the
+// bounded physical SALE_ISSUE. No valuation term is fabricated here.
 export const HARVEST_MOVEMENT_TYPE_LABEL: Record<string, string> = {
   HARVEST_RECEIPT: 'استلام حصاد',
   TRANSFER: 'تحويل',
   ADJUSTMENT_IN: 'تعديل زيادة',
   ADJUSTMENT_OUT: 'تعديل نقص',
   SPOILAGE: 'تالف/هالك',
+  SALE_ISSUE: 'صرف بيع/تسليم',
 };
 
 export function formatHarvestMovementType(type: string | null | undefined): string {
@@ -130,4 +130,17 @@ export const LAND_CONTROL_BASIS_LABEL: Record<string, string> = {
 export function formatLandControlBasis(basis: string | null | undefined): string {
   if (!basis) return '—';
   return LAND_CONTROL_BASIS_LABEL[basis] ?? basis;
+}
+
+// GF-018 — sale/control transfer and collection remain distinct in wording.
+export const AGRICULTURE_SALE_STATE_LABEL: Record<string, string> = {
+  DRAFT: 'مسودة — لا مخزون ولا إيراد',
+  APPROVED: 'معتمد — بانتظار التسليم',
+  CONTROL_TRANSFERRED: 'تم التسليم والاعتراف بالإيراد',
+  SETTLED: 'محصّل بالكامل',
+};
+
+export function formatAgricultureSaleState(state: string | null | undefined): string {
+  if (!state) return '—';
+  return AGRICULTURE_SALE_STATE_LABEL[state] ?? state;
 }

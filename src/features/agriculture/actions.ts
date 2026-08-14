@@ -7,6 +7,10 @@ import { parseMajorUnitsToMinor } from '@/shared/money';
 import {
   agriculturalLandAssetSchema,
   agricultureProfileSchema,
+  agricultureSaleApprovalSchema,
+  agricultureSaleCollectionSchema,
+  agricultureSaleRecognitionSchema,
+  agricultureSaleSchema,
   cropAssignmentSchema,
   cropCycleSchema,
   cycleTransitionSchema,
@@ -92,7 +96,9 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('invalid harvest quantity unit')) return fail('وحدة كمية الحصاد مطلوبة.');
   if (text.includes('invalid harvest grade')) return fail('درجة/جودة الحصاد غير صالحة.');
   if (text.includes('harvest lot reference already exists')) return fail('مرجع تشغيلة الحصاد مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('harvest lot not found for sale')) return fail('تشغيلة الحصاد المحددة لا تنتمي إلى هذا المشروع.');
   if (text.includes('harvest lot not found')) return fail('تشغيلة الحصاد المحددة غير موجودة في هذه المنظمة.');
+  if (text.includes('insufficient inventory for agriculture sale')) return fail('الرصيد المتاح لا يكفي لتسليم هذا البيع.');
   if (text.includes('insufficient inventory')) return fail('الرصيد المتاح غير كافٍ لهذه الحركة.');
   if (text.includes('transfer source and destination storage must differ')) return fail('لا يمكن النقل إلى نفس موقع التخزين.');
   if (text.includes('cannot precede the harvest date')) return fail('تاريخ الحركة لا يمكن أن يسبق تاريخ الحصاد.');
@@ -117,6 +123,23 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('agricultural land asset not found in project')) return fail('الأرض/الأصل المحدد لا ينتمي إلى هذا المشروع.');
   if (text.includes('farm not found in project')) return fail('المزرعة المحددة لا تنتمي إلى هذا المشروع.');
   if (text.includes('farm already linked')) return fail('المزرعة مرتبطة بالفعل بأرض/أصل استثماري.');
+  // GF-018 — sale, physical dispatch, revenue and collection.
+  if (text.includes('buyer party not found')) return fail('المشتري المحدد غير موجود في هذه المنظمة.');
+  if (text.includes('agriculture sale reference already exists')) return fail('مرجع البيع مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('source storage not found for sale')) return fail('موقع المصدر لا ينتمي إلى هذا المشروع.');
+  if (text.includes('sale cannot precede harvest') || text.includes('sale issue cannot precede harvest')) return fail('تاريخ البيع/التسليم لا يمكن أن يسبق تاريخ الحصاد.');
+  if (text.includes('sale quantity must be positive')) return fail('كمية البيع يجب أن تكون موجبة.');
+  if (text.includes('sale unit price must be positive')) return fail('سعر الوحدة يجب أن يكون موجبًا.');
+  if (text.includes('exact minor units')) return fail('الكمية والسعر ينتجان جزءًا من أصغر وحدة للعملة؛ راجع القيم.');
+  if (text.includes('duplicate lot and storage')) return fail('لا تكرر نفس التشغيلة وموقع التخزين داخل البيع؛ اجمع الكمية في سطر واحد.');
+  if (text.includes('only a draft agriculture sale')) return fail('لا يمكن اعتماد هذا البيع لأنه لم يعد مسودة. حدّث الصفحة.');
+  if (text.includes('must be approved before control transfer')) return fail('اعتمد البيع أولًا قبل تسجيل التسليم وانتقال السيطرة.');
+  if (text.includes('control transfer date must be effective')) return fail('تاريخ التسليم يجب ألا يكون في المستقبل.');
+  if (text.includes('collection date must be effective')) return fail('تاريخ التحصيل يجب ألا يكون في المستقبل.');
+  if (text.includes('collection exceeds outstanding agriculture receivable')) return fail('مبلغ التحصيل يتجاوز الذمة المدينة المتبقية.');
+  if (text.includes('cash account must belong')) return fail('حساب النقدية لا ينتمي إلى نفس المشروع أو العملة.');
+  if (text.includes('collection cannot precede recognition')) return fail('تاريخ التحصيل لا يمكن أن يسبق الاعتراف بالإيراد.');
+  if (text.includes('organization owner required')) return fail('هذا الإجراء المالي المادي يتطلب صلاحية مالك المنظمة.');
   return fail(fallback);
 }
 
@@ -509,4 +532,64 @@ export async function linkFarmToAgriculturalLandAsset(_: ActionState, form: Form
     'تعذر ربط المزرعة بالأرض/الأصل.',
     value.projectId,
   );
+}
+
+// ---------------------------------------------------------------------------
+// GF-018 — Agriculture Sale, Dispatch & Revenue.
+// ---------------------------------------------------------------------------
+export async function createAgricultureSale(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('create_agriculture_sale', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_buyer_party_id: value.buyerPartyId,
+    p_sale_reference: value.saleReference,
+    p_agreement_reference: value.agreementReference,
+    p_sale_date: value.saleDate,
+    p_currency: value.currency,
+    p_terms: value.terms,
+    p_evidence_reference: value.evidenceReference,
+    p_harvest_lot_ids: value.linesJson.map((line) => line.harvestLotId),
+    p_source_storage_ids: value.linesJson.map((line) => line.sourceStorageId),
+    p_quantities: value.linesJson.map((line) => line.quantity.replace(',', '.')),
+    p_unit_price_minor_units: value.linesJson.map((line) => parseMajorUnitsToMinor(line.unitPrice, value.currency)),
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر حفظ مسودة البيع الزراعي.', value.projectId);
+}
+
+export async function approveAgricultureSale(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleApprovalSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('approve_agriculture_sale', {
+    p_organization_id: value.organizationId,
+    p_sale_id: value.saleId,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر اعتماد البيع الزراعي.', value.projectId);
+}
+
+export async function recognizeAgricultureSale(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleRecognitionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('recognize_agriculture_sale', {
+    p_organization_id: value.organizationId,
+    p_sale_id: value.saleId,
+    p_control_transfer_date: value.controlTransferDate,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تسجيل التسليم والاعتراف بالإيراد.', value.projectId);
+}
+
+export async function collectAgricultureSaleReceivable(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleCollectionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('collect_agriculture_sale_receivable', {
+    p_organization_id: value.organizationId,
+    p_recognition_id: value.recognitionId,
+    p_cash_account_id: value.cashAccountId,
+    p_amount_minor_units: parseMajorUnitsToMinor(value.amount, value.currency),
+    p_collection_date: value.collectionDate,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تسجيل التحصيل.', value.projectId);
 }
