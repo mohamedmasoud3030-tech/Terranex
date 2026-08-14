@@ -30,7 +30,7 @@ describe('GF-021/GF-022 review hardening contract', () => {
   it('rejects future quantity/movement actual facts and preserves operation business time', () => {
     expect(hardening).toContain('future livestock actual event is not allowed');
     expect(hardening).toContain('p_effective_at > clock_timestamp()');
-    expect(hardening).toContain('p_placed_at, p_effective_at');
+    expect(hardening).toMatch(/livestock_cohort_initial_placements[\s\S]*placed_at[\s\S]*p_effective_at/);
   });
 
   it('makes species continuity and post-use herd species immutable DB rules', () => {
