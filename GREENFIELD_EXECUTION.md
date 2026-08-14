@@ -354,7 +354,7 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 
 Real Estate and Agriculture are **TECHNICALLY IMPLEMENTED** for their authorized
 scopes. `GF-013` through `GF-019` form the completed Agriculture chain.
-**Livestock is the next authorized sector.** This status is not permission to
+**Livestock is the active sector. GF-020 is the active bounded Site → Herd → Cohort foundation.** This status is not permission to
 place Livestock schema or runtime inside GF-019, and Real Estate remains closed
 to unrelated changes.
 

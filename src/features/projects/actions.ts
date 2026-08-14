@@ -18,7 +18,7 @@ export async function createProject(_: ActionState, form: FormData): Promise<Act
   });
   if (error || !data) {
     if (error?.message?.includes('invalid sector')) {
-      return { error: 'القطاع المحدد غير مدعوم. اختر عقارات أو زراعة.' };
+      return { error: 'القطاع المحدد غير مدعوم. اختر عقارات أو زراعة أو ثروة حيوانية.' };
     }
     return { error: 'تعذر إنشاء المشروع. تأكد من صلاحياتك وحاول مجددًا.' };
   }
@@ -26,6 +26,8 @@ export async function createProject(_: ActionState, form: FormData): Promise<Act
   // existing intake path.
   if (p.sector === 'AGRICULTURE') {
     redirect(`/projects/${data}/agriculture`);
+  } else if (p.sector === 'LIVESTOCK') {
+    redirect(`/projects/${data}/livestock`);
   } else {
     redirect(`/projects/${data}/intake`);
   }

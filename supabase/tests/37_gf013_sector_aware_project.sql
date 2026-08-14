@@ -69,10 +69,10 @@ select 1/case when (
   select sector = 'AGRICULTURE' from public.investment_projects where id = :'s13_ag_a'
 ) then 1 else 0 end as s13_ag_sector_visible;
 
--- Sector vocabulary is exactly REAL_ESTATE | AGRICULTURE. Any other
--- sector is rejected at the database boundary.
+-- GF-020 later extends the vocabulary with LIVESTOCK. An unsupported
+-- sector remains rejected at the database boundary.
 select 1/case when s13_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع غير مسموح','GF013-BAD','x','LIVESTOCK')$$
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع غير مسموح','GF013-BAD','x','UNSUPPORTED')$$
 )) like '%invalid sector%' then 1 else 0 end as s13_invalid_sector_rejected;
 
 -- Historical 2-, 3-, and 4-argument calls still resolve only to the

@@ -1,7 +1,7 @@
 import { createClient } from '@/shared/supabase/server';
 import { throwOperatorQuery } from '@/shared/supabase/errors';
 
-export type ProjectSector = 'REAL_ESTATE' | 'AGRICULTURE';
+export type ProjectSector = 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK';
 
 export type ProjectListItem = {
   id: string;

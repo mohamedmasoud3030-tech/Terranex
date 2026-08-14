@@ -20,7 +20,7 @@ import Link from 'next/link';
  * honest with the operator.
  */
 
-export type WorkspaceSector = 'REAL_ESTATE' | 'AGRICULTURE';
+export type WorkspaceSector = 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK';
 
 export type WorkspaceSection =
   | 'overview'
@@ -38,7 +38,8 @@ export type WorkspaceSection =
   | 'field-inputs'
   | 'harvest-inventory'
   | 'agriculture-sales'
-  | 'agriculture-results';
+  | 'agriculture-results'
+  | 'livestock';
 
 type SectionDef = {
   id: WorkspaceSection;
@@ -59,6 +60,10 @@ const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'controls', label: 'الرقابة والجاهزية', description: 'الرقابة الداخلية، الوصول، والجاهزية للبيانات الحقيقية', href: (p) => `/projects/${p}/controls` },
 ];
 
+const LIVESTOCK_SECTIONS: ReadonlyArray<SectionDef> = [
+  { id: 'livestock', label: 'المواقع والقطعان', description: 'مواقع التشغيل، القطعان الإدارية، والدفعات القابلة للعد', href: (p) => `/projects/${p}/livestock` },
+];
+
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
   { id: 'land-assets', label: 'الأراضي والأصول', description: 'أصل الأرض، أساس السيطرة، العقد، والطرف المقابل وربط المزرعة', href: (p) => `/projects/${p}/agriculture#land-assets` },
@@ -73,16 +78,19 @@ export const REAL_ESTATE_SECTION_IDS = REAL_ESTATE_SECTIONS.map((s) => s.id);
 export const AGRICULTURE_SECTION_IDS = AGRICULTURE_SECTIONS.map((s) => s.id);
 
 export function sectionsFor(sector: WorkspaceSector): ReadonlyArray<SectionDef> {
-  return sector === 'AGRICULTURE' ? AGRICULTURE_SECTIONS : REAL_ESTATE_SECTIONS;
+  if (sector === 'AGRICULTURE') return AGRICULTURE_SECTIONS;
+  if (sector === 'LIVESTOCK') return LIVESTOCK_SECTIONS;
+  return REAL_ESTATE_SECTIONS;
 }
 
 export function sectionHref(section: WorkspaceSection, projectId: string): string {
-  const def = [...REAL_ESTATE_SECTIONS, ...AGRICULTURE_SECTIONS].find((s) => s.id === section);
+  const def = [...REAL_ESTATE_SECTIONS, ...AGRICULTURE_SECTIONS, ...LIVESTOCK_SECTIONS].find((s) => s.id === section);
   return def ? def.href(projectId) : `/projects/${projectId}`;
 }
 
 export function sectorLandingHref(sector: WorkspaceSector, projectId: string): string {
   if (sector === 'AGRICULTURE') return `/projects/${projectId}/agriculture`;
+  if (sector === 'LIVESTOCK') return `/projects/${projectId}/livestock`;
   return `/projects/${projectId}/operations`;
 }
 
