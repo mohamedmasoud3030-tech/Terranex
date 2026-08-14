@@ -131,6 +131,9 @@ describe('GF-019 closeout and technical controls', () => {
     expect(migration).toContain('set search_path=pg_catalog,public');
     expect(dbTest).toContain('s19_tenant_b_result_rls');
     expect(dbTest).toContain('s19_rls_force_grants');
+    expect(dbTest).toContain('s19_revenue_obeys_closed_period');
+    expect(dbTest).toContain('s19_collection_obeys_closed_period');
+    expect(dbTest).toContain('s19_authoritative_cost_source_obeys_closed_period');
   });
 
   it('retains real two-session harvest, sale, collection and new cost races', () => {

@@ -536,11 +536,26 @@ union all
 select l.organization_id,l.project_id,l.crop_cycle_id,'NEGATIVE_INVENTORY','HARD','رصيد مخزون حصاد سالب.'
 from public.harvest_lots l where public.harvest_lot_total_balance(l.id)<0
 union all
+select distinct l.organization_id,l.project_id,l.crop_cycle_id,'NEGATIVE_INVENTORY','HARD','رصيد تشغيلة حصاد سالب في موقع تخزين.'
+from public.harvest_lots l
+join lateral (
+  select storage_id from (
+    select m.from_storage_id as storage_id from public.harvest_inventory_movements m
+      where m.harvest_lot_id=l.id and m.from_storage_id is not null
+    union
+    select m.to_storage_id from public.harvest_inventory_movements m
+      where m.harvest_lot_id=l.id and m.to_storage_id is not null
+  ) locations where public.harvest_lot_storage_balance(l.id,storage_id)<0
+) negative_location on true
+union all
 select l.organization_id,l.project_id,l.crop_cycle_id,'BROKEN_HARVEST_RECEIPT','HARD','استلام تشغيلة الحصاد لا يطابق صافي حدث الحصاد.'
 from public.harvest_lots l where (select count(*) from public.harvest_inventory_movements m
   where m.harvest_lot_id=l.id and m.movement_type='HARVEST_RECEIPT')<>1
   or (select coalesce(sum(m.quantity),0) from public.harvest_inventory_movements m
       where m.harvest_lot_id=l.id and m.movement_type='HARVEST_RECEIPT')<>l.initial_quantity
+union all
+select e.organization_id,e.project_id,e.crop_cycle_id,'BROKEN_HARVEST_RECEIPT','HARD','حدث حصاد لا يملك تشغيلة واستلامًا متماسكين.'
+from public.harvest_events e where not exists(select 1 from public.harvest_lots l where l.harvest_event_id=e.id)
 union all
 select sl.organization_id,sl.project_id,l.crop_cycle_id,'BROKEN_SALE_ISSUE','HARD','كمية البيع لا تتطابق مع حركة صرف SALE_ISSUE.'
 from public.agriculture_sale_lines sl

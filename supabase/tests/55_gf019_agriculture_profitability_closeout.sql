@@ -21,6 +21,7 @@ create or replace function s19_owner_catch(p_sql text) returns text language plp
 begin begin execute p_sql; exception when others then return sqlerrm; end; return 'NO_EXCEPTION'; end $$;
 
 select id as s19_project from public.investment_projects where internal_reference='GF013-AG-A' \gset
+select id as s19_other_project from public.investment_projects where internal_reference='GF017-AG-OTHER' \gset
 select id as s19_cycle from public.crop_cycles where season_reference='GF018-2026' \gset
 select id as s19_field from public.fields where identifier='حقل مبيعات' \gset
 select farm_id as s19_farm from public.fields where id=:'s19_field' \gset
@@ -78,6 +79,11 @@ select 1/case when s19_catch('00000000-0000-4000-8000-000000000002',format(
   :'s19_project',:'s19_cycle',:'s19_cost_line'))='forbidden'
 then 1 else 0 end as s19_cost_cross_tenant_rejected;
 select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.attribute_crop_cycle_cost('10000000-0000-4000-8000-000000000001',%L,%L,null,%L,1000,
+    'OTHER','سياسة تكلفة التشغيل 2026','دليل تكلفة','s19-cost-project')$$,
+  :'s19_other_project',:'s19_cycle',:'s19_cost_line'))='crop cycle not found in project'
+then 1 else 0 end as s19_cost_cross_project_rejected;
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
   $$insert into public.crop_cycle_cost_attributions(organization_id,project_id,crop_cycle_id,source_journal_line_id,
     attributed_amount_minor_units,currency,cost_category,policy_reference,evidence_reference,recorded_by,idempotency_key,request_hash)
     values('10000000-0000-4000-8000-000000000001',%L,%L,%L,1,'EGP','OTHER','سياسة','دليل تكلفة',
@@ -111,6 +117,12 @@ select 1/case when not exists(select 1 from public.crop_cycle_cost_sources_read 
   and not exists(select 1 from information_schema.columns where table_schema='public' and table_name='agricultural_land_assets'
     and column_name in ('depreciation_minor_units','amortization_minor_units','fair_value_minor_units'))
 then 1 else 0 end as s19_no_land_depreciation_amortization_fair_value;
+select 1/case when (select land_asset_names='أرض النيل' and land_control_bases='PURCHASED'
+  and land_consideration_minor_units='50000000' and attributed_operating_cost_minor_units='0'
+  from public.crop_cycle_results_read where crop_cycle_id=(select id from public.crop_cycles where season_reference='موسم 2027-HV'))
+  and (select agreed_consideration_minor_units is null from public.agricultural_land_assets where internal_reference='LAND-002')
+  and (select agreed_consideration_minor_units is null from public.agricultural_land_assets where internal_reference='LAND-004')
+then 1 else 0 end as s19_land_position_separate_and_nonowned_not_costed;
 
 -- ---------------------------------------------------------------------------
 -- 3. Dedicated close fixture keeps the GF-018 cycle HARVESTING so its real
@@ -167,6 +179,9 @@ select 1/case when (select gross_harvest_quantity='189.000000'
   and cogs_status='NOT_GUESSED'
   from public.crop_cycle_results_read where crop_cycle_id=:'s19_cycle')
 then 1 else 0 end as s19_reproducible_result_revenue_cash_inventory_cost;
+select 1/case when (select spoilage_quantity='5.000000' from public.crop_cycle_results_read
+  where crop_cycle_id=(select id from public.crop_cycles where season_reference='موسم 2027-HV'))
+then 1 else 0 end as s19_spoilage_derived_from_movements;
 select 1/case when (select gross_harvest_quantity='22.000000' and net_accepted_harvest_quantity='20.000000'
   and harvest_loss='2.000000' and quantity_sold='10.000000' and remaining_physical_inventory='10.000000'
   and recognized_revenue_minor_units='10000' and cash_collected_minor_units='2000'
@@ -175,6 +190,51 @@ then 1 else 0 end as s19_close_fixture_positions_reproducible;
 select 1/case when exists(select 1 from public.crop_cycle_integrity_issues_read where crop_cycle_id=:'s19_close_cycle' and code='OPEN_INVENTORY' and severity='WARN')
   and exists(select 1 from public.crop_cycle_integrity_issues_read where crop_cycle_id=:'s19_close_cycle' and code='OPEN_RECEIVABLE' and severity='WARN')
 then 1 else 0 end as s19_open_commercial_positions_visible;
+
+-- Inject and remove corruption as the database owner to prove close recomputes
+-- hard integrity rather than trusting command history. Production roles cannot
+-- perform these mutations; direct-DML denial is asserted above.
+set session_replication_role=replica;
+update public.crop_cycle_cost_attributions set attributed_amount_minor_units=100001 where id=:'s19_attribution';
+reset session_replication_role;
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.close_crop_cycle('10000000-0000-4000-8000-000000000001',%L,%L,'اختبار سقف التكلفة','دليل اختبار','s19-block-cost')$$,
+  :'s19_project',:'s19_cycle'))='crop cycle close blocked: COST_ATTRIBUTION_CEILING_BROKEN'
+then 1 else 0 end as s19_broken_cost_attribution_blocks_close;
+set session_replication_role=replica;
+update public.crop_cycle_cost_attributions set attributed_amount_minor_units=60000 where id=:'s19_attribution';
+reset session_replication_role;
+
+select m.id as s19_sale_issue,m.quantity as s19_sale_issue_quantity
+from public.harvest_inventory_movements m join public.agriculture_sale_lines sl on sl.id=m.agriculture_sale_line_id
+join public.agriculture_sales s on s.id=sl.sale_id where s.sale_reference='SALE-AG-018-001' order by sl.line_no limit 1 \gset
+set session_replication_role=replica;
+update public.harvest_inventory_movements set quantity=quantity-1 where id=:'s19_sale_issue';
+reset session_replication_role;
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.close_crop_cycle('10000000-0000-4000-8000-000000000001',%L,%L,'اختبار تطابق البيع','دليل اختبار','s19-block-sale')$$,
+  :'s19_project',:'s19_cycle'))='crop cycle close blocked: BROKEN_SALE_ISSUE'
+then 1 else 0 end as s19_broken_sale_inventory_reconciliation_blocks_close;
+set session_replication_role=replica;
+update public.harvest_inventory_movements set quantity=:'s19_sale_issue_quantity' where id=:'s19_sale_issue';
+reset session_replication_role;
+
+set session_replication_role=replica;
+insert into public.harvest_inventory_movements(
+  id,organization_id,project_id,harvest_lot_id,movement_type,movement_date,quantity,unit,
+  from_storage_id,reason,evidence_reference,recorded_by,idempotency_key,request_hash
+) values(
+  '19000000-0000-4000-8000-000000000019','10000000-0000-4000-8000-000000000001',:'s19_project',:'s19_lot',
+  'ADJUSTMENT_OUT',current_date,999,'كجم',:'s19_store','حقن تلف لاختبار الإغلاق','اختبار فقط',
+  '00000000-0000-4000-8000-000000000001','s19-corrupt-negative',repeat('9',64));
+reset session_replication_role;
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.close_crop_cycle('10000000-0000-4000-8000-000000000001',%L,%L,'اختبار الرصيد السالب','دليل اختبار','s19-block-negative')$$,
+  :'s19_project',:'s19_cycle'))='crop cycle close blocked: NEGATIVE_INVENTORY'
+then 1 else 0 end as s19_negative_inventory_blocks_close;
+set session_replication_role=replica;
+delete from public.harvest_inventory_movements where id='19000000-0000-4000-8000-000000000019';
+reset session_replication_role;
 
 select count(*) as s19_distributions_before from public.s5_distributions where project_id=:'s19_project' \gset
 select count(*) as s19_audits_before_close from public.audit_events where entity_id=:'s19_close_cycle' and event_type='CROP_CYCLE_TRANSITIONED' \gset
@@ -250,6 +310,94 @@ select s19_run('00000000-0000-4000-8000-000000000001',format(
 select 1/case when (select attributed_operating_cost_minor_units='0' from public.crop_cycle_results_read where crop_cycle_id=:'s19_cycle')
   and (select count(*) from public.crop_cycle_cost_attributions where reversal_of_attribution_id=:'s19_attribution')=1
 then 1 else 0 end as s19_append_only_cost_correction;
+
+-- ---------------------------------------------------------------------------
+-- 5. Agriculture monetary events obey the shared S6 OPEN/CLOSED period.
+-- ---------------------------------------------------------------------------
+select s19_run('00000000-0000-4000-8000-000000000001',
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001',
+    'مشروع اختبار فترة زراعية GF019','GF019-PERIOD-AG',null,'AGRICULTURE')$$) as s19_period_project \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.s6_create_accounting_period('10000000-0000-4000-8000-000000000001',%L,current_date-1,current_date+1)$$,
+  :'s19_period_project')) as s19_period \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_farm('10000000-0000-4000-8000-000000000001',%L,'مزرعة اختبار الفترة','S19-PERIOD-FARM',null,null,'Africa/Cairo',null,'s19-period-farm')$$,
+  :'s19_period_project')) as s19_period_farm \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_field('10000000-0000-4000-8000-000000000001',%L,%L,'حقل اختبار الفترة',1,'FEDDAN',null,null,'s19-period-field')$$,
+  :'s19_period_project',:'s19_period_farm')) as s19_period_field \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'باذنجان',null,'S19-PERIOD-CYCLE',current_date-5,current_date+1,null,null,'s19-period-cycle')$$,
+  :'s19_period_project')) as s19_period_cycle \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','ESTABLISHED','تجهيز اختبار الفترة','دليل فترة 1','s19-period-t1')$$,:'s19_period_cycle')) as s19_period_t1 \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','نمو اختبار الفترة','دليل فترة 2','s19-period-t2')$$,:'s19_period_cycle')) as s19_period_t2 \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'GROWING','HARVESTING','حصاد اختبار الفترة','دليل فترة 3','s19-period-t3')$$,:'s19_period_cycle')) as s19_period_t3 \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.assign_crop_cycle_to_field('10000000-0000-4000-8000-000000000001',%L,%L,%L,1,'FEDDAN',current_date-5,current_date+1,'s19-period-assignment')$$,
+  :'s19_period_project',:'s19_period_cycle',:'s19_period_field')) as s19_period_assignment \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_storage_location('10000000-0000-4000-8000-000000000001',%L,'مخزن اختبار الفترة','S19-PERIOD-STORE',null,'s19-period-store')$$,
+  :'s19_period_project')) as s19_period_store \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.record_harvest_event('10000000-0000-4000-8000-000000000001',%L,current_date,10,10,'كجم',null,'S19-PERIOD-LOT',%L,null,'دليل حصاد الفترة','s19-period-harvest')$$,
+  :'s19_period_assignment',:'s19_period_store')) as s19_period_harvest \gset
+select id as s19_period_lot from public.harvest_lots where harvest_event_id=:'s19_period_harvest' \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_project_cash_account('10000000-0000-4000-8000-000000000001',%L,'نقدية اختبار الفترة','EGP')$$,
+  :'s19_period_project')) as s19_period_cash \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,%L,'S19-PERIOD-SALE',null,current_date,'EGP',null,'دليل بيع الفترة',
+    array[%L::uuid],array[%L::uuid],array[5::numeric],array[1000::bigint],'s19-period-sale')$$,
+  :'s19_period_project',:'s19_buyer',:'s19_period_lot',:'s19_period_store')) as s19_period_sale \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.approve_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,'s19-period-sale-approve')$$,:'s19_period_sale')) as s19_period_approved \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.recognize_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,current_date,'إذن تسليم الفترة','s19-period-recognize')$$,
+  :'s19_period_sale')) as s19_period_recognition \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.close_crop_cycle('10000000-0000-4000-8000-000000000001',%L,%L,'اكتمال دورة اختبار الفترة','دليل إغلاق الفترة','s19-period-cycle-close')$$,
+  :'s19_period_project',:'s19_period_cycle')) as s19_period_cycle_close \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.s6_prepare_close_run('10000000-0000-4000-8000-000000000001',%L,%L,'إغلاق فترة زراعية GF019')$$,
+  :'s19_period_project',:'s19_period')) as s19_period_close_run \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.s6_approve_close_run('10000000-0000-4000-8000-000000000001',%L,'s19-period-close-approve')$$,
+  :'s19_period_close_run')) as s19_period_approved_close \gset
+select 1/case when (select status='CLOSED' from public.accounting_periods where id=:'s19_period')
+then 1 else 0 end as s19_shared_s6_period_closed;
+
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.collect_agriculture_sale_receivable('10000000-0000-4000-8000-000000000001',%L,%L,1000,current_date,'تحصيل بعد الإغلاق','s19-period-collection-blocked')$$,
+  :'s19_period_recognition',:'s19_period_cash')) like 'no open accounting period covers%'
+then 1 else 0 end as s19_collection_obeys_closed_period;
+select 1/case when not exists(select 1 from public.agriculture_sale_collections where recognition_id=:'s19_period_recognition')
+then 1 else 0 end as s19_closed_period_collection_atomic_rollback;
+
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,%L,'S19-PERIOD-LATE-SALE',null,current_date,'EGP',null,'دليل بيع متأخر',
+    array[%L::uuid],array[%L::uuid],array[2::numeric],array[1000::bigint],'s19-period-late-sale')$$,
+  :'s19_period_project',:'s19_buyer',:'s19_period_lot',:'s19_period_store')) as s19_period_late_sale \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.approve_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,'s19-period-late-approve')$$,:'s19_period_late_sale')) as s19_period_late_approved \gset
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.recognize_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,current_date,'تسليم متأخر','s19-period-late-recognize')$$,
+  :'s19_period_late_sale')) like 'no open accounting period covers%'
+then 1 else 0 end as s19_revenue_obeys_closed_period;
+select 1/case when not exists(select 1 from public.agriculture_sale_recognitions where sale_id=:'s19_period_late_sale')
+  and not exists(select 1 from public.harvest_inventory_movements where agriculture_sale_line_id in
+    (select id from public.agriculture_sale_lines where sale_id=:'s19_period_late_sale'))
+then 1 else 0 end as s19_closed_period_revenue_atomic_rollback;
+
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,'تكلفة بعد إغلاق الفترة',1000,'EGP',current_date,'EXPENSE','s19-period-cost')$$,
+  :'s19_period_project',:'s19_supplier')) as s19_period_cost \gset
+select 1/case when s19_catch('00000000-0000-4000-8000-000000000001',format(
+  $$select public.authorize_cost_obligation('10000000-0000-4000-8000-000000000001',%L,'s19-period-cost-authorize')$$,
+  :'s19_period_cost')) like 'no open accounting period covers%'
+then 1 else 0 end as s19_authoritative_cost_source_obeys_closed_period;
 
 reset role;
 select 'GF-019 Agriculture profitability and closeout PASS (synthetic)' as result;
