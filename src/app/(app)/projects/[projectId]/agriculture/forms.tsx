@@ -8,6 +8,7 @@ import {
   createCropCycle,
   createFarm,
   createField,
+  createFieldActivity,
   transitionCropCycle,
 } from '@/features/agriculture/actions';
 import type {
@@ -16,10 +17,11 @@ import type {
   FarmRead,
   FieldRead,
 } from '@/features/agriculture/queries';
-import { CYCLE_STATES, CYCLE_TRANSITIONS } from '@/features/agriculture/schema';
+import { CYCLE_STATES, CYCLE_TRANSITIONS, FIELD_ACTIVITY_TYPES } from '@/features/agriculture/schema';
 import {
   AREA_UNIT_LABEL,
   CYCLE_STATE_LABEL,
+  FIELD_ACTIVITY_TYPE_LABEL,
   formatCycleState,
 } from '@/features/agriculture/labels';
 
@@ -335,6 +337,97 @@ export function AssignmentForm({
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تخصيص الحقل للدورة" />
+      </div>
+    </form>
+  );
+}
+
+export function FieldActivityForm({
+  organizationId,
+  projectId,
+  assignments,
+  cycles,
+  fields,
+}: {
+  organizationId: string;
+  projectId: string;
+  assignments: CropAssignmentRead[];
+  cycles: CropCycleRead[];
+  fields: FieldRead[];
+}) {
+  const [state, action, pending] = useActionState(createFieldActivity, initial);
+  if (assignments.length === 0) {
+    return (
+      <p className="muted">
+        يلزم وجود تخصيص دورة-حقل قائم قبل تسجيل نشاط ميداني. النشاط لا ينشئ تخصيصًا ولا يغيّر حالة الدورة.
+      </p>
+    );
+  }
+  const cycleById = new Map(cycles.map((c) => [c.id, c]));
+  const fieldById = new Map(fields.map((f) => [f.id, f]));
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-activity" />
+      <label className="full">
+        التخصيص (الدورة والحقل)
+        <select name="assignmentPicker" required defaultValue={assignments[0]?.id}
+          onChange={(event) => {
+            const selected = assignments.find((a) => a.id === event.target.value);
+            const form = event.currentTarget.form;
+            if (!form || !selected) return;
+            (form.elements.namedItem('assignmentId') as HTMLInputElement).value = selected.id;
+            (form.elements.namedItem('cropCycleId') as HTMLInputElement).value = selected.crop_cycle_id;
+            (form.elements.namedItem('fieldId') as HTMLInputElement).value = selected.field_id;
+          }}
+        >
+          {assignments.map((a) => {
+            const cycle = cycleById.get(a.crop_cycle_id);
+            const field = fieldById.get(a.field_id);
+            return (
+              <option key={a.id} value={a.id}>
+                {cycle ? `${cycle.crop} — ${cycle.season_reference}` : 'دورة'} · {field?.identifier ?? 'حقل'}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+      <input type="hidden" name="assignmentId" defaultValue={assignments[0].id} />
+      <input type="hidden" name="cropCycleId" defaultValue={assignments[0].crop_cycle_id} />
+      <input type="hidden" name="fieldId" defaultValue={assignments[0].field_id} />
+      <label>
+        تاريخ النشاط
+        <input type="date" name="activityDate" required />
+      </label>
+      <label>
+        نوع النشاط
+        <select name="activityType" required defaultValue="IRRIGATE">
+          {FIELD_ACTIVITY_TYPES.map((t) => (
+            <option key={t} value={t}>{FIELD_ACTIVITY_TYPE_LABEL[t]}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        الكمية <span className="muted">(اختياري)</span>
+        <input name="quantity" inputMode="decimal" placeholder="12.5" />
+      </label>
+      <label>
+        الوحدة <span className="muted">(مع الكمية)</span>
+        <input name="unit" maxLength={40} placeholder="م³" />
+      </label>
+      <label className="full">
+        ملاحظات <span className="muted">(اختياري)</span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <label className="full">
+        مرجع الدليل <span className="muted">(اختياري)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <p className="muted full">
+        تسجيل النشاط لا يحرّك دورة حياة المحصول ولا ينشئ مخزونًا أو قيدًا محاسبيًا.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل نشاط الحقل" />
       </div>
     </form>
   );

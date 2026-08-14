@@ -130,4 +130,43 @@ export type FarmInput = z.infer<typeof farmSchema>;
 export type FieldInput = z.infer<typeof fieldSchema>;
 export type CropCycleInput = z.infer<typeof cropCycleSchema>;
 export type CropAssignmentInput = z.infer<typeof cropAssignmentSchema>;
+export const FIELD_ACTIVITY_TYPES = [
+  'PREPARE', 'PLANT', 'IRRIGATE', 'FERTILIZE', 'SPRAY', 'SCOUT', 'WEED', 'OTHER',
+] as const;
+
+const activityQuantity = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'string' && value.trim() === '') return null;
+    return value;
+  },
+  z.string().trim().regex(/^(?:[1-9]\d{0,13})(?:\.\d{1,6})?$/).nullable().optional(),
+);
+
+export const fieldActivitySchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  cropCycleId: uuid,
+  fieldId: uuid,
+  assignmentId: uuid,
+  activityDate: dateRequired,
+  activityType: z.enum(FIELD_ACTIVITY_TYPES, { message: 'نوع النشاط غير صالح' }),
+  quantity: activityQuantity,
+  unit: optionalText(40),
+  notes: optionalText(2000),
+  evidenceReference: optionalText(200),
+  idempotencyKey,
+}).superRefine((data, ctx) => {
+  const hasQty = data.quantity != null;
+  const hasUnit = data.unit != null;
+  if (hasQty !== hasUnit) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['quantity'],
+      message: 'الكمية ووحدتها يجب إدخالهما معًا أو تركهما معًا',
+    });
+  }
+});
+
 export type CycleTransitionInput = z.infer<typeof cycleTransitionSchema>;
+export type FieldActivityInput = z.infer<typeof fieldActivitySchema>;

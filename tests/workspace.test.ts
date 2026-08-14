@@ -54,14 +54,15 @@ describe('GF-010 workspace navigation contract', () => {
     ]);
   });
 
-  it('exposes a single Agriculture business section that is not a Real Estate one', () => {
+  it('exposes Agriculture business sections that are not Real Estate ones', () => {
     const agriBlock = workspaceNav.match(/AGRICULTURE_SECTIONS[\s\S]*?\]\s*;/);
     expect(agriBlock).not.toBeNull();
     const ids = Array.from(
       agriBlock![0].matchAll(/id: '([a-z-]+)'/g),
       (match) => match[1],
     );
-    expect(ids).toEqual(['agriculture']);
+    expect(ids).toEqual(['agriculture', 'field-activities']);
+    expect(agriBlock![0]).not.toMatch(/الأصول العقارية/);
   });
 
   it('does not expose engineering slice names to operators', () => {

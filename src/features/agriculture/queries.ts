@@ -59,6 +59,23 @@ export type CropAssignmentRead = {
   created_at: string;
 };
 
+export type FieldActivityRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  crop_cycle_id: string;
+  field_id: string;
+  assignment_id: string;
+  activity_date: string;
+  activity_type: 'PREPARE' | 'PLANT' | 'IRRIGATE' | 'FERTILIZE' | 'SPRAY' | 'SCOUT' | 'WEED' | 'OTHER';
+  quantity: string | null;
+  unit: string | null;
+  notes: string | null;
+  evidence_reference: string | null;
+  recorded_by: string;
+  created_at: string;
+};
+
 export type CropCycleTimelineEntry = {
   id: string;
   organization_id: string;
@@ -118,6 +135,14 @@ export const getCropAssignments = (projectId: string) =>
     'id,organization_id,project_id,crop_cycle_id,field_id,assigned_area_quantity,assigned_area_unit,planned_start_date,planned_end_date,created_by,created_at',
     projectId,
     'created_at',
+  );
+
+export const getFieldActivities = (projectId: string) =>
+  many<FieldActivityRead>(
+    'field_activities_read',
+    'id,organization_id,project_id,crop_cycle_id,field_id,assignment_id,activity_date,activity_type,quantity,unit,notes,evidence_reference,recorded_by,created_at',
+    projectId,
+    'activity_date',
   );
 
 export const getCropCycleTimeline = (projectId: string) =>

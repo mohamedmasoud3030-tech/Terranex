@@ -29,7 +29,8 @@ export type WorkspaceSection =
   | 'statements'
   | 'opening'
   | 'controls'
-  | 'agriculture';
+  | 'agriculture'
+  | 'field-activities';
 
 type SectionDef = {
   id: WorkspaceSection;
@@ -52,6 +53,7 @@ const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
 
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
+  { id: 'field-activities', label: 'أنشطة الحقل', description: 'تسجيل ما حدث في الحقل على تخصيص دورة قائم', href: (p) => `/projects/${p}/agriculture#activities` },
 ];
 
 export const REAL_ESTATE_SECTION_IDS = REAL_ESTATE_SECTIONS.map((s) => s.id);
