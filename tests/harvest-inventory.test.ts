@@ -180,13 +180,58 @@ describe('GF-016 migration contract', () => {
       'foreign key (assignment_id, organization_id, project_id, crop_cycle_id, field_id)',
     );
     expect(migration).toContain(
-      'harvest_event_id, organization_id, project_id,\n    crop_cycle_id, field_id, assignment_id, quantity_unit',
+      'harvest_event_id, organization_id, project_id,\n    crop_cycle_id, field_id, assignment_id, quantity_unit,\n    initial_quantity, harvest_date',
     );
     expect(migration).toContain(
       'foreign key (harvest_lot_id, organization_id, project_id, unit)',
     );
     expect(migration).toContain(
       'foreign key (from_storage_id, organization_id, project_id)',
+    );
+  });
+
+  it('enforces initial_quantity = net_quantity and harvest-date equality at the database boundary', () => {
+    // The lot→event composite FK maps initial_quantity onto net_quantity and
+    // harvest_date onto harvest_date, so privileged SQL cannot create a lot
+    // whose initial quantity or date differs from its event.
+    expect(migration).toContain(
+      'crop_cycle_id, field_id, assignment_id, quantity_unit,\n    net_quantity, harvest_date',
+    );
+    expect(migration).toContain(
+      'crop_cycle_id, field_id, assignment_id, quantity_unit,\n    initial_quantity, harvest_date\n  ) references public.harvest_events',
+    );
+  });
+
+  it('allows exactly one HARVEST_RECEIPT per lot with receipt quantity/date equal to the lot', () => {
+    expect(migration).toContain('harvest_inventory_movements_one_receipt');
+    expect(migration).toContain("where movement_type = 'HARVEST_RECEIPT'");
+    expect(migration).toContain('harvest receipt quantity % must equal the lot initial quantity');
+    expect(migration).toContain('harvest receipt date % must equal the harvest date');
+  });
+
+  it('resolves the idempotency replay before lifecycle and balance checks', () => {
+    // A true retry must return the original row before any mutable-state
+    // check (cycle state or available balance) can reject it.
+    const harvestFn = migration.slice(
+      migration.indexOf('function public.record_harvest_event'),
+      migration.indexOf('function public.transfer_harvest_inventory'),
+    );
+    expect(harvestFn.indexOf('return v_existing.id')).toBeLessThan(
+      harvestFn.indexOf('not harvest-ready'),
+    );
+    const transferFn = migration.slice(
+      migration.indexOf('function public.transfer_harvest_inventory'),
+      migration.indexOf('function public.record_harvest_inventory_adjustment'),
+    );
+    expect(transferFn.indexOf('return v_existing.id')).toBeLessThan(
+      transferFn.indexOf('insufficient inventory'),
+    );
+    const adjustmentFn = migration.slice(
+      migration.indexOf('function public.record_harvest_inventory_adjustment'),
+      migration.indexOf('8. Default-deny RLS'),
+    );
+    expect(adjustmentFn.indexOf('return v_existing.id')).toBeLessThan(
+      adjustmentFn.indexOf('insufficient inventory'),
     );
   });
 
@@ -316,6 +361,10 @@ describe('GF-016 database verification coverage', () => {
       's16_input_tables_have_no_stock_columns',
       's16_no_sale_issue_movement_type',
       's16_tenant_b_cannot_read_harvest_events',
+      's16_harvest_replay_after_close',
+      's16_transfer_replay_after_balance_change',
+      's16_initial_quantity_mismatch_rejected',
+      's16_second_receipt_rejected',
       's16_rls_enabled_and_forced',
       's16_read_views_are_security_invoker',
     ]) {

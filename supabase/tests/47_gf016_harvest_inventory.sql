@@ -552,6 +552,80 @@ select 1/case when s16_catch('00000000-0000-4000-8000-000000000002', format(
   as s16_tenant_b_transfer_against_tenant_a_lot_rejected;
 
 -- ---------------------------------------------------------------------------
+-- 12b. Stable idempotent replay after mutable state changes, plus the
+--      database-enforced HarvestLot / initial-receipt invariants.
+-- ---------------------------------------------------------------------------
+-- A fresh harvest-ready cycle.
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.create_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ذرة','هجين','موسم 2027-REPLAY',date '2027-05-01',date '2027-09-01',null,null,'s16-cycle-replay')$$
+  , :'s16_ag_project')) as s16_cycle_r \gset
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','ESTABLISHED','تجهيز','ev1','s16-rp-e1')$$
+  , :'s16_cycle_r')) as s16_rp_tr1 \gset
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','نمو','ev2','s16-rp-e2')$$
+  , :'s16_cycle_r')) as s16_rp_tr2 \gset
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'GROWING','HARVESTING','حصاد','ev3','s16-rp-e3')$$
+  , :'s16_cycle_r')) as s16_rp_tr3 \gset
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.assign_crop_cycle_to_field('10000000-0000-4000-8000-000000000001',%L,%L,%L,'2','FEDDAN',date '2027-05-01',date '2027-09-01','s16-assign-replay')$$
+  , :'s16_ag_project', :'s16_cycle_r', :'s16_field')) as s16_assign_r \gset
+
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.record_harvest_event('10000000-0000-4000-8000-000000000001',%L,date '2027-08-01','100','100','كجم',null,'LOT-REPLAY',%L,null,null,'s16-harvest-replay')$$
+  , :'s16_assign_r', :'s16_storage_a')) as s16_harvest_r \gset
+select id as s16_lot_r from public.harvest_lots where harvest_event_id = :'s16_harvest_r' \gset
+
+-- Close the cycle, then replay the identical harvest request: it must
+-- return the original event, not a "not harvest-ready" rejection.
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'HARVESTING','CLOSED','إغلاق دورة','ev4','s16-rp-close')$$
+  , :'s16_cycle_r')) as s16_rp_close \gset
+select 1/case when s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.record_harvest_event('10000000-0000-4000-8000-000000000001',%L,date '2027-08-01','100','100','كجم',null,'LOT-REPLAY',%L,null,null,'s16-harvest-replay')$$
+  , :'s16_assign_r', :'s16_storage_a')) = :'s16_harvest_r' then 1 else 0 end
+  as s16_harvest_replay_after_close;
+
+-- Transfer 70, then drain the source below 70, then replay the identical
+-- transfer: it must return the original movement, not "insufficient".
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.transfer_harvest_inventory('10000000-0000-4000-8000-000000000001',%L,%L,%L,'70',date '2027-08-05',null,null,'s16-transfer-replay')$$
+  , :'s16_lot_r', :'s16_storage_a', :'s16_storage_b')) as s16_transfer_r \gset
+select s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.record_harvest_inventory_adjustment('10000000-0000-4000-8000-000000000001',%L,%L,'ADJUSTMENT_OUT','30',date '2027-08-06','تصفير الرصيد',null,'s16-drain-replay')$$
+  , :'s16_lot_r', :'s16_storage_a')) as s16_drain_r \gset
+select 1/case when s16_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.transfer_harvest_inventory('10000000-0000-4000-8000-000000000001',%L,%L,%L,'70',date '2027-08-05',null,null,'s16-transfer-replay')$$
+  , :'s16_lot_r', :'s16_storage_a', :'s16_storage_b')) = :'s16_transfer_r' then 1 else 0 end
+  as s16_transfer_replay_after_balance_change;
+
+-- Database-enforced HarvestLot invariants (privileged SQL path). The event
+-- net quantity is 100; a lot initial quantity of 500 must be rejected by
+-- the composite foreign key, not silently accepted.
+select 1/case when s16_owner_catch(format(
+  $$with ev as (
+    insert into public.harvest_events(organization_id, project_id, crop_cycle_id, field_id, assignment_id, harvest_date, gross_quantity, net_quantity, quantity_unit, recorded_by, idempotency_key, request_hash)
+    values ('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,date '2027-08-02','100','100','كجم','00000000-0000-4000-8000-000000000001','s16-owner-ev','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    returning id, organization_id, project_id, crop_cycle_id, field_id, assignment_id, harvest_date, quantity_unit, recorded_by
+  )
+  insert into public.harvest_lots(organization_id, project_id, crop_cycle_id, field_id, assignment_id, harvest_event_id, lot_reference, harvest_date, initial_quantity, quantity_unit, created_by, idempotency_key, request_hash)
+  select organization_id, project_id, crop_cycle_id, field_id, assignment_id, id, 'LOT-OWNER-MISMATCH', harvest_date, '500', quantity_unit, recorded_by, 's16-owner-lot','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  from ev$$
+  , :'s16_ag_project', :'s16_cycle', :'s16_field', :'s16_assign'))
+  is distinct from 'NO_EXCEPTION' then 1 else 0 end
+  as s16_initial_quantity_mismatch_rejected;
+
+-- A second HARVEST_RECEIPT for the same lot is rejected by the partial
+-- unique index (exactly one receipt per lot).
+select 1/case when s16_owner_catch(format(
+  $$insert into public.harvest_inventory_movements(organization_id, project_id, harvest_lot_id, movement_type, movement_date, quantity, unit, from_storage_id, to_storage_id, recorded_by, idempotency_key, request_hash)
+    values ('10000000-0000-4000-8000-000000000001',%L,%L,'HARVEST_RECEIPT',date '2027-08-01','95','كجم',null,%L,'00000000-0000-4000-8000-000000000001','s16-owner-receipt2','cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc')$$
+  , :'s16_ag_project', :'s16_lot', :'s16_storage_b'))
+  is distinct from 'NO_EXCEPTION' then 1 else 0 end
+  as s16_second_receipt_rejected;
+
+-- ---------------------------------------------------------------------------
 -- 13. RLS / grant posture.
 -- ---------------------------------------------------------------------------
 select 1/case when (

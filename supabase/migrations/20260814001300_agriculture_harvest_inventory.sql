@@ -117,9 +117,11 @@ create table public.harvest_events (
   check (net_quantity <= gross_quantity),
   unique (organization_id, idempotency_key),
   unique (id, organization_id, project_id),
-  -- Composite referential target used by harvest_lots so that scope AND
-  -- quantity-unit coherence are enforced by the database in one key.
-  unique (id, organization_id, project_id, crop_cycle_id, field_id, assignment_id, quantity_unit),
+  -- Composite referential target used by harvest_lots so that scope,
+  -- quantity-unit, net-quantity and harvest-date coherence are all
+  -- enforced by the database in one key: a lot's initial quantity must
+  -- equal its event's net quantity and its date must equal the event's.
+  unique (id, organization_id, project_id, crop_cycle_id, field_id, assignment_id, quantity_unit, net_quantity, harvest_date),
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict,
   foreign key (crop_cycle_id, organization_id, project_id)
@@ -171,14 +173,19 @@ create table public.harvest_lots (
   unique (id, organization_id, project_id, quantity_unit),
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict,
-  -- Event coherence AND scope AND unit coherence in one key: the lot
-  -- cannot exist with a unit or scope that differs from its event.
+  -- Event coherence AND scope AND unit AND quantity AND date coherence in
+  -- one key: the lot cannot exist with a unit, scope, initial quantity,
+  -- or date that differs from its event. `initial_quantity` is therefore
+  -- database-enforced to equal the event's `net_quantity`, and the lot's
+  -- `harvest_date` to equal the event's `harvest_date`.
   foreign key (
     harvest_event_id, organization_id, project_id,
-    crop_cycle_id, field_id, assignment_id, quantity_unit
+    crop_cycle_id, field_id, assignment_id, quantity_unit,
+    initial_quantity, harvest_date
   ) references public.harvest_events(
     id, organization_id, project_id,
-    crop_cycle_id, field_id, assignment_id, quantity_unit
+    crop_cycle_id, field_id, assignment_id, quantity_unit,
+    net_quantity, harvest_date
   ) on delete restrict
 );
 create index harvest_lots_project_idx on public.harvest_lots(project_id, harvest_date desc);
@@ -257,6 +264,11 @@ create index harvest_inventory_movements_from_idx
   on public.harvest_inventory_movements(from_storage_id);
 create index harvest_inventory_movements_to_idx
   on public.harvest_inventory_movements(to_storage_id);
+-- Exactly one initial HARVEST_RECEIPT per Harvest Lot, enforced
+-- declaratively so even privileged SQL cannot append a second receipt.
+create unique index harvest_inventory_movements_one_receipt
+  on public.harvest_inventory_movements(harvest_lot_id)
+  where movement_type = 'HARVEST_RECEIPT';
 
 -- ===========================================================================
 -- 5. Derived balances (never stored).
@@ -356,6 +368,16 @@ begin
   if new.movement_date < v_lot.harvest_date then
     raise exception 'movement date % cannot precede the harvest date %',
       new.movement_date, v_lot.harvest_date;
+  end if;
+  if new.movement_type = 'HARVEST_RECEIPT' then
+    if new.quantity <> v_lot.initial_quantity then
+      raise exception 'harvest receipt quantity % must equal the lot initial quantity %',
+        new.quantity, v_lot.initial_quantity;
+    end if;
+    if new.movement_date <> v_lot.harvest_date then
+      raise exception 'harvest receipt date % must equal the harvest date %',
+        new.movement_date, v_lot.harvest_date;
+    end if;
   end if;
   if new.from_storage_id is not null then
     v_available := public.harvest_lot_storage_balance(new.harvest_lot_id, new.from_storage_id);
@@ -559,12 +581,6 @@ begin
    for update;
   if not found then raise exception 'crop cycle not found'; end if;
 
-  -- Lifecycle rule: harvest may only be recorded while HARVESTING.
-  if public.agriculture_current_cycle_state(v_cycle.id) is distinct from 'HARVESTING' then
-    raise exception 'crop cycle is not harvest-ready: current state %',
-      coalesce(public.agriculture_current_cycle_state(v_cycle.id), 'none');
-  end if;
-
   if p_harvest_date is null then
     raise exception 'invalid harvest date';
   end if;
@@ -621,6 +637,14 @@ begin
   if found then
     if v_existing.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
     return v_existing.id;
+  end if;
+
+  -- Lifecycle rule: harvest may only be recorded while HARVESTING. This
+  -- check runs AFTER the idempotency replay so a true retry returns the
+  -- original event even after the cycle has moved out of HARVESTING.
+  if public.agriculture_current_cycle_state(v_cycle.id) is distinct from 'HARVESTING' then
+    raise exception 'crop cycle is not harvest-ready: current state %',
+      coalesce(public.agriculture_current_cycle_state(v_cycle.id), 'none');
   end if;
 
   -- Explicit natural-key check so a genuine duplicate lot reference is a
@@ -792,12 +816,6 @@ begin
     raise exception 'invalid evidence reference';
   end if;
 
-  v_available := public.harvest_lot_storage_balance(p_harvest_lot_id, p_from_storage_id);
-  if v_available < p_quantity then
-    raise exception 'insufficient inventory: available %, requested %',
-      v_available, p_quantity;
-  end if;
-
   select encode(digest(
     p_harvest_lot_id::text || '|' || p_from_storage_id::text || '|'
     || p_to_storage_id::text || '|' || (p_quantity::numeric(20,6))::text || '|'
@@ -814,6 +832,14 @@ begin
   if found then
     if v_existing.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
     return v_existing.id;
+  end if;
+
+  -- Balance check runs AFTER the idempotency replay so a true retry
+  -- returns the original movement even after the source balance changed.
+  v_available := public.harvest_lot_storage_balance(p_harvest_lot_id, p_from_storage_id);
+  if v_available < p_quantity then
+    raise exception 'insufficient inventory: available %, requested %',
+      v_available, p_quantity;
   end if;
 
   insert into public.harvest_inventory_movements(
@@ -925,14 +951,6 @@ begin
     raise exception 'invalid evidence reference';
   end if;
 
-  if p_movement_type in ('ADJUSTMENT_OUT','SPOILAGE') then
-    v_available := public.harvest_lot_storage_balance(p_harvest_lot_id, p_storage_id);
-    if v_available < p_quantity then
-      raise exception 'insufficient inventory: available %, requested %',
-        v_available, p_quantity;
-    end if;
-  end if;
-
   select encode(digest(
     p_harvest_lot_id::text || '|' || p_storage_id::text || '|'
     || p_movement_type || '|' || (p_quantity::numeric(20,6))::text || '|'
@@ -949,6 +967,16 @@ begin
   if found then
     if v_existing.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
     return v_existing.id;
+  end if;
+
+  -- Balance check runs AFTER the idempotency replay so a true retry
+  -- returns the original movement even after the balance changed.
+  if p_movement_type in ('ADJUSTMENT_OUT','SPOILAGE') then
+    v_available := public.harvest_lot_storage_balance(p_harvest_lot_id, p_storage_id);
+    if v_available < p_quantity then
+      raise exception 'insufficient inventory: available %, requested %',
+        v_available, p_quantity;
+    end if;
   end if;
 
   insert into public.harvest_inventory_movements(

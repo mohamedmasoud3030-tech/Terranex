@@ -37,8 +37,13 @@ For this bounded version a single weighing event yields one lot. Grade
 splitting or multi-lot output from one weighing is a deliberately deferred
 future workflow; prebuilding it now would add unused schema and commands.
 The lot's initial quantity equals the event's net quantity and its unit
-equals the event's unit — both enforced by a composite foreign key, so a
-free-floating or incoherent lot cannot exist.
+equals the event's unit, and its harvest date equals the event's harvest
+date — all enforced by a single composite foreign key
+(`initial_quantity → net_quantity`, `harvest_date → harvest_date`,
+`quantity_unit → quantity_unit`), so a free-floating or incoherent lot
+cannot exist even via privileged SQL. Exactly one `HARVEST_RECEIPT` exists
+per lot (a partial unique index), and its quantity and date must equal the
+lot's initial quantity and harvest date (enforced in the movement trigger).
 
 ### 3. Harvest does not auto-transition CropCycle
 
@@ -81,6 +86,13 @@ against the same lot serialize and re-check the available balance under the
 lock. Two simultaneous outbound movements cannot overdraw the same
 lot/location; the database test races 70 KG and 60 KG against a 100 KG
 location and requires exactly one success.
+
+Idempotent replay is resolved **before** any mutable-state check: the
+lifecycle check (harvest) and the available-balance check
+(transfer/adjustment) run only after the same-key/same-payload replay
+lookup has returned. A true retry therefore returns the original event or
+movement even after the cycle has moved out of `HARVESTING` or the source
+balance has dropped below the requested quantity.
 
 ### 8. Input inventory remains outside scope
 
