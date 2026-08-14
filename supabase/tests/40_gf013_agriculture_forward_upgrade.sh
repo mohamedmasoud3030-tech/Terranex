@@ -47,7 +47,7 @@ sed 's/create role authenticated nologin; create role anon nologin;//' \
 # Pre-GF-013 boundary: every migration except the GF-013 family.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    20260813000900*.sql|20260813001000*.sql|20260813001010*.sql|20260813001100*.sql|20260814*.sql) continue ;;
+    20260813000900*.sql|20260813001000*.sql|20260813001010*.sql|20260813001100*.sql|20260814*.sql|20260815*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done
