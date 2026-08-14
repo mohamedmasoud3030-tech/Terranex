@@ -1165,6 +1165,7 @@ declare
   v_hash text;
   v_row record;
   v_id uuid;
+  v_legacy_hash text;
   v_cause text := upper(trim(coalesce(p_cause_category, '')));
   v_disposal text := upper(trim(coalesce(p_disposal_method, 'PENDING')));
   v_current integer;
@@ -1186,7 +1187,18 @@ begin
   where organization_id = p_organization_id
     and idempotency_key = trim(p_idempotency_key);
   if found then
-    if v_row.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
+    if v_row.request_hash <> v_hash then
+      -- A pre-hardening caller used the original hash without disposal.
+      v_legacy_hash := public.gf020_hash(
+        p_project_id::text || '|' || p_cohort_id::text || '|MORTALITY|' ||
+        coalesce(p_quantity::text, '') || '|' || coalesce(p_effective_at::text, '') || '|' ||
+        v_cause || '|' || coalesce(trim(p_cause_detail), '') || '|' ||
+        coalesce(trim(p_evidence_reference), '') || '|' || coalesce(trim(p_notes), '')
+      );
+      if v_disposal <> 'PENDING' or v_row.request_hash <> v_legacy_hash then
+        raise exception 'idempotency key payload mismatch';
+      end if;
+    end if;
     return v_row.id;
   end if;
 
@@ -1253,6 +1265,7 @@ declare
   v_hash text;
   v_row record;
   v_id uuid;
+  v_legacy_hash text;
   v_method text := upper(trim(coalesce(p_method, '')));
   v_unit text := upper(trim(coalesce(p_weight_unit, '')));
   v_confidence text := upper(trim(coalesce(p_confidence_level, 'UNASSESSED')));
@@ -1276,7 +1289,19 @@ begin
   where organization_id = p_organization_id
     and idempotency_key = trim(p_idempotency_key);
   if found then
-    if v_row.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
+    if v_row.request_hash <> v_hash then
+      -- A pre-hardening caller used the original hash without quality.
+      v_legacy_hash := public.gf020_hash(
+        p_project_id::text || '|' || p_cohort_id::text || '|' ||
+        coalesce(p_effective_at::text, '') || '|' || v_method || '|' ||
+        coalesce(p_weight_value::text, '') || '|' || v_unit || '|' ||
+        coalesce(p_measured_animal_count::text, '') || '|' || coalesce(p_sample_size::text, '') || '|' ||
+        coalesce(trim(p_evidence_reference), '') || '|' || coalesce(trim(p_notes), '')
+      );
+      if v_confidence <> 'UNASSESSED' or v_row.request_hash <> v_legacy_hash then
+        raise exception 'idempotency key payload mismatch';
+      end if;
+    end if;
     return v_row.id;
   end if;
 

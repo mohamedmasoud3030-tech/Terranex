@@ -236,7 +236,7 @@ select 1/case when gf20_owner_catch(format($q$
       ('10000000-0000-4000-8000-000000000001', %L, %L, 'SPLIT_IN', 2,
        current_timestamp - interval '1 hour', '68000000-0000-0000-8000-000000000002',
        '00000000-0000-4000-8000-000000000001', 'gf68-extra-in', repeat('2',64));
-    SET CONSTRAINTS ALL IMMEDIATE;
+    EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
 $q$, :'gf68_project', :'gf68_asof', :'gf68_asof', :'gf68_backdated', :'gf68_backdated')) like '%exactly one SPLIT_OUT%'
 then 1 else 0 end as privileged_extra_split_legs_rejected;
@@ -263,7 +263,7 @@ select 1/case when gf20_owner_catch(format($q$
       ('10000000-0000-4000-8000-000000000001', %L, %L, 'SPLIT_IN', 1,
        current_timestamp - interval '1 hour', '68000000-0000-0000-8000-000000000003',
        '00000000-0000-4000-8000-000000000001', 'gf68-no-lineage-in', repeat('5',64));
-    SET CONSTRAINTS ALL IMMEDIATE;
+    EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
 $q$, :'gf68_project', :'gf68_asof', :'gf68_backdated')) like '%exactly one lineage%'
 then 1 else 0 end as privileged_missing_split_lineage_rejected;
@@ -293,7 +293,7 @@ select 1/case when gf20_owner_catch(format($q$
       ('10000000-0000-4000-8000-000000000001', %L, %L, 'MERGE_IN', 1,
        current_timestamp - interval '1 hour', '68000000-0000-0000-8000-000000000004',
        '00000000-0000-4000-8000-000000000001', 'gf68-bad-merge-in', repeat('9',64));
-    SET CONSTRAINTS ALL IMMEDIATE;
+    EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
 $q$, :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort')) like '%MERGE_IN quantity must equal%'
 then 1 else 0 end as privileged_merge_total_mismatch_rejected;
@@ -330,7 +330,7 @@ select 1/case when gf20_owner_catch(format($q$
        '68000000-0000-0000-8000-000000000005', %L, %L, 2),
       ('10000000-0000-4000-8000-000000000001', %L,
        '68000000-0000-0000-8000-000000000005', %L, %L, 1);
-    SET CONSTRAINTS ALL IMMEDIATE;
+    EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
 $q$, :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort',
      :'gf68_project', :'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort')) like '%MERGE lineage does not match%'
