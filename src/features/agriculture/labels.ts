@@ -2,9 +2,10 @@
 // Truthful, no fabricated financial terms. Mirrors the canonical
 // lifecycle documented in docs/greenfield/04_SECTOR_MODELS.md.
 
-export const SECTOR_LABEL: Record<'REAL_ESTATE' | 'AGRICULTURE', string> = {
+export const SECTOR_LABEL: Record<'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK', string> = {
   REAL_ESTATE: 'عقارات',
   AGRICULTURE: 'زراعة',
+  LIVESTOCK: 'ثروة حيوانية',
 };
 
 export const AREA_UNIT_LABEL: Record<'M2' | 'HECTARE' | 'FEDDAN', string> = {

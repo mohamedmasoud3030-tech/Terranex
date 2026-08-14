@@ -260,8 +260,8 @@ merged GF-013 through GF-016:
    the input-stock boundary from evidence.
 
 GF-013 through GF-019 are technically implemented. Real Estate and Agriculture
-are technically implemented for their authorized scopes. Livestock is the next
-authorized sector. Real Estate stays
+are technically implemented for their authorized scopes. Livestock is the active
+sector, with GF-020 as the active bounded Site → Herd → Cohort foundation. Real Estate stays
 unchanged unless a proved regression requires the smallest forward repair.
 
 Technical completion never counts as Agriculture customer UAT, a paid pilot,

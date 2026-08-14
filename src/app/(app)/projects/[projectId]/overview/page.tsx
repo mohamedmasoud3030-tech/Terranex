@@ -39,9 +39,8 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
   if (!project) notFound();
   // Agriculture projects do not have a Real Estate overview; the
   // canonical sector landing is the agriculture workspace.
-  if (project.sector === 'AGRICULTURE') {
-    redirect(`/projects/${projectId}/agriculture`);
-  }
+  if (project.sector === 'AGRICULTURE') redirect(`/projects/${projectId}/agriculture`);
+  if (project.sector === 'LIVESTOCK') redirect(`/projects/${projectId}/livestock`);
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
   const money = (value: string | number | bigint | null | undefined) => formatMinorUnits(value ?? '0', currency);

@@ -14,7 +14,7 @@ const projectsQueriesSource = readFileSync('src/features/projects/queries.ts', '
 
 describe('GF-013 sector-aware project identity', () => {
   it('exposes the canonical REAL_ESTATE | AGRICULTURE sector vocabulary to the application', () => {
-    expect(SECTORS).toEqual(['REAL_ESTATE', 'AGRICULTURE']);
+    expect(SECTORS).toEqual(['REAL_ESTATE', 'AGRICULTURE', 'LIVESTOCK']);
   });
 
   it('requires an explicit sector when validating project creation', () => {
@@ -36,7 +36,7 @@ describe('GF-013 sector-aware project identity', () => {
       organizationId: '00000000-0000-4000-8000-000000000001',
       name: 'مشروع',
       sector: 'LIVESTOCK',
-    }).success).toBe(false);
+    }).success).toBe(true);
   });
 
   it('expands the database sector constraint to include AGRICULTURE', () => {
@@ -81,8 +81,8 @@ describe('GF-013 sector-aware navigation', () => {
     expect(projectFormSource).toContain('عقارات');
     expect(projectFormSource).toContain('زراعة');
     expect(projectFormSource).toMatch(/name="sector"/);
-    expect(projectFormSource).not.toContain('LIVESTOCK');
-    expect(projectFormSource).not.toContain('Livestock');
+    expect(projectFormSource).toContain('LIVESTOCK');
+    expect(projectFormSource).toContain('ثروة حيوانية');
   });
 
   it('the project home page links Agriculture projects to the agriculture workspace and Real Estate to operations', () => {
@@ -119,7 +119,6 @@ describe('GF-013 sector-aware navigation', () => {
       projectsQueriesSource,
     ];
     for (const s of sources) {
-      expect(s).not.toMatch(/livestock/i);
       expect(s).not.toMatch(/plugin|rules engine|outbox/i);
     }
   });

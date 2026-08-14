@@ -6,6 +6,7 @@ import { SECTORS } from '@/features/projects/schema';
 const SECTOR_LABEL: Record<(typeof SECTORS)[number], string> = {
   REAL_ESTATE: 'عقارات',
   AGRICULTURE: 'زراعة',
+  LIVESTOCK: 'ثروة حيوانية',
 };
 
 export default function NewProjectForm({ organizationId }: { organizationId: string }) {
@@ -37,9 +38,7 @@ export default function NewProjectForm({ organizationId }: { organizationId: str
             ))}
           </div>
           <small className="muted">
-            {sector === 'AGRICULTURE'
-              ? 'سيُفتح المشروع في مساحة الزراعة بعد إنشائه.'
-              : 'سيُفتح المشروع في المسار الموجّه للعقارات بعد إنشائه.'}
+            {sector === 'AGRICULTURE' ? 'سيُفتح المشروع في مساحة الزراعة بعد إنشائه.' : sector === 'LIVESTOCK' ? 'سيُفتح المشروع في مساحة الثروة الحيوانية بعد إنشائه.' : 'سيُفتح المشروع في المسار الموجّه للعقارات بعد إنشائه.'}
           </small>
         </fieldset>
         <label>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const SECTORS = ['REAL_ESTATE', 'AGRICULTURE'] as const;
+export const SECTORS = ['REAL_ESTATE', 'AGRICULTURE', 'LIVESTOCK'] as const;
 
 export const projectSchema = z.object({
   organizationId: z.string().uuid(),
