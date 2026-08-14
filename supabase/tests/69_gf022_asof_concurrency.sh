@@ -70,7 +70,7 @@ if ! { [[ "$status_a" -eq 0 && "$status_b" -ne 0 ]] || [[ "$status_a" -ne 0 && "
   exit 1
 fi
 if [[ "$status_a" -ne 0 ]]; then LOSER="$tmpdir/m7.log"; else LOSER="$tmpdir/m6.log"; fi
-if ! grep -q 'exceeds the current derived quantity' "$LOSER"; then
+if ! grep -Eq 'exceeds the current derived quantity|as-of quantity cannot go below zero' "$LOSER"; then
   echo 'ERROR: losing as-of mortality did not fail on the effective-time balance.' >&2
   cat "$LOSER" >&2
   exit 1
