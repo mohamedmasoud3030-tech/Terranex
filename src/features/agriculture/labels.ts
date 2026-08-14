@@ -144,3 +144,28 @@ export function formatAgricultureSaleState(state: string | null | undefined): st
   if (!state) return '—';
   return AGRICULTURE_SALE_STATE_LABEL[state] ?? state;
 }
+
+// GF-019 — operator-facing result and cost labels.
+export const CROP_CYCLE_COST_CATEGORY_LABEL: Record<string, string> = {
+  INPUTS: 'مدخلات زراعية',
+  LABOR: 'عمالة',
+  EQUIPMENT: 'معدات وتشغيل',
+  IRRIGATION: 'ري',
+  HARVEST: 'حصاد',
+  STORAGE: 'تخزين',
+  OTHER: 'تشغيل أخرى',
+};
+
+export const EVIDENCE_COMPLETENESS_LABEL: Record<string, string> = {
+  COMPLETE: 'المصادر والأدلة مكتملة',
+  PARTIAL: 'بعض الأدلة المرجعية غير مسجلة',
+  INCOMPLETE: 'أساس النتيجة غير مكتمل',
+};
+
+export function formatCostCategory(category: string): string {
+  return CROP_CYCLE_COST_CATEGORY_LABEL[category] ?? category;
+}
+
+export function formatEvidenceCompleteness(status: string): string {
+  return EVIDENCE_COMPLETENESS_LABEL[status] ?? status;
+}

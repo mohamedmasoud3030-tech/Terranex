@@ -579,3 +579,104 @@ export const getHarvestLotSaleTraceability = (projectId: string) =>
     projectId,
     'harvest_date',
   );
+
+// ---------------------------------------------------------------------------
+// GF-019 — result, integrity and authoritative cost-source read models.
+// ---------------------------------------------------------------------------
+export type CropCycleCostSourceRead = {
+  source_journal_line_id: string;
+  organization_id: string;
+  project_id: string;
+  batch_id: string;
+  cost_obligation_id: string;
+  description: string;
+  transaction_date: string;
+  party_id: string;
+  posted_amount_minor_units: string;
+  attributed_amount_minor_units: string;
+  available_amount_minor_units: string;
+  currency: string;
+  authoritative_source: 'FINANCE_CORE_POSTED_JOURNAL_LINE';
+};
+
+export type CropCycleResultRead = {
+  crop_cycle_id: string;
+  organization_id: string;
+  project_id: string;
+  crop: string;
+  variety: string | null;
+  season_reference: string;
+  operational_state: CropCycleRead['operational_state'];
+  farm_names: string;
+  field_identifiers: string;
+  assignment_count: number;
+  assigned_area_quantity: string | null;
+  area_unit: FieldRead['area_unit'] | null;
+  harvest_event_count: number;
+  gross_harvest_quantity: string | null;
+  net_accepted_harvest_quantity: string | null;
+  harvest_loss: string | null;
+  spoilage_quantity: string | null;
+  quantity_sold: string | null;
+  remaining_physical_inventory: string | null;
+  quantity_unit: string | null;
+  recognized_revenue_minor_units: string;
+  cash_collected_minor_units: string;
+  receivable_outstanding_minor_units: string;
+  attributed_operating_cost_minor_units: string;
+  operating_result_to_date_minor_units: string;
+  currency: string;
+  yield_per_area: string | null;
+  recognized_revenue_minor_units_per_area: string | null;
+  operating_cost_minor_units_per_area: string | null;
+  realized_average_selling_price_minor_units: string | null;
+  activity_count: number;
+  input_application_count: number;
+  source_evidence_completeness: 'COMPLETE' | 'PARTIAL' | 'INCOMPLETE';
+  open_exception_count: number;
+  hard_exception_count: number;
+  open_exception_codes: string | null;
+  land_asset_names: string | null;
+  land_control_bases: string | null;
+  land_consideration_minor_units: string;
+  land_cost_treatment: 'EXCLUDED_FROM_CROP_CYCLE_OPERATING_COST';
+  remaining_inventory_value_status: 'UNAVAILABLE_NOT_RECOGNIZED_BY_CURRENT_POLICY';
+  cogs_status: 'NOT_GUESSED';
+  closed_by: string | null;
+  closed_at: string | null;
+  close_reason: string | null;
+  close_evidence_reference: string | null;
+};
+
+export type CropCycleIntegrityIssueRead = {
+  organization_id: string;
+  project_id: string;
+  crop_cycle_id: string;
+  code: string;
+  severity: 'HARD' | 'WARN';
+  message_ar: string;
+};
+
+export const getCropCycleCostSources = (projectId: string) =>
+  many<CropCycleCostSourceRead>(
+    'crop_cycle_cost_sources_read',
+    'source_journal_line_id,organization_id,project_id,batch_id,cost_obligation_id,description,transaction_date,party_id,posted_amount_minor_units,attributed_amount_minor_units,available_amount_minor_units,currency,authoritative_source',
+    projectId,
+    'transaction_date',
+  );
+
+export const getCropCycleResults = (projectId: string) =>
+  many<CropCycleResultRead>(
+    'crop_cycle_results_read',
+    'crop_cycle_id,organization_id,project_id,crop,variety,season_reference,operational_state,farm_names,field_identifiers,assignment_count,assigned_area_quantity,area_unit,harvest_event_count,gross_harvest_quantity,net_accepted_harvest_quantity,harvest_loss,spoilage_quantity,quantity_sold,remaining_physical_inventory,quantity_unit,recognized_revenue_minor_units,cash_collected_minor_units,receivable_outstanding_minor_units,attributed_operating_cost_minor_units,operating_result_to_date_minor_units,currency,yield_per_area,recognized_revenue_minor_units_per_area,operating_cost_minor_units_per_area,realized_average_selling_price_minor_units,activity_count,input_application_count,source_evidence_completeness,open_exception_count,hard_exception_count,open_exception_codes,land_asset_names,land_control_bases,land_consideration_minor_units,land_cost_treatment,remaining_inventory_value_status,cogs_status,closed_by,closed_at,close_reason,close_evidence_reference',
+    projectId,
+    'season_reference',
+  );
+
+export const getCropCycleIntegrityIssues = (projectId: string) =>
+  many<CropCycleIntegrityIssueRead>(
+    'crop_cycle_integrity_issues_read',
+    'organization_id,project_id,crop_cycle_id,code,severity,message_ar',
+    projectId,
+    'code',
+  );
