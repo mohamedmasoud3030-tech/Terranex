@@ -265,3 +265,93 @@ export const inputApplicationSchema = z.object({
 export type InputItemInput = z.infer<typeof inputItemSchema>;
 export type InputLotInput = z.infer<typeof inputLotSchema>;
 export type InputApplicationInput = z.infer<typeof inputApplicationSchema>;
+
+// ---------------------------------------------------------------------------
+// GF-016 — Harvest & Inventory Flow Foundation.
+//
+// Harvest Event, Harvest Lot, Storage Location, and append-only harvest
+// inventory movements. The harvest quantity unit is captured once and the
+// event and its lot share it; movement quantities always use the lot's own
+// unit (derived server-side, never asserted by the browser).
+//
+// No SALE_ISSUE movement, no sale/valuation/accounting field, and no input
+// stock balance is modelled here.
+// ---------------------------------------------------------------------------
+export const HARVEST_MOVEMENT_TYPES = [
+  'HARVEST_RECEIPT', 'TRANSFER', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'SPOILAGE',
+] as const;
+export type HarvestMovementType = typeof HARVEST_MOVEMENT_TYPES[number];
+
+export const storageLocationSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  name: z.string().trim().min(2, 'اسم موقع التخزين مطلوب').max(160),
+  internalReference: optionalText(80),
+  notes: optionalText(2000),
+  idempotencyKey,
+});
+
+const harvestQuantity = positiveDecimal;
+
+export const harvestEventSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  assignmentId: uuid,
+  harvestDate: dateRequired,
+  grossQuantity: harvestQuantity,
+  netQuantity: harvestQuantity,
+  quantityUnit: z.string().trim().min(1, 'وحدة الكمية مطلوبة').max(40),
+  grade: optionalText(80),
+  lotReference: z.string().trim().min(1, 'مرجع التشغيلة مطلوب').max(120),
+  destinationStorageId: uuid,
+  notes: optionalText(2000),
+  evidenceReference: optionalText(200),
+  idempotencyKey,
+}).superRefine((data, ctx) => {
+  if (Number(data.netQuantity) > Number(data.grossQuantity)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['netQuantity'],
+      message: 'الكمية الصافية يجب ألا تتجاوز الكمية الإجمالية',
+    });
+  }
+});
+
+export const transferHarvestInventorySchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  harvestLotId: uuid,
+  fromStorageId: uuid,
+  toStorageId: uuid,
+  quantity: harvestQuantity,
+  movementDate: dateRequired,
+  reason: optionalText(500),
+  evidenceReference: optionalText(200),
+  idempotencyKey,
+}).superRefine((data, ctx) => {
+  if (data.fromStorageId === data.toStorageId) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['toStorageId'],
+      message: 'لا يمكن النقل إلى نفس موقع التخزين',
+    });
+  }
+});
+
+export const harvestInventoryAdjustmentSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  harvestLotId: uuid,
+  storageId: uuid,
+  movementType: z.enum(['ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'SPOILAGE'], { message: 'نوع الحركة غير صالح' }),
+  quantity: harvestQuantity,
+  movementDate: dateRequired,
+  reason: z.string().trim().min(3, 'سبب التعديل مطلوب').max(500),
+  evidenceReference: optionalText(200),
+  idempotencyKey,
+});
+
+export type StorageLocationInput = z.infer<typeof storageLocationSchema>;
+export type HarvestEventInput = z.infer<typeof harvestEventSchema>;
+export type TransferHarvestInventoryInput = z.infer<typeof transferHarvestInventorySchema>;
+export type HarvestInventoryAdjustmentInput = z.infer<typeof harvestInventoryAdjustmentSchema>;

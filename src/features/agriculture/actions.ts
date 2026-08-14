@@ -11,9 +11,13 @@ import {
   farmSchema,
   fieldActivitySchema,
   fieldSchema,
+  harvestEventSchema,
+  harvestInventoryAdjustmentSchema,
   inputApplicationSchema,
   inputItemSchema,
   inputLotSchema,
+  storageLocationSchema,
+  transferHarvestInventorySchema,
 } from './schema';
 
 function fail(error: string): ActionState { return { error }; }
@@ -74,6 +78,27 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('applied area exceeds the assigned area')) return fail('المساحة المعالجة تتجاوز المساحة المخصصة لهذا التخصيص.');
   if (text.includes('invalid application date')) return fail('تاريخ التطبيق غير صالح.');
   if (text.includes('invalid safety note')) return fail('ملاحظة السلامة غير صالحة.');
+  // GF-016 — harvest event, harvest lot, storage location, and harvest inventory movement.
+  if (text.includes('invalid storage location name')) return fail('اسم موقع التخزين مطلوب (حرفان على الأقل).');
+  if (text.includes('storage location already exists')) return fail('يوجد موقع تخزين بنفس الاسم في هذا المشروع.');
+  if (text.includes('storage location not found')) return fail('موقع التخزين المحدد غير موجود في هذا المشروع.');
+  if (text.includes('crop cycle is not harvest-ready')) return fail('دورة المحصول ليست جاهزة للحصاد. انقلها إلى حالة "قيد الحصاد" أولًا.');
+  if (text.includes('harvest gross quantity must be positive')) return fail('الكمية الإجمالية للحصاد يجب أن تكون موجبة.');
+  if (text.includes('harvest net quantity must be positive')) return fail('الكمية الصافية للحصاد يجب أن تكون موجبة.');
+  if (text.includes('harvest net quantity must not exceed gross quantity')) return fail('الكمية الصافية يجب ألا تتجاوز الكمية الإجمالية.');
+  if (text.includes('invalid harvest quantity unit')) return fail('وحدة كمية الحصاد مطلوبة.');
+  if (text.includes('invalid harvest grade')) return fail('درجة/جودة الحصاد غير صالحة.');
+  if (text.includes('harvest lot reference already exists')) return fail('مرجع تشغيلة الحصاد مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('harvest lot not found')) return fail('تشغيلة الحصاد المحددة غير موجودة في هذه المنظمة.');
+  if (text.includes('insufficient inventory')) return fail('الرصيد المتاح غير كافٍ لهذه الحركة.');
+  if (text.includes('transfer source and destination storage must differ')) return fail('لا يمكن النقل إلى نفس موقع التخزين.');
+  if (text.includes('cannot precede the harvest date')) return fail('تاريخ الحركة لا يمكن أن يسبق تاريخ الحصاد.');
+  if (text.includes('transfer quantity must be positive')) return fail('كمية النقل يجب أن تكون موجبة.');
+  if (text.includes('adjustment quantity must be positive')) return fail('كمية التعديل يجب أن تكون موجبة.');
+  if (text.includes('adjustment reason is required')) return fail('سبب التعديل مطلوب.');
+  if (text.includes('invalid harvest inventory movement type')) return fail('نوع حركة المخزون غير صالح.');
+  if (text.includes('invalid movement reason')) return fail('سبب الحركة غير صالح.');
+  if (text.includes('invalid movement date')) return fail('تاريخ الحركة غير صالح.');
   return fail(fallback);
 }
 
@@ -309,6 +334,108 @@ export async function recordInputApplication(_: ActionState, form: FormData): Pr
       p_idempotency_key: value.idempotencyKey,
     },
     'تعذر تسجيل تطبيق المدخل.',
+    value.projectId,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GF-016 — Harvest & Inventory Flow Foundation.
+//
+// Four commands, all server-authoritative. The browser never supplies the
+// actor. For a harvest, project, crop cycle, field and assignment are all
+// derived server-side from the referenced assignment; the movement unit is
+// derived server-side from the referenced Harvest Lot. `projectId` is
+// carried in the form only so the affected workspace paths are revalidated.
+//
+// GF-016 tracks physical harvest-output quantity only: no sale, valuation,
+// accounting, biological-asset, or input-stock fact is created, and
+// CropCycle lifecycle state is never advanced.
+// ---------------------------------------------------------------------------
+
+export async function createStorageLocation(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(storageLocationSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_storage_location',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_notes: value.notes,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل موقع التخزين.',
+    value.projectId,
+  );
+}
+
+export async function recordHarvestEvent(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(harvestEventSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  // Project, crop cycle, field and assignment are derived server-side from
+  // the referenced assignment; they are not re-asserted by the browser.
+  return rpc(
+    'record_harvest_event',
+    {
+      p_organization_id: value.organizationId,
+      p_assignment_id: value.assignmentId,
+      p_harvest_date: value.harvestDate,
+      p_gross_quantity: value.grossQuantity.replace(',', '.'),
+      p_net_quantity: value.netQuantity.replace(',', '.'),
+      p_quantity_unit: value.quantityUnit,
+      p_grade: value.grade,
+      p_lot_reference: value.lotReference,
+      p_destination_storage_id: value.destinationStorageId,
+      p_notes: value.notes,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل حدث الحصاد.',
+    value.projectId,
+  );
+}
+
+export async function transferHarvestInventory(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(transferHarvestInventorySchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  // The movement unit is derived server-side from the Harvest Lot's own
+  // unit; it is never supplied by the browser.
+  return rpc(
+    'transfer_harvest_inventory',
+    {
+      p_organization_id: value.organizationId,
+      p_harvest_lot_id: value.harvestLotId,
+      p_from_storage_id: value.fromStorageId,
+      p_to_storage_id: value.toStorageId,
+      p_quantity: value.quantity.replace(',', '.'),
+      p_movement_date: value.movementDate,
+      p_reason: value.reason,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تنفيذ نقل المخزون.',
+    value.projectId,
+  );
+}
+
+export async function recordHarvestInventoryAdjustment(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(harvestInventoryAdjustmentSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'record_harvest_inventory_adjustment',
+    {
+      p_organization_id: value.organizationId,
+      p_harvest_lot_id: value.harvestLotId,
+      p_storage_id: value.storageId,
+      p_movement_type: value.movementType,
+      p_quantity: value.quantity.replace(',', '.'),
+      p_movement_date: value.movementDate,
+      p_reason: value.reason,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل تعديل المخزون.',
     value.projectId,
   );
 }

@@ -347,7 +347,10 @@ describe('GF-015 database verification coverage', () => {
   });
 
   it('constructs the forward-upgrade fixture at the real pre-GF-015 boundary', () => {
-    expect(upgradeTest).toContain('20260814001200*.sql) continue ;;');
+    // The skip list excludes the GF-015 family and every later family
+    // (GF-016) so a later migration is never applied before GF-015's own
+    // prerequisites.
+    expect(upgradeTest).toContain('20260814001200*.sql|20260814001300*.sql) continue ;;');
     // Guard against the GF-014 defect: the skip list must not remove a
     // prerequisite, so the fixture asserts a minimum applied count.
     expect(upgradeTest).toContain('the skip list is too broad');
@@ -386,7 +389,10 @@ describe('GF-015 application layer', () => {
 
   it('does not send the derived scope or the actor from the browser', () => {
     expect(actions).not.toContain('p_crop_cycle_id: value.cropCycleId,\n      p_field_activity_id');
-    const applicationCall = actions.slice(actions.indexOf("'record_input_application'"));
+    const applicationCall = actions.slice(
+      actions.indexOf("'record_input_application'"),
+      actions.indexOf("'create_storage_location'"),
+    );
     expect(applicationCall).not.toContain('p_recorded_by');
     expect(applicationCall).not.toContain('p_assignment_id');
     expect(applicationCall).not.toContain('p_crop_cycle_id');
@@ -483,10 +489,17 @@ describe('GF-015 workspace UI', () => {
     expect(forms).not.toContain('property_assets');
   });
 
-  it('does not scaffold deferred GF-016+ scope', () => {
-    expect(page).not.toMatch(/حصاد|ماشية|IAS 41|أمر شراء|مستودع/);
-    expect(forms).not.toMatch(/harvest|livestock|warehouse|purchaseOrder/i);
-    expect(actions).not.toMatch(/createHarvest|createInventoryMovement|createStorageLocation/);
+  it('scaffolds GF-016 harvest/inventory but not sale, livestock or warehouse ERP', () => {
+    // GF-016 legitimately delivers harvest/inventory in this workspace.
+    expect(page).toContain('الحصاد والمخزون');
+    expect(forms).toMatch(/HarvestEventForm/);
+    expect(forms).toMatch(/StorageLocationForm/);
+    expect(actions).toMatch(/createStorageLocation/);
+    expect(actions).toMatch(/recordHarvestEvent/);
+    // Sale, livestock and warehouse ERP remain deferred.
+    expect(page).not.toMatch(/ماشية|IAS 41|أمر شراء|مستودع|فاتورة|مشترٍ|سعر بيع/);
+    expect(forms).not.toMatch(/livestock|warehouse|purchaseOrder|saleOrder|invoice|buyer/i);
+    expect(actions).not.toMatch(/recordSale|createInvoice|createBuyer|createPurchaseOrder|sale_issue/i);
   });
 });
 
