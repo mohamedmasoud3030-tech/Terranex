@@ -333,6 +333,11 @@ then 1 else 0 end as privileged_merge_lineage_mismatch_rejected;
 -- ---------------------------------------------------------------------------
 -- Lifecycle, quality and disposal boundaries.
 -- ---------------------------------------------------------------------------
+select 'GF68_PRE_LIFECYCLE_DIAGNOSTIC' as diagnostic,
+       :'gf68_asof' as asof_id, :'gf68_exhausted' as exhausted_id,
+       (select count(*) from livestock_quantity_events where cohort_id=:'gf68_asof') as asof_events,
+       (select count(*) from livestock_quantity_events where cohort_id=:'gf68_exhausted') as exhausted_events;
+
 -- A zero ACTIVE Cohort remains visible but consuming/measurement commands are
 -- not accepted; no implicit CLOSED/LOST state is manufactured. Keep this
 -- fixture separate from the earlier Cohort carrying scheduled future events,
