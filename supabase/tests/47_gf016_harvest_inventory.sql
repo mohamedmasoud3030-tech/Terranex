@@ -364,8 +364,12 @@ select 1/case when s16_catch('00000000-0000-4000-8000-000000000001', format(
 select s16_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.transfer_harvest_inventory('10000000-0000-4000-8000-000000000001',%L,%L,%L,'1',date '2027-08-01',null,null,'s16-transfer-on-date')$$
   , :'s16_lot', :'s16_storage_a', :'s16_storage_b')) as s16_transfer_on_date \gset
-select 1/case when s16_transfer_on_date is not null then 1 else 0 end
-  as s16_movement_on_harvest_date_allowed;
+select 1/case when (
+  select count(*) from public.harvest_inventory_movements
+  where idempotency_key = 's16-transfer-on-date'
+    and movement_type = 'TRANSFER'
+    and movement_date = date '2027-08-01'
+) = 1 then 1 else 0 end as s16_movement_on_harvest_date_allowed;
 
 -- ---------------------------------------------------------------------------
 -- 8. Adjustment and spoilage.
