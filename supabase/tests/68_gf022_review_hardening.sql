@@ -202,6 +202,10 @@ $q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
 -- ---------------------------------------------------------------------------
 -- Exact SPLIT/MERGE semantic shape under privileged writes.
 -- ---------------------------------------------------------------------------
+select 'GF68_PRE_SHAPE_DIAGNOSTIC' as diagnostic, c.id, c.cohort_reference,
+       c.opening_headcount
+from livestock_cohorts c
+where c.id in (:'gf68_asof', :'gf68_backdated', :'gf68_weight_cohort');
 -- Extra balanced SPLIT legs are rejected, even though sum(out) = sum(in).
 select gf20_owner_catch(format($q$
   DO $do$
