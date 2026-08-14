@@ -95,7 +95,8 @@ QUANTITIES_BEFORE="$(psql_db "$UPGRADE_DB" -Atc "select md5(coalesce(string_agg(
 # review hardening.
 for migration in \
   "$ROOT"/supabase/migrations/20260814001900_*.sql \
-  "$ROOT"/supabase/migrations/20260814002000_*.sql; do
+  "$ROOT"/supabase/migrations/20260814002000_*.sql \
+  "$ROOT"/supabase/migrations/20260814002100_*.sql; do
   psql_db "$UPGRADE_DB" < "$migration" >/dev/null
 done
 
@@ -133,7 +134,7 @@ SITE="$(psql_db "$UPGRADE_DB" -Atc "select id from livestock_sites where interna
 
 # A Cohort created before GF-022 still reports current = opening, then accepts
 # the new biological events.
-COHORT="$(psql_db "$UPGRADE_DB" -Atc "$AUTH select create_livestock_cohort('$ORG','$PROJECT','$HERD','$SITE','دفعة ترقية 022','PURCHASED',date '2026-09-01',80,null,null,null,null,null,null,null,'gf22-up-cohort');" | tail -1)"
+COHORT="$(psql_db "$UPGRADE_DB" -Atc "$AUTH select create_livestock_cohort('$ORG','$PROJECT','$HERD','$SITE','دفعة ترقية 022','PURCHASED',date '2026-08-01',80,null,null,null,null,null,null,null,'gf22-up-cohort');" | tail -1)"
 psql_db "$UPGRADE_DB" -Atc "$AUTH select transition_livestock_cohort('$ORG','$PROJECT','$COHORT','PLANNED','ACTIVE','تفعيل ترقية',null,'gf22-up-activate');" >/dev/null
 psql_db "$UPGRADE_DB" -Atc "$AUTH select record_livestock_birth('$ORG','$PROJECT','$COHORT',10,now(),null,null,'gf22-up-birth');" >/dev/null
 psql_db "$UPGRADE_DB" -Atc "$AUTH select record_livestock_mortality('$ORG','$PROJECT','$COHORT',5,now(),'DISEASE',null,null,null,'gf22-up-mortality');" >/dev/null
@@ -156,6 +157,8 @@ CHECK="$(psql_db "$UPGRADE_DB" -Atc "select (
         - mortality - split_out - merge_out)
      from livestock_cohort_quantity_rollforward)
   and (select count(*)=0 from livestock_cohort_quantity_rollforward where current_quantity < 0)
+  and (select operational_inception_at = (date '2026-08-01'::timestamp at time zone 'UTC')
+       from livestock_cohorts_read where id='$COHORT')
 )::text")"
 [[ "$CHECK" == true ]] || {
   echo "ERROR: GF-022 post-upgrade workflow failed ($CHECK)" >&2

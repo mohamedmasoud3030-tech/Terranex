@@ -17,6 +17,10 @@ const migration = readFileSync(
   'supabase/migrations/20260814002000_livestock_review_hardening.sql',
   'utf8',
 );
+const inceptionMigration = readFileSync(
+  'supabase/migrations/20260814002100_livestock_cohort_inception.sql',
+  'utf8',
+);
 const page = readFileSync(
   'src/app/(app)/projects/[projectId]/livestock/page.tsx',
   'utf8',
@@ -100,8 +104,19 @@ describe('GF-022 review hardening database contract', () => {
     expect(migration).toContain('deferrable initially deferred');
   });
 
+  it('defines date-only normal inception and exact derived-operation inception', () => {
+    expect(inceptionMigration).toContain('gf022_cohort_inception_at');
+    expect(inceptionMigration).toContain("origin_date::timestamp without time zone at time zone 'UTC'");
+    expect(inceptionMigration).toContain('derived Cohort inception is not established');
+    expect(inceptionMigration).toContain('livestock_quantity_events_inception_guard');
+    expect(inceptionMigration).toContain('livestock_movements_inception_guard');
+    expect(inceptionMigration).toContain('livestock_derived_cohort_provenance_validate');
+    expect(inceptionMigration).toContain('operational_inception_at');
+  });
+
   it('keeps zero ACTIVE bounded without inventing a later lifecycle state', () => {
     expect(migration).toContain('has no positive quantity at the weight effective time');
+    expect(page).toContain('operationalActiveCohorts');
     expect(page).toContain('positiveQuantityCohorts');
     expect(forms).toContain('لا يمكن تسجيل النفوق على دفعة مستنفدة');
     expect(forms).toContain('لا يمكن تسجيل وزن لدفعة مستنفدة');
@@ -154,6 +169,8 @@ describe('GF-022 review errors', () => {
       ['livestock movement Herd species must match the Cohort species', 'نوع القطيع'],
       ['invalid livestock mortality disposal method', 'طريقة التخلص'],
       ['invalid livestock weight confidence level', 'درجة الثقة'],
+      ['livestock movement effective time precedes Cohort inception', 'بداية تشغيل'],
+      ['livestock derived Cohort inception is not established', 'لم تثبت'],
     ] as const) {
       expect(livestockErrorMessage(databaseMessage)).toContain(expected);
     }

@@ -212,12 +212,14 @@ function CurrentPlacements({
   herds,
   organizationId,
   projectId,
+  operationalCohortIds,
 }: Readonly<{
   placements: readonly CurrentPlacementRead[];
   sites: readonly SiteRead[];
   herds: readonly HerdRead[];
   organizationId: string;
   projectId: string;
+  operationalCohortIds: ReadonlySet<string>;
 }>) {
   if (placements.length === 0) {
     return <p className="muted">لا توجد دفعات لعرض موقعها الحالي.</p>;
@@ -248,17 +250,21 @@ function CurrentPlacements({
           <small className="muted">
             حقيقة مشتقة من الوضع الافتتاحي وسلسلة الحركات، وليست بيانًا أساسيًا قابلًا للتحرير.
           </small>
-          <details>
-            <summary>نقل الدفعة</summary>
-            <MovementForm
-              organizationId={organizationId}
-              projectId={projectId}
-              commandNonce={newCommandNonce()}
-              placement={placement}
-              sites={sites}
-              herds={herds}
-            />
-          </details>
+          {operationalCohortIds.has(placement.cohort_id) ? (
+            <details>
+              <summary>نقل الدفعة</summary>
+              <MovementForm
+                organizationId={organizationId}
+                projectId={projectId}
+                commandNonce={newCommandNonce()}
+                placement={placement}
+                sites={sites}
+                herds={herds}
+              />
+            </details>
+          ) : (
+            <p className="muted">تظهر الدفعة للجدولة، لكن لا يمكن تسجيل حركة قبل بداية تشغيلها المشتقة.</p>
+          )}
         </article>
       ))}
     </div>
@@ -472,13 +478,18 @@ export default async function LivestockPage({
   // Operational events belong to an ACTIVE Cohort; a PLANNED one has not
   // entered operations yet and the database refuses events against it.
   const activeCohorts = cohorts.filter((cohort) => cohort.lifecycle_state === 'ACTIVE');
+  // A row may be created now to schedule a future split/merge, but it is not
+  // operational until the database-derived inception boundary is reached.
+  const operationalActiveCohorts = activeCohorts.filter(
+    (cohort) => cohort.is_operational_as_of_now,
+  );
+  const operationalCohortIds = new Set(operationalActiveCohorts.map((cohort) => cohort.id));
   const currentQuantityByCohort = new Map(
     quantities.map((row) => [row.cohort_id, row.current_quantity]),
   );
   // Consumption and measurement forms only offer a currently positive Cohort.
-  // Birth remains available for an ACTIVE zero Cohort because it is an additive
-  // fact; the database still validates any later destructive event as-of time.
-  const positiveQuantityCohorts = activeCohorts.filter(
+  // Birth remains available for an ACTIVE zero Cohort after its inception.
+  const positiveQuantityCohorts = operationalActiveCohorts.filter(
     (cohort) => (currentQuantityByCohort.get(cohort.id) ?? 0) > 0,
   );
   return (
@@ -527,6 +538,7 @@ export default async function LivestockPage({
           herds={herds}
           organizationId={project.organization_id}
           projectId={projectId}
+          operationalCohortIds={operationalCohortIds}
         />
       </section>
       <section className="card stack">
@@ -539,7 +551,7 @@ export default async function LivestockPage({
       </section>
       <section className="card stack">
         <h2>تسجيل ولادات</h2>
-        <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+        <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={operationalActiveCohorts} />
       </section>
       <section className="card stack">
         <h2>تسجيل نفوق</h2>

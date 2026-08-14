@@ -78,6 +78,10 @@ const ERROR_RULES: readonly ErrorRule[] = [
   { includes: 'Herd species must match', message: 'نوع القطيع الوجهة يجب أن يطابق نوع الدفعة.' },
   { includes: 'has no positive quantity', message: 'لا يمكن تنفيذ هذا الإجراء على دفعة مستنفدة عند وقت الواقعة.' },
   { includes: 'invalid livestock weight confidence level', message: 'درجة الثقة التشغيلية غير صالحة.' },
+  { includes: 'derived Cohort inception is not established', message: 'لم تثبت بعد بداية تشغيل الدفعة الناتجة عن العملية.' },
+  { includes: 'Cohort inception', message: 'لا يمكن تسجيل الواقعة قبل بداية تشغيل الدفعة الموثقة.' },
+  { includes: 'derived Cohort origin does not match', message: 'مصدر الدفعة الناتجة لا يطابق نوع العملية.' },
+  { includes: 'producing operation', message: 'يجب أن ترتبط الدفعة الناتجة بعملية إنتاج واحدة مكتملة.' },
 ];
 
 export function livestockErrorMessage(databaseMessage?: string): string {

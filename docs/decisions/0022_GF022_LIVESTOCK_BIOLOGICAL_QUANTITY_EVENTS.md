@@ -159,3 +159,21 @@ Mortality events now store constrained `disposal_method` values:
 `PENDING` is an explicit operational state for legacy callers that did not yet
 capture the method. Disposal remains operational evidence only and creates no
 Finance posting.
+
+### Inception and future-derived provenance
+
+The authoritative operational inception for a normal Cohort is its `origin_date`
+at **00:00 UTC**. This is a date-only lower boundary; it does not claim a
+legacy time of day that was never recorded. `livestock_cohort_quantity_as_of`
+returns zero before that boundary and includes opening quantity only at or after
+it. Quantity, mortality, birth, movement, split, merge, and weight writes before
+that boundary are database-rejected.
+
+A `SPLIT_FROM_COHORT` or `MERGED_FROM_COHORTS` Cohort instead becomes
+operational at the exact `effective_at` of its single producing operation. The
+provenance trigger requires the derived origin to match the operation type and
+rejects ambiguous or multiple producing operations. A future operation may
+create a scheduling row and its lifecycle scaffold, but the Cohort has zero
+as-of quantity and no operational event—including birth or movement—can be
+recorded before that exact producing timestamp. The UI hides operational forms
+until the inception boundary is reached.

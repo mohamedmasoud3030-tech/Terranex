@@ -52,6 +52,8 @@ export type CohortRead = {
   created_by: string;
   created_at: string;
   lifecycle_state: string;
+  operational_inception_at: string;
+  is_operational_as_of_now: boolean;
 };
 
 export type CohortTimelineRead = {
@@ -97,7 +99,7 @@ export const getLivestockHerds = (projectId: string) => many<HerdRead>(
 
 export const getLivestockCohorts = (projectId: string) => many<CohortRead>(
   'livestock_cohorts_read',
-  'id,organization_id,project_id,herd_id,herd_name,herd_reference,species,purpose,initial_site_id,initial_site_name,cohort_reference,origin_type,origin_date,opening_headcount,sex_composition,breed_descriptor,opening_weight_value,opening_weight_unit,opening_weight_basis,origin_evidence_reference,notes,created_by,created_at,lifecycle_state',
+  'id,organization_id,project_id,herd_id,herd_name,herd_reference,species,purpose,initial_site_id,initial_site_name,cohort_reference,origin_type,origin_date,opening_headcount,sex_composition,breed_descriptor,opening_weight_value,opening_weight_unit,opening_weight_basis,origin_evidence_reference,notes,created_by,created_at,lifecycle_state,operational_inception_at,is_operational_as_of_now',
   projectId,
 );
 

@@ -169,15 +169,17 @@ then 1 else 0 end as privileged_herd_species_change_rejected;
 
 -- A split lineage into a Sheep Herd is rejected even when the rows are written
 -- directly by the database owner instead of through the RPC.
-select public.gf022_create_derived_cohort(
-  '10000000-0000-4000-8000-000000000001', :'gf68_project', :'gf68_sheep_herd',
-  :'gf68_site', 'دفعة وجهة نوع خاطئ', 'SPLIT_FROM_COHORT',
-  current_timestamp - interval '1 hour', null, null, null, null,
-  '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage'
-) gf68_bad_species_destination \gset
 select 1/case when gf20_owner_catch(format($q$
   DO $do$
+  DECLARE
+    v_destination uuid;
   BEGIN
+    v_destination := public.gf022_create_derived_cohort(
+      '10000000-0000-4000-8000-000000000001', %L, %L, %L,
+      'دفعة وجهة نوع خاطئ', 'SPLIT_FROM_COHORT',
+      current_timestamp - interval '1 hour', null, null, null, null,
+      '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage'
+    );
     insert into public.livestock_quantity_operations(
       id, organization_id, project_id, operation_type, effective_at, reason,
       performed_by, idempotency_key, request_hash
@@ -193,7 +195,7 @@ select 1/case when gf20_owner_catch(format($q$
       ('10000000-0000-4000-8000-000000000001', %L, %L, 'SPLIT_OUT', 1,
        current_timestamp - interval '1 hour', '68000000-0000-4000-8000-000000000001',
        '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage-out', repeat('c',64)),
-      ('10000000-0000-4000-8000-000000000001', %L, %L, 'SPLIT_IN', 1,
+      ('10000000-0000-4000-8000-000000000001', %L, v_destination, 'SPLIT_IN', 1,
        current_timestamp - interval '1 hour', '68000000-0000-4000-8000-000000000001',
        '00000000-0000-4000-8000-000000000001', 'gf68-bad-lineage-in', repeat('d',64));
     insert into public.livestock_cohort_lineage(
@@ -201,11 +203,11 @@ select 1/case when gf20_owner_catch(format($q$
       destination_cohort_id, quantity
     ) values (
       '10000000-0000-4000-8000-000000000001', %L,
-      '68000000-0000-4000-8000-000000000001', %L, %L, 1
+      '68000000-0000-4000-8000-000000000001', %L, v_destination, 1
     );
   END $do$;
-$q$, :'gf68_project', :'gf68_asof', :'gf68_asof', :'gf68_bad_species_destination',
-     :'gf68_asof', :'gf68_bad_species_destination')) like '%compatible species%'
+$q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
+     :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_project', :'gf68_asof')) like '%compatible species%'
 then 1 else 0 end as privileged_cross_species_lineage_rejected;
 
 -- ---------------------------------------------------------------------------
