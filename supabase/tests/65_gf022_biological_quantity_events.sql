@@ -537,10 +537,13 @@ select 1/case when (
 select 1/case when (
   select bool_and(
     current_quantity =
-      opening_headcount + births + split_in + merge_in
-      - mortality - split_out - merge_out
+      (case when cr.operational_inception_at <= current_timestamp
+            then r.opening_headcount else 0 end)
+      + r.births + r.split_in + r.merge_in
+      - r.mortality - r.split_out - r.merge_out
     and current_quantity >= 0)
-  from livestock_cohort_quantity_rollforward
+  from livestock_cohort_quantity_rollforward r
+  join livestock_cohorts_read cr on cr.id = r.cohort_id
 ) then 1 else 0 end as rollforward_invariant_holds_globally;
 
 -- Every event class is reflected exactly once in the rollforward.
