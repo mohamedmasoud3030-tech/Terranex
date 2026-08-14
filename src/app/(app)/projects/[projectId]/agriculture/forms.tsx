@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
 import {
   assignCropCycleToField,
+  createAgriculturalLandAsset,
   createAgricultureProfile,
   createCropCycle,
   createFarm,
@@ -12,13 +13,16 @@ import {
   createInputItem,
   createInputLot,
   createStorageLocation,
+  linkFarmToAgriculturalLandAsset,
   recordHarvestEvent,
   recordHarvestInventoryAdjustment,
   recordInputApplication,
   transferHarvestInventory,
   transitionCropCycle,
 } from '@/features/agriculture/actions';
+import type { Party } from '@/features/funding/queries';
 import type {
+  AgriculturalLandAssetRead,
   CropAssignmentRead,
   CropCycleRead,
   FarmRead,
@@ -36,6 +40,7 @@ import {
   FIELD_ACTIVITY_TYPES,
   INPUT_BEARING_ACTIVITY_TYPES,
   INPUT_CATEGORIES,
+  LAND_CONTROL_BASES,
   inputCategoryForActivity,
 } from '@/features/agriculture/schema';
 import {
@@ -44,6 +49,7 @@ import {
   FIELD_ACTIVITY_TYPE_LABEL,
   HARVEST_MOVEMENT_TYPE_LABEL,
   INPUT_CATEGORY_LABEL,
+  LAND_CONTROL_BASIS_LABEL,
   formatCycleState,
   formatFieldActivityType,
 } from '@/features/agriculture/labels';
@@ -93,6 +99,82 @@ export function ProfileForm({ organizationId, projectId }: { organizationId: str
       <div className="full">
         <Result state={state} pending={pending} label="إنشاء ملف الزراعة" />
       </div>
+    </form>
+  );
+}
+
+export function AgriculturalLandAssetForm({
+  organizationId,
+  projectId,
+  currency,
+  parties,
+}: {
+  organizationId: string;
+  projectId: string;
+  currency: string;
+  parties: Party[];
+}) {
+  const [state, action, pending] = useActionState(createAgriculturalLandAsset, initial);
+  const [basis, setBasis] = useState<(typeof LAND_CONTROL_BASES)[number]>('PURCHASED');
+  if (parties.length === 0) {
+    return <p className="muted">سجّل طرفًا (مالك/بائع/مؤجر/مساهم) من قسم الشروط أولًا.</p>;
+  }
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-land" />
+      <label>اسم الأرض/الأصل<input name="name" required minLength={2} maxLength={160} /></label>
+      <label>المرجع الداخلي<input name="internalReference" required maxLength={80} /></label>
+      <label>المرجع القانوني/الحيازي <span className="muted">(اختياري)</span><input name="legalReference" maxLength={160} /></label>
+      <label>المالك/البائع/المؤجر/المساهم<select name="counterpartyPartyId" required><option value="">اختر الطرف</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.legal_name}</option>)}</select></label>
+      <label>المساحة القانونية/التعاقدية<input name="legalAreaQuantity" inputMode="decimal" required /></label>
+      <label>وحدة المساحة<select name="areaUnit" defaultValue="FEDDAN"><option value="FEDDAN">{AREA_UNIT_LABEL.FEDDAN}</option><option value="HECTARE">{AREA_UNIT_LABEL.HECTARE}</option><option value="M2">{AREA_UNIT_LABEL.M2}</option></select></label>
+      <label>أساس السيطرة<select name="controlBasis" value={basis} onChange={(event) => setBasis(event.target.value as typeof basis)}>{LAND_CONTROL_BASES.map((value) => <option key={value} value={value}>{LAND_CONTROL_BASIS_LABEL[value]}</option>)}</select></label>
+      <label>بداية السيطرة<input type="date" name="controlStartDate" required /></label>
+      <label>نهاية السيطرة <span className="muted">(اختياري)</span><input type="date" name="controlEndDate" /></label>
+      <label>مرجع العقد/الاتفاق<input name="agreementReference" required minLength={2} maxLength={200} /></label>
+      <label>مرجع دليل السيطرة<input name="evidenceReference" required minLength={3} maxLength={200} /></label>
+      <label className="full">وصف قانوني/موقعي <span className="muted">(اختياري)</span><textarea name="legalLocationDescription" maxLength={1000} /></label>
+      {basis === 'PURCHASED' ? (
+        <>
+          <label>المقابل المتفق عليه <span className="muted">(اختياري)</span><input name="agreedConsideration" inputMode="decimal" /></label>
+          <label>عملة المقابل<select name="considerationCurrency" defaultValue=""><option value="">بدون مقابل مسجل</option><option value={currency}>{currency}</option></select></label>
+          <p className="muted full">المقابل المتفق عليه ليس مبلغًا مسددًا ولا قيمة دفترية أو تقييمًا، ولا يدخل تلقائيًا ضمن تكلفة دورة المحصول. اترك المقابل والعملة فارغين معًا إن لم يكن المقابل موثقًا بعد.</p>
+        </>
+      ) : null}
+      {basis === 'CONTRIBUTED_IN_KIND' ? <p className="muted full">يسجل هذا أساس السيطرة والدليل فقط. النواة الحالية تدعم مساهمات نقدية؛ لن ننشئ مساهمة نقدية أو دفعة وهمية للأرض العينية.</p> : null}
+      {basis === 'LEASED' || basis === 'MANAGED_FOR_OWNER' ? <p className="muted full">حق تشغيل موثق فقط؛ لا يصف النظام هذه الأرض بأنها مملوكة ولا يستنتج قيمة دفترية.</p> : null}
+      <div className="full"><Result state={state} pending={pending} label="تسجيل الأرض/الأصل" /></div>
+    </form>
+  );
+}
+
+export function FarmLandAssetLinkForm({
+  organizationId,
+  projectId,
+  landAssets,
+  farms,
+  linkedFarmIds,
+}: {
+  organizationId: string;
+  projectId: string;
+  landAssets: AgriculturalLandAssetRead[];
+  farms: FarmRead[];
+  linkedFarmIds: string[];
+}) {
+  const [state, action, pending] = useActionState(linkFarmToAgriculturalLandAsset, initial);
+  const availableFarms = farms.filter((farm) => !linkedFarmIds.includes(farm.id));
+  if (landAssets.length === 0 || availableFarms.length === 0) {
+    return <p className="muted">يلزم وجود أرض/أصل مسجل ومزرعة غير مرتبطة لإتمام الربط.</p>;
+  }
+  return (
+    <form action={action} className="form-grid compact">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-land-farm-link" />
+      <label>الأرض/الأصل<select name="landAssetId" required>{landAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name} · {asset.internal_reference}</option>)}</select></label>
+      <label>المزرعة<select name="farmId" required>{availableFarms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label>
+      <div><Result state={state} pending={pending} label="ربط المزرعة" /></div>
+      <p className="muted full">الأرض أصل استثماري/قانوني، والمزرعة موقع تشغيل، والحقل وحدة زراعية داخل المزرعة.</p>
     </form>
   );
 }

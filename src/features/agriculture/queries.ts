@@ -382,3 +382,63 @@ export const getHarvestInventoryMovements = (projectId: string) =>
     projectId,
     'movement_date',
   );
+
+// ---------------------------------------------------------------------------
+// GF-017 — Agricultural Land Asset, Acquisition & Control read models.
+// ---------------------------------------------------------------------------
+export type AgriculturalLandAssetRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  name: string;
+  internal_reference: string;
+  legal_reference: string | null;
+  legal_area_quantity: string;
+  area_unit: 'M2' | 'HECTARE' | 'FEDDAN';
+  legal_location_description: string | null;
+  control_basis: 'PURCHASED' | 'LEASED' | 'CONTRIBUTED_IN_KIND' | 'MANAGED_FOR_OWNER';
+  control_start_date: string;
+  control_end_date: string | null;
+  counterparty_party_id: string;
+  counterparty_name: string;
+  agreement_reference: string;
+  evidence_reference: string;
+  agreed_consideration_minor_units: string | null;
+  consideration_currency: string | null;
+  consideration_obligation_id: string | null;
+  recorded_by: string;
+  recorded_at: string;
+  linked_farm_count: number;
+};
+
+export type FarmLandAssetLinkRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  land_asset_id: string;
+  farm_id: string;
+  land_asset_name: string;
+  land_asset_reference: string;
+  control_basis: AgriculturalLandAssetRead['control_basis'];
+  legal_area_quantity: string;
+  area_unit: AgriculturalLandAssetRead['area_unit'];
+  farm_name: string;
+  linked_by: string;
+  linked_at: string;
+};
+
+export const getAgriculturalLandAssets = (projectId: string) =>
+  many<AgriculturalLandAssetRead>(
+    'agricultural_land_assets_read',
+    'id,organization_id,project_id,name,internal_reference,legal_reference,legal_area_quantity,area_unit,legal_location_description,control_basis,control_start_date,control_end_date,counterparty_party_id,counterparty_name,agreement_reference,evidence_reference,agreed_consideration_minor_units,consideration_currency,consideration_obligation_id,recorded_by,recorded_at,linked_farm_count',
+    projectId,
+    'recorded_at',
+  );
+
+export const getFarmLandAssetLinks = (projectId: string) =>
+  many<FarmLandAssetLinkRead>(
+    'farm_land_asset_links_read',
+    'id,organization_id,project_id,land_asset_id,farm_id,land_asset_name,land_asset_reference,control_basis,legal_area_quantity,area_unit,farm_name,linked_by,linked_at',
+    projectId,
+    'linked_at',
+  );

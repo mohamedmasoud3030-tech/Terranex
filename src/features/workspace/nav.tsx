@@ -33,6 +33,7 @@ export type WorkspaceSection =
   | 'opening'
   | 'controls'
   | 'agriculture'
+  | 'land-assets'
   | 'field-activities'
   | 'field-inputs'
   | 'harvest-inventory';
@@ -58,6 +59,7 @@ const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
 
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
+  { id: 'land-assets', label: 'الأراضي والأصول', description: 'أصل الأرض، أساس السيطرة، العقد، والطرف المقابل وربط المزرعة', href: (p) => `/projects/${p}/agriculture#land-assets` },
   { id: 'field-activities', label: 'أنشطة الحقل', description: 'تسجيل ما حدث في الحقل على تخصيص دورة قائم', href: (p) => `/projects/${p}/agriculture#activities` },
   { id: 'field-inputs', label: 'المدخلات والتطبيقات', description: 'المدخلات وتشغيلاتها وتطبيقها الفعلي على نشاط حقل قائم', href: (p) => `/projects/${p}/agriculture#inputs` },
   { id: 'harvest-inventory', label: 'الحصاد والمخزون', description: 'أحداث الحصاد، تشغيلات المحصول، مواقع التخزين، وحركات المخزون', href: (p) => `/projects/${p}/agriculture#harvest` },

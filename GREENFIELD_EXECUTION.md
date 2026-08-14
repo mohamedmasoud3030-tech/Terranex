@@ -125,9 +125,15 @@ Real Estate status is therefore explicit:
 - latest hosted deployment verification: pending until the production alias SHA is proved;
 - real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
 
+### GF-017 — Agricultural Land Asset, Acquisition & Control
+
+Status: **ACTIVE BOUNDED SLICE**. Adds the durable Agriculture investment/legal-control object before Farm, with `PURCHASED | LEASED | CONTRIBUTED_IN_KIND | MANAGED_FOR_OWNER`, exact legal/contract area, Party/agreement/evidence, optional purchase consideration, and an append-only Farm link. It does not fabricate assets for existing Farms and does not create payment, Contribution, journal, valuation, carrying amount, or CropCycle cost. Real Estate alignment passed without a Real Estate change. Canonical decision: `docs/decisions/0017_GF017_AGRICULTURAL_LAND_ASSET.md`.
+
+GF-018 Agriculture Sale, Dispatch & Revenue follows only after GF-017 merges. GF-019 Profitability, Cycle Closeout & Technical Gate is the final Agriculture phase; Livestock follows GF-019.
+
 ### GF-016 — Harvest & Inventory Flow Foundation
 
-Status: **ACTIVE BOUNDED SLICE — draft PR under review**. Bounded
+Status: **MERGED — TECHNICALLY COMPLETE**. Bounded
 Agriculture slice extending the chain from
 `Farm → Field → CropCycle → assignment → Field Activity / Input Application`
 to
@@ -164,8 +170,9 @@ Delivered in this slice:
 
 **Intentional boundary — not missing implementation:** GF-016 tracks
 physical harvest-output quantity only. Sale/dispatch, buyers, invoicing,
-receivables, revenue, COGS, inventory valuation, IAS 41 posting, cycle
-profitability and closeout are deferred to the final Agriculture slice.
+receivables, revenue and any policy-approved COGS/valuation are deferred to
+GF-018/GF-019; profitability and closeout are deferred to the final
+Agriculture phase, GF-019. No IAS 41 posting is implied.
 GF-015 input lots remain identity/traceability records, not stock: GF-016
 does not retrofit an input balance and does not claim InputApplication now
 validates input-stock availability.
@@ -334,24 +341,20 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 
 ## Next active batch
 
-`GF-016 — Harvest & Inventory Flow Foundation` is the active bounded
-Agriculture slice; GF-013, GF-014 and GF-015 are merged and technically
-complete.
+`GF-017 — Agricultural Land Asset, Acquisition & Control` is active; GF-013
+through GF-016 are merged and technically complete. The remaining authorized
+sequence is exact:
 
-The expected slice after GF-016 is reviewed is
-`GF-017 — Sale + Profitability + Cycle Closeout + Agriculture Hardening`.
-It must not be started inside GF-016. The intended Agriculture progression is
+1. GF-017 Agricultural Land Asset;
+2. GF-018 Agriculture Sale, Dispatch & Revenue;
+3. GF-019 Agriculture Profitability, Cycle Closeout & Technical Gate;
+4. Livestock only after GF-019 passes.
 
-```
-field work → input application → harvest event → harvest lot
-           → storage/inventory movement → sale → cycle profitability
-```
+Each phase starts from the preceding merged main. Do not reopen Real Estate,
+combine the remaining Agriculture phases, or scaffold Livestock.
 
-and it must be reachable without rewriting the Agriculture core. Do not
-reopen Real Estate or scaffold livestock.
-
-Real-customer validation remains a separate parallel evidence track.
-No synthetic fixture may impersonate customer, UAT, or production
+Real-customer validation remains a separate parallel evidence track. No
+synthetic fixture may impersonate customer, UAT, production or commercial
 verification.
 
 ## Decision rules

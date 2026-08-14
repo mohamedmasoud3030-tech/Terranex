@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import type { ActionState } from '@/features/auth/actions';
 import { createClient } from '@/shared/supabase/server';
+import { parseMajorUnitsToMinor } from '@/shared/money';
 import {
+  agriculturalLandAssetSchema,
   agricultureProfileSchema,
   cropAssignmentSchema,
   cropCycleSchema,
@@ -11,6 +13,7 @@ import {
   farmSchema,
   fieldActivitySchema,
   fieldSchema,
+  farmLandAssetLinkSchema,
   harvestEventSchema,
   harvestInventoryAdjustmentSchema,
   inputApplicationSchema,
@@ -99,6 +102,21 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('invalid harvest inventory movement type')) return fail('نوع حركة المخزون غير صالح.');
   if (text.includes('invalid movement reason')) return fail('سبب الحركة غير صالح.');
   if (text.includes('invalid movement date')) return fail('تاريخ الحركة غير صالح.');
+  // GF-017 — Agriculture land investment/control.
+  if (text.includes('agricultural land asset reference already exists')) return fail('مرجع الأرض/الأصل مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('agricultural land area must be positive')) return fail('مساحة الأرض القانونية/التعاقدية يجب أن تكون موجبة.');
+  if (text.includes('invalid agricultural land control basis')) return fail('أساس السيطرة على الأرض غير صالح.');
+  if (text.includes('land counterparty not found')) return fail('المالك/البائع/المؤجر المحدد غير موجود في هذه المنظمة.');
+  if (text.includes('land agreement reference is required')) return fail('مرجع عقد أو اتفاق السيطرة مطلوب.');
+  if (text.includes('land control evidence is required')) return fail('مرجع دليل السيطرة مطلوب.');
+  if (text.includes('control end date must not precede')) return fail('تاريخ نهاية السيطرة لا يمكن أن يسبق بدايتها.');
+  if (text.includes('consideration is only supported')) return fail('المقابل الشرائي يُسجّل للأرض المشتراة فقط.');
+  if (text.includes('purchase consideration and currency')) return fail('المقابل المتفق عليه وعملته يجب إدخالهما معًا.');
+  if (text.includes('land consideration obligation must belong')) return fail('التزام المقابل لا ينتمي إلى نفس المشروع.');
+  if (text.includes('land consideration obligation must match')) return fail('مبلغ وعملة الالتزام لا يطابقان المقابل المتفق عليه.');
+  if (text.includes('agricultural land asset not found in project')) return fail('الأرض/الأصل المحدد لا ينتمي إلى هذا المشروع.');
+  if (text.includes('farm not found in project')) return fail('المزرعة المحددة لا تنتمي إلى هذا المشروع.');
+  if (text.includes('farm already linked')) return fail('المزرعة مرتبطة بالفعل بأرض/أصل استثماري.');
   return fail(fallback);
 }
 
@@ -436,6 +454,59 @@ export async function recordHarvestInventoryAdjustment(_: ActionState, form: For
       p_idempotency_key: value.idempotencyKey,
     },
     'تعذر تسجيل تعديل المخزون.',
+    value.projectId,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GF-017 — Agricultural Land Asset, Acquisition & Control.
+// ---------------------------------------------------------------------------
+export async function createAgriculturalLandAsset(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agriculturalLandAssetSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  const considerationMinor = value.agreedConsideration && value.considerationCurrency
+    ? parseMajorUnitsToMinor(value.agreedConsideration, value.considerationCurrency)
+    : null;
+  return rpc(
+    'create_agricultural_land_asset',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_legal_reference: value.legalReference,
+      p_legal_area_quantity: value.legalAreaQuantity,
+      p_area_unit: value.areaUnit,
+      p_legal_location_description: value.legalLocationDescription,
+      p_control_basis: value.controlBasis,
+      p_control_start_date: value.controlStartDate,
+      p_control_end_date: value.controlEndDate,
+      p_counterparty_party_id: value.counterpartyPartyId,
+      p_agreement_reference: value.agreementReference,
+      p_evidence_reference: value.evidenceReference,
+      p_agreed_consideration_minor_units: considerationMinor,
+      p_consideration_currency: value.considerationCurrency,
+      p_consideration_obligation_id: value.considerationObligationId,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل أرض/أصل الاستثمار الزراعي.',
+    value.projectId,
+  );
+}
+
+export async function linkFarmToAgriculturalLandAsset(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(farmLandAssetLinkSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'link_farm_to_agricultural_land_asset',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_land_asset_id: value.landAssetId,
+      p_farm_id: value.farmId,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر ربط المزرعة بالأرض/الأصل.',
     value.projectId,
   );
 }

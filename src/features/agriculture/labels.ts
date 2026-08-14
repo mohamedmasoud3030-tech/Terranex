@@ -117,3 +117,17 @@ export function formatHarvestQuantity(
   if (!value) return '—';
   return `${value} ${unit ?? ''}`.trim();
 }
+
+// GF-017 — legal/economic control wording. None of the non-purchase labels
+// claims ownership, and purchase still does not imply title or payment.
+export const LAND_CONTROL_BASIS_LABEL: Record<string, string> = {
+  PURCHASED: 'مشتراة — مقابل متفق عليه منفصل عن السداد',
+  LEASED: 'مؤجرة — حق تشغيل بعقد، وليست مملوكة',
+  CONTRIBUTED_IN_KIND: 'مساهمة عينية معتمدة — دون إثبات نقدي تلقائي',
+  MANAGED_FOR_OWNER: 'تُدار لحساب المالك — ليست مملوكة للمشروع',
+};
+
+export function formatLandControlBasis(basis: string | null | undefined): string {
+  if (!basis) return '—';
+  return LAND_CONTROL_BASIS_LABEL[basis] ?? basis;
+}
