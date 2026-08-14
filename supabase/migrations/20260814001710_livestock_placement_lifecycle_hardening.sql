@@ -170,11 +170,17 @@ create trigger livestock_history_validate_link
 create function public.gf020_validate_cohort_foundation() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
 declare
-  v_cohort_id uuid := case when tg_table_name = 'livestock_cohorts' then new.id else new.cohort_id end;
+  v_cohort_id uuid;
   v_roots integer;
   v_tips integer;
   v_placements integer;
 begin
+  if tg_table_name = 'livestock_cohorts' then
+    v_cohort_id := new.id;
+  else
+    v_cohort_id := new.cohort_id;
+  end if;
+
   select count(*) into v_roots
   from public.livestock_cohort_state_history
   where cohort_id = v_cohort_id and previous_history_id is null;
