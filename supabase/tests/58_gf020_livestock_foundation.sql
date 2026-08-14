@@ -15,7 +15,7 @@ select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001',format($q$s
 select id ag_project from investment_projects where sector='AGRICULTURE' limit 1 \gset
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001',format($q$select public.create_livestock_profile('10000000-0000-4000-8000-000000000001',%L,null,'gf20-profile-ag')$q$,:'ag_project')) like '%livestock project not found%' then 1 else 0 end;
 
-select (select count(*) from journal_batches) jb_before,(select count(*) from payments) pay_before,(select count(*) from property_assets) prop_before,(select count(*) from agricultural_land_assets) land_before \gset
+select (select count(*) from journal_batches) jb_before,(select count(*) from project_payments) pay_before,(select count(*) from property_assets) prop_before,(select count(*) from agricultural_land_assets) land_before \gset
 select gf20_run('00000000-0000-4000-8000-000000000001',format($q$select public.create_livestock_site('10000000-0000-4000-8000-000000000001',%L,'مزرعة التسمين','SITE-A','FARM','الجيزة',null,'gf20-site-001')$q$,:'project_id')) site_id \gset
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001',format($q$select public.create_livestock_site('10000000-0000-4000-8000-000000000001',%L,'خطأ','SITE-X','DAIRY',null,null,'gf20-site-bad')$q$,:'project_id')) like '%invalid livestock site type%' then 1 else 0 end;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001',format($q$select public.create_livestock_site('10000000-0000-4000-8000-000000000001',%L,'مكرر','SITE-A','BARN',null,null,'gf20-site-dup')$q$,:'project_id')) like '%reference already exists%' then 1 else 0 end;
@@ -47,5 +47,5 @@ select 1/case when gf20_count('00000000-0000-4000-8000-000000000002','select cou
 select 1/case when gf20_count('00000000-0000-4000-8000-000000000002','select count(*) from public.livestock_cohorts_read')=0 then 1 else 0 end;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000002',format($q$select public.transition_livestock_cohort('20000000-0000-4000-8000-000000000001',%L,%L,'ACTIVE','PLANNED','x',null,'gf20-tenant-b')$q$,:'project_id',:'cohort_id')) <> 'NO_EXCEPTION' then 1 else 0 end;
 
-select 1/case when (select count(*) from journal_batches)=:'jb_before' and (select count(*) from payments)=:'pay_before' and (select count(*) from property_assets)=:'prop_before' and (select count(*) from agricultural_land_assets)=:'land_before' then 1 else 0 end;
+select 1/case when (select count(*) from journal_batches)=:'jb_before' and (select count(*) from project_payments)=:'pay_before' and (select count(*) from property_assets)=:'prop_before' and (select count(*) from agricultural_land_assets)=:'land_before' then 1 else 0 end;
 select 'GF-020 Livestock foundation PASS' result;
