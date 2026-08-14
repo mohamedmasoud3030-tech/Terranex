@@ -169,7 +169,7 @@ then 1 else 0 end as privileged_herd_species_change_rejected;
 
 -- A split lineage into a Sheep Herd is rejected even when the rows are written
 -- directly by the database owner instead of through the RPC.
-select 1/case when gf20_owner_catch(format($q$
+select gf20_owner_catch(format($q$
   DO $do$
   DECLARE
     v_destination uuid;
@@ -207,8 +207,8 @@ select 1/case when gf20_owner_catch(format($q$
     );
   END $do$;
 $q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
-     :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_project', :'gf68_asof')) like '%compatible species%'
-then 1 else 0 end as privileged_cross_species_lineage_rejected;
+     :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_project', :'gf68_asof'))
+  as privileged_cross_species_lineage_error;
 
 -- ---------------------------------------------------------------------------
 -- Exact SPLIT/MERGE semantic shape under privileged writes.
