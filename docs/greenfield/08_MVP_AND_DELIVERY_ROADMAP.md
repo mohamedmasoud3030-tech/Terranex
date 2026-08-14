@@ -249,19 +249,19 @@ merged GF-013 through GF-016:
    purchase, lease, approved in-kind and managed-for-owner bases; links existing
    Farms only through an explicit genuine command; keeps consideration separate
    from payment, carrying amount, valuation and CropCycle operating cost.
-2. **GF-018 — Agriculture Sale, Dispatch & Revenue (active).** Adds physical
+2. **GF-018 — Agriculture Sale, Dispatch & Revenue (merged).** Adds physical
    `SALE_ISSUE`, buyer/control-transfer sale truth, shared-core revenue,
    receivable and collection with oversell/over-collection concurrency guards.
    It does not guess harvest inventory value or COGS.
 3. **GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate
-   (next and final).** Attribute authoritative shared-core posted cost without a
+   (active and final).** Attribute authoritative shared-core posted cost without a
    second ledger, disclose cycle result bases and outstanding inventory/
    receivables, close safely, harden the complete Agriculture path, and decide
    the input-stock boundary from evidence.
 
-GF-013 through GF-017 are merged and technically complete. GF-018 remains an
-independent active phase and GF-019 may start only after GF-018 is reviewed and
-merged. Livestock is the next authorized sector only after GF-019 passes. Real Estate stays
+GF-013 through GF-018 are merged and technically complete. GF-019 is the
+independent active final Agriculture phase. Livestock is the next authorized
+sector only after GF-019 passes. Real Estate stays
 unchanged unless a proved regression requires the smallest forward repair.
 
 Technical completion never counts as Agriculture customer UAT, a paid pilot,

@@ -5,6 +5,8 @@ import type { ActionState } from '@/features/auth/actions';
 import {
   approveAgricultureSale,
   assignCropCycleToField,
+  attributeCropCycleCost,
+  closeCropCycle,
   collectAgricultureSaleReceivable,
   createAgriculturalLandAsset,
   createAgricultureSale,
@@ -26,11 +28,14 @@ import {
 } from '@/features/agriculture/actions';
 import type { Party } from '@/features/funding/queries';
 import type { CashAccountPosition } from '@/features/finance/queries';
+import { formatMinorUnits } from '@/shared/money';
 import type {
   AgriculturalLandAssetRead,
   AgricultureSaleRead,
   CropAssignmentRead,
+  CropCycleCostSourceRead,
   CropCycleRead,
+  CropCycleResultRead,
   FarmRead,
   FieldActivityRead,
   FieldRead,
@@ -41,6 +46,7 @@ import type {
   StorageLocationRead,
 } from '@/features/agriculture/queries';
 import {
+  CROP_CYCLE_COST_CATEGORIES,
   CYCLE_STATES,
   CYCLE_TRANSITIONS,
   FIELD_ACTIVITY_TYPES,
@@ -51,6 +57,7 @@ import {
 } from '@/features/agriculture/schema';
 import {
   AREA_UNIT_LABEL,
+  CROP_CYCLE_COST_CATEGORY_LABEL,
   CYCLE_STATE_LABEL,
   FIELD_ACTIVITY_TYPE_LABEL,
   HARVEST_MOVEMENT_TYPE_LABEL,
@@ -1415,4 +1422,74 @@ export function AgricultureSaleCollectionForm({
   const accounts = cashAccounts.filter((account) => account.currency === sale.currency);
   if (accounts.length === 0) return <p className="muted">لا يوجد حساب نقدية للمشروع بنفس عملة البيع.</p>;
   return <form action={action} className="form-grid compact"><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-collection" /><input type="hidden" name="recognitionId" value={sale.recognition_id} /><input type="hidden" name="currency" value={sale.currency} /><label>حساب النقدية<select name="cashAccountId" required>{accounts.map((account) => <option key={account.cash_account_id} value={account.cash_account_id}>{account.name}</option>)}</select></label><label>مبلغ التحصيل<input name="amount" inputMode="decimal" required /></label><label>تاريخ التحصيل<input type="date" name="collectionDate" required /></label><label>مرجع دليل التحصيل<input name="evidenceReference" required minLength={3} maxLength={200} /></label><div><Result state={state} pending={pending} label="تسجيل التحصيل" /></div><p className="muted full">التحصيل يخفض الذمة المدينة فقط ولا يعيد الاعتراف بالإيراد. يمكن تسجيل تحصيلات جزئية ومتعددة دون تجاوز المتبقي.</p></form>;
+}
+
+export function CropCycleCostAttributionForm({
+  organizationId,
+  projectId,
+  result,
+  assignments,
+  fields,
+  sources,
+}: {
+  organizationId: string;
+  projectId: string;
+  result: CropCycleResultRead;
+  assignments: CropAssignmentRead[];
+  fields: FieldRead[];
+  sources: CropCycleCostSourceRead[];
+}) {
+  const [state, action, pending] = useActionState(attributeCropCycleCost, initial);
+  const available = sources.filter((source) => BigInt(source.available_amount_minor_units) > 0n);
+  const cycleAssignments = assignments.filter((assignment) => assignment.crop_cycle_id === result.crop_cycle_id);
+  if (available.length === 0) {
+    return <p className="muted">لا يوجد مصروف تشغيل مُرحّل في النواة المالية برصيد متاح للتحميل. أنشئ واعتمد التزام تكلفة تشغيل من قسم التكاليف أولًا.</p>;
+  }
+  return (
+    <form action={action} className="form-grid compact">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-cycle-cost" />
+      <input type="hidden" name="cropCycleId" value={result.crop_cycle_id} />
+      <input type="hidden" name="currency" value={result.currency} />
+      <label className="full">مصدر المصروف المالي المعتمد
+        <select name="sourceJournalLineId" required>
+          {available.map((source) => <option key={source.source_journal_line_id} value={source.source_journal_line_id}>{source.description} · متاح {formatMinorUnits(source.available_amount_minor_units, source.currency)} · {source.transaction_date}</option>)}
+        </select>
+      </label>
+      <label>المبلغ المحمّل ({result.currency})<input name="amount" required inputMode="decimal" /></label>
+      <label>فئة التشغيل<select name="costCategory" required>{CROP_CYCLE_COST_CATEGORIES.map((category) => <option key={category} value={category}>{CROP_CYCLE_COST_CATEGORY_LABEL[category]}</option>)}</select></label>
+      <label>الحقل <span className="muted">(اختياري)</span><select name="fieldId" defaultValue=""><option value="">على مستوى الدورة</option>{cycleAssignments.map((assignment) => <option key={assignment.id} value={assignment.field_id}>{fields.find((field) => field.id === assignment.field_id)?.identifier ?? assignment.field_id}</option>)}</select></label>
+      <label>مرجع سياسة التحميل<input name="policyReference" required minLength={3} maxLength={200} placeholder="مثال: سياسة تكلفة التشغيل 2026" /></label>
+      <label className="full">مرجع الدليل<input name="evidenceReference" required minLength={3} maxLength={200} /></label>
+      <p className="muted full">هذا الربط لا ينشئ مصروفًا جديدًا: المبلغ مصدره قيد Finance Core المرحّل، ولا يمكن أن تتجاوز مجموع التحميلات قيمة المصدر. مقابل شراء الأرض غير مؤهل.</p>
+      <div className="full"><Result state={state} pending={pending} label="تحميل تكلفة التشغيل" pendingLabel="جارٍ ربط المصدر المالي…" /></div>
+    </form>
+  );
+}
+
+export function CropCycleCloseoutForm({
+  organizationId,
+  projectId,
+  result,
+}: {
+  organizationId: string;
+  projectId: string;
+  result: CropCycleResultRead;
+}) {
+  const [state, action, pending] = useActionState(closeCropCycle, initial);
+  if (result.operational_state !== 'HARVESTING') return null;
+  if (result.hard_exception_count > 0) {
+    return <p className="error" role="status">الإغلاق موقوف حتى معالجة استثناءات السلامة الجوهرية الموضحة أعلاه.</p>;
+  }
+  return (
+    <form action={action} className="form-grid compact">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-cycle-close" />
+      <input type="hidden" name="cropCycleId" value={result.crop_cycle_id} />
+      <label className="full">سبب الإغلاق<textarea name="closeReason" required minLength={3} maxLength={500} aria-describedby={`close-help-${result.crop_cycle_id}`} /></label>
+      <label className="full">مرجع دليل الإغلاق<input name="evidenceReference" required minLength={3} maxLength={200} /></label>
+      <p className="muted full" id={`close-help-${result.crop_cycle_id}`}>يمكن أن يبقى مخزون فعلي أو ذمة للتحصيل بعد الإغلاق؛ سيظلان ظاهرين ويتغير التحصيل لاحقًا دون إعادة فتح دورة التشغيل.</p>
+      <div className="full"><Result state={state} pending={pending} label="إغلاق دورة المحصول" pendingLabel="جارٍ فحص السلامة والإغلاق…" /></div>
+    </form>
+  );
 }

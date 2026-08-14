@@ -512,3 +512,41 @@ export type AgricultureSaleInput = z.infer<typeof agricultureSaleSchema>;
 export type AgricultureSaleApprovalInput = z.infer<typeof agricultureSaleApprovalSchema>;
 export type AgricultureSaleRecognitionInput = z.infer<typeof agricultureSaleRecognitionSchema>;
 export type AgricultureSaleCollectionInput = z.infer<typeof agricultureSaleCollectionSchema>;
+
+// ---------------------------------------------------------------------------
+// GF-019 — authoritative posted-cost attribution and CropCycle closeout.
+// The amount is only a dimension of an existing Finance Core journal line;
+// neither schema accepts an editable profit, inventory value, or COGS.
+// ---------------------------------------------------------------------------
+export const CROP_CYCLE_COST_CATEGORIES = [
+  'INPUTS', 'LABOR', 'EQUIPMENT', 'IRRIGATION', 'HARVEST', 'STORAGE', 'OTHER',
+] as const;
+
+export const cropCycleCostAttributionSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  cropCycleId: uuid,
+  fieldId: optionalUuid,
+  sourceJournalLineId: uuid,
+  amount: z.string().trim().refine(
+    (value) => isValidMajorMoney(value, 'EGP'),
+    'أدخل تكلفة تشغيل موجبة بدقة العملة',
+  ),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  costCategory: z.enum(CROP_CYCLE_COST_CATEGORIES, { message: 'فئة تكلفة التشغيل غير صالحة' }),
+  policyReference: z.string().trim().min(3, 'مرجع سياسة التحميل مطلوب').max(200),
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل تحميل التكلفة مطلوب').max(200),
+  idempotencyKey,
+});
+
+export const cropCycleCloseoutSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  cropCycleId: uuid,
+  closeReason: z.string().trim().min(3, 'سبب إغلاق الدورة مطلوب').max(500),
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل الإغلاق مطلوب').max(200),
+  idempotencyKey,
+});
+
+export type CropCycleCostAttributionInput = z.infer<typeof cropCycleCostAttributionSchema>;
+export type CropCycleCloseoutInput = z.infer<typeof cropCycleCloseoutSchema>;

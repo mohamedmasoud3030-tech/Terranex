@@ -131,7 +131,7 @@ Use one-step-back/one-step-forward capable lot records: field/cycle, inputs and 
 ### Controls and KPIs
 
 - area assigned to concurrent cycles cannot exceed field policy;
-- input application validates unit, rate, lot expiry, and available inventory;
+- input application validates unit, rate and lot expiry; input-stock availability is explicitly deferred until authoritative receipt/opening-stock facts exist;
 - harvest output cannot be sold before it exists; adjustments require reason/approval;
 - planned vs actual input rate, work, yield, and cost per feddan/hectare;
 - yield per area, grade mix, loss/spoilage, realized selling price, gross margin per cycle;
@@ -141,7 +141,7 @@ Use one-step-back/one-step-forward capable lot records: field/cycle, inputs and 
 
 IAS 41 addresses biological assets during transformation and agricultural produce at harvest; subsequent processing/inventory is outside its agricultural-produce scope and may fall under IAS 2. Terranex captures quantities, fair-value inputs, harvest point, and costs; the customer’s approved accounting policy determines posting.
 
-GF-018 implements sale agreement, physical `SALE_ISSUE`, control-transfer revenue/receivable, collection, and lot-to-buyer traceability through the shared Finance Core. It deliberately does not estimate harvest inventory value or COGS. Authoritative CropCycle cost attribution, profitability, and closeout remain the GF-019 decision; Agricultural Land Asset consideration/value remains separate from seasonal operating result.
+GF-018 implements sale agreement, physical `SALE_ISSUE`, control-transfer revenue/receivable, collection, and lot-to-buyer traceability through the shared Finance Core. GF-019 adds attribution from authoritative posted Finance cost, a reproducible CropCycle result, and safe `HARVESTING → CLOSED` closeout. Agricultural Land Asset consideration remains separate from seasonal operating cost; unsold physical inventory has no guessed value or COGS under the current policy.
 
 ## 4. Livestock context
 

@@ -125,13 +125,17 @@ Real Estate status is therefore explicit:
 - latest hosted deployment verification: pending until the production alias SHA is proved;
 - real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
 
+### GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate
+
+Status: **ACTIVE FINAL AGRICULTURE PHASE**. GF-018 is merged through PR #129 and technically complete. GF-019 dimensions active posted Finance Core `PROJECT_EXPENSE` lines to CropCycle without a second expense ledger, derives the cycle quantity/commercial/operating result, keeps Land Asset investment and unvalued physical inventory separate, and validates the canonical `HARVESTING → CLOSED` transition while allowing inventory and receivables to remain open.
+
+Input-stock decision: traceability stays in scope; procurement/receipt/opening-stock and availability remain deferred farm-ERP scope because no authoritative stock source exists. Shared S6 periods/corrections and S5 allocation/distribution remain authoritative; CropCycle close never auto-distributes. Canonical decision: `docs/decisions/0019_GF019_AGRICULTURE_PROFITABILITY_CLOSEOUT_GATE.md`.
+
 ### GF-018 — Agriculture Sale, Dispatch & Revenue
 
-Status: **ACTIVE BOUNDED SLICE**. Adds buyer-backed Agriculture Sale headers and immutable Harvest Lot lines, explicit draft/approval/control-transfer states, atomic physical `SALE_ISSUE` plus shared Finance Core revenue/receivable recognition, and append-only partial/multiple collections protected by a concurrent ceiling. Sale units are derived from Harvest Lot truth. Lot-to-buyer dispatch and revenue lineage is exposed in Arabic/RTL under `المبيعات والتحصيل`.
+Status: **MERGED — TECHNICALLY COMPLETE** through PR #129. Adds buyer-backed Agriculture Sale headers and immutable Harvest Lot lines, explicit draft/approval/control-transfer states, atomic physical `SALE_ISSUE` plus shared Finance Core revenue/receivable recognition, and append-only partial/multiple collections protected by a concurrent ceiling. Sale units are derived from Harvest Lot truth. Lot-to-buyer dispatch and revenue lineage is exposed in Arabic/RTL under `المبيعات والتحصيل`.
 
 GF-018 reuses `CUSTOMER_RECEIVABLE`, `BANK_CASH`, shared journal batches/lines, project cash accounts, S6 posting-period guards, audit, membership and idempotency controls. It adds only `AGRICULTURE_SALE_REVENUE`; it does not create a sector ledger, mutable receivable balance, inventory valuation, COGS, profit or margin. Canonical decision: `docs/decisions/0018_GF018_AGRICULTURE_SALE_DISPATCH_REVENUE.md`.
-
-GF-019 Profitability, Cycle Closeout & Technical Gate follows only after GF-018 is independently reviewed and merged. Livestock follows only after GF-019 passes.
 
 ### GF-017 — Agricultural Land Asset, Acquisition & Control
 
@@ -228,8 +232,9 @@ Delivered in this slice:
 
 **Intentional boundary — not missing implementation:** GF-015 proves
 identity, lot traceability, field/application quantity, expiry, and
-project/assignment coherence. Available-stock validation begins only
-when the canonical `InventoryMovement` slice exists. No
+project/assignment coherence. Input available-stock validation begins only
+when canonical input receipt/opening-stock and consumption movements exist;
+GF-016 harvest-output movement is not an input-stock source. No
 `available_stock`, `current_quantity`, `remaining_quantity` or
 `lot_balance` column exists, and no accounting, inventory-valuation,
 or CropCycle-lifecycle side effect is created.
@@ -341,22 +346,18 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - partial-property disposition and other sector-specific complexity not required by the current Real Estate vertical slice;
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
-- Agriculture capabilities beyond the active bounded slice and all Livestock runtime modules;
-- Agriculture capabilities deferred beyond GF-018: input-stock receiving/balance, purchase orders / procurement / receiving / supplier accounting, input costing and valuation, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, harvest inventory valuation, COGS, CropCycle profitability and closeout, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit-conversion engines, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
+- Agriculture capabilities beyond the completed GF-013–GF-019 investment operating scope and all Livestock runtime modules;
+- Agriculture capabilities deferred beyond GF-019: input-stock receiving/balance, purchase orders / procurement / supplier ERP, input/harvest valuation, COGS policy, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit conversion, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
 ## Next active batch
 
-`GF-018 — Agriculture Sale, Dispatch & Revenue` is active; GF-013 through
-GF-017 are merged and technically complete. The remaining authorized sequence
-is exact:
-
-1. complete and merge GF-018 Agriculture Sale, Dispatch & Revenue;
-2. GF-019 Agriculture Profitability, Cycle Closeout & Technical Gate;
-3. Livestock only after GF-019 passes.
-
-Each phase starts from the preceding merged main. Do not reopen Real Estate,
-combine the remaining Agriculture phases, or scaffold Livestock.
+`GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate` is the
+active final Agriculture phase; GF-013 through GF-018 are merged and technically
+complete. After GF-019 genuinely passes and merges, Agriculture is technically
+implemented and Livestock becomes the next authorized sector. Do not implement
+or scaffold Livestock inside GF-019, and do not reopen Real Estate without a
+proved regression.
 
 Real-customer validation remains a separate parallel evidence track. No
 synthetic fixture may impersonate customer, UAT, production or commercial

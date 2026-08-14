@@ -12,6 +12,8 @@ import {
   agricultureSaleRecognitionSchema,
   agricultureSaleSchema,
   cropAssignmentSchema,
+  cropCycleCloseoutSchema,
+  cropCycleCostAttributionSchema,
   cropCycleSchema,
   cycleTransitionSchema,
   farmSchema,
@@ -140,6 +142,25 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('cash account must belong')) return fail('حساب النقدية لا ينتمي إلى نفس المشروع أو العملة.');
   if (text.includes('collection cannot precede recognition')) return fail('تاريخ التحصيل لا يمكن أن يسبق الاعتراف بالإيراد.');
   if (text.includes('organization owner required')) return fail('هذا الإجراء المالي المادي يتطلب صلاحية مالك المنظمة.');
+  // GF-019 — result, posted-cost attribution and closeout.
+  if (text.includes('attributed cost amount must be positive')) return fail('مبلغ تكلفة التشغيل المحمّل يجب أن يكون موجبًا.');
+  if (text.includes('authoritative posted cost source not found')) return fail('مصدر التكلفة المالية المعتمد غير موجود أو غير متاح لهذا المشروع.');
+  if (text.includes('source is not an authoritative posted operating expense')) return fail('المصدر المختار ليس مصروف تشغيل مُرحّلًا في النواة المالية.');
+  if (text.includes('posted cost source does not belong')) return fail('مصدر التكلفة لا ينتمي إلى مشروع دورة المحصول.');
+  if (text.includes('exceeds authoritative source amount')) return fail('التحميل المطلوب يتجاوز الرصيد المتاح في مصدر التكلفة المالي.');
+  if (text.includes('land acquisition consideration is not eligible')) return fail('مقابل شراء الأرض أصل استثماري ولا يدخل في تكلفة تشغيل دورة المحصول.');
+  if (text.includes('field is not assigned to crop cycle')) return fail('الحقل المحدد ليس ضمن تخصيصات هذه الدورة.');
+  if (text.includes('cost attribution policy reference is required')) return fail('مرجع سياسة تحميل تكلفة التشغيل مطلوب.');
+  if (text.includes('cost attribution evidence is required')) return fail('مرجع دليل تحميل تكلفة التشغيل مطلوب.');
+  if (text.includes('crop cycle must be HARVESTING')) return fail('لا يمكن الإغلاق إلا عندما تكون الدورة في حالة «قيد الحصاد».');
+  if (text.includes('crop cycle close reason is required')) return fail('اكتب سببًا واضحًا لإغلاق الدورة.');
+  if (text.includes('crop cycle close evidence is required')) return fail('مرجع دليل الإغلاق مطلوب.');
+  if (text.includes('crop cycle close blocked: NO_HARVEST')) return fail('لا يمكن إغلاق دورة حصاد ناجحة بلا حدث حصاد. إذا لم ينتج المحصول فاستخدم مسار الفشل قبل بدء الحصاد.');
+  if (text.includes('crop cycle close blocked: NO_ASSIGNMENT')) return fail('لا يمكن الإغلاق دون تخصيص حقل صالح للدورة.');
+  if (text.includes('crop cycle close blocked: NEGATIVE_INVENTORY')) return fail('الإغلاق موقوف لأن رصيد مخزون الحصاد سالب. راجع الحركات وصحّحها أولًا.');
+  if (text.includes('crop cycle close blocked: BROKEN_SALE_ISSUE')) return fail('الإغلاق موقوف لأن كمية البيع لا تتطابق مع صرف المخزون.');
+  if (text.includes('crop cycle close blocked: COST_ATTRIBUTION_CEILING_BROKEN')) return fail('الإغلاق موقوف لأن تحميل تكلفة التشغيل يتجاوز مصدره المالي.');
+  if (text.includes('crop cycle close blocked:')) return fail('الإغلاق موقوف بسبب استثناء سلامة جوهري. راجع قائمة الاستثناءات في نتيجة الدورة.');
   return fail(fallback);
 }
 
@@ -592,4 +613,38 @@ export async function collectAgricultureSaleReceivable(_: ActionState, form: For
     p_evidence_reference: value.evidenceReference,
     p_idempotency_key: value.idempotencyKey,
   }, 'تعذر تسجيل التحصيل.', value.projectId);
+}
+
+// ---------------------------------------------------------------------------
+// GF-019 — dimensions existing posted Finance cost and closes the canonical
+// CropCycle lifecycle. Neither action accepts browser-supplied actor/result.
+// ---------------------------------------------------------------------------
+export async function attributeCropCycleCost(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cropCycleCostAttributionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('attribute_crop_cycle_cost', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_crop_cycle_id: value.cropCycleId,
+    p_field_id: value.fieldId,
+    p_source_journal_line_id: value.sourceJournalLineId,
+    p_amount_minor_units: parseMajorUnitsToMinor(value.amount, value.currency),
+    p_cost_category: value.costCategory,
+    p_policy_reference: value.policyReference,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تحميل تكلفة التشغيل على الدورة.', value.projectId);
+}
+
+export async function closeCropCycle(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cropCycleCloseoutSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('close_crop_cycle', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_crop_cycle_id: value.cropCycleId,
+    p_close_reason: value.closeReason,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر إغلاق دورة المحصول.', value.projectId);
 }
