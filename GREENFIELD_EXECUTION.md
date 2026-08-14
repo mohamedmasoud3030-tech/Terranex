@@ -346,7 +346,7 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - partial-property disposition and other sector-specific complexity not required by the current Real Estate vertical slice;
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
-- Agriculture capabilities beyond the completed GF-013–GF-019 investment operating scope and all Livestock runtime modules;
+- Agriculture capabilities beyond the completed GF-013–GF-019 investment operating scope, and Livestock capabilities beyond the merged GF-020 foundation and the active GF-021/GF-022 slices — specifically health/medicine/withdrawal, vaccination, reproduction/pregnancy/breeding, individual Animal/RFID identity, feed formulation/inventory/FCR, livestock procurement, sale/receivable/revenue, profitability, closeout, dairy/milk, and IAS 41 or fair-value biological-asset accounting;
 - Agriculture capabilities deferred beyond GF-019: input-stock receiving/balance, purchase orders / procurement / supplier ERP, input/harvest valuation, COGS policy, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit conversion, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
@@ -354,9 +354,44 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 
 Real Estate and Agriculture are **TECHNICALLY IMPLEMENTED** for their authorized
 scopes. `GF-013` through `GF-019` form the completed Agriculture chain.
-**Livestock is the active sector. GF-020 is the active bounded Site → Herd → Cohort foundation.** This status is not permission to
+**Livestock is the active sector. GF-020 is merged; GF-021 and GF-022 are the active bounded slices.** This status is not permission to
 place Livestock schema or runtime inside GF-019, and Real Estate remains closed
 to unrelated changes.
+
+Livestock construction order, and its truthful state:
+
+- `GF-020 — Livestock Sector Foundation` (`Site`/`Herd` → `Cohort`, immutable
+  opening placement, one causal lifecycle chain): **merged through PR #131,
+  technically complete**.
+- `GF-021 — Livestock Movement, Quantity Rollforward & Weight Events`: delivered
+  as the independently reviewable first commit of PR #132. Delivers an append-only
+  causal movement chain
+  (`UNIQUE (previous_movement_id)`, one root per Cohort, same-Cohort composite
+  predecessor FK, database-level no-op rejection, source-equals-current-placement
+  validator), a derived current-placement read model that raises on ambiguity
+  instead of using `LIMIT 1`, the exact integer quantity-event architecture with
+  **zero** event classes registered, and immutable WeightEvents across
+  `INDIVIDUAL_MEASURED | COHORT_TOTAL | SAMPLED_AVERAGE | ESTIMATED` with
+  method-specific required/forbidden metadata enforced by CHECK constraints.
+  Its quantity registry is intentionally empty; GF-022 extends it additively.
+- `GF-022 — Livestock Biological Quantity Events, Mortality, Births, Split &
+  Merge`: delivered as the independently reviewable second commit of PR #132,
+  with forward-only review hardening. Registers
+  `BIRTH | MORTALITY | SPLIT_OUT | SPLIT_IN | MERGE_OUT | MERGE_IN`; binds both
+  sides of a split/merge to one `livestock_quantity_operations` identity with a
+  deferred conservation trigger proving `sum(out) = sum(in)`; makes a negative
+  derived quantity unreachable through a per-Cohort advisory lock plus a
+  deferred non-negative trigger; gives operation-derived Cohorts a zero opening
+  headcount under the new `SPLIT_FROM_COHORT` / `MERGED_FROM_COHORTS` origins so
+  quantity is never double-counted; and does NOT mutate lifecycle state when a
+  Cohort reaches zero. Rollforward:
+  `current = opening + births + split_in + merge_in − mortality − split_out − merge_out`
+  as of `current_timestamp`; future events are scheduled facts and same-time
+  events are one atomic bucket. It also stores qualitative weight confidence and
+  constrained mortality disposal state. Normal Cohorts do not expose opening
+  quantity before their date-only `origin_date` boundary; operation-derived
+  Cohorts use the exact producing operation `effective_at`, including for future
+  split/merge scheduling. GF-023 has not started.
 
 Real-customer validation remains a separate parallel evidence track. No
 synthetic fixture may impersonate customer, UAT, production or commercial

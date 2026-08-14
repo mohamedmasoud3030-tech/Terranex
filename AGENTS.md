@@ -38,7 +38,7 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 
 ## Current delivery gate
 
-Current state: **Real Estate is technically implemented; Agriculture GF-013 through GF-019 is technically implemented; Livestock is the active sector; GF-020 is the active bounded foundation**.
+Current state: **Real Estate is technically implemented; Agriculture GF-013 through GF-019 is technically implemented; Livestock is the active sector; GF-020 is merged, and GF-021 (movement, quantity rollforward foundation, weight events) plus GF-022 (births, mortality, split, merge) are the active bounded slices**.
 
 Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
 
@@ -46,7 +46,7 @@ Implementation is authorized now. Record decisions just in time for the active s
 
 The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core.
 
-Real Estate has completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Real-customer evidence, buyer UAT, and commercial Phase 2/3 exits remain pending and must never be fabricated. Their absence does not block authorized product construction: Agriculture has passed its technical implementation gate. Livestock is the active sector; GF-020 is the active bounded foundation, but no Livestock runtime belongs in the completed Agriculture work. No agent may reopen or rebuild the completed Real Estate architecture without a proven defect or an explicit product decision.
+Real Estate has completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Real-customer evidence, buyer UAT, and commercial Phase 2/3 exits remain pending and must never be fabricated. Their absence does not block authorized product construction: Agriculture has passed its technical implementation gate. Livestock is the active sector; GF-020 is merged and GF-021/GF-022 are the active bounded slices, but no Livestock runtime belongs in the completed Agriculture work. No agent may reopen or rebuild the completed Real Estate architecture without a proven defect or an explicit product decision.
 
 Agriculture construction order, and its truthful state:
 
@@ -57,7 +57,11 @@ Agriculture construction order, and its truthful state:
 - `GF-017 — Agricultural Land Asset, Acquisition & Control`: **merged through PR #128, technically complete**.
 - `GF-018 — Agriculture Sale, Dispatch & Revenue`: **merged, technically complete**.
 - `GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate`: **technically complete**.
-- **Active sector: Livestock — GF-020 Site → Herd → Cohort foundation.**
+- **Active sector: Livestock.**
+  - `GF-020 — Livestock Sector Foundation` (`Site`/`Herd` → `Cohort`, immutable opening placement, causal lifecycle chain): **merged through PR #131, technically complete**.
+  - `GF-021 — Livestock Movement, Quantity Rollforward & Weight Events`: active bounded slice. Adds an append-only causal movement chain, a derived current-placement read model, the exact integer quantity-event architecture (no event class registered yet), and immutable WeightEvents.
+  - `GF-022 — Livestock Biological Quantity Events, Mortality, Births, Split & Merge`: active bounded slice, additive on the GF-021 ledger. Registers `BIRTH | MORTALITY | SPLIT_OUT | SPLIT_IN | MERGE_OUT | MERGE_IN`, binds both sides of a split/merge to one operation identity with a database-enforced conservation invariant, and makes a negative derived quantity unreachable.
+  - Livestock current state stays event-derived across every slice: no mutable `current_site_id`, `current_herd_id`, `current_headcount`, `current_weight`, `mortality_total`, or `births_total` is authoritative.
 
 Agriculture technical completeness is not commercial validation. No Agriculture slice counts as customer evidence, pilot evidence, or UAT.
 

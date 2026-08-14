@@ -1,9 +1,15 @@
 import type {
+  LivestockBirthInput,
   LivestockCohortInput,
   LivestockHerdInput,
+  LivestockMergeInput,
+  LivestockMortalityInput,
+  LivestockMovementInput,
   LivestockProfileInput,
   LivestockSiteInput,
+  LivestockSplitInput,
   LivestockTransitionInput,
+  LivestockWeightEventInput,
 } from './schema';
 
 function commandContext(input: {
@@ -58,6 +64,35 @@ export const cohortRpcArguments = (input: LivestockCohortInput) => ({
   p_notes: input.notes ?? null,
 });
 
+export const movementRpcArguments = (input: LivestockMovementInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_source_site_id: input.sourceSiteId,
+  p_source_herd_id: input.sourceHerdId,
+  p_destination_site_id: input.destinationSiteId,
+  p_destination_herd_id: input.destinationHerdId,
+  p_effective_at: input.effectiveAt,
+  p_reason: input.reason,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
+export const weightEventRpcArguments = (input: LivestockWeightEventInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_effective_at: input.effectiveAt,
+  p_method: input.method,
+  p_weight_value: input.weightValue,
+  p_weight_unit: input.weightUnit,
+  p_measured_animal_count: input.measuredAnimalCount
+    ? Number(input.measuredAnimalCount)
+    : null,
+  p_sample_size: input.sampleSize ? Number(input.sampleSize) : null,
+  p_confidence_level: input.confidenceLevel ?? null,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
 export const transitionRpcArguments = (input: LivestockTransitionInput) => ({
   ...commandContext(input),
   p_cohort_id: input.cohortId,
@@ -65,4 +100,55 @@ export const transitionRpcArguments = (input: LivestockTransitionInput) => ({
   p_new_state: input.newState,
   p_reason: input.reason,
   p_evidence_reference: input.evidenceReference ?? null,
+});
+
+export const birthRpcArguments = (input: LivestockBirthInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_quantity: Number(input.quantity),
+  p_effective_at: input.effectiveAt,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
+export const mortalityRpcArguments = (input: LivestockMortalityInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_quantity: Number(input.quantity),
+  p_effective_at: input.effectiveAt,
+  p_cause_category: input.causeCategory,
+  p_cause_detail: input.causeDetail ?? null,
+  p_disposal_method: input.disposalMethod ?? null,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
+export const splitRpcArguments = (input: LivestockSplitInput) => ({
+  ...commandContext(input),
+  p_source_cohort_id: input.sourceCohortId,
+  p_quantity: Number(input.quantity),
+  p_effective_at: input.effectiveAt,
+  p_destination_cohort_reference: input.destinationCohortReference,
+  p_destination_herd_id: input.destinationHerdId,
+  p_destination_site_id: input.destinationSiteId,
+  p_destination_sex_composition: input.destinationSexComposition ?? null,
+  p_destination_breed_descriptor: input.destinationBreedDescriptor ?? null,
+  p_reason: input.reason,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
+export const mergeRpcArguments = (input: LivestockMergeInput) => ({
+  ...commandContext(input),
+  p_source_cohort_ids: input.sourceCohortIds,
+  p_quantities: input.quantities.map(Number),
+  p_effective_at: input.effectiveAt,
+  p_destination_cohort_reference: input.destinationCohortReference,
+  p_destination_herd_id: input.destinationHerdId,
+  p_destination_site_id: input.destinationSiteId,
+  p_destination_sex_composition: input.destinationSexComposition ?? null,
+  p_destination_breed_descriptor: input.destinationBreedDescriptor ?? null,
+  p_reason: input.reason,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
 });

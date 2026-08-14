@@ -20,10 +20,12 @@ psql_postgres -c "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB" >/dev/null
 
-# Complete merged boundary through GF-019; exclude the exact GF-020 family only.
+# Complete merged boundary through GF-019; exclude the GF-020 family and every
+# later Livestock slice that builds on it, so the fixture stays genuinely
+# pre-GF-020 as new Livestock stages are added.
 for migration in "$ROOT"/supabase/migrations/*.sql; do
   base="$(basename "$migration")"
-  [[ "$base" == 20260814001700_* || "$base" == 20260814001710_* ]] && continue
+  [[ ! "$base" < 20260814001700_ ]] && continue
   psql_db "$UPGRADE_DB" < "$migration" >/dev/null
 done
 for test_file in "$ROOT"/supabase/tests/*.sql; do
