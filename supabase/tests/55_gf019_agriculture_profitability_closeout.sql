@@ -23,6 +23,7 @@ begin begin execute p_sql; exception when others then return sqlerrm; end; retur
 select id as s19_project from public.investment_projects where internal_reference='GF013-AG-A' \gset
 select id as s19_cycle from public.crop_cycles where season_reference='GF018-2026' \gset
 select id as s19_field from public.fields where identifier='حقل مبيعات' \gset
+select farm_id as s19_farm from public.fields where id=:'s19_field' \gset
 select id as s19_buyer from public.parties where legal_name='مشتري محاصيل GF018' \gset
 select id as s19_supplier from public.parties where organization_id='10000000-0000-4000-8000-000000000001' order by created_at limit 1 \gset
 select id as s19_cash from public.project_cash_accounts where name='حساب تحصيل زراعي GF018' \gset
@@ -112,13 +113,41 @@ select 1/case when not exists(select 1 from public.crop_cycle_cost_sources_read 
 then 1 else 0 end as s19_no_land_depreciation_amortization_fair_value;
 
 -- ---------------------------------------------------------------------------
--- 3. Keep an outstanding receivable and physical stock at operational close.
+-- 3. Dedicated close fixture keeps the GF-018 cycle HARVESTING so its real
+-- two-session oversell/collection suite can still run later in this gate.
 -- ---------------------------------------------------------------------------
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_field('10000000-0000-4000-8000-000000000001',%L,%L,
+    'حقل إغلاق GF019',2,'FEDDAN',null,null,'s19-close-field')$$,
+  :'s19_project',:'s19_farm')) as s19_close_field \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.create_crop_cycle('10000000-0000-4000-8000-000000000001',%L,
+    'فلفل','هجين','GF019-CLOSE-2026',current_date-30,current_date+30,null,null,'s19-close-cycle')$$,
+  :'s19_project')) as s19_close_cycle \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'PLANNED','ESTABLISHED','تجهيز دورة الإغلاق','دليل 19-1','s19-close-established')$$,
+  :'s19_close_cycle')) as s19_close_t1 \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'ESTABLISHED','GROWING','نمو دورة الإغلاق','دليل 19-2','s19-close-growing')$$,
+  :'s19_close_cycle')) as s19_close_t2 \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.transition_crop_cycle('10000000-0000-4000-8000-000000000001',%L,'GROWING','HARVESTING','بدء حصاد الإغلاق','دليل 19-3','s19-close-harvesting')$$,
+  :'s19_close_cycle')) as s19_close_t3 \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.assign_crop_cycle_to_field('10000000-0000-4000-8000-000000000001',%L,%L,%L,
+    2,'FEDDAN',current_date-30,current_date+30,'s19-close-assignment')$$,
+  :'s19_project',:'s19_close_cycle',:'s19_close_field')) as s19_close_assignment \gset
+select s19_run('00000000-0000-4000-8000-000000000001',format(
+  $$select public.record_harvest_event('10000000-0000-4000-8000-000000000001',%L,current_date,
+    22,20,'كجم','أولى','GF019-CLOSE-LOT',%L,'حصاد إغلاق صناعي','دليل حصاد 19','s19-close-harvest')$$,
+  :'s19_close_assignment',:'s19_store')) as s19_close_harvest \gset
+select id as s19_close_lot from public.harvest_lots where harvest_event_id=:'s19_close_harvest' \gset
+
 select s19_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.create_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,%L,
     'GF019-SYNTHETIC-SALE','طلب شراء تكميلي',current_date,'EGP','تسليم من المخزن','دليل اتفاق تكميلي',
     array[%L::uuid],array[%L::uuid],array[10::numeric],array[1000::bigint],'s19-sale')$$,
-  :'s19_project',:'s19_buyer',:'s19_lot',:'s19_store')) as s19_sale \gset
+  :'s19_project',:'s19_buyer',:'s19_close_lot',:'s19_store')) as s19_sale \gset
 select s19_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.approve_agriculture_sale('10000000-0000-4000-8000-000000000001',%L,'s19-sale-approve')$$,:'s19_sale')) as s19_approved \gset
 select s19_run('00000000-0000-4000-8000-000000000001',format(
@@ -130,36 +159,41 @@ select s19_run('00000000-0000-4000-8000-000000000001',format(
 
 select 1/case when (select gross_harvest_quantity='189.000000'
   and net_accepted_harvest_quantity='180.000000' and harvest_loss='9.000000'
-  and quantity_sold='130.000000' and remaining_physical_inventory='50.000000'
-  and recognized_revenue_minor_units='140000' and cash_collected_minor_units='132000'
-  and receivable_outstanding_minor_units='8000'
-  and attributed_operating_cost_minor_units='60000' and operating_result_to_date_minor_units='80000'
+  and quantity_sold='120.000000' and remaining_physical_inventory='60.000000'
+  and recognized_revenue_minor_units='130000' and cash_collected_minor_units='130000'
+  and receivable_outstanding_minor_units='0'
+  and attributed_operating_cost_minor_units='60000' and operating_result_to_date_minor_units='70000'
   and remaining_inventory_value_status='UNAVAILABLE_NOT_RECOGNIZED_BY_CURRENT_POLICY'
   and cogs_status='NOT_GUESSED'
   from public.crop_cycle_results_read where crop_cycle_id=:'s19_cycle')
 then 1 else 0 end as s19_reproducible_result_revenue_cash_inventory_cost;
-select 1/case when exists(select 1 from public.crop_cycle_integrity_issues_read where crop_cycle_id=:'s19_cycle' and code='OPEN_INVENTORY' and severity='WARN')
-  and exists(select 1 from public.crop_cycle_integrity_issues_read where crop_cycle_id=:'s19_cycle' and code='OPEN_RECEIVABLE' and severity='WARN')
+select 1/case when (select gross_harvest_quantity='22.000000' and net_accepted_harvest_quantity='20.000000'
+  and harvest_loss='2.000000' and quantity_sold='10.000000' and remaining_physical_inventory='10.000000'
+  and recognized_revenue_minor_units='10000' and cash_collected_minor_units='2000'
+  and receivable_outstanding_minor_units='8000' from public.crop_cycle_results_read where crop_cycle_id=:'s19_close_cycle')
+then 1 else 0 end as s19_close_fixture_positions_reproducible;
+select 1/case when exists(select 1 from public.crop_cycle_integrity_issues_read where crop_cycle_id=:'s19_close_cycle' and code='OPEN_INVENTORY' and severity='WARN')
+  and exists(select 1 from public.crop_cycle_integrity_issues_read where crop_cycle_id=:'s19_close_cycle' and code='OPEN_RECEIVABLE' and severity='WARN')
 then 1 else 0 end as s19_open_commercial_positions_visible;
 
 select count(*) as s19_distributions_before from public.s5_distributions where project_id=:'s19_project' \gset
-select count(*) as s19_audits_before_close from public.audit_events where entity_id=:'s19_cycle' and event_type='CROP_CYCLE_TRANSITIONED' \gset
+select count(*) as s19_audits_before_close from public.audit_events where entity_id=:'s19_close_cycle' and event_type='CROP_CYCLE_TRANSITIONED' \gset
 select s19_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.close_crop_cycle('10000000-0000-4000-8000-000000000001',%L,%L,
     'اكتملت أعمال الحصاد والتسليم التشغيلي','محضر إغلاق دورة SYNTHETIC','s19-close')$$,
-  :'s19_project',:'s19_cycle')) as s19_closeout \gset
-select 1/case when public.agriculture_current_cycle_state(:'s19_cycle')='CLOSED'
-  and (select count(*) from public.crop_cycle_closeouts where crop_cycle_id=:'s19_cycle')=1
-  and (select remaining_physical_inventory='50.000000' and receivable_outstanding_minor_units='8000'
+  :'s19_project',:'s19_close_cycle')) as s19_closeout \gset
+select 1/case when public.agriculture_current_cycle_state(:'s19_close_cycle')='CLOSED'
+  and (select count(*) from public.crop_cycle_closeouts where crop_cycle_id=:'s19_close_cycle')=1
+  and (select remaining_physical_inventory='10.000000' and receivable_outstanding_minor_units='8000'
        from public.crop_cycle_closeouts_read where id=:'s19_closeout')
 then 1 else 0 end as s19_close_allows_inventory_and_receivable;
 select 1/case when s19_run('00000000-0000-4000-8000-000000000001',format(
   $$select public.close_crop_cycle('10000000-0000-4000-8000-000000000001',%L,%L,
     'اكتملت أعمال الحصاد والتسليم التشغيلي','محضر إغلاق دورة SYNTHETIC','s19-close')$$,
-  :'s19_project',:'s19_cycle'))=:'s19_closeout'
+  :'s19_project',:'s19_close_cycle'))=:'s19_closeout'
 then 1 else 0 end as s19_close_true_replay;
-select 1/case when (select count(*) from public.crop_cycle_state_history where crop_cycle_id=:'s19_cycle' and new_state='CLOSED')=1
-  and (select count(*) from public.audit_events where entity_id=:'s19_cycle' and event_type='CROP_CYCLE_TRANSITIONED')=:'s19_audits_before_close'::bigint+1
+select 1/case when (select count(*) from public.crop_cycle_state_history where crop_cycle_id=:'s19_close_cycle' and new_state='CLOSED')=1
+  and (select count(*) from public.audit_events where entity_id=:'s19_close_cycle' and event_type='CROP_CYCLE_TRANSITIONED')=:'s19_audits_before_close'::bigint+1
 then 1 else 0 end as s19_no_duplicate_transition_or_audit;
 select 1/case when (select count(*) from public.s5_distributions where project_id=:'s19_project')=:'s19_distributions_before'::bigint
 then 1 else 0 end as s19_close_does_not_auto_distribute;
