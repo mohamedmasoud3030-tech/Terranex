@@ -169,7 +169,7 @@ then 1 else 0 end as privileged_herd_species_change_rejected;
 
 -- A split lineage into a Sheep Herd is rejected even when the rows are written
 -- directly by the database owner instead of through the RPC.
-select gf20_owner_catch(format($q$
+select 1/case when gf20_owner_catch(format($q$
   DO $do$
   DECLARE
     v_destination uuid;
@@ -197,7 +197,8 @@ select gf20_owner_catch(format($q$
     );
   END $do$;
 $q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
-     :'gf68_project', :'gf68_asof')) as privileged_cross_species_lineage_error;
+     :'gf68_project', :'gf68_asof')) like '%compatible species%'
+then 1 else 0 end as privileged_cross_species_lineage_rejected;
 
 -- ---------------------------------------------------------------------------
 -- Dedicated no-future-event Cohorts keep shape tests focused on operation
@@ -238,12 +239,8 @@ select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
 
 -- Exact SPLIT/MERGE semantic shape under privileged writes.
 -- ---------------------------------------------------------------------------
-select 'GF68_PRE_SHAPE_DIAGNOSTIC' as diagnostic, c.id, c.cohort_reference,
-       c.opening_headcount
-from livestock_cohorts c
-where c.id in (:'gf68_shape_a', :'gf68_shape_b', :'gf68_shape_dest');
 -- Extra balanced SPLIT legs are rejected, even though sum(out) = sum(in).
-select gf20_owner_catch(format($q$
+select 1/case when gf20_owner_catch(format($q$
   DO $do$
   BEGIN
     insert into public.livestock_quantity_operations(
@@ -270,7 +267,8 @@ select gf20_owner_catch(format($q$
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
 $q$, :'gf68_project', :'gf68_project', :'gf68_shape_a', :'gf68_project', :'gf68_shape_a',
-     :'gf68_project', :'gf68_shape_b')) as privileged_extra_split_error;
+     :'gf68_project', :'gf68_shape_b')) like '%exactly one SPLIT_OUT%'
+then 1 else 0 end as privileged_extra_split_legs_rejected;
 
 
 -- Missing lineage is rejected even when the two split legs balance exactly.
