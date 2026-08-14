@@ -167,7 +167,7 @@ describe('GF-019 Arabic RTL result UX', () => {
 
   it('provides accessible blocked/successful close and cost forms', () => {
     expect(forms).toContain('aria-describedby');
-    expect(forms).toContain('role="status"');
+    expect(forms).toContain('<output className="error">');
     expect(forms).toContain('الإغلاق موقوف حتى معالجة استثناءات السلامة الجوهرية');
     expect(forms).toContain('جارٍ فحص السلامة والإغلاق');
     expect(forms).toContain('هذا الربط لا ينشئ مصروفًا جديدًا');

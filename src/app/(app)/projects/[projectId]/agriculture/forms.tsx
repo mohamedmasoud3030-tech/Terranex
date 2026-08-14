@@ -1431,14 +1431,14 @@ export function CropCycleCostAttributionForm({
   assignments,
   fields,
   sources,
-}: {
+}: Readonly<{
   organizationId: string;
   projectId: string;
   result: CropCycleResultRead;
   assignments: CropAssignmentRead[];
   fields: FieldRead[];
   sources: CropCycleCostSourceRead[];
-}) {
+}>) {
   const [state, action, pending] = useActionState(attributeCropCycleCost, initial);
   const available = sources.filter((source) => BigInt(source.available_amount_minor_units) > 0n);
   const cycleAssignments = assignments.filter((assignment) => assignment.crop_cycle_id === result.crop_cycle_id);
@@ -1451,7 +1451,7 @@ export function CropCycleCostAttributionForm({
       <Key prefix="ag-cycle-cost" />
       <input type="hidden" name="cropCycleId" value={result.crop_cycle_id} />
       <input type="hidden" name="currency" value={result.currency} />
-      <label className="full">مصدر المصروف المالي المعتمد
+      <label className="full">مصدر المصروف المالي المعتمد{' '}
         <select name="sourceJournalLineId" required>
           {available.map((source) => <option key={source.source_journal_line_id} value={source.source_journal_line_id}>{source.description} · متاح {formatMinorUnits(source.available_amount_minor_units, source.currency)} · {source.transaction_date}</option>)}
         </select>
@@ -1471,15 +1471,15 @@ export function CropCycleCloseoutForm({
   organizationId,
   projectId,
   result,
-}: {
+}: Readonly<{
   organizationId: string;
   projectId: string;
   result: CropCycleResultRead;
-}) {
+}>) {
   const [state, action, pending] = useActionState(closeCropCycle, initial);
   if (result.operational_state !== 'HARVESTING') return null;
   if (result.hard_exception_count > 0) {
-    return <p className="error" role="status">الإغلاق موقوف حتى معالجة استثناءات السلامة الجوهرية الموضحة أعلاه.</p>;
+    return <output className="error">الإغلاق موقوف حتى معالجة استثناءات السلامة الجوهرية الموضحة أعلاه.</output>;
   }
   return (
     <form action={action} className="form-grid compact">
