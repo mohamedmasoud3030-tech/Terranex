@@ -51,7 +51,7 @@ select 1/case when gf20_owner_catch(format($q$
     null, 'ACTIVE', 'جذر مشوه مرفوض',
     '00000000-0000-4000-8000-000000000001', 'gf20-malformed-root', repeat('b',64)
   )
-$q$, :'gf20_project', :'gf20_cohort2')) like '%root_or_child_check%'
+$q$, :'gf20_project', :'gf20_cohort2')) like '%invalid livestock lifecycle root%'
 then 1 else 0 end as malformed_root_rejected;
 
 -- A predecessor from another Cohort is rejected before its composite FK can persist.
