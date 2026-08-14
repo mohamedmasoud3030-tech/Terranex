@@ -61,13 +61,15 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Pre-GF-015 boundary: every migration except the GF-015 family. Every
-# prerequisite (S0..S7, governance, GF-013, GF-014) is applied in its
-# canonical lexical order.
+# Pre-GF-015 boundary: every migration except the GF-015 family and every
+# later family (GF-016). Every prerequisite (S0..S7, governance, GF-013,
+# GF-014) is applied in its canonical lexical order. Excluding the later
+# GF-016 family here prevents a later migration from being applied before
+# GF-015's own prerequisites — the exact defect found during GF-014.
 applied=0
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    20260814001200*.sql) continue ;;
+    20260814001200*.sql|20260814001300*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
   applied=$((applied + 1))

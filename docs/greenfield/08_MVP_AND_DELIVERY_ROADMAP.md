@@ -241,17 +241,26 @@ Coding is authorized. Resolve only the decisions required by the active slice. D
 
 ## 13. Immediate next execution batch
 
-Execute `GF-015 — Field Input Application Foundation` as one working
+Execute `GF-016 — Harvest & Inventory Flow Foundation` as one working
 vertical slice after the merged GF-013 Farm → Field → CropCycle
-foundation and the merged GF-014 Field Activity foundation:
+foundation, the merged GF-014 Field Activity foundation, and the merged
+GF-015 Field Input Application foundation:
 
-1. Define an Agriculture `InputItem` (`SEED | FERTILIZER | CHEMICAL`) and a traceable `InputLot`, both scoped to one Agriculture project.
-2. Record an append-only `InputApplication` proving a specific lot was applied through an existing `FieldActivity`, deriving project, crop cycle, field and assignment from that activity.
-3. Enforce the activity/category mapping (`SEED → PLANT`, `FERTILIZER → FERTILIZE`, `CHEMICAL → SPRAY`), the assignment area cap in the assignment's own unit, the input item application unit, and the lot expiry rule server-side.
-4. Keep RLS, idempotent commands, and the existing audit trail; do not advance CropCycle state and do not create inventory, harvest, or accounting facts.
-5. Do not model stock-on-hand. Available-stock validation begins only when the canonical `InventoryMovement` slice exists; this is a recorded boundary, not missing implementation.
+1. Add a minimal `StorageLocation` (organization, project, name, optional reference/notes) that holds harvested output.
+2. Record an atomic `HarvestEvent` against a CropCycle-Field assignment while the cycle is `HARVESTING`, capturing harvest date, gross/net quantity, unit, optional grade, notes and evidence.
+3. Create exactly one traceable `HarvestLot` per event (initial quantity = net quantity, same unit), and append the lot's initial `HARVEST_RECEIPT` into the selected storage location in the same transaction.
+4. Model append-only harvest-output `InventoryMovement` (`HARVEST_RECEIPT`, `TRANSFER`, `ADJUSTMENT_IN`, `ADJUSTMENT_OUT`, `SPOILAGE`) with derived (never stored) balances and concurrency protection so no location can go negative.
+5. Enforce harvest quantity invariants (gross > 0, net > 0, net ≤ gross), the movement-date-after-harvest rule, the cross-project storage rule, and reason-required adjustments/spoilage server-side.
+6. Keep RLS, idempotent commands, and the existing audit trail; do not advance CropCycle state and do not create sale, valuation, or accounting facts.
+7. Do not retrofit an input-stock balance onto GF-015 input lots and do not implement `SALE_ISSUE`; sale and profitability are the final slice.
 
-Previous batch (complete and merged on `main`): `GF-014 — Field Activity Foundation`:
+Previous batch (complete and merged on `main`): `GF-015 — Field Input Application Foundation`:
+
+1. Agriculture `InputItem` (`SEED | FERTILIZER | CHEMICAL`) and traceable `InputLot`, scoped to one project.
+2. Append-only `InputApplication` deriving project, cycle, field and assignment from a `FieldActivity`, with the activity/category mapping, area cap, unit, and lot expiry enforced server-side.
+3. No CropCycle state change and no inventory, harvest, sale, or accounting facts. Input lots are identity/traceability records, not stock.
+
+Earlier batch (complete and merged on `main`): `GF-014 — Field Activity Foundation`:
 
 1. Append-only field activities against an existing CropCycle-to-Field assignment.
 2. Controlled vocabulary, paired quantity/unit, RLS, idempotent command, and the existing audit trail.
@@ -266,4 +275,4 @@ Earlier batch (complete and merged on `main`): `GF-013 — Agriculture Sector Fo
 5. Reuse the canonical organization, project, authorization, audit, evidence, money, and workspace implementations; do not build Agriculture finance or a generic sector framework.
 6. Verify clean migration replay, upgrade compatibility, two-tenant isolation, lifecycle/invariant tests, application tests, typecheck, lint, and build.
 
-Harvest events, harvest lots, storage locations, inventory movements, sale/dispatch, cycle profitability, offline drafts, and Livestock remain later bounded slices. `GF-016 — Harvest Event & Harvest Lot Foundation` is the expected next batch after GF-015 is reviewed; it must not be started inside GF-015. The permanent Real Estate showcase remains intact and synthetic; it never counts as customer evidence for Agriculture or Livestock.
+Sale/dispatch, cycle profitability, cycle closeout, Agriculture technical hardening, offline drafts, and Livestock remain later bounded slices. `GF-017 — Sale + Profitability + Cycle Closeout + Agriculture Hardening` is the expected final Agriculture batch after GF-016 is reviewed; it must not be started inside GF-016. The permanent Real Estate showcase remains intact and synthetic; it never counts as customer evidence for Agriculture or Livestock.

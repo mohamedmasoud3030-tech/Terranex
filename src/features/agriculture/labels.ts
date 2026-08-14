@@ -92,3 +92,28 @@ export function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
   return new Date(value).toLocaleDateString('ar-EG');
 }
+
+// GF-016 — Harvest & Inventory movement labels. These describe physical
+// harvest-output movement types only; there is no sale issue and no
+// fabricated financial or valuation term.
+export const HARVEST_MOVEMENT_TYPE_LABEL: Record<string, string> = {
+  HARVEST_RECEIPT: 'استلام حصاد',
+  TRANSFER: 'تحويل',
+  ADJUSTMENT_IN: 'تعديل زيادة',
+  ADJUSTMENT_OUT: 'تعديل نقص',
+  SPOILAGE: 'تالف/هالك',
+};
+
+export function formatHarvestMovementType(type: string | null | undefined): string {
+  if (!type) return '—';
+  return HARVEST_MOVEMENT_TYPE_LABEL[type] ?? type;
+}
+
+/** Harvest quantity plus a free-text quantity unit (كجم، طن…). */
+export function formatHarvestQuantity(
+  value: string | null | undefined,
+  unit: string | null | undefined,
+): string {
+  if (!value) return '—';
+  return `${value} ${unit ?? ''}`.trim();
+}

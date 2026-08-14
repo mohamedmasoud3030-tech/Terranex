@@ -10,9 +10,14 @@ import {
   getFarms,
   getFieldActivities,
   getFields,
+  getHarvestEvents,
+  getHarvestInventoryByLocation,
+  getHarvestInventoryMovements,
+  getHarvestLots,
   getInputApplications,
   getInputItems,
   getInputLots,
+  getStorageLocations,
 } from '@/features/agriculture/queries';
 import {
   AREA_UNIT_LABEL,
@@ -20,6 +25,8 @@ import {
   formatAreaUnit,
   formatDate,
   formatFieldActivityType,
+  formatHarvestMovementType,
+  formatHarvestQuantity,
   formatInputCategory,
   formatInputQuantity,
   formatLotExpiryStatus,
@@ -32,10 +39,14 @@ import {
   FarmForm,
   FieldActivityForm,
   FieldForm,
+  HarvestEventForm,
+  HarvestInventoryAdjustmentForm,
   InputApplicationForm,
   InputItemForm,
   InputLotForm,
   ProfileForm,
+  StorageLocationForm,
+  TransferHarvestInventoryForm,
 } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -67,6 +78,7 @@ export default async function AgriculturePage({
   const [
     membership, farms, fields, cycles, assignments, timeline, activities,
     inputItems, inputLots, inputApplications,
+    storages, harvestEvents, harvestLots, inventoryByLocation, inventoryMovements,
   ] = await Promise.all([
     getCurrentMembership(organizationId),
     getFarms(projectId),
@@ -78,6 +90,11 @@ export default async function AgriculturePage({
     getInputItems(projectId),
     getInputLots(projectId),
     getInputApplications(projectId),
+    getStorageLocations(projectId),
+    getHarvestEvents(projectId),
+    getHarvestLots(projectId),
+    getHarvestInventoryByLocation(projectId),
+    getHarvestInventoryMovements(projectId),
   ]);
 
   if (!membership) {
@@ -607,6 +624,252 @@ export default async function AgriculturePage({
             />
           </details>
         ) : null}
+      </section>
+
+      <section className="card stack scroll-target" id="harvest">
+        <h2>الحصاد والمخزون</h2>
+        <p className="muted">
+          أحداث الحصاد، تشغيلات المحصول الناتجة، مواقع التخزين، وحركات المخزون المتراكمة.
+          الرصيد الحالي لكل تشغيلة/موقع يُشتق من حركات المخزون ولا يُخزَّن أو يُدخَل يدويًا.
+        </p>
+        <p className="muted">
+          هذه الشريحة تتعقب كمية محصول الحصاد التشغيلية فقط. لا بيع، لا تقييم، لا قيد محاسبي،
+          ولا رصيد مخزون للمدخلات الزراعية هنا. البيع والربحية مؤجلان للشريحة النهائية.
+        </p>
+
+        <div className="overview-kpis">
+          <article className="overview-kpi">
+            <span>أحداث الحصاد</span>
+            <strong>{harvestEvents.length}</strong>
+            <small>وقائع حصاد فعلية مسجّلة</small>
+          </article>
+          <article className="overview-kpi">
+            <span>تشغيلات الحصاد</span>
+            <strong>{harvestLots.length}</strong>
+            <small>محصول قابل للتتبع</small>
+          </article>
+          <article className="overview-kpi">
+            <span>مواقع التخزين</span>
+            <strong>{storages.length}</strong>
+            <small>مواقع استلام محصول</small>
+          </article>
+          <article className="overview-kpi">
+            <span>حركات المخزون</span>
+            <strong>{inventoryMovements.length}</strong>
+            <small>سجل متراكم غير قابل للتعديل</small>
+          </article>
+        </div>
+
+        <h3 id="harvest-events">أحداث الحصاد</h3>
+        {harvestEvents.length === 0 ? (
+          <div className="card empty">
+            <h4>لا توجد أحداث حصاد بعد</h4>
+            <p className="muted">
+              سجّل أول حدث حصاد لدورة في حالة &quot;قيد الحصاد&quot; مع موقع تخزين لاستلام المحصول.
+            </p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">الدورة</th>
+                  <th scope="col">الحقل</th>
+                  <th scope="col">الإجمالي</th>
+                  <th scope="col">الصافي</th>
+                  <th scope="col">الفاقد</th>
+                  <th scope="col">الدرجة</th>
+                  <th scope="col">التشغيلة</th>
+                  <th scope="col">موقع الاستلام</th>
+                </tr>
+              </thead>
+              <tbody>
+                {harvestEvents.map((e) => (
+                  <tr key={e.id}>
+                    <td>{d(e.harvest_date)}</td>
+                    <td>{`${e.crop} · ${e.season_reference}`}</td>
+                    <td>{e.field_identifier}</td>
+                    <td>{formatHarvestQuantity(e.gross_quantity, e.quantity_unit)}</td>
+                    <td>{formatHarvestQuantity(e.net_quantity, e.quantity_unit)}</td>
+                    <td>{formatHarvestQuantity(e.harvest_loss, e.quantity_unit)}</td>
+                    <td>{e.grade ?? '—'}</td>
+                    <td>{e.lot_reference}</td>
+                    <td>{e.destination_storage_name ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <details open={harvestEvents.length === 0 && storages.length > 0}>
+          <summary>تسجيل حدث حصاد</summary>
+          <HarvestEventForm
+            organizationId={organizationId}
+            projectId={projectId}
+            cycles={cycles}
+            assignments={assignments}
+            fields={fields}
+            storages={storages}
+          />
+        </details>
+
+        <h3 id="harvest-lots">تشغيلات الحصاد</h3>
+        {harvestLots.length === 0 ? (
+          <p className="muted">لا توجد تشغيلات حصاد بعد. كل حدث حصاد ينشئ تشغيلة واحدة تلقائيًا.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">مرجع التشغيلة</th>
+                  <th scope="col">الدورة</th>
+                  <th scope="col">الحقل</th>
+                  <th scope="col">تاريخ الحصاد</th>
+                  <th scope="col">الكمية الأولية</th>
+                  <th scope="col">الرصيد الحالي الكلي</th>
+                  <th scope="col">الدرجة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {harvestLots.map((l) => (
+                  <tr key={l.id}>
+                    <td>{l.lot_reference}</td>
+                    <td>{`${l.crop} · ${l.season_reference}`}</td>
+                    <td>{l.field_identifier}</td>
+                    <td>{d(l.harvest_date)}</td>
+                    <td>{formatHarvestQuantity(l.initial_quantity, l.quantity_unit)}</td>
+                    <td>{formatHarvestQuantity(l.current_total_balance, l.quantity_unit)}</td>
+                    <td>{l.grade ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h3 id="inventory-by-location">المخزون حسب الموقع</h3>
+        {inventoryByLocation.length === 0 ? (
+          <p className="muted">لا توجد أرصدة مخزون حصاد بعد.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">التشغيلة</th>
+                  <th scope="col">موقع التخزين</th>
+                  <th scope="col">الرصيد الحالي</th>
+                  <th scope="col">آخر حركة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventoryByLocation.map((e) => (
+                  <tr key={`${e.harvest_lot_id}-${e.storage_id}`}>
+                    <td>{e.lot_reference}</td>
+                    <td>{e.storage_name}</td>
+                    <td>{formatHarvestQuantity(e.current_balance, e.quantity_unit)}</td>
+                    <td>{d(e.last_movement_date)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h3 id="movement-history">سجل حركات المخزون</h3>
+        {inventoryMovements.length === 0 ? (
+          <p className="muted">لا توجد حركات مخزون بعد. الحركات سجل متراكم غير قابل للتعديل.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">النوع</th>
+                  <th scope="col">من</th>
+                  <th scope="col">إلى</th>
+                  <th scope="col">الكمية</th>
+                  <th scope="col">السبب</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventoryMovements.map((m) => (
+                  <tr key={m.id}>
+                    <td>{d(m.movement_date)}</td>
+                    <td>{formatHarvestMovementType(m.movement_type)}</td>
+                    <td>{m.from_storage_name ?? '—'}</td>
+                    <td>{m.to_storage_name ?? '—'}</td>
+                    <td>{formatHarvestQuantity(m.quantity, m.unit)}</td>
+                    <td>
+                      {m.reason ?? '—'}
+                      {m.evidence_reference ? <div className="muted">دليل: {m.evidence_reference}</div> : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h3 id="storage-locations">مواقع التخزين</h3>
+        {storages.length === 0 ? (
+          <div className="card empty">
+            <h4>لا توجد مواقع تخزين</h4>
+            <p className="muted">سجّل موقع تخزين لاستلام محصول الحصاد فيه.</p>
+            <StorageLocationForm organizationId={organizationId} projectId={projectId} />
+          </div>
+        ) : (
+          <>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">الاسم</th>
+                    <th scope="col">المرجع</th>
+                    <th scope="col">ملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {storages.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.name}</td>
+                      <td>{s.internal_reference ?? '—'}</td>
+                      <td>{s.notes ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <details>
+              <summary>إضافة موقع تخزين</summary>
+              <StorageLocationForm organizationId={organizationId} projectId={projectId} />
+            </details>
+          </>
+        )}
+
+        <h3 id="transfer-inventory">نقل المخزون</h3>
+        <p className="muted">
+          اختر تشغيلة وموقعها الحالي والوجهة والكمية. النقل يغيّر الموقع فقط ولا ينشئ كمية.
+        </p>
+        <TransferHarvestInventoryForm
+          organizationId={organizationId}
+          projectId={projectId}
+          lots={harvestLots}
+          inventory={inventoryByLocation}
+          storages={storages}
+        />
+
+        <h3 id="adjust-inventory">تعديل / تالف</h3>
+        <p className="muted">
+          تعديل زيادة أو نقص أو تسجيل تالف بسبب واضح. لا يمكن أن يجعل الرصيد سالبًا.
+        </p>
+        <HarvestInventoryAdjustmentForm
+          organizationId={organizationId}
+          projectId={projectId}
+          lots={harvestLots}
+          inventory={inventoryByLocation}
+        />
       </section>
 
       <section className="card stack scroll-target" id="timeline">

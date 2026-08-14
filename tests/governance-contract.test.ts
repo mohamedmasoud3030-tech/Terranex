@@ -40,27 +40,29 @@ describe('GF-012 canonical governance contract', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
 
-    // GF-014 is merged, not upcoming; GF-015 is the active slice.
-    expect(policy).toMatch(/GF-014 Field Activity are merged and technically complete/);
-    expect(policy).toMatch(/GF-015 Field Input Application is the active bounded Agriculture slice/);
+    // GF-013, GF-014 and GF-015 are merged; GF-016 is the active slice.
+    expect(policy).toMatch(/GF-013, GF-014 and GF-015 are merged and technically complete/);
+    expect(policy).toMatch(/GF-016 Harvest & Inventory is the active bounded Agriculture slice/);
     expect(policy).not.toMatch(/Agriculture is next\b/);
     expect(execution).toMatch(/GF-014 — Field Activity Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
-    expect(execution).toMatch(/GF-015 — Field Input Application Foundation/);
+    expect(execution).toMatch(/GF-015 — Field Input Application Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
+    expect(execution).toMatch(/GF-016 — Harvest & Inventory Flow Foundation/);
     expect(execution).not.toMatch(/`GF-015 — next bounded Agriculture slice`/);
-    expect(roadmap).toMatch(/Execute `GF-015 — Field Input Application Foundation`/);
-    expect(roadmap).toMatch(/Previous batch \(complete and merged on `main`\): `GF-014/);
+    expect(roadmap).toMatch(/Execute `GF-016 — Harvest & Inventory Flow Foundation`/);
+    expect(roadmap).toMatch(/Previous batch \(complete and merged on `main`\): `GF-015/);
   });
 
-  it('keeps the deferred Agriculture scope honest after GF-015', () => {
+  it('keeps the deferred Agriculture scope honest after GF-016', () => {
     const execution = read('GREENFIELD_EXECUTION.md');
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
-    // Inputs are delivered, so they must no longer be listed as deferred.
-    expect(execution).toMatch(/deferred after GF-015/);
+    // Harvest and inventory are delivered, so they must no longer be listed as deferred.
+    expect(execution).toMatch(/deferred after GF-016/);
+    expect(execution).not.toMatch(/deferred after GF-015: `HarvestEvent`/);
     expect(execution).not.toMatch(/deferred after GF-014: `InputItem`/);
-    // Harvest and inventory remain deferred and GF-016 is named, not built.
-    expect(execution).toMatch(/`HarvestEvent`, `HarvestLot`/);
-    expect(execution).toMatch(/GF-016 — Harvest Event & Harvest Lot Foundation/);
-    expect(roadmap).toMatch(/must not be started inside GF-015/);
+    // Input-stock, sale, and profitability remain deferred; GF-017 is named, not built.
+    expect(execution).toMatch(/input-stock receiving\/balance/);
+    expect(execution).toMatch(/GF-017 — Sale \+ Profitability \+ Cycle Closeout \+ Agriculture Hardening/);
+    expect(roadmap).toMatch(/must not be started inside GF-016/);
   });
 
   it('keeps implementation, deployment, and customer evidence separate', () => {

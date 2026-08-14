@@ -241,3 +241,144 @@ export const getCropCycleTimeline = (projectId: string) =>
     projectId,
     'changed_at',
   );
+
+// ---------------------------------------------------------------------------
+// GF-016 — Harvest & Inventory Flow Foundation.
+//
+// Read models for Storage Location, Harvest Event, Harvest Lot, inventory
+// by location, and append-only movement history. Current balances are
+// derived in the database from movement facts, never stored.
+// ---------------------------------------------------------------------------
+export type StorageLocationRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  name: string;
+  internal_reference: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type HarvestEventRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  crop_cycle_id: string;
+  field_id: string;
+  assignment_id: string;
+  harvest_date: string;
+  gross_quantity: string;
+  net_quantity: string;
+  /** Derived for display only (gross - net); never stored twice. */
+  harvest_loss: string;
+  quantity_unit: string;
+  grade: string | null;
+  notes: string | null;
+  evidence_reference: string | null;
+  recorded_by: string;
+  recorded_at: string;
+  crop: string;
+  season_reference: string;
+  field_identifier: string;
+  harvest_lot_id: string;
+  lot_reference: string;
+  destination_storage_id: string | null;
+  destination_storage_name: string | null;
+};
+
+export type HarvestLotRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  crop_cycle_id: string;
+  field_id: string;
+  assignment_id: string;
+  harvest_event_id: string;
+  lot_reference: string;
+  harvest_date: string;
+  initial_quantity: string;
+  quantity_unit: string;
+  grade: string | null;
+  /** Derived for display only; never stored twice. */
+  current_total_balance: string;
+  crop: string;
+  season_reference: string;
+  field_identifier: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type HarvestInventoryByLocationRead = {
+  harvest_lot_id: string;
+  organization_id: string;
+  project_id: string;
+  lot_reference: string;
+  quantity_unit: string;
+  grade: string | null;
+  storage_id: string;
+  storage_name: string;
+  /** Derived for display only; never stored twice. */
+  current_balance: string;
+  last_movement_date: string | null;
+};
+
+export type HarvestInventoryMovementRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  harvest_lot_id: string;
+  movement_type: 'HARVEST_RECEIPT' | 'TRANSFER' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT' | 'SPOILAGE';
+  movement_date: string;
+  quantity: string;
+  unit: string;
+  from_storage_id: string | null;
+  to_storage_id: string | null;
+  from_storage_name: string | null;
+  to_storage_name: string | null;
+  reason: string | null;
+  evidence_reference: string | null;
+  recorded_by: string;
+  created_at: string;
+  lot_reference: string;
+};
+
+export const getStorageLocations = (projectId: string) =>
+  many<StorageLocationRead>(
+    'storage_locations_read',
+    'id,organization_id,project_id,name,internal_reference,notes,created_by,created_at',
+    projectId,
+    'created_at',
+  );
+
+export const getHarvestEvents = (projectId: string) =>
+  many<HarvestEventRead>(
+    'harvest_events_read',
+    'id,organization_id,project_id,crop_cycle_id,field_id,assignment_id,harvest_date,gross_quantity,net_quantity,harvest_loss,quantity_unit,grade,notes,evidence_reference,recorded_by,recorded_at,crop,season_reference,field_identifier,harvest_lot_id,lot_reference,destination_storage_id,destination_storage_name',
+    projectId,
+    'harvest_date',
+  );
+
+export const getHarvestLots = (projectId: string) =>
+  many<HarvestLotRead>(
+    'harvest_lots_read',
+    'id,organization_id,project_id,crop_cycle_id,field_id,assignment_id,harvest_event_id,lot_reference,harvest_date,initial_quantity,quantity_unit,grade,current_total_balance,crop,season_reference,field_identifier,created_by,created_at',
+    projectId,
+    'harvest_date',
+  );
+
+export const getHarvestInventoryByLocation = (projectId: string) =>
+  many<HarvestInventoryByLocationRead>(
+    'harvest_inventory_by_location_read',
+    'harvest_lot_id,organization_id,project_id,lot_reference,quantity_unit,grade,storage_id,storage_name,current_balance,last_movement_date',
+    projectId,
+    'last_movement_date',
+  );
+
+export const getHarvestInventoryMovements = (projectId: string) =>
+  many<HarvestInventoryMovementRead>(
+    'harvest_inventory_movements_read',
+    'id,organization_id,project_id,harvest_lot_id,movement_type,movement_date,quantity,unit,from_storage_id,to_storage_id,from_storage_name,to_storage_name,reason,evidence_reference,recorded_by,created_at,lot_reference',
+    projectId,
+    'movement_date',
+  );

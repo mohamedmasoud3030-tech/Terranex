@@ -11,7 +11,11 @@ import {
   createFieldActivity,
   createInputItem,
   createInputLot,
+  createStorageLocation,
+  recordHarvestEvent,
+  recordHarvestInventoryAdjustment,
   recordInputApplication,
+  transferHarvestInventory,
   transitionCropCycle,
 } from '@/features/agriculture/actions';
 import type {
@@ -20,8 +24,11 @@ import type {
   FarmRead,
   FieldActivityRead,
   FieldRead,
+  HarvestInventoryByLocationRead,
+  HarvestLotRead,
   InputItemRead,
   InputLotRead,
+  StorageLocationRead,
 } from '@/features/agriculture/queries';
 import {
   CYCLE_STATES,
@@ -35,6 +42,7 @@ import {
   AREA_UNIT_LABEL,
   CYCLE_STATE_LABEL,
   FIELD_ACTIVITY_TYPE_LABEL,
+  HARVEST_MOVEMENT_TYPE_LABEL,
   INPUT_CATEGORY_LABEL,
   formatCycleState,
   formatFieldActivityType,
@@ -804,6 +812,430 @@ export function InputApplicationForm({
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تسجيل تطبيق المدخل" />
+      </div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GF-016 — الحصاد والمخزون
+//
+// Four forms: define a storage location, record an atomic harvest event
+// (which creates the lot and its initial receipt), transfer quantity
+// between locations, and record an adjustment/spoilage with a reason.
+//
+// The harvest form makes invalid combinations hard to choose: selecting a
+// CropCycle limits the eligible fields to its own assignments (and the
+// assignment is derived, never asked for); the destination storage is a
+// valid location in the same project. The server re-derives project, cycle,
+// field and assignment from the assignment and remains authoritative.
+// ---------------------------------------------------------------------------
+
+export function StorageLocationForm({
+  organizationId,
+  projectId,
+}: {
+  organizationId: string;
+  projectId: string;
+}) {
+  const [state, action, pending] = useActionState(createStorageLocation, initial);
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-storage" />
+      <label>
+        اسم موقع التخزين
+        <input name="name" required minLength={2} maxLength={160} placeholder="مثال: مخزن رئيسي" />
+      </label>
+      <label>
+        مرجع داخلي <span className="muted">(اختياري)</span>
+        <input name="internalReference" maxLength={80} />
+      </label>
+      <label className="full">
+        ملاحظات <span className="muted">(اختياري)</span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        موقع التخزين بسيط: اسم ومرجع وملاحظات فقط. لا توجد سعة أو مناطق أو رفوف أو أتمتة حرارية في هذه الشريحة.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل موقع التخزين" />
+      </div>
+    </form>
+  );
+}
+
+export function HarvestEventForm({
+  organizationId,
+  projectId,
+  cycles,
+  assignments,
+  fields,
+  storages,
+}: {
+  organizationId: string;
+  projectId: string;
+  cycles: CropCycleRead[];
+  assignments: CropAssignmentRead[];
+  fields: FieldRead[];
+  storages: StorageLocationRead[];
+}) {
+  const [state, action, pending] = useActionState(recordHarvestEvent, initial);
+
+  // Only harvest-ready cycles are selectable.
+  const harvestReadyCycles = cycles.filter((c) => c.operational_state === 'HARVESTING');
+  const [cycleId, setCycleId] = useState(harvestReadyCycles[0]?.id ?? '');
+  const cycle = harvestReadyCycles.find((c) => c.id === cycleId) ?? harvestReadyCycles[0];
+
+  const eligibleAssignments = assignments.filter((a) => a.crop_cycle_id === cycle?.id);
+  const [assignmentId, setAssignmentId] = useState(eligibleAssignments[0]?.id ?? '');
+  const assignment = eligibleAssignments.find((a) => a.id === assignmentId) ?? eligibleAssignments[0];
+  const field = fields.find((f) => f.id === assignment?.field_id);
+
+  const fieldById = new Map(fields.map((f) => [f.id, f]));
+
+  if (harvestReadyCycles.length === 0) {
+    return (
+      <p className="muted">
+        لا توجد دورات محصول في حالة &quot;قيد الحصاد&quot;.
+        انقل الدورة إلى حالة الحصاد أولًا من قسم &quot;دورات المحصول&quot; قبل تسجيل حدث حصاد.
+      </p>
+    );
+  }
+
+  const blockedReason = (() => {
+    if (eligibleAssignments.length === 0) {
+      return 'الدورة المختارة لا تحتوي على حقول مخصصة. خصّص حقلًا لهذه الدورة أولًا.';
+    }
+    if (storages.length === 0) {
+      return 'لا يوجد موقع تخزين بعد. سجّل موقع تخزين لاستلام محصول الحصاد فيه.';
+    }
+    return null;
+  })();
+
+  const cyclePicker = (
+    <label className="full">
+      دورة المحصول (جاهزة للحصاد)
+      <select
+        name={blockedReason ? undefined : 'cyclePicker'}
+        required={!blockedReason}
+        value={cycleId}
+        onChange={(event) => {
+          setCycleId(event.target.value);
+          setAssignmentId('');
+        }}
+      >
+        {harvestReadyCycles.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.crop} — {c.season_reference} ({formatCycleState(c.operational_state)})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  const assignmentPicker = eligibleAssignments.length > 0 ? (
+    <label className="full">
+      الحقل (التخصيص يُشتق تلقائيًا)
+      <select
+        name={blockedReason ? undefined : 'assignmentPicker'}
+        required={!blockedReason}
+        value={assignment?.id ?? ''}
+        onChange={(event) => setAssignmentId(event.target.value)}
+      >
+        {eligibleAssignments.map((a) => {
+          const f = fieldById.get(a.field_id);
+          return (
+            <option key={a.id} value={a.id}>
+              {f?.identifier ?? 'حقل'} · {a.assigned_area_quantity} {AREA_UNIT_LABEL[a.assigned_area_unit]}
+            </option>
+          );
+        })}
+      </select>
+    </label>
+  ) : null;
+
+  if (blockedReason) {
+    return (
+      <div className="form-grid">
+        {cyclePicker}
+        {assignmentPicker}
+        <p className="muted full" role="status">{blockedReason}</p>
+      </div>
+    );
+  }
+
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-harvest" />
+      <input type="hidden" name="assignmentId" value={assignment?.id ?? ''} />
+
+      {cyclePicker}
+      {assignmentPicker}
+
+      <p className="muted full" aria-live="polite">
+        التخصيص يحدد المشروع ودورة المحصول والحقل تلقائيًا:{' '}
+        <strong>{cycle ? `${cycle.crop} — ${cycle.season_reference}` : '—'}</strong> ·{' '}
+        <strong>{field?.identifier ?? '—'}</strong>. لا يُطلب منك إدخال هذه المعرّفات يدويًا.
+      </p>
+
+      <label>
+        تاريخ الحصاد
+        <input type="date" name="harvestDate" required />
+      </label>
+      <label>
+        الكمية الإجمالية (الموزونة)
+        <input name="grossQuantity" required inputMode="decimal" placeholder="100" />
+      </label>
+      <label>
+        الكمية الصافية (المقبولة)
+        <input name="netQuantity" required inputMode="decimal" placeholder="95" />
+      </label>
+      <label>
+        وحدة الكمية
+        <input name="quantityUnit" required maxLength={40} placeholder="كجم" />
+      </label>
+      <label>
+        الدرجة / الجودة <span className="muted">(اختياري)</span>
+        <input name="grade" maxLength={80} placeholder="درجة أولى" />
+      </label>
+      <label>
+        مرجع تشغيلة الحصاد
+        <input name="lotReference" required minLength={1} maxLength={120} placeholder="LOT-HV-001" />
+      </label>
+      <label>
+        موقع التخزين المستلم
+        <select name="destinationStorageId" required>
+          {storages.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </label>
+      <label className="full">
+        ملاحظات <span className="muted">(اختياري)</span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <label className="full">
+        مرجع الدليل <span className="muted">(اختياري)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <p className="muted full">
+        الكمية الصافية يجب ألا تتجاوز الإجمالية، والفاقد (الإجمالي − الصافي) يُشتق تلقائيًا ولا يُخزَّن مرتين.
+        تسجيل الحصاد ينشئ تشغيلة المحصول ويستلم كميتها الصافية في موقع التخزين المختار كحركة واحدة.
+        لا يغيّر حالة دورة المحصول ولا ينشئ قيدًا محاسبيًا.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل حدث الحصاد" />
+      </div>
+    </form>
+  );
+}
+
+export function TransferHarvestInventoryForm({
+  organizationId,
+  projectId,
+  lots,
+  inventory,
+  storages,
+}: {
+  organizationId: string;
+  projectId: string;
+  lots: HarvestLotRead[];
+  inventory: HarvestInventoryByLocationRead[];
+  storages: StorageLocationRead[];
+}) {
+  const [state, action, pending] = useActionState(transferHarvestInventory, initial);
+
+  const [lotId, setLotId] = useState(lots[0]?.id ?? '');
+  const lot = lots.find((l) => l.id === lotId) ?? lots[0];
+
+  const lotLocations = inventory.filter((e) => e.harvest_lot_id === lot?.id && Number(e.current_balance) > 0);
+  const [fromStorageId, setFromStorageId] = useState(lotLocations[0]?.storage_id ?? '');
+  const source = lotLocations.find((e) => e.storage_id === fromStorageId) ?? lotLocations[0];
+
+  if (lots.length === 0) {
+    return <p className="muted">لا توجد تشغيلات حصاد بعد. سجّل حدث حصاد أولًا قبل نقل المخزون.</p>;
+  }
+  if (lotLocations.length === 0) {
+    return <p className="muted">لا يوجد رصيد حالي قابل للنقل لتشغيلة الحصاد المختارة.</p>;
+  }
+
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-transfer" />
+      <input type="hidden" name="harvestLotId" value={lot?.id ?? ''} />
+
+      <label>
+        تشغيلة الحصاد
+        <select
+          name="lotPicker"
+          value={lotId}
+          onChange={(event) => {
+            setLotId(event.target.value);
+            setFromStorageId('');
+          }}
+        >
+          {lots.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.lot_reference} · {l.crop} ({l.quantity_unit})
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        الموقع الحالي
+        <select
+          name="fromStorageId"
+          required
+          value={source?.storage_id ?? ''}
+          onChange={(event) => setFromStorageId(event.target.value)}
+        >
+          {lotLocations.map((e) => (
+            <option key={e.storage_id} value={e.storage_id}>
+              {e.storage_name} · الرصيد الحالي {e.current_balance} {e.quantity_unit}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        الموقع الوجهة
+        <select name="toStorageId" required>
+          {storages
+            .filter((s) => s.id !== source?.storage_id)
+            .map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+        </select>
+      </label>
+
+      <label>
+        الكمية المنقولة
+        <input name="quantity" required inputMode="decimal" placeholder="30" />
+      </label>
+      <label>
+        تاريخ الحركة
+        <input type="date" name="movementDate" required />
+      </label>
+      <label className="full">
+        سبب <span className="muted">(اختياري)</span>
+        <textarea name="reason" maxLength={500} />
+      </label>
+      <label className="full">
+        مرجع الدليل <span className="muted">(اختياري)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <p className="muted full">
+        النقل يغيّر الموقع فقط ولا ينشئ كمية جديدة. وحدة الكمية تُشتق من تشغيلة الحصاد ولا يمكن تغييرها هنا.
+        الرصيد المتاح يُحتسب من حركات المخزون ولا يُدخَل يدويًا.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تنفيذ النقل" />
+      </div>
+    </form>
+  );
+}
+
+export function HarvestInventoryAdjustmentForm({
+  organizationId,
+  projectId,
+  lots,
+  inventory,
+}: {
+  organizationId: string;
+  projectId: string;
+  lots: HarvestLotRead[];
+  inventory: HarvestInventoryByLocationRead[];
+}) {
+  const [state, action, pending] = useActionState(recordHarvestInventoryAdjustment, initial);
+
+  const [lotId, setLotId] = useState(lots[0]?.id ?? '');
+  const lot = lots.find((l) => l.id === lotId) ?? lots[0];
+
+  const lotLocations = inventory.filter((e) => e.harvest_lot_id === lot?.id);
+  const [storageId, setStorageId] = useState(lotLocations[0]?.storage_id ?? '');
+  const location = lotLocations.find((e) => e.storage_id === storageId) ?? lotLocations[0];
+
+  if (lots.length === 0) {
+    return <p className="muted">لا توجد تشغيلات حصاد بعد. سجّل حدث حصاد أولًا قبل تعديل المخزون.</p>;
+  }
+  if (lotLocations.length === 0) {
+    return <p className="muted">لا توجد مواقع تخزين لهذه التشغيلة بعد.</p>;
+  }
+
+  return (
+    <form action={action} className="form-grid">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-adjust" />
+      <input type="hidden" name="harvestLotId" value={lot?.id ?? ''} />
+
+      <label>
+        تشغيلة الحصاد
+        <select
+          name="lotPicker"
+          value={lotId}
+          onChange={(event) => {
+            setLotId(event.target.value);
+            setStorageId('');
+          }}
+        >
+          {lots.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.lot_reference} · {l.crop} ({l.quantity_unit})
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        موقع التخزين
+        <select
+          name="storageId"
+          required
+          value={location?.storage_id ?? ''}
+          onChange={(event) => setStorageId(event.target.value)}
+        >
+          {lotLocations.map((e) => (
+            <option key={e.storage_id} value={e.storage_id}>
+              {e.storage_name} · الرصيد الحالي {e.current_balance} {e.quantity_unit}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        نوع الحركة
+        <select name="movementType" required defaultValue="ADJUSTMENT_IN">
+          <option value="ADJUSTMENT_IN">{HARVEST_MOVEMENT_TYPE_LABEL.ADJUSTMENT_IN}</option>
+          <option value="ADJUSTMENT_OUT">{HARVEST_MOVEMENT_TYPE_LABEL.ADJUSTMENT_OUT}</option>
+          <option value="SPOILAGE">{HARVEST_MOVEMENT_TYPE_LABEL.SPOILAGE}</option>
+        </select>
+      </label>
+
+      <label>
+        الكمية
+        <input name="quantity" required inputMode="decimal" placeholder="10" />
+      </label>
+      <label>
+        تاريخ الحركة
+        <input type="date" name="movementDate" required />
+      </label>
+      <label className="full">
+        السبب <span className="muted">(مطلوب)</span>
+        <textarea name="reason" required minLength={3} maxLength={500} placeholder="مثال: جرد فعلي، تسوية، تلف أثناء التخزين" />
+      </label>
+      <label className="full">
+        مرجع الدليل <span className="muted">(اختياري)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <p className="muted full">
+        التعديل أو التالف يتطلب سببًا، ولا يمكن أن يجعل الرصيد سالبًا. التصحيحات حركات إضافية وليست تعديلًا على حركة سابقة.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل الحركة" />
       </div>
     </form>
   );

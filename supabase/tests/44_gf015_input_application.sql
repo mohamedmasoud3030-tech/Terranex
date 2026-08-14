@@ -591,12 +591,15 @@ select 1/case when (
     )
 ) = 0 then 1 else 0 end as s15_no_fake_inventory_or_costing_columns;
 
--- No inventory subsystem was scaffolded "for later".
+-- GF-016 legitimately introduced harvest/inventory primitives, so the old
+-- "no deferred tables" assertion is replaced: the GF-015 input tables must
+-- remain identity/traceability records with no stock balance, and no sale,
+-- valuation, or accounting artifact may have been fabricated.
 select 1/case when (
   select count(*) from information_schema.tables
   where table_schema = 'public'
-    and table_name in ('inventory_movements','storage_locations','harvest_events','harvest_lots')
-) = 0 then 1 else 0 end as s15_no_deferred_tables_scaffolded;
+    and table_name in ('sale_orders','purchase_orders','warehouses','inventory_valuations','buyers','invoices','receivables')
+) = 0 then 1 else 0 end as s15_no_sale_or_procurement_scaffolded;
 
 -- ---------------------------------------------------------------------------
 -- 12. Two-tenant isolation.

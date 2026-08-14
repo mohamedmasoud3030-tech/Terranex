@@ -125,9 +125,56 @@ Real Estate status is therefore explicit:
 - latest hosted deployment verification: pending until the production alias SHA is proved;
 - real-customer validation, buyer UAT, and commercial Phase 2/3 evidence: not started/not passed.
 
-### GF-015 — Field Input Application Foundation
+### GF-016 — Harvest & Inventory Flow Foundation
 
 Status: **ACTIVE BOUNDED SLICE — draft PR under review**. Bounded
+Agriculture slice extending the chain from
+`Farm → Field → CropCycle → assignment → Field Activity / Input Application`
+to
+`Harvest Event → Harvest Lot → Storage Location → Inventory Movement`.
+
+Delivered in this slice:
+
+1. `storage_locations` — a minimal Storage Location (organization, project,
+   name, optional reference/notes) that holds harvested output. No capacity
+   planning, zones, bins, temperature automation, or WMS workflow.
+2. `harvest_events` — the immutable operational fact of a real harvest:
+   harvest date, gross and net accepted quantity, unit, optional grade,
+   notes and evidence. Gross and net are positive and net never exceeds
+   gross; loss is derived (gross − net), never stored twice.
+3. `harvest_lots` — one traceable output lot per Harvest Event, with the
+   lot's initial quantity equal to the event's net quantity and the same
+   unit, both enforced by a composite foreign key. A free-floating lot
+   cannot exist.
+4. `harvest_inventory_movements` — the append-only inventory truth
+   (`HARVEST_RECEIPT`, `TRANSFER`, `ADJUSTMENT_IN`, `ADJUSTMENT_OUT`,
+   `SPOILAGE`). Current balance per lot/location is derived from movements,
+   never stored, and is concurrency-protected so a location can never go
+   negative. `SALE_ISSUE` is deliberately not implemented.
+5. Four idempotent, audited commands — `create_storage_location`,
+   `record_harvest_event` (atomically creating event + lot + initial
+   receipt + one audit event), `transfer_harvest_inventory`, and
+   `record_harvest_inventory_adjustment` — with numerics normalized to the
+   stored `numeric(20,6)` precision before hashing.
+6. Harvest may only be recorded while the CropCycle is `HARVESTING`;
+   recording a harvest never advances the lifecycle.
+7. Arabic/RTL `الحصاد والمخزون` area inside the existing Agriculture
+   workspace, with derived balances shown as derived and server-authoritative
+   commands.
+
+**Intentional boundary — not missing implementation:** GF-016 tracks
+physical harvest-output quantity only. Sale/dispatch, buyers, invoicing,
+receivables, revenue, COGS, inventory valuation, IAS 41 posting, cycle
+profitability and closeout are deferred to the final Agriculture slice.
+GF-015 input lots remain identity/traceability records, not stock: GF-016
+does not retrofit an input balance and does not claim InputApplication now
+validates input-stock availability.
+
+Canonical decision: `docs/decisions/0016_GF016_HARVEST_INVENTORY.md`.
+
+### GF-015 — Field Input Application Foundation
+
+Status: **MERGED — TECHNICALLY COMPLETE**. Bounded
 Agriculture slice completing the chain
 `Farm → Field → CropCycle → assignment → Field Activity → Input Item →
 Input Lot → Input Application`.
@@ -282,18 +329,18 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
 - Agriculture capabilities beyond the active bounded slice and all Livestock runtime modules;
-- Agriculture operational entities deferred after GF-015: `HarvestEvent`, `HarvestLot`, crop output inventory, `StorageLocation`, `InventoryMovement`, stock-on-hand and warehouse balances, purchase orders / procurement / receiving / supplier accounting, input costing and valuation, `AgronomyObservation`, agriculture-side sales/dispatch/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit-conversion engines, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
+- Agriculture operational entities deferred after GF-016: input-stock receiving/balance, purchase orders / procurement / receiving / supplier accounting, input costing and valuation, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, agriculture-side sales/dispatch/receivables, agriculture profitability or accounting recognition, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit-conversion engines, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
 ## Next active batch
 
-`GF-015 — Field Input Application Foundation` is the active bounded
-Agriculture slice; GF-013 and GF-014 are merged and technically
+`GF-016 — Harvest & Inventory Flow Foundation` is the active bounded
+Agriculture slice; GF-013, GF-014 and GF-015 are merged and technically
 complete.
 
-The expected slice after GF-015 is reviewed is
-`GF-016 — Harvest Event & Harvest Lot Foundation`. It must not be
-started inside GF-015. The intended Agriculture progression is
+The expected slice after GF-016 is reviewed is
+`GF-017 — Sale + Profitability + Cycle Closeout + Agriculture Hardening`.
+It must not be started inside GF-016. The intended Agriculture progression is
 
 ```
 field work → input application → harvest event → harvest lot
