@@ -343,8 +343,8 @@ begin
     end if;
     v_balance := v_balance + v_bucket.delta;
     if v_balance < 0 then
-      raise exception 'livestock as-of quantity cannot go below zero at % (%)',
-        v_bucket.effective_at, v_balance;
+      raise exception 'livestock as-of quantity cannot go below zero for Cohort % at % (%)',
+        new.cohort_id, v_bucket.effective_at, v_balance;
     end if;
   end loop;
   return null;
