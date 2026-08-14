@@ -60,6 +60,11 @@ describe('GF-014 command and read contracts', () => {
     expect(migration).toContain('raise exception \'agriculture project not found\'');
   });
 
+  it('qualifies pgcrypto digest with the proven 00500 replacement, not an over-escaped backref', () => {
+    expect(migration).toContain("E'\\\\1' || quote_ident(v_pgcrypto_schema) || '.digest('");
+    expect(migration).not.toContain("E'\\\\\\\\1'");
+  });
+
   it('is idempotent and auditable through the existing audit_events table', () => {
     expect(migration).toContain('idempotency key payload mismatch');
     expect(migration).toContain('insert into public.audit_events');

@@ -103,6 +103,11 @@ select 1/case when s14_run('00000000-0000-4000-8000-000000000001', format(
   , :'s14_ag_project', :'s14_cycle', :'s14_field', :'s14_assign')) = :'s14_act'
   then 1 else 0 end as s14_idempotent_same_payload;
 
+select 1/case when (
+  select count(*) from public.audit_events
+  where event_type = 'FIELD_ACTIVITY_CREATED' and entity_id = :'s14_act'
+) = 1 then 1 else 0 end as s14_idempotent_replay_does_not_re_audit;
+
 -- 3. Same key + different payload is rejected.
 select 1/case when s14_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_field_activity('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,date '2026-11-16','PLANT',null,null,null,null,'s14-act-001')$$

@@ -230,9 +230,12 @@ begin
       v_rewritten := regexp_replace(
         v_definition,
         '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
-        E'\\\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
+        E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
         'g'
       );
+      if v_rewritten = v_definition then
+        raise exception 'failed to qualify pgcrypto digest in create_field_activity';
+      end if;
       execute v_rewritten;
     end if;
   end loop;
