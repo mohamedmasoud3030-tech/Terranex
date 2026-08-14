@@ -9,16 +9,20 @@ import { commandFailureState, commandSuccessState } from './idempotency';
 import {
   cohortRpcArguments,
   herdRpcArguments,
+  movementRpcArguments,
   profileRpcArguments,
   siteRpcArguments,
   transitionRpcArguments,
+  weightEventRpcArguments,
 } from './rpc';
 import {
   livestockCohortSchema,
   livestockHerdSchema,
+  livestockMovementSchema,
   livestockProfileSchema,
   livestockSiteSchema,
   livestockTransitionSchema,
+  livestockWeightEventSchema,
 } from './schema';
 
 async function invoke<T extends { projectId: string }>(
@@ -95,5 +99,31 @@ export async function transitionLivestockCohort(
     form,
     'transition_livestock_cohort',
     transitionRpcArguments,
+  );
+}
+
+export async function recordLivestockMovement(
+  prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    prev,
+    livestockMovementSchema,
+    form,
+    'record_livestock_movement',
+    movementRpcArguments,
+  );
+}
+
+export async function recordLivestockWeightEvent(
+  prev: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return invoke(
+    prev,
+    livestockWeightEventSchema,
+    form,
+    'record_livestock_weight_event',
+    weightEventRpcArguments,
   );
 }

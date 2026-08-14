@@ -107,3 +107,108 @@ export const getLivestockCohortTimeline = (projectId: string) => many<CohortTime
   projectId,
   'changed_at',
 );
+
+/** GF-021 derived current placement. Never a stored column. */
+export type CurrentPlacementRead = {
+  cohort_id: string;
+  organization_id: string;
+  project_id: string;
+  cohort_reference: string;
+  current_site_id: string;
+  current_site_name: string;
+  current_herd_id: string;
+  current_herd_name: string;
+  species: string;
+  purpose: string;
+  placement_source: 'OPENING' | 'MOVEMENT';
+  effective_from: string;
+  movement_id: string | null;
+};
+
+export type MovementRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  cohort_id: string;
+  cohort_reference: string;
+  previous_movement_id: string | null;
+  effective_at: string;
+  source_site_id: string;
+  source_site_name: string;
+  source_herd_id: string;
+  source_herd_name: string;
+  destination_site_id: string;
+  destination_site_name: string;
+  destination_herd_id: string;
+  destination_herd_name: string;
+  site_changed: boolean;
+  herd_changed: boolean;
+  reason: string;
+  evidence_reference: string | null;
+  notes: string | null;
+  moved_by: string;
+  recorded_at: string;
+};
+
+/** GF-021 exact integer quantity rollforward. Never a stored counter. */
+export type QuantityRollforwardRead = {
+  cohort_id: string;
+  organization_id: string;
+  project_id: string;
+  cohort_reference: string;
+  opening_headcount: number;
+  quantity_increase: number;
+  quantity_decrease: number;
+  current_quantity: number;
+};
+
+export type WeightEventRead = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  cohort_id: string;
+  cohort_reference: string;
+  effective_at: string;
+  method: string;
+  weight_value: string;
+  weight_unit: string;
+  value_meaning: string;
+  is_estimate: boolean;
+  measured_animal_count: number | null;
+  sample_size: number | null;
+  evidence_reference: string | null;
+  notes: string | null;
+  recorded_by: string;
+  recorded_at: string;
+};
+
+export const getLivestockCurrentPlacements = (projectId: string) =>
+  many<CurrentPlacementRead>(
+    'livestock_cohort_current_placement_read',
+    'cohort_id,organization_id,project_id,cohort_reference,current_site_id,current_site_name,current_herd_id,current_herd_name,species,purpose,placement_source,effective_from,movement_id',
+    projectId,
+    'effective_from',
+  );
+
+export const getLivestockMovements = (projectId: string) => many<MovementRead>(
+  'livestock_cohort_movements_read',
+  'id,organization_id,project_id,cohort_id,cohort_reference,previous_movement_id,effective_at,source_site_id,source_site_name,source_herd_id,source_herd_name,destination_site_id,destination_site_name,destination_herd_id,destination_herd_name,site_changed,herd_changed,reason,evidence_reference,notes,moved_by,recorded_at',
+  projectId,
+  'effective_at',
+);
+
+export const getLivestockQuantityRollforward = (projectId: string) =>
+  many<QuantityRollforwardRead>(
+    'livestock_cohort_quantity_rollforward',
+    'cohort_id,organization_id,project_id,cohort_reference,opening_headcount,quantity_increase,quantity_decrease,current_quantity',
+    projectId,
+    'cohort_reference',
+  );
+
+export const getLivestockWeightEvents = (projectId: string) =>
+  many<WeightEventRead>(
+    'livestock_weight_events_read',
+    'id,organization_id,project_id,cohort_id,cohort_reference,effective_at,method,weight_value,weight_unit,value_meaning,is_estimate,measured_animal_count,sample_size,evidence_reference,notes,recorded_by,recorded_at',
+    projectId,
+    'effective_at',
+  );

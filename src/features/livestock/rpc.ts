@@ -1,9 +1,11 @@
 import type {
   LivestockCohortInput,
   LivestockHerdInput,
+  LivestockMovementInput,
   LivestockProfileInput,
   LivestockSiteInput,
   LivestockTransitionInput,
+  LivestockWeightEventInput,
 } from './schema';
 
 function commandContext(input: {
@@ -55,6 +57,34 @@ export const cohortRpcArguments = (input: LivestockCohortInput) => ({
   p_opening_weight_unit: input.openingWeightUnit ?? null,
   p_opening_weight_basis: input.openingWeightBasis ?? null,
   p_origin_evidence_reference: input.originEvidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
+export const movementRpcArguments = (input: LivestockMovementInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_source_site_id: input.sourceSiteId,
+  p_source_herd_id: input.sourceHerdId,
+  p_destination_site_id: input.destinationSiteId,
+  p_destination_herd_id: input.destinationHerdId,
+  p_effective_at: input.effectiveAt,
+  p_reason: input.reason,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+});
+
+export const weightEventRpcArguments = (input: LivestockWeightEventInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_effective_at: input.effectiveAt,
+  p_method: input.method,
+  p_weight_value: input.weightValue,
+  p_weight_unit: input.weightUnit,
+  p_measured_animal_count: input.measuredAnimalCount
+    ? Number(input.measuredAnimalCount)
+    : null,
+  p_sample_size: input.sampleSize ? Number(input.sampleSize) : null,
+  p_evidence_reference: input.evidenceReference ?? null,
   p_notes: input.notes ?? null,
 });
 

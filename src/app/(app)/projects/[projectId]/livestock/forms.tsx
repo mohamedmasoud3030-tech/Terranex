@@ -8,6 +8,8 @@ import {
   createLivestockHerd,
   createLivestockProfile,
   createLivestockSite,
+  recordLivestockMovement,
+  recordLivestockWeightEvent,
   transitionLivestockCohort,
 } from '@/features/livestock/actions';
 import {
@@ -16,6 +18,7 @@ import {
   SITE_TYPES,
   SPECIES,
   WEIGHT_BASES,
+  WEIGHT_METHODS,
 } from '@/features/livestock/schema';
 import {
   ORIGIN_LABEL,
@@ -23,8 +26,14 @@ import {
   SITE_TYPE_LABEL,
   SPECIES_LABEL,
   WEIGHT_BASIS_LABEL,
+  WEIGHT_METHOD_LABEL,
 } from '@/features/livestock/labels';
-import type { CohortRead, HerdRead, SiteRead } from '@/features/livestock/queries';
+import type {
+  CohortRead,
+  CurrentPlacementRead,
+  HerdRead,
+  SiteRead,
+} from '@/features/livestock/queries';
 
 const initialState: ActionState = {};
 
@@ -318,6 +327,201 @@ export function ActivateForm({
         <input name="evidenceReference" maxLength={200} />
       </label>
       <div><SubmitResult state={state} pending={pending} label="تفعيل الدفعة" /></div>
+    </form>
+  );
+}
+
+/**
+ * GF-021 — record a movement.
+ *
+ * The source placement is rendered read-only from the server-derived current
+ * placement and submitted as a hidden field only so the server can reject a
+ * stale view. It is never editable, and the server re-derives the truth
+ * regardless of what the browser sends.
+ */
+export function MovementForm({
+  placement,
+  sites,
+  herds,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  placement: CurrentPlacementRead;
+  sites: readonly SiteRead[];
+  herds: readonly HerdRead[];
+}>) {
+  const [state, action, pending] = useActionState(recordLivestockMovement, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-move', state, commandNonce);
+  const otherSites = sites.filter((site) => site.id !== placement.current_site_id);
+  const otherHerds = herds.filter((herd) => herd.id !== placement.current_herd_id);
+
+  return (
+    <form action={action} className="form-grid compact">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <input type="hidden" name="cohortId" value={placement.cohort_id} />
+      <input type="hidden" name="sourceSiteId" value={placement.current_site_id} />
+      <input type="hidden" name="sourceHerdId" value={placement.current_herd_id} />
+      <p className="muted full">
+        من: {placement.current_site_name} · {placement.current_herd_name}{' '}
+        <span className="muted">(الموقع الحالي المشتق، غير قابل للتحرير)</span>
+      </p>
+      <label>
+        <span>موقع التشغيل الوجهة</span>
+        <select name="destinationSiteId" defaultValue={placement.current_site_id}>
+          <option value={placement.current_site_id}>
+            {placement.current_site_name} (بدون تغيير)
+          </option>
+          {otherSites.map((site) => (
+            <option key={site.id} value={site.id}>{site.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>القطيع الوجهة</span>
+        <select name="destinationHerdId" defaultValue={placement.current_herd_id}>
+          <option value={placement.current_herd_id}>
+            {placement.current_herd_name} (بدون تغيير)
+          </option>
+          {otherHerds.map((herd) => (
+            <option key={herd.id} value={herd.id}>{herd.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>تاريخ ووقت النقل</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <label>
+        <span>سبب النقل</span>
+        <input name="reason" required minLength={3} maxLength={500} />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        يجب أن يتغير الموقع أو القطيع. الحركة حدث ثابت يُضاف إلى السلسلة ولا يعدّل الوضع الافتتاحي.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تسجيل نقل الدفعة" />
+      </div>
+    </form>
+  );
+}
+
+/** GF-021 — record a weight measurement event. */
+export function WeightEventForm({
+  cohorts,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ cohorts: readonly CohortRead[] }>) {
+  const [state, action, pending] = useActionState(
+    recordLivestockWeightEvent,
+    initialState,
+  );
+  const [method, setMethod] = useState<string>('COHORT_TOTAL');
+  const idempotencyKey = useCommandIdempotencyKey('ls-weight', state, commandNonce);
+
+  if (cohorts.length === 0) {
+    return <p className="muted">فعّل دفعة أولًا قبل تسجيل الأوزان.</p>;
+  }
+
+  const isSampled = method === 'SAMPLED_AVERAGE';
+  const isIndividual = method === 'INDIVIDUAL_MEASURED';
+
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <input type="hidden" name="weightUnit" value="KG" />
+      <label>
+        <span>الدفعة</span>
+        <select name="cohortId">
+          {cohorts.map((cohort) => (
+            <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>تاريخ ووقت القياس</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <label>
+        <span>أسلوب القياس</span>
+        <select
+          name="method"
+          value={method}
+          onChange={(event) => setMethod(event.target.value)}
+        >
+          {WEIGHT_METHODS.map((value) => (
+            <option key={value} value={value}>{WEIGHT_METHOD_LABEL[value]}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>
+          {isSampled ? 'متوسط وزن الرأس في العينة (كجم)' : 'قيمة الوزن (كجم)'}
+        </span>
+        <input
+          name="weightValue"
+          inputMode="decimal"
+          required
+          aria-describedby="weight-meaning-help"
+        />
+      </label>
+      <p id="weight-meaning-help" className="muted full">
+        {isSampled
+          ? 'الرقم متوسط للرأس داخل العينة فقط، وليس وزنًا مقاسًا لكل الدفعة.'
+          : null}
+        {method === 'ESTIMATED'
+          ? 'رقم تقديري صريح؛ لا يُعرض ولا يُستخدم كوزن مقاس.'
+          : null}
+        {method === 'COHORT_TOTAL' ? 'إجمالي وزن مقاس للدفعة.' : null}
+        {isIndividual ? 'إجمالي وزن الحيوانات التي شملها القياس الفردي.' : null}
+      </p>
+      {isIndividual ? (
+        <label>
+          <span>عدد الحيوانات التي شملها القياس</span>
+          <input name="measuredAnimalCount" inputMode="numeric" pattern="[1-9][0-9]*" required />
+        </label>
+      ) : null}
+      {isSampled ? (
+        <label>
+          <span>حجم العينة</span>
+          <input
+            name="sampleSize"
+            inputMode="numeric"
+            pattern="[1-9][0-9]*"
+            required
+            aria-describedby="sample-size-help"
+          />
+        </label>
+      ) : null}
+      {isSampled ? (
+        <p id="sample-size-help" className="muted full">
+          حجم العينة إلزامي ولا يجوز أن يتجاوز العدد الحالي المشتق للدفعة.
+        </p>
+      ) : null}
+      <label>
+        <span>
+          مرجع الدليل{' '}
+          <span className="muted">{isSampled ? '(إلزامي للعينة)' : '(اختياري)'}</span>
+        </span>
+        <input name="evidenceReference" maxLength={200} required={isSampled} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <p className="muted full">
+        الوزن قياس ثابت بتاريخه، وليس خاصية متغيرة للدفعة. لا ينشئ أي أثر محاسبي أو تقييم.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تسجيل حدث الوزن" />
+      </div>
     </form>
   );
 }

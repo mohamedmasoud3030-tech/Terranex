@@ -230,8 +230,12 @@ describe('GF-020 database and UX boundary', () => {
   });
 
   it('renders honest opening placement and quantity language', () => {
+    // The GF-020 opening facts stay labelled as opening facts. GF-021 added a
+    // separately-labelled derived current placement, so the page must keep the
+    // two visibly distinct rather than letting one silently stand for the other.
     expect(page).toContain('موقع الوضع الافتتاحي');
-    expect(page).toContain('ليس ادعاءً بالموقع الحالي');
+    expect(page).toContain('الموقع الحالي المشتق');
+    expect(page).toContain('العدد الافتتاحي');
     expect(forms).toContain('موقع التشغيل ليس جزءًا دائمًا من هويته');
     expect(forms).toContain('المتوسط بالعينة مؤجل');
     expect(page).not.toContain('المخزون الحالي');

@@ -3,25 +3,45 @@ import { getCurrentMembership } from '@/features/finance/queries';
 import {
   COHORT_STATE_LABEL,
   ORIGIN_LABEL,
+  PLACEMENT_SOURCE_LABEL,
   PURPOSE_LABEL,
   SITE_TYPE_LABEL,
   SPECIES_LABEL,
   WEIGHT_BASIS_LABEL,
+  WEIGHT_MEANING_LABEL,
+  WEIGHT_METHOD_LABEL,
+  movementChangeLabel,
 } from '@/features/livestock/labels';
 import {
   type CohortRead,
   type CohortTimelineRead,
+  type CurrentPlacementRead,
   type HerdRead,
+  type MovementRead,
+  type QuantityRollforwardRead,
   type SiteRead,
-  getLivestockCohorts,
+  type WeightEventRead,
   getLivestockCohortTimeline,
+  getLivestockCohorts,
+  getLivestockCurrentPlacements,
   getLivestockHerds,
+  getLivestockMovements,
+  getLivestockQuantityRollforward,
   getLivestockSites,
+  getLivestockWeightEvents,
 } from '@/features/livestock/queries';
 import { getProject } from '@/features/projects/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import { newCommandNonce } from '@/features/livestock/idempotency';
-import { ActivateForm, CohortForm, HerdForm, ProfileForm, SiteForm } from './forms';
+import {
+  ActivateForm,
+  CohortForm,
+  HerdForm,
+  MovementForm,
+  ProfileForm,
+  SiteForm,
+  WeightEventForm,
+} from './forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -167,6 +187,161 @@ function Cohorts({
   );
 }
 
+
+function dateTime(value: string): string {
+  return new Date(value).toLocaleString('ar-EG');
+}
+
+/** GF-021.B — derived current placement, never editable master data. */
+function CurrentPlacements({
+  placements,
+  sites,
+  herds,
+  organizationId,
+  projectId,
+}: Readonly<{
+  placements: readonly CurrentPlacementRead[];
+  sites: readonly SiteRead[];
+  herds: readonly HerdRead[];
+  organizationId: string;
+  projectId: string;
+}>) {
+  if (placements.length === 0) {
+    return <p className="muted">لا توجد دفعات لعرض موقعها الحالي.</p>;
+  }
+  return (
+    <div className="responsive-grid">
+      {placements.map((placement) => (
+        <article className="card stack" key={placement.cohort_id}>
+          <h3>{placement.cohort_reference}</h3>
+          <dl className="facts">
+            <div>
+              <dt>الموقع الحالي المشتق</dt>
+              <dd>{placement.current_site_name}</dd>
+            </div>
+            <div>
+              <dt>القطيع الحالي المشتق</dt>
+              <dd>{placement.current_herd_name}</dd>
+            </div>
+            <div>
+              <dt>مصدر الموقع الحالي</dt>
+              <dd>{PLACEMENT_SOURCE_LABEL[placement.placement_source]}</dd>
+            </div>
+            <div>
+              <dt>ساري من</dt>
+              <dd>{dateTime(placement.effective_from)}</dd>
+            </div>
+          </dl>
+          <small className="muted">
+            حقيقة مشتقة من الوضع الافتتاحي وسلسلة الحركات، وليست بيانًا أساسيًا قابلًا للتحرير.
+          </small>
+          <details>
+            <summary>نقل الدفعة</summary>
+            <MovementForm
+              organizationId={organizationId}
+              projectId={projectId}
+              commandNonce={newCommandNonce()}
+              placement={placement}
+              sites={sites}
+              herds={herds}
+            />
+          </details>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/** GF-021.A — the immutable movement history. */
+function Movements({ movements }: Readonly<{ movements: readonly MovementRead[] }>) {
+  if (movements.length === 0) {
+    return <p className="muted">لا توجد حركات مسجلة بعد. الموقع الحالي لكل دفعة هو وضعها الافتتاحي.</p>;
+  }
+  return (
+    <ol className="stack">
+      {movements.map((movement) => (
+        <li key={movement.id}>
+          <strong>{movement.cohort_reference}</strong> ·{' '}
+          {movementChangeLabel(movement.site_changed, movement.herd_changed)}
+          <p className="muted">
+            من {movement.source_site_name} / {movement.source_herd_name} إلى{' '}
+            {movement.destination_site_name} / {movement.destination_herd_name} ·{' '}
+            {dateTime(movement.effective_at)}
+          </p>
+          <p className="muted">{movement.reason}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * GF-021.C — the current operational headcount, derived exactly.
+ *
+ * GF-021 registers no quantity-changing event, so the derived current number
+ * still equals the opening headcount. The screen says so truthfully instead of
+ * implying a rollforward that has not happened yet.
+ */
+function QuantityRollforward({
+  rows,
+}: Readonly<{ rows: readonly QuantityRollforwardRead[] }>) {
+  if (rows.length === 0) return <p className="muted">لا توجد دفعات لعرض عددها.</p>;
+  return (
+    <table>
+      <caption className="muted">
+        العدد التشغيلي الحالي مشتق بالحساب الدقيق: العدد الافتتاحي + الزيادات − النواقص. ليس تقييمًا ماليًا.
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">الدفعة</th>
+          <th scope="col">العدد الافتتاحي</th>
+          <th scope="col">زيادات مسجلة</th>
+          <th scope="col">نواقص مسجلة</th>
+          <th scope="col">العدد الحالي المشتق</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.cohort_id}>
+            <th scope="row">{row.cohort_reference}</th>
+            <td>{row.opening_headcount}</td>
+            <td>{row.quantity_increase}</td>
+            <td>{row.quantity_decrease}</td>
+            <td><strong>{row.current_quantity}</strong></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** GF-021.D — the weight log, with each figure's meaning made explicit. */
+function WeightLog({ events }: Readonly<{ events: readonly WeightEventRead[] }>) {
+  if (events.length === 0) return <p className="muted">لا توجد أوزان مسجلة بعد.</p>;
+  return (
+    <ol className="stack">
+      {events.map((event) => (
+        <li key={event.id}>
+          <strong>{event.cohort_reference}</strong> ·{' '}
+          {WEIGHT_METHOD_LABEL[event.method]}
+          {event.is_estimate ? <span className="status"> تقديري</span> : null}
+          <p>
+            {event.weight_value} كجم ·{' '}
+            <span className="muted">{WEIGHT_MEANING_LABEL[event.value_meaning]}</span>
+          </p>
+          {event.sample_size ? (
+            <p className="muted">حجم العينة: {event.sample_size} رأس</p>
+          ) : null}
+          {event.measured_animal_count ? (
+            <p className="muted">عدد الحيوانات المقاسة: {event.measured_animal_count} رأس</p>
+          ) : null}
+          <p className="muted">{dateTime(event.effective_at)}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default async function LivestockPage({
   params,
 }: Readonly<{ params: Promise<{ projectId: string }> }>) {
@@ -174,12 +349,26 @@ export default async function LivestockPage({
   const project = await getProject(projectId);
   if (project?.sector !== 'LIVESTOCK') notFound();
 
-  const [membership, sites, herds, cohorts, timeline] = await Promise.all([
+  const [
+    membership,
+    sites,
+    herds,
+    cohorts,
+    timeline,
+    placements,
+    movements,
+    quantities,
+    weightEvents,
+  ] = await Promise.all([
     getCurrentMembership(project.organization_id),
     getLivestockSites(projectId),
     getLivestockHerds(projectId),
     getLivestockCohorts(projectId),
     getLivestockCohortTimeline(projectId),
+    getLivestockCurrentPlacements(projectId),
+    getLivestockMovements(projectId),
+    getLivestockQuantityRollforward(projectId),
+    getLivestockWeightEvents(projectId),
   ]);
   if (!membership) {
     return (
@@ -226,8 +415,41 @@ export default async function LivestockPage({
         <CohortForm {...context} herds={herds} sites={sites} commandNonce={newCommandNonce()} />
         <Cohorts {...context} cohorts={cohorts} timeline={timeline} />
       </section>
+      <section className="card stack">
+        <h2>الموقع الحالي</h2>
+        <p className="muted">
+          الموقع الحالي المشتق لكل دفعة، ومنه تُسجَّل حركة النقل. الوضع الافتتاحي يظل ثابتًا في بطاقة الدفعة.
+        </p>
+        <CurrentPlacements
+          placements={placements}
+          sites={sites}
+          herds={herds}
+          organizationId={project.organization_id}
+          projectId={projectId}
+        />
+      </section>
+      <section className="card stack">
+        <h2>سجل الحركات</h2>
+        <Movements movements={movements} />
+      </section>
+      <section className="card stack">
+        <h2>العدد التشغيلي الحالي</h2>
+        <QuantityRollforward rows={quantities} />
+      </section>
+      <section className="card stack">
+        <h2>تسجيل وزن</h2>
+        <WeightEventForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          cohorts={cohorts.filter((cohort) => cohort.lifecycle_state === 'ACTIVE')}
+        />
+      </section>
+      <section className="card stack">
+        <h2>سجل الأوزان</h2>
+        <WeightLog events={weightEvents} />
+      </section>
       <aside className="banner">
-        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علف أو نفوق أو حركة أو بيع أو تقييم محاسبي. العدد المعروض هو عدد بداية الدفعة، وليس رصيدًا حاليًا. الموقع المعروض هو الوضع الافتتاحي وليس ادعاءً بالموقع الحالي.
+        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو علف أو تكاثر أو بيع أو تقييم محاسبي. الحركة والموقع الحالي والوزن أحداث مسجلة الآن؛ أما الولادات والنفوق والتقسيم والدمج فتأتي في المرحلة التالية، ولذلك يساوي العدد الحالي المشتق العدد الافتتاحي حتى الآن.
       </aside>
     </section>
   );
