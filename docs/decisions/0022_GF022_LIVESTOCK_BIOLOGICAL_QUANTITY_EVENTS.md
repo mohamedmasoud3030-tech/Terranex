@@ -99,3 +99,63 @@ programmes, reproduction/pregnancy/breeding workflow, individual Animal/RFID
 registry, feed formulation/inventory/FCR, procurement, sales, receivables,
 collections, revenue, profitability, closeout, dairy/milk, IAS 41 and
 fair-value biological-asset accounting, GIS, IoT, AI, and offline sync.
+
+## Review hardening decisions
+
+### Temporal/as-of quantity rule
+
+`current_quantity` means the exact integer balance as of `current_timestamp`:
+opening headcount plus only quantity-event buckets whose `effective_at` is at or
+before now. A command that records a dated event validates consumption against
+the same resolver at that event's `effective_at`, not against a browser value or
+against a later/current balance. A deferred database trigger scans every
+cohort's effective-time buckets and rejects any negative prefix, including a
+backdated mortality or operation that would consume animals supplied only by a
+later event. Events sharing one `effective_at` are one atomic bucket; their
+recording order is not business truth. Future events remain visible in the
+immutable log with a scheduled marker but do not change the current rollforward.
+
+The same as-of resolver is used by the rollforward view, command checks,
+negative-balance backstop, weight population checks, split, merge and mortality.
+The UI only offers positive current cohorts for consuming or measuring actions;
+Birth remains available for an ACTIVE zero cohort because it adds quantity.
+
+### Species and operation shape
+
+Cohort creation, Herd species changes, movement inserts, and split/merge lineage
+inserts are database-guarded for species continuity. A Cohort's Herd species is
+stable while it has Cohorts; a movement source and destination Herd must match
+the Cohort species; and a lineage source and destination must be species
+compatible.
+
+A deferred operation-shape invariant now proves more than conservation. SPLIT
+has exactly one `SPLIT_OUT`, one `SPLIT_IN`, one source, one destination, equal
+leg quantities, one matching lineage row, and matching effective times. MERGE
+has at least two distinct `MERGE_OUT` sources, exactly one `MERGE_IN`
+destination, one matching lineage row per source, and an incoming quantity equal
+to the source total. Extra balanced legs, duplicate destinations, missing or
+mismatched lineage, and wrong Cohort identities are rejected on privileged paths.
+
+### Zero quantity and lifecycle boundary
+
+GF-022 keeps a fully consumed Cohort `ACTIVE` with a truthful derived quantity
+of zero; it does not invent `CLOSED` or `LOST` transitions that belong to a
+later lifecycle slice. This is safe and bounded because mortality, split,
+merge-out and weight commands require a positive balance at their effective
+instant, while the temporal trigger makes an invalid negative timeline
+unreachable. A same-timestamp additive event may participate in the same atomic
+bucket. Birth remains the only operation offered for an ACTIVE zero Cohort.
+
+### Weight quality and mortality disposal
+
+Weight events now store a constrained qualitative `confidence_level`:
+`UNASSESSED | LOW | MEDIUM | HIGH`. It is shown beside sampled `sample_size`
+and explicitly is not a statistical confidence interval; Terranex does not
+fabricate one. Existing GF-021 callers remain compatible and receive the honest
+`UNASSESSED` value until quality is supplied.
+
+Mortality events now store constrained `disposal_method` values:
+`BURIAL | INCINERATION | RENDERING | COMPOSTING | OTHER | PENDING`.
+`PENDING` is an explicit operational state for legacy callers that did not yet
+capture the method. Disposal remains operational evidence only and creates no
+Finance posting.

@@ -103,6 +103,24 @@ export const MORTALITY_CAUSE_LABEL: Record<string, string> = {
   OTHER: 'سبب آخر',
 };
 
+/** Disposal is operational evidence, not a Finance posting decision. */
+export const DISPOSAL_METHOD_LABEL: Record<string, string> = {
+  BURIAL: 'دفن',
+  INCINERATION: 'حرق/إتلاف حراري',
+  RENDERING: 'تصنيع/تحويل مرخّص',
+  COMPOSTING: 'تحلل عضوي',
+  OTHER: 'طريقة أخرى',
+  PENDING: 'لم تُحدَّد بعد',
+};
+
+/** Qualitative only; this is not a statistical confidence interval. */
+export const WEIGHT_CONFIDENCE_LABEL: Record<string, string> = {
+  UNASSESSED: 'غير مُقيّمة',
+  LOW: 'منخفضة',
+  MEDIUM: 'متوسطة',
+  HIGH: 'مرتفعة',
+};
+
 export const OPERATION_TYPE_LABEL: Record<string, string> = {
   SPLIT: 'تقسيم دفعة',
   MERGE: 'دمج دفعات',

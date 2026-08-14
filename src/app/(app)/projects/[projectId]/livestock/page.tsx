@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
   COHORT_STATE_LABEL,
+  DISPOSAL_METHOD_LABEL,
   MORTALITY_CAUSE_LABEL,
   OPERATION_TYPE_LABEL,
   ORIGIN_LABEL,
@@ -11,6 +12,7 @@ import {
   SITE_TYPE_LABEL,
   SPECIES_LABEL,
   WEIGHT_BASIS_LABEL,
+  WEIGHT_CONFIDENCE_LABEL,
   WEIGHT_MEANING_LABEL,
   WEIGHT_METHOD_LABEL,
   movementChangeLabel,
@@ -302,8 +304,8 @@ function QuantityRollforward({
   return (
     <table>
       <caption className="muted">
-        العدد الحالي = عدد افتتاحي + ولادات + وارد من تقسيم/دمج − نفوق − صادر إلى تقسيم/دمج.
-        رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
+        العدد الحالي المشتق = عدد افتتاحي + أحداث سارية حتى الآن + وارد من تقسيم/دمج − نفوق − صادر إلى تقسيم/دمج.
+        الأحداث المستقبلية لا تغيّر هذا الرصيد؛ الأحداث ذات الطابع الزمني نفسه تُحسب كدفعة واحدة. رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
       </caption>
       <thead>
         <tr>
@@ -353,12 +355,16 @@ function QuantityEvents({
           <p>
             {event.direction > 0 ? '+' : '−'}{event.quantity} رأس ·{' '}
             <span className="muted">{dateTime(event.effective_at)}</span>
+            {!event.is_effective_as_of_now ? <span className="status"> مجدول مستقبليًا</span> : null}
           </p>
           {event.cause_category ? (
             <p className="muted">
               السبب: {MORTALITY_CAUSE_LABEL[event.cause_category] ?? event.cause_category}
               {event.cause_detail ? ` — ${event.cause_detail}` : ''}
             </p>
+          ) : null}
+          {event.disposal_method ? (
+            <p className="muted">طريقة التخلص: {DISPOSAL_METHOD_LABEL[event.disposal_method] ?? event.disposal_method}</p>
           ) : null}
         </li>
       ))}
@@ -380,7 +386,10 @@ function Lineage({ lineage }: Readonly<{ lineage: readonly CohortLineageRead[] }
             {entry.quantity} رأس من {entry.source_cohort_reference} إلى{' '}
             {entry.destination_cohort_reference}
           </p>
-          <p className="muted">{dateTime(entry.effective_at)} · {entry.reason}</p>
+          <p className="muted">
+            {dateTime(entry.effective_at)} · {entry.reason}
+            {!entry.is_effective_as_of_now ? ' · مجدولة مستقبليًا' : ''}
+          </p>
         </li>
       ))}
     </ol>
@@ -404,6 +413,10 @@ function WeightLog({ events }: Readonly<{ events: readonly WeightEventRead[] }>)
           {event.sample_size ? (
             <p className="muted">حجم العينة: {event.sample_size} رأس</p>
           ) : null}
+          <p className="muted">
+            درجة الثقة التشغيلية: {WEIGHT_CONFIDENCE_LABEL[event.confidence_level] ?? event.confidence_level}
+            <span className="muted"> (تصنيف نوعي، وليس فاصلًا إحصائيًا)</span>
+          </p>
           {event.measured_animal_count ? (
             <p className="muted">عدد الحيوانات المقاسة: {event.measured_animal_count} رأس</p>
           ) : null}
@@ -459,6 +472,15 @@ export default async function LivestockPage({
   // Operational events belong to an ACTIVE Cohort; a PLANNED one has not
   // entered operations yet and the database refuses events against it.
   const activeCohorts = cohorts.filter((cohort) => cohort.lifecycle_state === 'ACTIVE');
+  const currentQuantityByCohort = new Map(
+    quantities.map((row) => [row.cohort_id, row.current_quantity]),
+  );
+  // Consumption and measurement forms only offer a currently positive Cohort.
+  // Birth remains available for an ACTIVE zero Cohort because it is an additive
+  // fact; the database still validates any later destructive event as-of time.
+  const positiveQuantityCohorts = activeCohorts.filter(
+    (cohort) => (currentQuantityByCohort.get(cohort.id) ?? 0) > 0,
+  );
   return (
     <section className="stack">
       <WorkspaceChrome
@@ -521,14 +543,14 @@ export default async function LivestockPage({
       </section>
       <section className="card stack">
         <h2>تسجيل نفوق</h2>
-        <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+        <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
       </section>
       <section className="card stack">
         <h2>تقسيم دفعة</h2>
         <SplitForm
           {...context}
           commandNonce={newCommandNonce()}
-          cohorts={activeCohorts}
+          cohorts={positiveQuantityCohorts}
           herds={herds}
           sites={sites}
         />
@@ -538,7 +560,7 @@ export default async function LivestockPage({
         <MergeForm
           {...context}
           commandNonce={newCommandNonce()}
-          cohorts={activeCohorts}
+          cohorts={positiveQuantityCohorts}
           herds={herds}
           sites={sites}
         />
@@ -553,7 +575,7 @@ export default async function LivestockPage({
       </section>
       <section className="card stack">
         <h2>تسجيل وزن</h2>
-        <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+        <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
       </section>
       <section className="card stack">
         <h2>سجل الأوزان</h2>

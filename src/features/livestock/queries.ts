@@ -187,9 +187,11 @@ export type QuantityEventRead = {
   quantity: number;
   signed_quantity: number;
   effective_at: string;
+  is_effective_as_of_now: boolean;
   operation_id: string | null;
   cause_category: string | null;
   cause_detail: string | null;
+  disposal_method: string | null;
   evidence_reference: string | null;
   notes: string | null;
   recorded_by: string;
@@ -203,6 +205,7 @@ export type CohortLineageRead = {
   operation_id: string;
   operation_type: 'SPLIT' | 'MERGE';
   effective_at: string;
+  is_effective_as_of_now: boolean;
   reason: string;
   evidence_reference: string | null;
   source_cohort_id: string;
@@ -228,6 +231,7 @@ export type WeightEventRead = {
   is_estimate: boolean;
   measured_animal_count: number | null;
   sample_size: number | null;
+  confidence_level: string;
   evidence_reference: string | null;
   notes: string | null;
   recorded_by: string;
@@ -260,7 +264,7 @@ export const getLivestockQuantityRollforward = (projectId: string) =>
 export const getLivestockWeightEvents = (projectId: string) =>
   many<WeightEventRead>(
     'livestock_weight_events_read',
-    'id,organization_id,project_id,cohort_id,cohort_reference,effective_at,method,weight_value,weight_unit,value_meaning,is_estimate,measured_animal_count,sample_size,evidence_reference,notes,recorded_by,recorded_at',
+    'id,organization_id,project_id,cohort_id,cohort_reference,effective_at,method,weight_value,weight_unit,value_meaning,is_estimate,measured_animal_count,sample_size,confidence_level,evidence_reference,notes,recorded_by,recorded_at',
     projectId,
     'effective_at',
   );
@@ -268,7 +272,7 @@ export const getLivestockWeightEvents = (projectId: string) =>
 export const getLivestockQuantityEvents = (projectId: string) =>
   many<QuantityEventRead>(
     'livestock_quantity_events_read',
-    'id,organization_id,project_id,cohort_id,cohort_reference,event_type,event_label,direction,quantity,signed_quantity,effective_at,operation_id,cause_category,cause_detail,evidence_reference,notes,recorded_by,recorded_at',
+    'id,organization_id,project_id,cohort_id,cohort_reference,event_type,event_label,direction,quantity,signed_quantity,effective_at,is_effective_as_of_now,operation_id,cause_category,cause_detail,disposal_method,evidence_reference,notes,recorded_by,recorded_at',
     projectId,
     'effective_at',
   );
@@ -276,7 +280,7 @@ export const getLivestockQuantityEvents = (projectId: string) =>
 export const getLivestockCohortLineage = (projectId: string) =>
   many<CohortLineageRead>(
     'livestock_cohort_lineage_read',
-    'id,organization_id,project_id,operation_id,operation_type,effective_at,reason,evidence_reference,source_cohort_id,source_cohort_reference,destination_cohort_id,destination_cohort_reference,quantity,performed_by,created_at',
+    'id,organization_id,project_id,operation_id,operation_type,effective_at,is_effective_as_of_now,reason,evidence_reference,source_cohort_id,source_cohort_reference,destination_cohort_id,destination_cohort_reference,quantity,performed_by,created_at',
     projectId,
     'effective_at',
   );

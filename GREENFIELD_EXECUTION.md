@@ -363,8 +363,9 @@ Livestock construction order, and its truthful state:
 - `GF-020 — Livestock Sector Foundation` (`Site`/`Herd` → `Cohort`, immutable
   opening placement, one causal lifecycle chain): **merged through PR #131,
   technically complete**.
-- `GF-021 — Livestock Movement, Quantity Rollforward & Weight Events`: active
-  bounded slice. Delivers an append-only causal movement chain
+- `GF-021 — Livestock Movement, Quantity Rollforward & Weight Events`: delivered
+  as the independently reviewable first commit of PR #132. Delivers an append-only
+  causal movement chain
   (`UNIQUE (previous_movement_id)`, one root per Cohort, same-Cohort composite
   predecessor FK, database-level no-op rejection, source-equals-current-placement
   validator), a derived current-placement read model that raises on ambiguity
@@ -372,9 +373,10 @@ Livestock construction order, and its truthful state:
   **zero** event classes registered, and immutable WeightEvents across
   `INDIVIDUAL_MEASURED | COHORT_TOTAL | SAMPLED_AVERAGE | ESTIMATED` with
   method-specific required/forbidden metadata enforced by CHECK constraints.
-  Current quantity truthfully equals opening headcount until GF-022.
+  Its quantity registry is intentionally empty; GF-022 extends it additively.
 - `GF-022 — Livestock Biological Quantity Events, Mortality, Births, Split &
-  Merge`: active bounded slice, additive on the GF-021 ledger. Registers
+  Merge`: delivered as the independently reviewable second commit of PR #132,
+  with forward-only review hardening. Registers
   `BIRTH | MORTALITY | SPLIT_OUT | SPLIT_IN | MERGE_OUT | MERGE_IN`; binds both
   sides of a split/merge to one `livestock_quantity_operations` identity with a
   deferred conservation trigger proving `sum(out) = sum(in)`; makes a negative
@@ -383,7 +385,10 @@ Livestock construction order, and its truthful state:
   headcount under the new `SPLIT_FROM_COHORT` / `MERGED_FROM_COHORTS` origins so
   quantity is never double-counted; and does NOT mutate lifecycle state when a
   Cohort reaches zero. Rollforward:
-  `current = opening + births + split_in + merge_in − mortality − split_out − merge_out`.
+  `current = opening + births + split_in + merge_in − mortality − split_out − merge_out`
+  as of `current_timestamp`; future events are scheduled facts and same-time
+  events are one atomic bucket. It also stores qualitative weight confidence and
+  constrained mortality disposal state. GF-023 has not started.
 
 Real-customer validation remains a separate parallel evidence track. No
 synthetic fixture may impersonate customer, UAT, production or commercial

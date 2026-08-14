@@ -18,20 +18,24 @@ import {
 } from '@/features/livestock/actions';
 import {
   COHORT_ORIGINS,
+  DISPOSAL_METHODS,
   HERD_PURPOSES,
   MORTALITY_CAUSES,
   SITE_TYPES,
   SPECIES,
   WEIGHT_BASES,
+  WEIGHT_CONFIDENCE_LEVELS,
   WEIGHT_METHODS,
 } from '@/features/livestock/schema';
 import {
+  DISPOSAL_METHOD_LABEL,
   MORTALITY_CAUSE_LABEL,
   ORIGIN_LABEL,
   PURPOSE_LABEL,
   SITE_TYPE_LABEL,
   SPECIES_LABEL,
   WEIGHT_BASIS_LABEL,
+  WEIGHT_CONFIDENCE_LABEL,
   WEIGHT_METHOD_LABEL,
 } from '@/features/livestock/labels';
 import type {
@@ -359,7 +363,9 @@ export function MovementForm({
   const [state, action, pending] = useActionState(recordLivestockMovement, initialState);
   const idempotencyKey = useCommandIdempotencyKey('ls-move', state, commandNonce);
   const otherSites = sites.filter((site) => site.id !== placement.current_site_id);
-  const otherHerds = herds.filter((herd) => herd.id !== placement.current_herd_id);
+  const otherHerds = herds.filter(
+    (herd) => herd.id !== placement.current_herd_id && herd.species === placement.species,
+  );
 
   return (
     <form action={action} className="form-grid compact">
@@ -433,7 +439,7 @@ export function WeightEventForm({
   const idempotencyKey = useCommandIdempotencyKey('ls-weight', state, commandNonce);
 
   if (cohorts.length === 0) {
-    return <p className="muted">فعّل دفعة أولًا قبل تسجيل الأوزان.</p>;
+    return <p className="muted">لا توجد دفعة نشطة برصيد موجب؛ لا يمكن تسجيل وزن لدفعة مستنفدة.</p>;
   }
 
   const isSampled = method === 'SAMPLED_AVERAGE';
@@ -511,6 +517,14 @@ export function WeightEventForm({
           حجم العينة إلزامي ولا يجوز أن يتجاوز العدد الحالي المشتق للدفعة.
         </p>
       ) : null}
+      <label>
+        <span>درجة الثقة التشغيلية <span className="muted">(نوعية وليست فاصلًا إحصائيًا)</span></span>
+        <select name="confidenceLevel" defaultValue="UNASSESSED">
+          {WEIGHT_CONFIDENCE_LEVELS.map((level) => (
+            <option key={level} value={level}>{WEIGHT_CONFIDENCE_LABEL[level]}</option>
+          ))}
+        </select>
+      </label>
       <label>
         <span>
           مرجع الدليل{' '}
@@ -630,7 +644,7 @@ export function MortalityForm({
 }: CommandContext & Readonly<{ cohorts: readonly CohortRead[] }>) {
   const [state, action, pending] = useActionState(recordLivestockMortality, initialState);
   const idempotencyKey = useCommandIdempotencyKey('ls-mortality', state, commandNonce);
-  if (cohorts.length === 0) return <p className="muted">فعّل دفعة أولًا قبل تسجيل النفوق.</p>;
+  if (cohorts.length === 0) return <p className="muted">لا توجد دفعة نشطة برصيد موجب؛ لا يمكن تسجيل النفوق على دفعة مستنفدة.</p>;
   return (
     <form action={action} className="form-grid">
       <CommandFields {...context} idempotencyKey={idempotencyKey} />
@@ -672,6 +686,14 @@ export function MortalityForm({
         <input name="causeDetail" maxLength={500} />
       </label>
       <label>
+        <span>طريقة التخلص</span>
+        <select name="disposalMethod" defaultValue="PENDING" required>
+          {DISPOSAL_METHODS.map((method) => (
+            <option key={method} value={method}>{DISPOSAL_METHOD_LABEL[method]}</option>
+          ))}
+        </select>
+      </label>
+      <label>
         <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
         <input name="evidenceReference" maxLength={200} />
       </label>
@@ -680,7 +702,7 @@ export function MortalityForm({
         <textarea name="notes" maxLength={2000} />
       </label>
       <p className="muted full">
-        واقعة تشغيلية تقلل العدد المشتق فقط؛ لا ينشأ عنها أي قيد محاسبي أو تكلفة أو تقييم.
+        واقعة تشغيلية تقلل العدد المشتق فقط؛ طريقة التخلص محفوظة كحقيقة تشغيلية ولا ينشأ عنها أي قيد محاسبي أو تكلفة أو تقييم.
       </p>
       <div className="full">
         <SubmitResult state={state} pending={pending} label="تسجيل نفوق" />
@@ -704,7 +726,7 @@ export function SplitForm({
   const [state, action, pending] = useActionState(splitLivestockCohort, initialState);
   const idempotencyKey = useCommandIdempotencyKey('ls-split', state, commandNonce);
   if (cohorts.length === 0 || herds.length === 0 || sites.length === 0) {
-    return <p className="muted">فعّل دفعة وأضف قطيعًا وموقعًا قبل التقسيم.</p>;
+    return <p className="muted">لا توجد دفعة نشطة برصيد موجب، أو أضف قطيعًا وموقعًا قبل التقسيم.</p>;
   }
   return (
     <form action={action} className="form-grid">
@@ -766,7 +788,7 @@ export function MergeForm({
   const idempotencyKey = useCommandIdempotencyKey('ls-merge', state, commandNonce);
 
   if (cohorts.length < 2 || herds.length === 0 || sites.length === 0) {
-    return <p className="muted">يلزم وجود دفعتين نشطتين على الأقل لتنفيذ الدمج.</p>;
+    return <p className="muted">يلزم وجود دفعتين نشطتين برصيد موجب على الأقل لتنفيذ الدمج.</p>;
   }
 
   function toggle(cohortId: string, checked: boolean) {

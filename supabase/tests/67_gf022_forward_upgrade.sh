@@ -72,7 +72,17 @@ fingerprint_sql="select md5(jsonb_build_object(
   'ls_placements',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from livestock_cohort_initial_placements x),
   'ls_history',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from livestock_cohort_state_history x),
   'ls_movements',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from livestock_cohort_movements x),
-  'ls_weights',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from livestock_weight_events x),
+  -- The hardening migration adds confidence_level. Fingerprint the old
+  -- columns explicitly so an additive quality field is not a row mutation.
+  'ls_weights',(select coalesce(jsonb_agg(jsonb_build_object(
+    'id',x.id,'organization_id',x.organization_id,'project_id',x.project_id,
+    'cohort_id',x.cohort_id,'effective_at',x.effective_at,'method',x.method,
+    'weight_value',x.weight_value,'weight_unit',x.weight_unit,
+    'measured_animal_count',x.measured_animal_count,'sample_size',x.sample_size,
+    'evidence_reference',x.evidence_reference,'notes',x.notes,
+    'recorded_by',x.recorded_by,'recorded_at',x.recorded_at,
+    'idempotency_key',x.idempotency_key,'request_hash',x.request_hash
+  ) order by x.id),'[]') from livestock_weight_events x),
   'ls_quantity',(select coalesce(jsonb_agg(to_jsonb(x) order by id),'[]') from livestock_quantity_events x)
 )::text);"
 BEFORE="$(psql_db "$UPGRADE_DB" -Atc "$fingerprint_sql")"
@@ -81,7 +91,13 @@ BEFORE="$(psql_db "$UPGRADE_DB" -Atc "$fingerprint_sql")"
 QUANTITIES_BEFORE="$(psql_db "$UPGRADE_DB" -Atc "select md5(coalesce(string_agg(cohort_id::text||':'||current_quantity::text, ',' order by cohort_id::text), ''))
   from livestock_cohort_quantity_rollforward")"
 
-psql_db "$UPGRADE_DB" < "$ROOT/supabase/migrations/20260814001900_livestock_biological_quantity_events.sql" >/dev/null
+# Apply the complete GF-022 family in order: biological events followed by
+# review hardening.
+for migration in \
+  "$ROOT"/supabase/migrations/20260814001900_*.sql \
+  "$ROOT"/supabase/migrations/20260814002000_*.sql; do
+  psql_db "$UPGRADE_DB" < "$migration" >/dev/null
+done
 
 AFTER="$(psql_db "$UPGRADE_DB" -Atc "$fingerprint_sql")"
 [[ "$BEFORE" == "$AFTER" ]] || {

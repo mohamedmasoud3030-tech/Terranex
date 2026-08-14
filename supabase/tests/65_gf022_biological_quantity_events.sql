@@ -1,4 +1,4 @@
--- GF-022 — births, mortality, split, merge, and the exact quantity rollforward.
+-- GF-022 — births, mortality, split, merge, and the exact as-of quantity rollforward.
 --
 -- Reuses the tenant-A hierarchy and the gf20_run / gf20_catch / gf20_count /
 -- gf20_owner_catch harness created by the GF-020 and GF-021 suites.
@@ -66,7 +66,7 @@ select (select count(*) from journal_batches) gf22_jb_before,
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_birth(
     '10000000-0000-4000-8000-000000000001', %L, %L, 12,
-    timestamptz '2026-09-01 06:00+00', 'سجل ولادات', null, 'gf22-birth-1'
+    timestamptz '2026-08-01 06:00+00', 'سجل ولادات', null, 'gf22-birth-1'
   )$q$, :'gf22_project', :'gf22_main')) gf22_birth \gset
 select 1/case when (
   select opening_headcount = 100 and births = 12 and current_quantity = 112
@@ -99,13 +99,13 @@ then 1 else 0 end as cross_tenant_birth_rejected;
 select 1/case when gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_birth(
     '10000000-0000-4000-8000-000000000001', %L, %L, 12,
-    timestamptz '2026-09-01 06:00+00', 'سجل ولادات', null, 'gf22-birth-1'
+    timestamptz '2026-08-01 06:00+00', 'سجل ولادات', null, 'gf22-birth-1'
   )$q$, :'gf22_project', :'gf22_main')) = :'gf22_birth'
 then 1 else 0 end as birth_replay_is_idempotent;
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_birth(
     '10000000-0000-4000-8000-000000000001', %L, %L, 99,
-    timestamptz '2026-09-01 06:00+00', 'سجل ولادات', null, 'gf22-birth-1'
+    timestamptz '2026-08-01 06:00+00', 'سجل ولادات', null, 'gf22-birth-1'
   )$q$, :'gf22_project', :'gf22_main')) like '%idempotency key payload mismatch%'
 then 1 else 0 end as birth_payload_mismatch_rejected;
 select 1/case when (
@@ -122,7 +122,7 @@ select 1/case when (
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_mortality(
     '10000000-0000-4000-8000-000000000001', %L, %L, 7,
-    timestamptz '2026-09-05 06:00+00', 'DISEASE', 'التهاب رئوي',
+    timestamptz '2026-08-02 06:00+00', 'DISEASE', 'التهاب رئوي',
     'تقرير بيطري', null, 'gf22-mortality-1'
   )$q$, :'gf22_project', :'gf22_main')) gf22_mortality \gset
 select 1/case when (
@@ -153,7 +153,7 @@ select 1/case when (
 select 1/case when gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.record_livestock_mortality(
     '10000000-0000-4000-8000-000000000001', %L, %L, 7,
-    timestamptz '2026-09-05 06:00+00', 'DISEASE', 'التهاب رئوي',
+    timestamptz '2026-08-02 06:00+00', 'DISEASE', 'التهاب رئوي',
     'تقرير بيطري', null, 'gf22-mortality-1'
   )$q$, :'gf22_project', :'gf22_main')) = :'gf22_mortality'
 then 1 else 0 end as mortality_replay_is_idempotent;
@@ -208,7 +208,7 @@ then 1 else 0 end as birth_with_cause_rejected;
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.split_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, 30,
-    timestamptz '2026-09-10 06:00+00', 'دفعة التقسيم أ', %L, %L,
+    timestamptz '2026-08-03 06:00+00', 'دفعة التقسيم أ', %L, %L,
     'MIXED', null, 'فصل مجموعة التسمين', 'محضر تقسيم', null, 'gf22-split-1'
   )$q$, :'gf22_project', :'gf22_main', :'gf22_herd_b', :'gf22_site_b'))
   gf22_split \gset
@@ -298,7 +298,7 @@ then 1 else 0 end as cross_project_split_rejected;
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.create_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, %L,
-    'دفعة مخططة 022', 'PURCHASED', date '2026-09-01', 10, null, null,
+    'دفعة مخططة 022', 'PURCHASED', date '2026-08-01', 10, null, null,
     null, null, null, null, null, 'gf22-planned-cohort'
   )$q$, :'gf22_project', :'gf22_herd_a', :'gf22_site_a')) gf22_planned \gset
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001', format($q$
@@ -314,7 +314,7 @@ then 1 else 0 end as split_of_planned_cohort_rejected;
 select 1/case when gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.split_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, 30,
-    timestamptz '2026-09-10 06:00+00', 'دفعة التقسيم أ', %L, %L,
+    timestamptz '2026-08-03 06:00+00', 'دفعة التقسيم أ', %L, %L,
     'MIXED', null, 'فصل مجموعة التسمين', 'محضر تقسيم', null, 'gf22-split-1'
   )$q$, :'gf22_project', :'gf22_main', :'gf22_herd_b', :'gf22_site_b'))
   = :'gf22_split'
@@ -353,7 +353,7 @@ select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.merge_livestock_cohorts(
     '10000000-0000-4000-8000-000000000001', %L,
     array[%L,%L]::uuid[], array[25,40]::integer[],
-    timestamptz '2026-09-15 06:00+00', 'دفعة الدمج الموحدة', %L, %L,
+    timestamptz '2026-08-04 06:00+00', 'دفعة الدمج الموحدة', %L, %L,
     'MIXED', null, 'توحيد مجموعتين', 'محضر دمج', null, 'gf22-merge-1'
   )$q$, :'gf22_project', :'gf22_main', :'gf22_merge_b',
        :'gf22_herd_a', :'gf22_site_a')) gf22_merge \gset
@@ -485,7 +485,7 @@ select 1/case when gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.merge_livestock_cohorts(
     '10000000-0000-4000-8000-000000000001', %L,
     array[%L,%L]::uuid[], array[25,40]::integer[],
-    timestamptz '2026-09-15 06:00+00', 'دفعة الدمج الموحدة', %L, %L,
+    timestamptz '2026-08-04 06:00+00', 'دفعة الدمج الموحدة', %L, %L,
     'MIXED', null, 'توحيد مجموعتين', 'محضر دمج', null, 'gf22-merge-1'
   )$q$, :'gf22_project', :'gf22_main', :'gf22_merge_b',
        :'gf22_herd_a', :'gf22_site_a')) = :'gf22_merge'

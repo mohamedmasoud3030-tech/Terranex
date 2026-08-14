@@ -124,6 +124,9 @@ export const WEIGHT_METHODS = [
   'ESTIMATED',
 ] as const;
 
+/** Qualitative operational quality only; never a statistical interval. */
+export const WEIGHT_CONFIDENCE_LEVELS = ['UNASSESSED', 'LOW', 'MEDIUM', 'HIGH'] as const;
+
 const optionalPositiveInteger = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? null : value,
   z.string().trim().regex(/^[1-9]\d*$/, 'أدخل عددًا صحيحًا أكبر من صفر')
@@ -174,6 +177,10 @@ export const livestockWeightEventSchema = z.object({
   weightUnit: z.literal('KG'),
   measuredAnimalCount: optionalPositiveInteger,
   sampleSize: optionalPositiveInteger,
+  confidenceLevel: z.preprocess(
+    (value) => value === '' ? null : value,
+    z.enum(WEIGHT_CONFIDENCE_LEVELS).nullable().optional(),
+  ),
   evidenceReference: optionalText(200),
   notes: optionalText(2000),
 }).superRefine((data, ctx) => {
@@ -239,6 +246,16 @@ export const MORTALITY_CAUSES = [
   'OTHER',
 ] as const;
 
+/** Constrained disposal state; PENDING is explicit, not an omitted field. */
+export const DISPOSAL_METHODS = [
+  'BURIAL',
+  'INCINERATION',
+  'RENDERING',
+  'COMPOSTING',
+  'OTHER',
+  'PENDING',
+] as const;
+
 const positiveCount = (message: string) =>
   z.string().trim().regex(/^[1-9]\d*$/, message);
 
@@ -258,6 +275,10 @@ export const livestockMortalitySchema = z.object({
   effectiveAt: z.string().min(1, 'تاريخ ووقت الواقعة مطلوب'),
   causeCategory: z.enum(MORTALITY_CAUSES, { message: 'سبب النفوق غير صالح' }),
   causeDetail: optionalText(500),
+  disposalMethod: z.preprocess(
+    (value) => value === '' ? null : value,
+    z.enum(DISPOSAL_METHODS).nullable().optional(),
+  ),
   evidenceReference: optionalText(200),
   notes: optionalText(2000),
 });

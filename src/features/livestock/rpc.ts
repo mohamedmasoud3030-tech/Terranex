@@ -88,6 +88,7 @@ export const weightEventRpcArguments = (input: LivestockWeightEventInput) => ({
     ? Number(input.measuredAnimalCount)
     : null,
   p_sample_size: input.sampleSize ? Number(input.sampleSize) : null,
+  p_confidence_level: input.confidenceLevel ?? null,
   p_evidence_reference: input.evidenceReference ?? null,
   p_notes: input.notes ?? null,
 });
@@ -117,6 +118,7 @@ export const mortalityRpcArguments = (input: LivestockMortalityInput) => ({
   p_effective_at: input.effectiveAt,
   p_cause_category: input.causeCategory,
   p_cause_detail: input.causeDetail ?? null,
+  p_disposal_method: input.disposalMethod ?? null,
   p_evidence_reference: input.evidenceReference ?? null,
   p_notes: input.notes ?? null,
 });
