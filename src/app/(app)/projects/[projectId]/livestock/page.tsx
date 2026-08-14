@@ -198,7 +198,6 @@ function Cohorts({
   );
 }
 
-
 function dateTime(value: string): string {
   return new Date(value).toLocaleString('ar-EG');
 }
@@ -208,12 +207,14 @@ function CurrentPlacements({
   placements,
   sites,
   herds,
+  eligibleCohortIds,
   organizationId,
   projectId,
 }: Readonly<{
   placements: readonly CurrentPlacementRead[];
   sites: readonly SiteRead[];
   herds: readonly HerdRead[];
+  eligibleCohortIds: ReadonlySet<string>;
   organizationId: string;
   projectId: string;
 }>) {
@@ -222,43 +223,60 @@ function CurrentPlacements({
   }
   return (
     <div className="responsive-grid">
-      {placements.map((placement) => (
-        <article className="card stack" key={placement.cohort_id}>
-          <h3>{placement.cohort_reference}</h3>
-          <dl className="facts">
-            <div>
-              <dt>الموقع الحالي المشتق</dt>
-              <dd>{placement.current_site_name}</dd>
-            </div>
-            <div>
-              <dt>القطيع الحالي المشتق</dt>
-              <dd>{placement.current_herd_name}</dd>
-            </div>
-            <div>
-              <dt>مصدر الموقع الحالي</dt>
-              <dd>{PLACEMENT_SOURCE_LABEL[placement.placement_source]}</dd>
-            </div>
-            <div>
-              <dt>ساري من</dt>
-              <dd>{dateTime(placement.effective_from)}</dd>
-            </div>
-          </dl>
-          <small className="muted">
-            حقيقة مشتقة من الوضع الافتتاحي وسلسلة الحركات، وليست بيانًا أساسيًا قابلًا للتحرير.
-          </small>
-          <details>
-            <summary>نقل الدفعة</summary>
-            <MovementForm
-              organizationId={organizationId}
-              projectId={projectId}
-              commandNonce={newCommandNonce()}
-              placement={placement}
-              sites={sites}
-              herds={herds}
-            />
-          </details>
-        </article>
-      ))}
+      {placements.map((placement) => {
+        const compatibleHerds = herds.filter((herd) => herd.species === placement.species);
+        const isOperationallyEligible = eligibleCohortIds.has(placement.cohort_id);
+        return (
+          <article className="card stack" key={placement.cohort_id}>
+            <h3>{placement.cohort_reference}</h3>
+            <dl className="facts">
+              <div>
+                <dt>الموقع الحالي المشتق</dt>
+                <dd>{placement.current_site_name}</dd>
+              </div>
+              <div>
+                <dt>القطيع الحالي المشتق</dt>
+                <dd>{placement.current_herd_name}</dd>
+              </div>
+              <div>
+                <dt>النوع الحيواني الثابت</dt>
+                <dd>{SPECIES_LABEL[placement.species]}</dd>
+              </div>
+              <div>
+                <dt>مصدر الموقع الحالي</dt>
+                <dd>{PLACEMENT_SOURCE_LABEL[placement.placement_source]}</dd>
+              </div>
+              <div>
+                <dt>ساري من</dt>
+                <dd>{dateTime(placement.effective_from)}</dd>
+              </div>
+            </dl>
+            <small className="muted">
+              حقيقة مشتقة من الوضع الافتتاحي وسلسلة الحركات، وليست بيانًا أساسيًا قابلًا للتحرير.
+            </small>
+            {isOperationallyEligible ? (
+              <details>
+                <summary>نقل الدفعة</summary>
+                <p className="muted">
+                  تظهر فقط القطعان من نفس النوع الحيواني. قاعدة البيانات تعيد التحقق عند الحفظ.
+                </p>
+                <MovementForm
+                  organizationId={organizationId}
+                  projectId={projectId}
+                  commandNonce={newCommandNonce()}
+                  placement={placement}
+                  sites={sites}
+                  herds={compatibleHerds}
+                />
+              </details>
+            ) : (
+              <p className="muted">
+                النقل غير متاح: يلزم أن تكون الدفعة نشطة وبرصيد عددي مشتق أكبر من صفر.
+              </p>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -456,9 +474,15 @@ export default async function LivestockPage({
   }
 
   const context = { organizationId: project.organization_id, projectId };
-  // Operational events belong to an ACTIVE Cohort; a PLANNED one has not
-  // entered operations yet and the database refuses events against it.
   const activeCohorts = cohorts.filter((cohort) => cohort.lifecycle_state === 'ACTIVE');
+  const quantityByCohort = new Map(
+    quantities.map((row) => [row.cohort_id, row.current_quantity] as const),
+  );
+  const positiveActiveCohorts = activeCohorts.filter(
+    (cohort) => (quantityByCohort.get(cohort.id) ?? cohort.opening_headcount) > 0,
+  );
+  const positiveActiveCohortIds = new Set(positiveActiveCohorts.map((cohort) => cohort.id));
+
   return (
     <section className="stack">
       <WorkspaceChrome
@@ -497,12 +521,13 @@ export default async function LivestockPage({
       <section className="card stack">
         <h2>الموقع الحالي</h2>
         <p className="muted">
-          الموقع الحالي المشتق لكل دفعة، ومنه تُسجَّل حركة النقل. الوضع الافتتاحي يظل ثابتًا في بطاقة الدفعة.
+          الموقع الحالي المشتق لكل دفعة. النقل متاح فقط لدفعة نشطة ذات رصيد موجب، وإلى قطيع من نفس النوع الحيواني؛ قاعدة البيانات تعيد التحقق من الرصيد والنوع ووقت الواقعة عند الحفظ.
         </p>
         <CurrentPlacements
           placements={placements}
           sites={sites}
           herds={herds}
+          eligibleCohortIds={positiveActiveCohortIds}
           organizationId={project.organization_id}
           projectId={projectId}
         />
@@ -517,28 +542,38 @@ export default async function LivestockPage({
       </section>
       <section className="card stack">
         <h2>تسجيل ولادات</h2>
+        <p className="muted">
+          الولادة عملية إضافة، ولذلك يمكن تسجيلها لدفعة نشطة حتى لو كان رصيدها الحالي صفرًا.
+        </p>
         <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
       </section>
       <section className="card stack">
         <h2>تسجيل نفوق</h2>
-        <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+        <p className="muted">تظهر فقط الدفعات النشطة ذات الرصيد العددي المشتق الأكبر من صفر.</p>
+        <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={positiveActiveCohorts} />
       </section>
       <section className="card stack">
         <h2>تقسيم دفعة</h2>
+        <p className="muted">
+          المصدر يجب أن يكون نشطًا وبرصيد موجب، والقطيع الوجهة يجب أن يحافظ على نفس النوع الحيواني. قاعدة البيانات هي المرجع النهائي.
+        </p>
         <SplitForm
           {...context}
           commandNonce={newCommandNonce()}
-          cohorts={activeCohorts}
+          cohorts={positiveActiveCohorts}
           herds={herds}
           sites={sites}
         />
       </section>
       <section className="card stack">
         <h2>دمج دفعات</h2>
+        <p className="muted">
+          تظهر فقط المصادر ذات الرصيد الموجب؛ وكل مصادر الدمج والوجهة يجب أن تكون من نفس النوع الحيواني.
+        </p>
         <MergeForm
           {...context}
           commandNonce={newCommandNonce()}
-          cohorts={activeCohorts}
+          cohorts={positiveActiveCohorts}
           herds={herds}
           sites={sites}
         />
@@ -553,14 +588,17 @@ export default async function LivestockPage({
       </section>
       <section className="card stack">
         <h2>تسجيل وزن</h2>
-        <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={activeCohorts} />
+        <p className="muted">
+          الوزن سجل ملاحظات مؤرخ؛ لا ينشئ «وزنًا حاليًا» مخزنًا. التسجيل يتطلب دفعة نشطة ذات رصيد موجب، وأعداد العينة تُراجع مقابل الرصيد في وقت القياس.
+        </p>
+        <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={positiveActiveCohorts} />
       </section>
       <section className="card stack">
         <h2>سجل الأوزان</h2>
         <WeightLog events={weightEvents} />
       </section>
       <aside className="banner">
-        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو فترات حظر أو تحصين أو علف أو دورة تكاثر أو بيع أو تحصيل أو ربحية أو تقييم محاسبي. الأعداد المعروضة أرصدة تشغيلية مشتقة من أحداث ثابتة، وليست تقييمًا للمخزون ولا أثرًا محاسبيًا.
+        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو فترات حظر أو تحصين أو علف أو دورة تكاثر أو بيع أو تحصيل أو ربحية أو تقييم محاسبي. ثقة الوزن بالعينة وطريقة التخلص من النافق مؤجلتان صراحة للمرحلة التي تملك تفاصيل القياس/الصحة؛ لا تدّعي GF-021/GF-022 اكتمالهما. الأعداد المعروضة أرصدة تشغيلية مشتقة من أحداث ثابتة، وليست تقييمًا للمخزون ولا أثرًا محاسبيًا.
       </aside>
     </section>
   );
