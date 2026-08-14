@@ -18,7 +18,8 @@ fi
 
 psql_postgres -c "drop database if exists \"$UPGRADE_DB\";" >/dev/null
 psql_postgres -c "create database \"$UPGRADE_DB\";" >/dev/null
-psql_db "$UPGRADE_DB" < "$ROOT/supabase/tests/00_supabase_shim.sql" >/dev/null
+sed 's/create role authenticated nologin; create role anon nologin;//' \
+  "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB" >/dev/null
 
 applied=0
 for migration in "$ROOT"/supabase/migrations/*.sql; do

@@ -1,7 +1,7 @@
 # ADR 0017 — GF-017 Agricultural Land Asset, Acquisition & Control
 
-**Status:** Accepted  
-**Date:** 2026-08-14  
+**Status:** Accepted
+**Date:** 2026-08-14
 **Decision owner:** Mohamed
 
 ## Context
