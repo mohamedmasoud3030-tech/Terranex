@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
+import { useCommandIdempotencyKey } from '@/features/livestock/use-command-idempotency-key';
 import {
   createLivestockCohort,
   createLivestockHerd,
@@ -35,14 +36,13 @@ type CommandContext = Readonly<{
 function CommandFields({
   organizationId,
   projectId,
-  prefix,
-}: CommandContext & Readonly<{ prefix: string }>) {
-  const key = useMemo(() => `${prefix}-${crypto.randomUUID()}`, [prefix]);
+  idempotencyKey,
+}: CommandContext & Readonly<{ idempotencyKey: string }>) {
   return (
     <>
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="idempotencyKey" value={key} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
     </>
   );
 }
@@ -62,9 +62,10 @@ function SubmitResult({
 
 export function ProfileForm(props: CommandContext) {
   const [state, action, pending] = useActionState(createLivestockProfile, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-profile', state);
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...props} prefix="ls-profile" />
+      <CommandFields {...props} idempotencyKey={idempotencyKey} />
       <label className="full">
         <span>ملاحظات تشغيلية <span className="muted">(اختياري)</span></span>
         <textarea name="notes" maxLength={2000} />
@@ -78,9 +79,10 @@ export function ProfileForm(props: CommandContext) {
 
 export function SiteForm(props: CommandContext) {
   const [state, action, pending] = useActionState(createLivestockSite, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-site', state);
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...props} prefix="ls-site" />
+      <CommandFields {...props} idempotencyKey={idempotencyKey} />
       <label>
         <span>اسم موقع التشغيل</span>
         <input name="name" required minLength={2} maxLength={160} />
@@ -115,9 +117,10 @@ export function SiteForm(props: CommandContext) {
 
 export function HerdForm(props: CommandContext) {
   const [state, action, pending] = useActionState(createLivestockHerd, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-herd', state);
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...props} prefix="ls-herd" />
+      <CommandFields {...props} idempotencyKey={idempotencyKey} />
       <label>
         <span>اسم القطيع</span>
         <input name="name" required minLength={2} maxLength={160} />
@@ -190,6 +193,7 @@ export function CohortForm({
 }: CommandContext & Readonly<{ herds: readonly HerdRead[]; sites: readonly SiteRead[] }>) {
   const [state, action, pending] = useActionState(createLivestockCohort, initialState);
   const [includeWeight, setIncludeWeight] = useState(false);
+  const idempotencyKey = useCommandIdempotencyKey('ls-cohort', state);
 
   if (herds.length === 0 || sites.length === 0) {
     return <p className="muted">أضف قطيعًا وموقع تشغيل قبل إنشاء الدفعة.</p>;
@@ -197,7 +201,7 @@ export function CohortForm({
 
   return (
     <form action={action} className="form-grid">
-      <CommandFields {...context} prefix="ls-cohort" />
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
       <label>
         <span>القطيع الإداري</span>
         <select name="herdId">
@@ -294,9 +298,10 @@ export function ActivateForm({
     transitionLivestockCohort,
     initialState,
   );
+  const idempotencyKey = useCommandIdempotencyKey('ls-activate', state);
   return (
     <form action={action} className="form-grid compact">
-      <CommandFields {...context} prefix="ls-activate" />
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
       <input type="hidden" name="cohortId" value={cohort.id} />
       <input type="hidden" name="expectedState" value="PLANNED" />
       <input type="hidden" name="newState" value="ACTIVE" />

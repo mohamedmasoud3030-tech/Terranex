@@ -5,6 +5,7 @@ import type { ZodType } from 'zod';
 import type { ActionState } from '@/features/auth/actions';
 import { createClient } from '@/shared/supabase/server';
 import { livestockErrorMessage } from './errors';
+import { commandFailureState, commandSuccessState } from './idempotency';
 import {
   cohortRpcArguments,
   herdRpcArguments,
@@ -20,11 +21,8 @@ import {
   livestockTransitionSchema,
 } from './schema';
 
-function failed(error: string): ActionState {
-  return { error };
-}
-
 async function invoke<T extends { projectId: string }>(
+  prev: ActionState,
   schema: ZodType<T>,
   form: FormData,
   rpc: string,
@@ -32,23 +30,27 @@ async function invoke<T extends { projectId: string }>(
 ): Promise<ActionState> {
   const parsed = schema.safeParse(Object.fromEntries(form));
   if (!parsed.success) {
-    return failed(parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة');
+    return commandFailureState(
+      prev,
+      parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة',
+    );
   }
 
   const { error } = await (await createClient()).rpc(rpc, argumentsFor(parsed.data));
   if (error) {
-    return failed(livestockErrorMessage(error.message));
+    return commandFailureState(prev, livestockErrorMessage(error.message));
   }
 
   revalidatePath(`/projects/${parsed.data.projectId}/livestock`);
-  return {};
+  return commandSuccessState(prev);
 }
 
 export async function createLivestockProfile(
-  _: ActionState,
+  prev: ActionState,
   form: FormData,
 ): Promise<ActionState> {
   return invoke(
+    prev,
     livestockProfileSchema,
     form,
     'create_livestock_profile',
@@ -57,24 +59,25 @@ export async function createLivestockProfile(
 }
 
 export async function createLivestockSite(
-  _: ActionState,
+  prev: ActionState,
   form: FormData,
 ): Promise<ActionState> {
-  return invoke(livestockSiteSchema, form, 'create_livestock_site', siteRpcArguments);
+  return invoke(prev, livestockSiteSchema, form, 'create_livestock_site', siteRpcArguments);
 }
 
 export async function createLivestockHerd(
-  _: ActionState,
+  prev: ActionState,
   form: FormData,
 ): Promise<ActionState> {
-  return invoke(livestockHerdSchema, form, 'create_livestock_herd', herdRpcArguments);
+  return invoke(prev, livestockHerdSchema, form, 'create_livestock_herd', herdRpcArguments);
 }
 
 export async function createLivestockCohort(
-  _: ActionState,
+  prev: ActionState,
   form: FormData,
 ): Promise<ActionState> {
   return invoke(
+    prev,
     livestockCohortSchema,
     form,
     'create_livestock_cohort',
@@ -83,10 +86,11 @@ export async function createLivestockCohort(
 }
 
 export async function transitionLivestockCohort(
-  _: ActionState,
+  prev: ActionState,
   form: FormData,
 ): Promise<ActionState> {
   return invoke(
+    prev,
     livestockTransitionSchema,
     form,
     'transition_livestock_cohort',
