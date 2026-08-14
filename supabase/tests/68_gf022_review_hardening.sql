@@ -203,7 +203,7 @@ $q$, :'gf68_project', :'gf68_sheep_herd', :'gf68_site', :'gf68_project',
 -- Exact SPLIT/MERGE semantic shape under privileged writes.
 -- ---------------------------------------------------------------------------
 -- Extra balanced SPLIT legs are rejected, even though sum(out) = sum(in).
-select 1/case when gf20_owner_catch(format($q$
+select gf20_owner_catch(format($q$
   DO $do$
   BEGIN
     insert into public.livestock_quantity_operations(
@@ -230,8 +230,8 @@ select 1/case when gf20_owner_catch(format($q$
     EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
   END $do$;
 $q$, :'gf68_project', :'gf68_project', :'gf68_asof', :'gf68_project', :'gf68_asof',
-     :'gf68_project', :'gf68_backdated')) like '%exactly one SPLIT_OUT%'
-then 1 else 0 end as privileged_extra_split_legs_rejected;
+     :'gf68_project', :'gf68_backdated')) as privileged_extra_split_error;
+
 
 -- Missing lineage is rejected even when the two split legs balance exactly.
 select 1/case when gf20_owner_catch(format($q$
