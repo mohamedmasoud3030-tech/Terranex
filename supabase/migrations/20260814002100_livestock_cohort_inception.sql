@@ -116,9 +116,12 @@ begin
 end $$;
 
 create function public.gf022_validate_quantity_event_inception() returns trigger
-language plpgsql set search_path=pg_catalog,public as $$
+language plpgsql security definer
+set search_path=pg_catalog,public as $$
 declare
   v_inception_at timestamptz;
+  v_balance bigint;
+  v_bucket record;
 begin
   v_inception_at := public.gf022_event_inception_at(
     new.cohort_id, new.operation_id, new.event_type
@@ -126,6 +129,46 @@ begin
   if new.effective_at < v_inception_at then
     raise exception 'livestock event effective time precedes Cohort inception';
   end if;
+
+  -- Validate the candidate row against the complete existing timeline before
+  -- inserting it. This turns a stale backdated concurrency loser into a normal
+  -- command error instead of allowing it to reach the deferred backstop.
+  perform pg_advisory_xact_lock(hashtextextended(
+    new.cohort_id::text || ':livestock-quantity', 0
+  ));
+  select c.opening_headcount::bigint into v_balance
+    from public.livestock_cohorts c
+   where c.id = new.cohort_id
+   for update;
+  if v_balance is null then
+    raise exception 'livestock cohort not found';
+  end if;
+  for v_bucket in
+    select x.effective_at, coalesce(sum(x.delta), 0::bigint) as delta
+      from (
+        select q.effective_at,
+               t.direction::bigint * q.quantity::bigint as delta
+          from public.livestock_quantity_events q
+          join public.livestock_quantity_event_types t on t.code = q.event_type
+         where q.cohort_id = new.cohort_id
+        union all
+        select new.effective_at,
+               t.direction::bigint * new.quantity::bigint as delta
+          from public.livestock_quantity_event_types t
+         where t.code = new.event_type
+      ) x
+     group by x.effective_at
+     order by x.effective_at
+  loop
+    if v_bucket.effective_at < v_inception_at then
+      raise exception 'livestock event effective time precedes Cohort inception';
+    end if;
+    v_balance := v_balance + v_bucket.delta;
+    if v_balance < 0 then
+      raise exception 'livestock as-of quantity cannot go below zero for Cohort % at % (%)',
+        new.cohort_id, v_bucket.effective_at, v_balance;
+    end if;
+  end loop;
   return new;
 end $$;
 
