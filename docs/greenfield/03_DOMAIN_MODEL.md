@@ -7,7 +7,7 @@
 
 ```mermaid
 flowchart TD
-  C["Investment Core"] --> F["Finance & Capital"]
+  C["Investment Core: Portfolio → Project"] --> F["Finance & Capital"]
   C --> R["Real Estate"]
   C --> A["Agriculture"]
   C --> L["Livestock"]
@@ -21,7 +21,7 @@ flowchart TD
 |---|---|---|
 | Identity & Organization | tenant, membership, role, policy | project economics |
 | Party & Compliance | person/org identity, contacts, verification/document status | ledger balances |
-| Investment Core | project, lifecycle, agreement, participants, commitment, decision rights | field/herd-specific state |
+| Investment Core | portfolio, project, lifecycle, approved agreement/participant relationships, decision rights | field/herd-specific state or invented investor economics |
 | Finance & Capital | money events, obligations, journal, partner capital, allocation, distribution, close | editing operational truth |
 | Documents & Workflow | evidence, version, approval, task, notification | final business state by itself |
 | Real Estate | parcels, property/development/disposal state | crops or animals |
@@ -34,10 +34,12 @@ flowchart TD
 | Term | Definition |
 |---|---|
 | Organization | A customer tenant with isolated users, settings, and data |
-| Investment Project | Economic and control boundary for one deal/venture with one primary sector |
+| Investment Portfolio | Organization-scoped management/reporting container above projects; not automatically a legal entity, fund, pooled vehicle, or investor pool |
+| Investment Project | Operational, budget, financial-attribution, execution, and close boundary for one deal/venture with one primary sector |
 | Party | A person or legal organization that can play roles without duplicating identity |
-| Project Participant | Party’s role in a project: sponsor, investor, operator, lender, vendor, customer, adviser |
-| Agreement Version | Effective-dated immutable terms controlling commitments, ownership, allocations, fees, and decisions |
+| Project Participant | Party’s approved role in a project: sponsor, investor, operator, lender, vendor, customer, adviser |
+| Portfolio Capital Deployment | Approved management/funding decision assigning capital capacity/value to a project; not an investor contribution or entitlement |
+| Agreement Version | Effective-dated immutable terms for the scope actually approved; ownership/allocation/fee/distribution rules exist only when supported by real business terms |
 | Commitment | Maximum or scheduled value a participant agrees to contribute; not cash received |
 | Capital Call | Approved request for a contribution under an agreement |
 | Contribution | Posted cash or approved non-cash value contributed to a project |
@@ -52,7 +54,14 @@ flowchart TD
 
 ## 3. Aggregate map
 
-This is a conceptual ownership map, not an implementation backlog. Create an aggregate/table only when the active vertical slice uses it. GF-002 implements only the minimum Organization, Membership, Investment Project, and Audit records required for authenticated project isolation.
+This is a conceptual ownership map, not an implementation backlog. Create an aggregate/table only when an approved vertical slice uses it. Existing implementation history does not authorize new portfolio/investor schema from this document alone.
+
+### Investment Portfolio aggregate
+
+- `InvestmentPortfolio`
+- project membership/association is a conceptual relationship; its physical representation is deferred until implementation is explicitly authorized.
+
+**Invariants:** a portfolio belongs to one Organization; a portfolio is not automatically a legal/fund/SPV boundary; membership does not merge project assets, cash, liabilities, agreements, or investor economics; portfolio totals are derived from project truth.
 
 ### Organization aggregate
 
@@ -88,7 +97,7 @@ This is a conceptual ownership map, not an implementation backlog. Create an agg
 - `RiskItem`
 - `DecisionRecord`
 
-**Invariants:** one primary sector; reporting currency fixed after first posting except migration workflow; closing requires resolved controls; lifecycle transitions are explicit commands.
+**Invariants:** one primary sector; project belongs to the organization and management portfolio context chosen by approved product rules; reporting currency fixed after first posting except migration workflow; closing requires resolved controls; lifecycle transitions are explicit commands; project economics remain independently traceable.
 
 ### Investment Agreement aggregate
 
@@ -102,7 +111,7 @@ This is a conceptual ownership map, not an implementation backlog. Create an agg
 - `DecisionRight`
 - `SignatureRecord`
 
-**Invariants:** activated versions are immutable; effective ranges cannot overlap for the same rule scope; allocation basis must resolve 100% using a deterministic rounding policy; signed document hash is retained.
+**Invariants:** activated versions are immutable; effective ranges cannot overlap for the same rule scope; only approved agreement rules may be represented; when an allocation basis exists it must resolve deterministically; signed document hash is retained. Portfolio membership alone never supplies agreement terms.
 
 ### Capital aggregate
 
@@ -117,7 +126,7 @@ This is a conceptual ownership map, not an implementation backlog. Create an agg
 - `DistributionLine`
 - `DistributionPayment`
 
-**Invariants:** calls do not change cash/capital until contribution; allocation run references closed inputs and exact agreement version; distribution cannot exceed approved payable/distributable balance; paid value comes only from posted payment.
+**Invariants:** capital calls/contributions/allocation/distribution are investor/project-capital mechanisms, not synonyms for portfolio capital deployment; calls do not change cash/capital until contribution; allocation run references closed inputs and exact approved rule version; distribution cannot exceed an approved payable/distributable balance; paid value comes only from posted payment. If the investor model is unresolved, these aggregates must not be extended by assumption.
 
 ### Finance aggregate
 
@@ -148,7 +157,8 @@ This is a conceptual ownership map, not an implementation backlog. Create an agg
 
 ```mermaid
 erDiagram
-  ORGANIZATION ||--o{ INVESTMENT_PROJECT : owns
+  ORGANIZATION ||--o{ INVESTMENT_PORTFOLIO : owns
+  INVESTMENT_PORTFOLIO ||--o{ INVESTMENT_PROJECT : groups
   PARTY ||--o{ PROJECT_PARTICIPANT : plays
   INVESTMENT_PROJECT ||--o{ PROJECT_PARTICIPANT : includes
   INVESTMENT_PROJECT ||--o{ AGREEMENT_VERSION : governed_by
@@ -162,7 +172,7 @@ erDiagram
   PARTY ||--o{ ALLOCATION_LINE : receives
 ```
 
-Sector tables connect through `investment_project_id` and their own roots; they do not share one universal “asset activity” table.
+Sector tables connect through `investment_project_id` and their own roots; they do not share one universal “asset activity” table. Portfolio is a parent management/reporting context, not a replacement foreign-key target for sector facts.
 
 ## 5. Value objects
 
@@ -182,6 +192,9 @@ Sector tables connect through `investment_project_id` and their own roots; they 
 
 Events use past tense and are immutable facts. Examples:
 
+- `PortfolioCreated`
+- `ProjectAssignedToPortfolio`
+- `PortfolioCapitalDeploymentApproved`
 - `ProjectActivated`
 - `AgreementVersionActivated`
 - `CapitalCallApproved`
@@ -214,13 +227,17 @@ The UI never writes projections directly. Balances, dashboards, profitability, i
 
 - Sector contexts publish confirmed quantity/state events; Finance decides monetary recognition through versioned posting rules.
 - Finance publishes posted cost/revenue/cash facts; sector reports consume project and sector-object dimensions.
-- Agreement context supplies the effective rules to Capital; Capital stores the exact version and calculation inputs used.
+- Portfolio context supplies management grouping/deployment context; it does not invent investor/legal/economic rules.
+- Agreement context supplies only approved effective rules to Capital; Capital stores the exact version and calculation inputs used.
 - Documents link through typed references; no context owns arbitrary document blobs.
 - Reporting reads stable projections and never bypasses tenant/role policies.
 
 ## 9. Prohibited shortcuts
 
 - `partner.balance` or `project.profit` stored as manually editable columns;
+- treating Portfolio as a fund/SPV/legal entity or shared investor pool without an explicit approved business decision;
+- converting portfolio capital deployment into investor contribution/ownership/allocation/distribution by inference;
+- cross-project netting/recycling/transfers without an explicit approved mechanism and accounting treatment;
 - one mutable ownership percentage on project;
 - using current agreement terms to recalculate historical allocations;
 - polymorphic strings without referential integrity for financial dimensions;
@@ -229,16 +246,31 @@ The UI never writes projections directly. Balances, dashboards, profitability, i
 - deleting a participant with historical postings;
 - status updates that bypass command validation and audit.
 
-## 10. Deferred product assumptions
+## 10. Deferred / business-dependent investor model — hard stop
 
-These do not block the shared core or GF-002 physical schema. Resolve each through an explicit later decision, typed configuration, or a bounded extension when its workflow is implemented:
+The shared operational core can model Portfolio → Project and project-authoritative operations/finance without deciding the company’s unresolved investor/legal/economic structure. **Do not implement or extend investor economics beyond already-approved behavior until the relevant owner decisions are recorded.**
 
-1. common legal structures and whether project/SPV/contract boundaries differ;
-2. ownership vs profit-sharing variations and non-cash contribution valuation;
-3. management fees, operator shares, reserves, withholding, and loss carryforward;
-4. whether agricultural/livestock customers manage at lot/cohort or individual level;
-5. sector-specific units, local permits, and document retention requirements;
-6. required external accounting and Egyptian e-invoice mappings.
+Open questions include, at minimum:
 
-Unknowns must become configurable policy or an explicit later phase—not nullable ambiguity in the core model.
+1. Is the Portfolio only a management grouping, or does any real legal/entity/contract boundary exist above projects?
+2. Who provides capital: the operating company, named investors/partners, project-specific investors, or a mixture?
+3. Do investors participate at portfolio level, project level, or both? Can one investor have different terms by project?
+4. What is the legally/economically authoritative meaning of “ownership”: company shares, project interest, contractual profit share, capital-account units, another basis, or combinations?
+5. Are capital calls/contributions actually used in the first company, or is project funding recorded as company cash deployment/current account/loan/equity by another mechanism?
+6. How are realized profits and losses assigned: by ownership, funding, fixed shares, project-specific agreements, operator fee/share, or another approved rule?
+7. Are unrealized valuations ever allocable/distributable, or informational only?
+8. What reserves, minimum cash, outstanding obligations, tax/withholding, management/operator fees, and loss carryforward rules affect distributable cash?
+9. Can cash or capital be transferred/recycled between projects? If yes, under what approval, due-to/from, loan, or capital treatment?
+10. Can profits/losses be netted across projects?
+11. What happens when an investor enters/exits, transfers interest, partially withdraws, defaults on funding, dies, or changes legal identity?
+12. Which statements/notices are contractual requirements and which are management reports only?
 
+These questions are tracked in `docs/OPEN_BUSINESS_DECISIONS.md`. Until answered, the canonical rule is **explicit uncertainty, not invented configuration**. Existing working features remain implementation facts, but they must not be generalized into a new universal investor model without approval.
+
+Other deferred sector/country assumptions remain bounded:
+
+- whether agricultural/livestock customers manage at lot/cohort or individual level;
+- sector-specific units, local permits, and document retention requirements;
+- required external accounting and Egyptian e-invoice mappings.
+
+Unknowns become an explicit later decision, typed configuration, or bounded extension only after evidence exists—not nullable ambiguity or guessed business logic in the core model.
