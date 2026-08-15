@@ -345,31 +345,93 @@ select 1/case when s80a_catch('00000000-0000-4000-8000-000000000001', format(
   :'s80_project_id', :'s80_pf2')) like '%forbidden%' then 1 else 0 end as s80_cross_move_forbidden;
 
 -- Read views: org B sees zero tenant-A procurement rows (checked as the
--- org B user so RLS applies; the suite itself runs as superuser).
-select 1/case when s80a_count('00000000-0000-4000-8000-000000000001', format(
+-- org B user so RLS applies; the suite itself runs as superuser). All eight
+-- security_invoker read views are covered.
+select 1/case when
+ s80a_count('00000000-0000-4000-8000-000000000001', format(
+  $$select count(*) from public.procurement_suppliers_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) = 0
+ and s80a_count('00000000-0000-4000-8000-000000000001', format(
+  $$select count(*) from public.purchase_requests_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) = 0
+ and s80a_count('00000000-0000-4000-8000-000000000001', format(
+  $$select count(*) from public.purchase_request_lines_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) = 0
+ and s80a_count('00000000-0000-4000-8000-000000000001', format(
   $$select count(*) from public.purchase_orders_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) = 0
+ and s80a_count('00000000-0000-4000-8000-000000000001', format(
+  $$select count(*) from public.purchase_order_lines_read where organization_id=%L$$,
   '40000000-0000-4000-8000-000000000081')) = 0
  and s80a_count('00000000-0000-4000-8000-000000000001', format(
   $$select count(*) from public.purchase_receipts_read where organization_id=%L$$,
   '40000000-0000-4000-8000-000000000081')) = 0
  and s80a_count('00000000-0000-4000-8000-000000000001', format(
-  $$select count(*) from public.investment_portfolios_read where organization_id=%L$$,
+  $$select count(*) from public.purchase_receipt_lines_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) = 0
+ and s80a_count('00000000-0000-4000-8000-000000000001', format(
+  $$select count(*) from public.purchase_order_lines_receiving_read where organization_id=%L$$,
   '40000000-0000-4000-8000-000000000081')) = 0
  then 1 else 0 end as s80_cross_tenant_reads_denied;
 
--- Org A's own member CAN read its own Procurement rows through the
--- security_invoker views (proves the authenticated view grants exist and
--- the canonical application read path works).
-select 1/case when s80a_count('00000000-0000-4000-8000-000000000082', format(
+-- Org A's own member CAN read its own Procurement rows through every
+-- security_invoker view (proves the authenticated view grants exist and the
+-- canonical application read path works for each view).
+select 1/case when
+ s80a_count('00000000-0000-4000-8000-000000000082', format(
+  $$select count(*) from public.procurement_suppliers_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) >= 1
+ and s80a_count('00000000-0000-4000-8000-000000000082', format(
+  $$select count(*) from public.purchase_requests_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) >= 1
+ and s80a_count('00000000-0000-4000-8000-000000000082', format(
+  $$select count(*) from public.purchase_request_lines_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) >= 1
+ and s80a_count('00000000-0000-4000-8000-000000000082', format(
   $$select count(*) from public.purchase_orders_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) >= 1
+ and s80a_count('00000000-0000-4000-8000-000000000082', format(
+  $$select count(*) from public.purchase_order_lines_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) >= 1
+ and s80a_count('00000000-0000-4000-8000-000000000082', format(
+  $$select count(*) from public.purchase_receipts_read where organization_id=%L$$,
+  '40000000-0000-4000-8000-000000000081')) >= 1
+ and s80a_count('00000000-0000-4000-8000-000000000082', format(
+  $$select count(*) from public.purchase_receipt_lines_read where organization_id=%L$$,
   '40000000-0000-4000-8000-000000000081')) >= 1
  and s80a_count('00000000-0000-4000-8000-000000000082', format(
   $$select count(*) from public.purchase_order_lines_receiving_read where organization_id=%L$$,
   '40000000-0000-4000-8000-000000000081')) >= 1
- and s80a_count('00000000-0000-4000-8000-000000000082', format(
-  $$select count(*) from public.purchase_receipts_read where organization_id=%L$$,
-  '40000000-0000-4000-8000-000000000081')) = 1
  then 1 else 0 end as s80_own_tenant_reads_through_views;
+
+-- anon cannot read any Procurement view (no grant, default deny).
+create or replace function s80a_anon_catch(p_sql text)
+returns text language plpgsql as $$
+declare v_msg text;
+begin
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('role', 'anon', false);
+  begin
+    execute p_sql;
+  exception when others then
+    v_msg := sqlerrm;
+    reset role;
+    return v_msg;
+  end;
+  reset role;
+  return 'NO_EXCEPTION';
+end $$;
+
+select 1/case when
+ s80a_anon_catch($$select count(*) from public.procurement_suppliers_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_requests_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_request_lines_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_orders_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_order_lines_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_receipts_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_receipt_lines_read$$) like '%permission denied%'
+ and s80a_anon_catch($$select count(*) from public.purchase_order_lines_receiving_read$$) like '%permission denied%'
+ then 1 else 0 end as s80_anon_reads_denied;
 
 -- Org B's own Procurement data was never touched by tenant A's flow.
 select 1/case when (

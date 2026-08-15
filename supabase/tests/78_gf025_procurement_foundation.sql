@@ -201,3 +201,198 @@ select 1/case when not exists (
    join public.procurement_suppliers_read s on s.id = o.supplier_id
    where o.internal_reference = 'PO-GF025-001' and s.organization_id = '10000000-0000-4000-8000-000000000001'
 ) then 0 else 1 end as s25_read_view_exposes_order_with_supplier;
+
+-- ---------------------------------------------------------------------------
+-- 6. Workflow-transition replay idempotency (response-loss retry safety).
+-- ---------------------------------------------------------------------------
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_request('10000000-0000-4000-8000-000000000001',%L,'PR-GF025-IDEM','طلب إعادة الإرسال',
+    '[{"item_description":"خرطوم","quantity":30,"unit":"متر"}]','s25a-pr-idem-create')$$, :'s25_project_id')) as s25_pr_idem \gset
+
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-submit')$$, :'s25_pr_idem')) as s25_pr_idem_submit_1 \gset
+select 1/case when :'s25_pr_idem_submit_1' = :'s25_pr_idem' then 1 else 0 end as s25_pr_submit_returns_entity_id;
+
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-submit')$$, :'s25_pr_idem')) as s25_pr_idem_submit_replay \gset
+select 1/case when :'s25_pr_idem_submit_replay' = :'s25_pr_idem' then 1 else 0 end as s25_pr_submit_replay_same_result;
+
+select 1/case when (select status='SUBMITTED' from public.purchase_requests where id=:'s25_pr_idem')
+  then 1 else 0 end as s25_pr_submit_replay_state_stable;
+
+select 1/case when (select count(*) = 1 from public.audit_events
+  where entity_id = :'s25_pr_idem' and event_type='PURCHASE_REQUEST_SUBMITTED') then 1 else 0 end
+  as s25_pr_submit_audit_exactly_once;
+
+select s25a_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-approve')$$, :'s25_pr_idem')) as s25_pr_idem_approve_1 \gset
+select 1/case when :'s25_pr_idem_approve_1' = :'s25_pr_idem' then 1 else 0 end as s25_pr_approve_returns_entity_id;
+
+select s25a_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-approve')$$, :'s25_pr_idem')) as s25_pr_idem_approve_replay \gset
+select 1/case when :'s25_pr_idem_approve_replay' = :'s25_pr_idem' then 1 else 0 end as s25_pr_approve_replay_same_result;
+select 1/case when (select status='APPROVED' from public.purchase_requests where id=:'s25_pr_idem')
+  then 1 else 0 end as s25_pr_approve_replay_state_stable;
+select 1/case when (select count(*) = 1 from public.audit_events
+  where entity_id = :'s25_pr_idem' and event_type='PURCHASE_REQUEST_APPROVED') then 1 else 0 end
+  as s25_pr_approve_audit_exactly_once;
+
+-- Same key + different entity -> fail closed with payload mismatch.
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_request('10000000-0000-4000-8000-000000000001',%L,'PR-GF025-MM','طلب عدم تطابق',
+    '[{"item_description":"مسمار","quantity":10,"unit":"قطعة"}]','s25a-pr-mm-create')$$, :'s25_project_id')) as s25_pr_mm \gset
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-submit')$$, :'s25_pr_mm'))
+  like '%idempotency key payload mismatch%' then 1 else 0 end as s25_pr_submit_cross_entity_mismatch;
+
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-approve')$$, :'s25_pr_mm'))
+  like '%idempotency key payload mismatch%' then 1 else 0 end as s25_pr_approve_cross_entity_mismatch;
+
+-- A fresh key after the transition is complete is NOT a replay: the normal
+-- state machine rejects it.
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-idem-submit-fresh')$$, :'s25_pr_idem'))
+  like '%purchase request is not in draft%' then 1 else 0 end as s25_pr_fresh_key_after_submit_rejected;
+
+-- Purchase Order submit + approve: same replay contract.
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-IDEM',null,null,null,(current_date + 30),
+    '[{"item_description":"خرطوم","quantity":30,"unit":"متر"}]','s25a-po-idem-create')$$, :'s25_project_id')) as s25_po_idem \gset
+
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-idem-submit')$$, :'s25_po_idem')) as s25_po_idem_submit_1 \gset
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-idem-submit')$$, :'s25_po_idem')) as s25_po_idem_submit_replay \gset
+select 1/case when :'s25_po_idem_submit_1' = :'s25_po_idem' and :'s25_po_idem_submit_replay' = :'s25_po_idem'
+  and (select status='SUBMITTED' from public.purchase_orders where id=:'s25_po_idem')
+  and (select count(*) = 1 from public.audit_events where entity_id = :'s25_po_idem' and event_type='PURCHASE_ORDER_SUBMITTED')
+  then 1 else 0 end as s25_po_submit_replay_idempotent;
+
+select s25a_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-idem-approve')$$, :'s25_po_idem')) as s25_po_idem_approve_1 \gset
+select s25a_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-idem-approve')$$, :'s25_po_idem')) as s25_po_idem_approve_replay \gset
+select 1/case when :'s25_po_idem_approve_1' = :'s25_po_idem' and :'s25_po_idem_approve_replay' = :'s25_po_idem'
+  and (select status='APPROVED' from public.purchase_orders where id=:'s25_po_idem')
+  and (select count(*) = 1 from public.audit_events where entity_id = :'s25_po_idem' and event_type='PURCHASE_ORDER_APPROVED')
+  then 1 else 0 end as s25_po_approve_replay_idempotent;
+
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-MM',null,null,null,(current_date + 30),
+    '[{"item_description":"مسمار","quantity":10,"unit":"قطعة"}]','s25a-po-mm-create')$$, :'s25_project_id')) as s25_po_mm \gset
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-idem-submit')$$, :'s25_po_mm'))
+  like '%idempotency key payload mismatch%' then 1 else 0 end as s25_po_submit_cross_entity_mismatch;
+
+-- ---------------------------------------------------------------------------
+-- 7. Source Purchase Request coherence: same project + APPROVED only.
+-- ---------------------------------------------------------------------------
+select s25a_run('00000000-0000-4000-8000-000000000003',
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع مشتريات ثان','GF025-PROJ2','second procurement project','REAL_ESTATE')$$
+) as s25_project2 \gset
+select id as s25_project2_id from public.investment_projects
+ where internal_reference='GF025-PROJ2' and organization_id='10000000-0000-4000-8000-000000000001' \gset
+
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_request('10000000-0000-4000-8000-000000000001',%L,'PR-GF025-PROJ2','طلب مشروع آخر',
+    '[{"item_description":"أسمنت","quantity":50,"unit":"كيس"}]','s25a-pr-p2-create')$$, :'s25_project2_id')) as s25_pr_p2 \gset
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-p2-submit')$$, :'s25_pr_p2')) as s25_pr_p2_submitted;
+select s25a_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-p2-approve')$$, :'s25_pr_p2')) as s25_pr_p2_approved;
+
+-- A project-1 PO cannot source the APPROVED request of project 2.
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-XPROJ',null,%L,null,(current_date + 30),
+    '[{"item_description":"أسمنت","quantity":50,"unit":"كيس"}]','s25a-po-xproj')$$, :'s25_project_id', :'s25_pr_p2'))
+  like '%same project%' then 1 else 0 end as s25_po_cross_project_source_rejected;
+
+-- A DRAFT request of the same project cannot be sourced.
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_request('10000000-0000-4000-8000-000000000001',%L,'PR-GF025-DRAFT','طلب مسودة',
+    '[{"item_description":"رمل","quantity":5,"unit":"طن"}]','s25a-pr-draft-create')$$, :'s25_project_id')) as s25_pr_draft \gset
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-DRAFTSRC',null,%L,null,(current_date + 30),
+    '[{"item_description":"رمل","quantity":5,"unit":"طن"}]','s25a-po-draftsrc')$$, :'s25_project_id', :'s25_pr_draft'))
+  like '%same project%' then 1 else 0 end as s25_po_draft_source_rejected;
+
+-- A SUBMITTED request of the same project cannot be sourced.
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_request('10000000-0000-4000-8000-000000000001',%L,'PR-GF025-SUB','طلب مرسل',
+    '[{"item_description":"حصى","quantity":5,"unit":"طن"}]','s25a-pr-sub-create')$$, :'s25_project_id')) as s25_pr_sub \gset
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-sub-submit')$$, :'s25_pr_sub')) as s25_pr_sub_submitted;
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-SUBSRC',null,%L,null,(current_date + 30),
+    '[{"item_description":"حصى","quantity":5,"unit":"طن"}]','s25a-po-subsrc')$$, :'s25_project_id', :'s25_pr_sub'))
+  like '%same project%' then 1 else 0 end as s25_po_submitted_source_rejected;
+
+-- A REJECTED request of the same project cannot be sourced (the persisted
+-- row itself carries the final state; the schema requires transition
+-- evidence columns for the rejection).
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_request('10000000-0000-4000-8000-000000000001',%L,'PR-GF025-REJ','طلب مرفوض',
+    '[{"item_description":"جير","quantity":5,"unit":"كيس"}]','s25a-pr-rej-create')$$, :'s25_project_id')) as s25_pr_rej \gset
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-rej-submit')$$, :'s25_pr_rej')) as s25_pr_rej_submitted;
+update public.purchase_requests
+   set status = 'REJECTED',
+       rejection_reason = 'مرفوض في اختبار الاتساق',
+       approved_by = '00000000-0000-4000-8000-000000000001',
+       approve_idempotency_key = 's25a-pr-rej-reject',
+       approve_request_hash = repeat('b', 64)
+ where id = :'s25_pr_rej' and organization_id = '10000000-0000-4000-8000-000000000001';
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-REJSRC',null,%L,null,(current_date + 30),
+    '[{"item_description":"جير","quantity":5,"unit":"كيس"}]','s25a-po-rejsrc')$$, :'s25_project_id', :'s25_pr_rej'))
+  like '%same project%' then 1 else 0 end as s25_po_rejected_source_rejected;
+
+-- The APPROVED same-project source remains allowed (already proven by the
+-- original PO creation above; re-assert for completeness).
+select 1/case when (select source_purchase_request_id = :'s25_pr'::uuid and status='APPROVED'
+  from public.purchase_orders where id=:'s25_po') then 1 else 0 end as s25_po_approved_source_allowed;
+
+-- ---------------------------------------------------------------------------
+-- 8. Delivery date: command-boundary rule; no volatile table CHECK.
+-- ---------------------------------------------------------------------------
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-PASTDATE',null,null,null,(current_date - 1),
+    '[{"item_description":"شيء","quantity":1,"unit":"قطعة"}]','s25a-po-pastdate')$$, :'s25_project_id'))
+  like '%cannot be in the past%' then 1 else 0 end as s25_po_past_delivery_date_rejected;
+
+-- A stored historical order with a past date is structurally valid forever
+-- (direct insert as the fixture session proves no wall-clock CHECK exists).
+insert into public.purchase_orders(
+  organization_id, project_id, internal_reference, expected_delivery_date,
+  requested_by, idempotency_key, request_hash
+) values (
+  '10000000-0000-4000-8000-000000000001', :'s25_project_id', 'PO-GF025-HIST',
+  (current_date - 30),
+  '00000000-0000-4000-8000-000000000003', 's25a-po-hist-001', repeat('c', 64)
+);
+select 1/case when exists (
+  select 1 from public.purchase_orders
+  where internal_reference='PO-GF025-HIST'
+    and organization_id='10000000-0000-4000-8000-000000000001'
+    and expected_delivery_date = (current_date - 30)
+    and status='DRAFT'
+) then 1 else 0 end as s25_historical_past_date_row_valid;
+
+-- ---------------------------------------------------------------------------
+-- 9. Purchase Order request fingerprint covers every business input,
+--    including expected_delivery_date.
+-- ---------------------------------------------------------------------------
+select s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-FP',null,null,null,(current_date + 30),
+    '[{"item_description":"بلاط","quantity":20,"unit":"متر مربع"}]','s25a-po-fp')$$, :'s25_project_id')) as s25_po_fp \gset
+
+select 1/case when s25a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-FP',null,null,null,(current_date + 30),
+    '[{"item_description":"بلاط","quantity":20,"unit":"متر مربع"}]','s25a-po-fp')$$, :'s25_project_id')) = :'s25_po_fp'
+  then 1 else 0 end as s25_po_identical_replay_same_id;
+
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF025-FP',null,null,null,(current_date + 31),
+    '[{"item_description":"بلاط","quantity":20,"unit":"متر مربع"}]','s25a-po-fp')$$, :'s25_project_id'))
+  like '%idempotency key payload mismatch%' then 1 else 0 end as s25_po_delivery_date_fingerprint_mismatch;

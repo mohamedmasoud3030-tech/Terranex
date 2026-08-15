@@ -170,3 +170,78 @@ select 1/case when not exists (
   select 1 from public.purchase_receipts_read
    where organization_id='10000000-0000-4000-8000-000000000001' and purchase_order_id=:'s26_po'
 ) then 0 else 1 end as s26_receipts_read_exposes_org1_receipts;
+
+-- ---------------------------------------------------------------------------
+-- 6. Structural coherence: a persisted receipt line can never point at
+--    another order's line, another project, or another order than its
+--    receipt header (composite foreign keys — proven with direct inserts
+--    as the fixture session, which bypasses every RPC and RLS).
+-- ---------------------------------------------------------------------------
+create or replace function s26b_super_catch(p_sql text)
+returns text language plpgsql as $$
+declare v_msg text;
+begin
+  begin
+    execute p_sql;
+  exception when others then
+    v_msg := sqlerrm;
+    return v_msg;
+  end;
+  return 'NO_EXCEPTION';
+end $$;
+
+-- RPC-written receipt lines carry the server-derived purchase_order_id.
+select 1/case when (select count(*) = 1 from public.purchase_receipt_lines
+  where purchase_receipt_id = :'s26_receipt_1'
+    and purchase_order_line_id = :'s26_po_line_1'
+    and purchase_order_id = :'s26_po') then 1 else 0 end
+  as s26_receipt_lines_carry_header_order;
+
+-- A second approved PO (single 100-unit line) + its own receipt.
+select s26a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-B',null,null,null,(current_date + 30),
+    '[{"item_description":"شعير","quantity":100,"unit":"كجم"}]','s26a-po-b')$$, :'s26_project')) as s26_po_b \gset
+select id as s26_po_b_line from public.purchase_order_lines
+ where purchase_order_id = :'s26_po_b' \gset
+select s26a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.submit_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s26a-po-b-submit')$$, :'s26_po_b')) as s26_po_b_submitted;
+select s26a_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s26a-po-b-approve')$$, :'s26_po_b')) as s26_po_b_approved;
+select s26a_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند استلام-ب',null,
+    ARRAY[%L]::uuid[],ARRAY[10]::numeric[],'s26a-rec-b')$$,
+  :'s26_project', :'s26_po_b', :'s26_po_b_line')) as s26_receipt_b \gset
+
+-- A receipt line referencing an order line of ANOTHER purchase order is
+-- structurally impossible (the declared purchase_order_id must equal the
+-- order line's own purchase_order_id).
+select 1/case when s26b_super_catch(format(
+  $$insert into public.purchase_receipt_lines(organization_id,project_id,purchase_receipt_id,purchase_order_line_id,purchase_order_id,quantity_received,unit)
+    values('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,5,'كجم')$$,
+  :'s26_project', :'s26_receipt_1', :'s26_po_b_line', :'s26_po')) like '%violates foreign key%'
+  then 1 else 0 end as s26_receipt_line_cross_order_impossible;
+
+-- A receipt line whose declared order differs from its receipt header's
+-- order is structurally impossible.
+select 1/case when s26b_super_catch(format(
+  $$insert into public.purchase_receipt_lines(organization_id,project_id,purchase_receipt_id,purchase_order_line_id,purchase_order_id,quantity_received,unit)
+    values('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,1,'لتر')$$,
+  :'s26_project', :'s26_receipt_b', :'s26_po_line_2', :'s26_po_b')) like '%violates foreign key%'
+  then 1 else 0 end as s26_receipt_line_wrong_order_impossible;
+
+-- A receipt line declaring a different project than its receipt header is
+-- structurally impossible.
+select 1/case when s26b_super_catch(format(
+  $$insert into public.purchase_receipt_lines(organization_id,project_id,purchase_receipt_id,purchase_order_line_id,purchase_order_id,quantity_received,unit)
+    values('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,1,'كجم')$$,
+  (select id from public.investment_projects where internal_reference='GF025-PROJ2' and organization_id='10000000-0000-4000-8000-000000000001'),
+  :'s26_receipt_b', :'s26_po_b_line', :'s26_po_b')) like '%violates foreign key%'
+  then 1 else 0 end as s26_receipt_line_cross_project_impossible;
+
+-- The BEFORE INSERT guard still fires first on a unit mismatch (first-line
+-- defense preserved next to the structural constraints).
+select 1/case when s26b_super_catch(format(
+  $$insert into public.purchase_receipt_lines(organization_id,project_id,purchase_receipt_id,purchase_order_line_id,purchase_order_id,quantity_received,unit)
+    values('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,1,'لتر')$$,
+  :'s26_project', :'s26_receipt_b', :'s26_po_b_line', :'s26_po_b')) like '%receipt line unit must match order line unit%'
+  then 1 else 0 end as s26_receipt_line_unit_guard_preserved;
