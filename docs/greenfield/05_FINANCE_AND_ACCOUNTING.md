@@ -1,11 +1,11 @@
 # Terranex Greenfield — 05 Finance & Accounting Model
 
-**Status:** Foundational finance contract v1  
-**Purpose:** Exact project and investor subledger. This is an accounting design input, not a claim of IFRS, tax, or statutory compliance.
+**Status:** Foundational finance contract v1
+**Purpose:** Exact project financial attribution plus approved investor-capital behavior. Portfolio roll-ups are derived management views. This is an accounting design input, not a claim of IFRS, tax, or statutory compliance.
 
 ## 1. Accounting boundary
 
-Terranex is the source of truth for project operations, investment terms, capital activity, operational obligations, project cash attribution, partner capital, allocations, and distributions. It maintains a balanced double-entry **investment/operational subledger** so every balance is reproducible.
+Terranex is the source of truth for project operations, project financial attribution, approved investment terms, operational obligations, and posted monetary events. Partner capital, allocations, and distributions are authoritative only to the extent that their governing business terms are explicitly approved. Portfolio is a management/reporting layer over projects, not a second ledger. It maintains a balanced double-entry **investment/operational subledger** so every balance is reproducible.
 
 The customer’s statutory general ledger remains external in v1. Terranex exports approved journal batches and references the returned external IDs. There is no second editable “official” ledger competing with it.
 
@@ -18,7 +18,7 @@ The customer’s statutory general ledger remains external in v1. Terranex expor
 5. Corrections use linked reversal and replacement; reversal date follows period policy.
 6. One source version posts once through an idempotency key and uniqueness constraint.
 7. Cash, revenue, cost, commitment, valuation, allocation, payable, and payment are separate facts.
-8. Ownership/allocation terms are effective-dated; historical results use the historical version.
+8. Ownership/allocation terms, when approved and used, are effective-dated; historical results use the historical version. Never infer them from portfolio membership, cash deployment, or contribution history.
 9. A closed period rejects normal posting; late posting or reopen requires approval and leaves evidence.
 10. No distribution payment can be created from a dashboard number; it requires an approved distribution liability.
 
@@ -27,7 +27,7 @@ The customer’s statutory general ledger remains external in v1. Terranex expor
 | Book/view | Purpose | Source |
 |---|---|---|
 | Project subledger | Asset, liability, income, cost, cash, and equity movements by project/sector object | Posted journal lines |
-| Partner capital ledger | Commitment, called, contributed, allocated income/loss, distributions, receivable/payable | Posted capital/accounting events |
+| Partner capital ledger | Commitment, called, contributed, allocated income/loss, distributions, receivable/payable when an approved participant model uses them | Posted capital/accounting events |
 | Cash/bank subledger | Book movements and bank reconciliation | Receipts/payments + statement matches |
 | Obligation ledger | Supplier/customer/partner amounts due and settlement state | Obligations, invoices/claims, settlements |
 | Operational inventory/asset rollforward | Quantity and cost linkage | Sector events + financial postings |
@@ -113,7 +113,7 @@ These values must not be collapsed:
 - **distribution payable**: approved value due to participant;
 - **cash paid**: settled distribution.
 
-Partner capital rollforward:
+Where an approved participant model uses partner capital, its rollforward is:
 
 $$
 ClosingCapital = OpeningCapital + Contributions + AllocatedIncome - AllocatedLoss - Distributions + OtherApprovedCapitalAdjustments
@@ -121,9 +121,27 @@ $$
 
 “Other adjustment” is a controlled transaction type, not a free-form balance edit.
 
+### Portfolio capital deployment is not investor capital
+
+Keep these concepts mechanically separate:
+
+- **portfolio capital deployment**: approved management/funding decision to make value available to a project;
+- **project funding/accounting mechanism**: the actual posted form of the movement, such as company cash deployment, inter-project due-to/from, loan, equity/current-account movement, or another approved treatment;
+- **investor contribution**: value accepted from an identified participant under an approved investor/project agreement;
+- **ownership interest**: legal/economic/control interest under approved terms;
+- **result allocation**: assignment of realized income/loss under approved rules;
+- **distribution**: approved payable/transfer of value to a participant;
+- **payment**: settlement of the approved payable.
+
+A single cash movement must never be relabeled across these concepts merely because the amounts happen to match. Cross-project movement, pooling, recycling, and netting require an explicit owner-approved business/accounting rule before implementation.
+
 ## 9. Allocation engine v1
 
-### Supported
+### Mechanism vs business rule
+
+The engine is a **mechanism for executing an already-approved rule**, not authority to invent the rule. The formulas below are capability patterns only; enabling one for a company/project requires documented governing terms and the hard-stop decisions in `docs/OPEN_BUSINESS_DECISIONS.md` where applicable.
+
+### Supported when explicitly governed
 
 - pro-rata by effective ownership units/percentage;
 - fixed participant shares that sum to 100%;
@@ -133,9 +151,9 @@ $$
 - allocation of realized income/loss and separately identified categories;
 - loss carryforward at participant/project scope if the agreement requires it.
 
-### Deferred
+### Deferred / not inferable
 
-Preferred return, hurdle tiers, GP catch-up, carried interest, European/American waterfalls, clawback, tax withholding calculation, and cross-project netting. These need a dedicated rules engine plus legal/accounting validation and are not hidden in generic formulas.
+Portfolio-level pooling or entitlement, cross-project netting/recycling, contribution-to-ownership inference, and any rule not evidenced by approved terms are deferred. Preferred return, hurdle tiers, GP catch-up, carried interest, European/American waterfalls, clawback, and tax withholding calculation also remain deferred. These need dedicated legal/accounting validation and, only when justified, an implementation mechanism; they are not hidden in generic formulas.
 
 ### Calculation snapshot
 
@@ -155,6 +173,8 @@ Re-running with current data creates a comparison, never overwrites the approved
 
 ## 10. Profitability and performance
 
+Portfolio profitability is a **derived roll-up of project-authoritative measures** with explicit currency, date, valuation, and completeness basis. It does not create a portfolio P&L ledger or a portfolio distributable balance by itself.
+
 ### Required project measures
 
 | Measure | Definition |
@@ -166,11 +186,11 @@ Re-running with current data creates a comparison, never overwrites the approved
 | Forecast at completion | Actual + open commitments + approved forecast remainder |
 | Management valuation | Latest approved valuation with date/method/source; separate from realized result |
 | Net asset view | Assets less liabilities under selected policy and data completeness |
-| Distributable cash | Approved formula: available cash less restricted/reserve/near-term obligations |
+| Distributable cash | Available only when an approved policy defines the exact scope, deductions/reserves, and calculation; otherwise not defined by approved policy |
 | MOIC | Total value/distributions basis divided by contributed capital, with basis disclosed |
 | IRR/XIRR | Dated cash-flow return using disclosed scope; never displayed without data-quality status |
 
-Do not show one unlabeled “profit.” At minimum distinguish realized result, unrealized valuation movement, cash surplus, and distributable cash.
+Do not show one unlabeled “profit.” At minimum distinguish realized result, unrealized valuation movement, cash surplus, and distributable cash. A blocked/undefined measure is not displayed as zero or estimated from a generic formula.
 
 ## 11. Asset and sector accounting policy matrix
 
@@ -196,7 +216,7 @@ Close gates:
 6. missing documents and pending material approvals resolved;
 7. FX rates and posting rules complete;
 8. sector cycle/milestone cut-off confirmed;
-9. partner capital rollforward balances to equity/control totals;
+9. partner capital rollforward balances to equity/control totals when the participant-capital model is enabled;
 10. close report and exception evidence approved.
 
 Closing stores control results and locks through a database-enforced rule. Reopen records reason, approver, affected statements, and revised-close version.
@@ -220,12 +240,12 @@ Egypt’s ETA exposes e-invoicing/e-receipt APIs for taxpayer ERP/POS systems. I
 
 - randomized journal batches cannot post unbalanced;
 - duplicate command/posting keys produce one material effect;
-- historical allocation is unchanged after a new agreement version;
-- concurrent distribution/payment requests cannot over-distribute;
+- historical allocation is unchanged after a new agreement version when allocation is enabled;
+- concurrent distribution/payment requests cannot over-distribute when distribution is enabled;
 - closed period rejects ordinary post and preserves approved late-post route;
 - reversal exactly negates source and links replacement;
 - cross-organization and cross-project references are rejected;
-- partner capital statement rolls forward exactly from postings;
+- partner capital statement rolls forward exactly from postings when that statement is enabled;
 - currency/rounding property tests preserve totals;
 - import/reconciliation retries are idempotent.
 
@@ -239,4 +259,3 @@ Egypt’s ETA exposes e-invoicing/e-receipt APIs for taxpayer ERP/POS systems. I
 - [IFRS IAS 16 — Property, Plant and Equipment](https://www.ifrs.org/issued-standards/list-of-standards/ias-16-property-plant-and-equipment/)
 - [ILPA Reporting Template](https://ilpa.org/industry-guidance/templates-standards-model-documents/ilpa-templates-hub/ilpa-reporting-template/)
 - [Egyptian Tax Authority eInvoicing API](https://sdk.invoicing.eta.gov.eg/einvoicingapi/)
-

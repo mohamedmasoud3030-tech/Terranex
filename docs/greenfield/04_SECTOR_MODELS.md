@@ -16,13 +16,15 @@ Every sector pack must provide:
 - valuation inputs clearly separated from posted financial facts;
 - closeout controls and sector KPIs.
 
-It must not implement ownership, partner balances, payments, or journals independently.
+The containing Investment Project may be grouped under an Investment Portfolio for management/reporting, but sector roots and events remain project-bounded. Portfolio membership does not move or co-own sector assets and does not create cross-project operational truth.
+
+A sector pack must not implement ownership, partner balances, payments, or journals independently.
 
 ## 2. Real-estate investment context
 
 ### Recommended v1 scope
 
-Acquisition, light development/land preparation, holding costs, milestones, valuation records, and disposal. Leasing/property-management is a later bounded context.
+Acquisition, light development/land preparation, holding costs, milestones, valuation records, **basic rental-income recognition/receivable/collection for held property**, and disposal. Full lease administration/property management—tenant lifecycle, renewals, service charges, maintenance/work orders, facilities operations, and similar workflows—is outside this bounded context.
 
 ### Model
 
@@ -34,6 +36,7 @@ Acquisition, light development/land preparation, holding costs, milestones, valu
 - `Acquisition`: seller, contract, consideration, closing costs, possession/title dates.
 - `PropertyCostItem`: category, capitalizable policy decision, phase/parcel dimension.
 - `Valuation`: effective date, valuer/source, method, amount, assumptions, confidence, approval.
+- `RentalIncome`: held property/unit reference, tenant/counterparty, contract/evidence reference, rental period, recognized amount, receivable and collection linkage. It records investment revenue only and is not a tenant/property-management subsystem.
 - `Disposition`: buyer, asset scope, contract, proceeds, selling costs, closing/collection state.
 - `Title/Permit/Inspection`: typed compliance record with expiry/status/evidence.
 
@@ -61,6 +64,7 @@ stateDiagram-v2
 - title/possession transferred;
 - development milestone started/completed;
 - valuation proposed/approved;
+- rental income recognized and collection recorded;
 - disposal contract signed;
 - control transferred and sale recognized;
 - proceeds collected and asset derecognized.
@@ -71,13 +75,14 @@ stateDiagram-v2
 - title status, possession, and payment status are independent;
 - cost-to-date vs approved budget by parcel/phase/category;
 - committed cost, forecast-at-completion, variance, and contingency;
+- rental income, rental receivable, and collection are separate from valuation and disposal proceeds;
 - purchase-to-sale days, gross margin, net realized margin, cash-on-cash return;
 - valuation date/source/staleness and realized-vs-last-valuation bridge;
 - disposal profit uses recognized proceeds minus carrying amount and selling costs, not cash received alone.
 
 ### Accounting policy hooks
 
-Classification is policy-driven: inventory held for ordinary-course sale (IAS 2), owner-used PPE (IAS 16), or investment property (IAS 40). The UI must not infer classification from the word “property.” Transfers/classification changes require approved evidence and effective date.
+Classification is policy-driven: inventory held for ordinary-course sale (IAS 2), owner-used PPE (IAS 16), or investment property (IAS 40). The UI must not infer classification from the word “property.” Transfers/classification changes require approved evidence and effective date. Rental/lease accounting treatment and statutory/tax consequences remain governed by the customer’s approved accounting policy and qualified review; Terranex records the business fact and evidence without inferring a universal treatment.
 
 ## 3. Agriculture context
 
@@ -241,4 +246,3 @@ A sector pack cannot ship until it has:
 - [GS1 Global Traceability Standard](https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard)
 - [AGRIVI Farm Enterprise](https://www.agrivi.com/products/360-farm-enterprise/)
 - [AgriWebb Animal Management](https://www.agriwebb.com/us/solutions/animal-management/)
-
