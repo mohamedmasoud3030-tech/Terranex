@@ -14,6 +14,7 @@ import {
   getSuppliers,
 } from '@/features/procurement/queries';
 import { formatDate, formatDocumentState, formatQuantity, formatSupplierStatus } from '@/features/procurement/labels';
+import { newCommandNonce } from '@/shared/idempotency';
 import {
   ApproveOrderAction,
   ApproveRequestAction,
@@ -111,7 +112,7 @@ export default async function ProcurementPage({
             </table>
           </div>
         )}
-        <details><summary>تسجيل مورد جديد</summary><SupplierForm organizationId={organizationId} projectId={projectId} /></details>
+        <details><summary>تسجيل مورد جديد</summary><SupplierForm organizationId={organizationId} projectId={projectId} serverNonce={newCommandNonce()} /></details>
       </section>
 
       <section className="card stack scroll-target" id="requests">
@@ -151,10 +152,10 @@ export default async function ProcurementPage({
                     </table>
                   </div>
                   {request.status === 'DRAFT'
-                    ? <SubmitRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} />
+                    ? <SubmitRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />
                     : null}
                   {request.status === 'SUBMITTED' && canApprove
-                    ? <ApproveRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} />
+                    ? <ApproveRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />
                     : null}
                   {request.status === 'SUBMITTED' && !canApprove
                     ? <p className="muted">الاعتماد يتطلب صلاحية مالك المنظمة.</p>
@@ -168,7 +169,7 @@ export default async function ProcurementPage({
             })}
           </div>
         )}
-        <details><summary>إنشاء طلب شراء جديد (مسودة)</summary><PurchaseRequestForm organizationId={organizationId} projectId={projectId} /></details>
+        <details><summary>إنشاء طلب شراء جديد (مسودة)</summary><PurchaseRequestForm organizationId={organizationId} projectId={projectId} serverNonce={newCommandNonce()} /></details>
       </section>
 
       <section className="card stack scroll-target" id="orders">
@@ -223,10 +224,10 @@ export default async function ProcurementPage({
                     </table>
                   </div>
                   {order.status === 'DRAFT'
-                    ? <SubmitOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} />
+                    ? <SubmitOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />
                     : null}
                   {order.status === 'SUBMITTED' && canApprove
-                    ? <ApproveOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} />
+                    ? <ApproveOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />
                     : null}
                   {order.status === 'SUBMITTED' && !canApprove
                     ? <p className="muted">الاعتماد يتطلب صلاحية مالك المنظمة.</p>
@@ -235,7 +236,7 @@ export default async function ProcurementPage({
                     ? (
                         <>
                           <p className="muted">أمر معتمد — يمكن تسجيل الاستلام عليه.</p>
-                          <details><summary>تسجيل استلام</summary><ReceiptForm organizationId={organizationId} projectId={projectId} order={order} lines={lines} /></details>
+                          <details><summary>تسجيل استلام</summary><ReceiptForm organizationId={organizationId} projectId={projectId} order={order} lines={lines} serverNonce={newCommandNonce()} /></details>
                         </>
                       )
                     : null}
@@ -246,7 +247,7 @@ export default async function ProcurementPage({
             })}
           </div>
         )}
-        <details><summary>إنشاء أمر شراء جديد (مسودة)</summary><PurchaseOrderForm organizationId={organizationId} projectId={projectId} suppliers={suppliers} requests={requests} /></details>
+        <details><summary>إنشاء أمر شراء جديد (مسودة)</summary><PurchaseOrderForm organizationId={organizationId} projectId={projectId} suppliers={suppliers} requests={requests} serverNonce={newCommandNonce()} /></details>
       </section>
 
       <section className="card stack scroll-target" id="receipts">

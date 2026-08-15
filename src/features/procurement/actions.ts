@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import type { ActionState } from '@/features/auth/actions';
 import { createClient } from '@/shared/supabase/server';
+import { commandFailureState, commandSuccessState } from '@/shared/idempotency';
 import {
   approvePurchaseOrderSchema,
   approvePurchaseRequestSchema,
@@ -14,57 +15,65 @@ import {
   supplierSchema,
 } from './schema';
 
-function fail(error: string): ActionState { return { error }; }
+/**
+ * Every action follows the canonical client idempotency-key lifecycle:
+ * a failure carries the current `successCount` forward (same key survives
+ * the retry); a confirmed success increments it (fresh key for the next
+ * logically distinct submission).
+ */
+function fail(prev: ActionState, error: string): ActionState {
+  return commandFailureState(prev, error);
+}
 function refresh(projectId: string) {
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/procurement`);
 }
 
-function parse<T>(result: { success: true; data: T } | { success: false; error: { issues: { message: string }[] } }): T | ActionState {
-  return result.success ? result.data : fail(result.error.issues[0]?.message ?? 'البيانات غير صحيحة');
+function parse<T>(prev: ActionState, result: { success: true; data: T } | { success: false; error: { issues: { message: string }[] } }): T | ActionState {
+  return result.success ? result.data : fail(prev, result.error.issues[0]?.message ?? 'البيانات غير صحيحة');
 }
 function isActionState(value: unknown): value is ActionState {
   return typeof value === 'object' && value !== null && 'error' in value;
 }
 
-function domainError(message: string | undefined, fallback: string): ActionState {
+function domainError(prev: ActionState, message: string | undefined, fallback: string): ActionState {
   const text = message ?? '';
-  if (text.includes('idempotency key payload mismatch')) return fail('مفتاح العملية استُخدم لبيانات مختلفة. حدّث الصفحة وأعد المحاولة.');
-  if (text.includes('forbidden')) return fail('لا تملك صلاحية تنفيذ هذا الإجراء على هذه المنظمة.');
-  if (text.includes('authentication required')) return fail('انتهت جلسة الدخول. سجّل الدخول ثم أعد المحاولة.');
-  if (text.includes('organization owner required') || text.includes('maker/checker')) return fail('اعتماد هذا المستند يتطلب مالك المنظمة، ويجب ألا يكون هو نفس طالب المستند.');
-  if (text.includes('active supplier not found')) return fail('المورد المحدد غير موجود أو غير نشط في هذه المنظمة.');
-  if (text.includes('source purchase request not found')) return fail('طلب الشراء المصدر غير موجود في هذه المنظمة.');
-  if (text.includes('purchase request not found')) return fail('طلب الشراء غير موجود في هذه المنظمة.');
-  if (text.includes('purchase order not found')) return fail('أمر الشراء غير موجود في هذه المنظمة.');
-  if (text.includes('purchase request is not in draft')) return fail('طلب الشراء ليس في حالة مسودة ولا يمكن إرساله.');
-  if (text.includes('purchase order is not in draft')) return fail('أمر الشراء ليس في حالة مسودة ولا يمكن إرساله.');
-  if (text.includes('purchase request is not submitted')) return fail('طلب الشراء ليس قيد الاعتماد حاليًا.');
-  if (text.includes('purchase order is not submitted')) return fail('أمر الشراء ليس قيد الاعتماد حاليًا.');
-  if (text.includes('already exists')) return fail('يوجد سجل بنفس المرجع/الاسم في هذا النطاق.');
-  if (text.includes('invalid idempotency key')) return fail('مفتاح العملية غير صالح.');
-  if (text.includes('invalid supplier name')) return fail('اسم المورد مطلوب (حرفان على الأقل).');
-  if (text.includes('at least one') && text.includes('line')) return fail('أضف سطرًا واحدًا على الأقل.');
-  if (text.includes('project not found')) return fail('المشروع غير موجود في هذه المنظمة.');
-  if (text.includes('purchase order must be approved before receiving')) return fail('لا يمكن الاستلام إلا على أمر شراء معتمد.');
-  if (text.includes('received quantity exceeds ordered quantity')) return fail('الكمية المستلمة تتجاوز الكمية المطلوبة لهذا السطر.');
-  if (text.includes('receipt line unit must match order line unit')) return fail('وحدة الاستلام يجب أن تطابق وحدة سطر الأمر.');
-  if (text.includes('invalid evidence reference')) return fail('مرجع دليل الاستلام مطلوب (3 أحرف على الأقل).');
-  if (text.includes('order line not found for this order')) return fail('سطر أمر الشراء المحدد لا ينتمي إلى هذا الأمر.');
-  if (text.includes('invalid receipt line quantity')) return fail('كمية الاستلام يجب أن تكون موجبة.');
-  return fail(fallback);
+  if (text.includes('idempotency key payload mismatch')) return fail(prev, 'مفتاح العملية استُخدم لبيانات مختلفة. حدّث الصفحة وأعد المحاولة.');
+  if (text.includes('forbidden')) return fail(prev, 'لا تملك صلاحية تنفيذ هذا الإجراء على هذه المنظمة.');
+  if (text.includes('authentication required')) return fail(prev, 'انتهت جلسة الدخول. سجّل الدخول ثم أعد المحاولة.');
+  if (text.includes('organization owner required') || text.includes('maker/checker')) return fail(prev, 'اعتماد هذا المستند يتطلب مالك المنظمة، ويجب ألا يكون هو نفس طالب المستند.');
+  if (text.includes('active supplier not found')) return fail(prev, 'المورد المحدد غير موجود أو غير نشط في هذه المنظمة.');
+  if (text.includes('source purchase request not found')) return fail(prev, 'طلب الشراء المصدر غير موجود في هذه المنظمة.');
+  if (text.includes('purchase request not found')) return fail(prev, 'طلب الشراء غير موجود في هذه المنظمة.');
+  if (text.includes('purchase order not found')) return fail(prev, 'أمر الشراء غير موجود في هذه المنظمة.');
+  if (text.includes('purchase request is not in draft')) return fail(prev, 'طلب الشراء ليس في حالة مسودة ولا يمكن إرساله.');
+  if (text.includes('purchase order is not in draft')) return fail(prev, 'أمر الشراء ليس في حالة مسودة ولا يمكن إرساله.');
+  if (text.includes('purchase request is not submitted')) return fail(prev, 'طلب الشراء ليس قيد الاعتماد حاليًا.');
+  if (text.includes('purchase order is not submitted')) return fail(prev, 'أمر الشراء ليس قيد الاعتماد حاليًا.');
+  if (text.includes('already exists')) return fail(prev, 'يوجد سجل بنفس المرجع/الاسم في هذا النطاق.');
+  if (text.includes('invalid idempotency key')) return fail(prev, 'مفتاح العملية غير صالح.');
+  if (text.includes('invalid supplier name')) return fail(prev, 'اسم المورد مطلوب (حرفان على الأقل).');
+  if (text.includes('at least one') && text.includes('line')) return fail(prev, 'أضف سطرًا واحدًا على الأقل.');
+  if (text.includes('project not found')) return fail(prev, 'المشروع غير موجود في هذه المنظمة.');
+  if (text.includes('purchase order must be approved before receiving')) return fail(prev, 'لا يمكن الاستلام إلا على أمر شراء معتمد.');
+  if (text.includes('received quantity exceeds ordered quantity')) return fail(prev, 'الكمية المستلمة تتجاوز الكمية المطلوبة لهذا السطر.');
+  if (text.includes('receipt line unit must match order line unit')) return fail(prev, 'وحدة الاستلام يجب أن تطابق وحدة سطر الأمر.');
+  if (text.includes('invalid evidence reference')) return fail(prev, 'مرجع دليل الاستلام مطلوب (3 أحرف على الأقل).');
+  if (text.includes('order line not found for this order')) return fail(prev, 'سطر أمر الشراء المحدد لا ينتمي إلى هذا الأمر.');
+  if (text.includes('invalid receipt line quantity')) return fail(prev, 'كمية الاستلام يجب أن تكون موجبة.');
+  return fail(prev, fallback);
 }
 
-async function rpc(name: string, args: Record<string, unknown>, fallback: string, projectId: string): Promise<ActionState> {
+async function rpc(name: string, args: Record<string, unknown>, fallback: string, projectId: string, prev: ActionState): Promise<ActionState> {
   const supabase = await createClient();
   const { error } = await supabase.rpc(name, args);
-  if (error) return domainError(error.message, fallback);
+  if (error) return domainError(prev, error.message, fallback);
   refresh(projectId);
-  return {};
+  return commandSuccessState(prev);
 }
 
-export async function createSupplier(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(supplierSchema.safeParse(Object.fromEntries(form)));
+export async function createSupplier(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, supplierSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   // Suppliers are organization-scoped and shared across projects; a projectId is
   // carried only so the opened project's procurement page can be refreshed.
@@ -76,11 +85,11 @@ export async function createSupplier(_: ActionState, form: FormData): Promise<Ac
     p_payment_terms: value.paymentTerms,
     p_notes: value.notes,
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر تسجيل المورد.', projectId);
+  }, 'تعذر تسجيل المورد.', projectId, prev);
 }
 
-export async function createPurchaseRequest(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(purchaseRequestSchema.safeParse(Object.fromEntries(form)));
+export async function createPurchaseRequest(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, purchaseRequestSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('create_purchase_request', {
     p_organization_id: value.organizationId,
@@ -94,31 +103,31 @@ export async function createPurchaseRequest(_: ActionState, form: FormData): Pro
       notes: line.notes ?? undefined,
     })),
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر إنشاء طلب الشراء.', value.projectId);
+  }, 'تعذر إنشاء طلب الشراء.', value.projectId, prev);
 }
 
-export async function submitPurchaseRequest(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(submitPurchaseRequestSchema.safeParse(Object.fromEntries(form)));
+export async function submitPurchaseRequest(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, submitPurchaseRequestSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('submit_purchase_request', {
     p_organization_id: value.organizationId,
     p_purchase_request_id: value.purchaseRequestId,
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر إرسال طلب الشراء للاعتماد.', value.projectId);
+  }, 'تعذر إرسال طلب الشراء للاعتماد.', value.projectId, prev);
 }
 
-export async function approvePurchaseRequest(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(approvePurchaseRequestSchema.safeParse(Object.fromEntries(form)));
+export async function approvePurchaseRequest(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, approvePurchaseRequestSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('approve_purchase_request', {
     p_organization_id: value.organizationId,
     p_purchase_request_id: value.purchaseRequestId,
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر اعتماد طلب الشراء.', value.projectId);
+  }, 'تعذر اعتماد طلب الشراء.', value.projectId, prev);
 }
 
-export async function createPurchaseOrder(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(purchaseOrderSchema.safeParse(Object.fromEntries(form)));
+export async function createPurchaseOrder(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, purchaseOrderSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('create_purchase_order', {
     p_organization_id: value.organizationId,
@@ -135,31 +144,31 @@ export async function createPurchaseOrder(_: ActionState, form: FormData): Promi
       notes: line.notes ?? undefined,
     })),
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر إنشاء أمر الشراء.', value.projectId);
+  }, 'تعذر إنشاء أمر الشراء.', value.projectId, prev);
 }
 
-export async function submitPurchaseOrder(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(submitPurchaseOrderSchema.safeParse(Object.fromEntries(form)));
+export async function submitPurchaseOrder(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, submitPurchaseOrderSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('submit_purchase_order', {
     p_organization_id: value.organizationId,
     p_purchase_order_id: value.purchaseOrderId,
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر إرسال أمر الشراء للاعتماد.', value.projectId);
+  }, 'تعذر إرسال أمر الشراء للاعتماد.', value.projectId, prev);
 }
 
-export async function approvePurchaseOrder(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(approvePurchaseOrderSchema.safeParse(Object.fromEntries(form)));
+export async function approvePurchaseOrder(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, approvePurchaseOrderSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('approve_purchase_order', {
     p_organization_id: value.organizationId,
     p_purchase_order_id: value.purchaseOrderId,
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر اعتماد أمر الشراء.', value.projectId);
+  }, 'تعذر اعتماد أمر الشراء.', value.projectId, prev);
 }
 
-export async function createPurchaseReceipt(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(purchaseReceiptSchema.safeParse(Object.fromEntries(form)));
+export async function createPurchaseReceipt(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, purchaseReceiptSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
   return rpc('create_purchase_receipt', {
     p_organization_id: value.organizationId,
@@ -170,5 +179,5 @@ export async function createPurchaseReceipt(_: ActionState, form: FormData): Pro
     p_purchase_order_line_ids: value.linesJson.map((line) => line.purchaseOrderLineId),
     p_quantities: value.linesJson.map((line) => line.quantityReceived.replace(',', '.')),
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر تسجيل الاستلام.', value.projectId);
+  }, 'تعذر تسجيل الاستلام.', value.projectId, prev);
 }

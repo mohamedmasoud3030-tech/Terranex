@@ -1,7 +1,7 @@
 // GF-025 / R4 — Procurement Foundation: read models.
 //
 // These match the security_invoker read views exposed by migration
-// 20260815030000. Suppliers are organization-scoped; requests/orders and
+// 20260815031000_gf025_procurement_foundation.sql. Suppliers are organization-scoped; requests/orders and
 // their lines are project-scoped. Quantities are text-cast numeric for safe
 // transport. No financial amounts in this slice.
 

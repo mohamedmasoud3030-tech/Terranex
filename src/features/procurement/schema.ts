@@ -1,6 +1,6 @@
 // GF-025 / R4 — Procurement Foundation: client input contracts.
 //
-// Mirrors the server commands exactly (migration 20260815030000). These
+// Mirrors the server commands exactly (migration 20260815031000_gf025_procurement_foundation.sql). These
 // schemas cover Suppliers, Purchase Requests and Purchase Orders only —
 // quantity/compatible-unit operational truth, no financial amounts in this
 // slice. Pricing/commitment, supplier invoicing/payment, and receiving are

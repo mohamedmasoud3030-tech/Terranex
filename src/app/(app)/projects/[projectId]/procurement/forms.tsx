@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
 import {
   approvePurchaseOrder,
   approvePurchaseRequest,
@@ -20,8 +21,15 @@ import type {
 } from '@/features/procurement/queries';
 
 const initial: ActionState = { error: undefined };
-function Key({ prefix }: { prefix: string }) {
-  const key = useMemo(() => `${prefix}-${crypto.randomUUID()}`, [prefix]);
+/**
+ * Canonical idempotency-key lifecycle (AGENTS.md): the per-mount nonce is
+ * issued by the owning Server Component and the key rotates exactly once,
+ * only after confirmed success, through the monotonic `successCount`.
+ */
+function CommandKey({ prefix, state, serverNonce }: {
+  prefix: string; state: ActionState; serverNonce: string;
+}) {
+  const key = useCommandIdempotencyKey(prefix, state, serverNonce);
   return <input type="hidden" name="idempotencyKey" value={key} />;
 }
 function Result({ state, pending, label, pendingLabel = 'جارٍ الحفظ…' }: {
@@ -35,13 +43,15 @@ function Result({ state, pending, label, pendingLabel = 'جارٍ الحفظ…'
   );
 }
 
-export function SupplierForm({ organizationId, projectId }: { organizationId: string; projectId: string }) {
+export function SupplierForm({ organizationId, projectId, serverNonce }: {
+  organizationId: string; projectId: string; serverNonce: string;
+}) {
   const [state, action, pending] = useActionState(createSupplier, initial);
   return (
     <form action={action} className="form-grid">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
-      <Key prefix="gf25-supplier" />
+      <CommandKey prefix="gf25-supplier" state={state} serverNonce={serverNonce} />
       <label className="full">اسم المورد<input name="name" required maxLength={160} /></label>
       <label>الرقم الضريبي <span className="muted">(اختياري)</span><input name="taxNumber" maxLength={40} /></label>
       <label>شروط السداد <span className="muted">(اختياري)</span><input name="paymentTerms" maxLength={200} /></label>
@@ -86,13 +96,15 @@ function LinesEditor({ name }: { name: string }) {
   );
 }
 
-export function PurchaseRequestForm({ organizationId, projectId }: { organizationId: string; projectId: string }) {
+export function PurchaseRequestForm({ organizationId, projectId, serverNonce }: {
+  organizationId: string; projectId: string; serverNonce: string;
+}) {
   const [state, action, pending] = useActionState(createPurchaseRequest, initial);
   return (
     <form action={action} className="form-grid">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
-      <Key prefix="gf25-pr" />
+      <CommandKey prefix="gf25-pr" state={state} serverNonce={serverNonce} />
       <label>المرجع الداخلي<input name="internalReference" required maxLength={80} /></label>
       <label className="full">الوصف <span className="muted">(اختياري)</span><textarea name="description" maxLength={2000} /></label>
       <LinesEditor name="linesJson" />
@@ -102,9 +114,9 @@ export function PurchaseRequestForm({ organizationId, projectId }: { organizatio
 }
 
 export function PurchaseOrderForm({
-  organizationId, projectId, suppliers, requests,
+  organizationId, projectId, serverNonce, suppliers, requests,
 }: {
-  organizationId: string; projectId: string;
+  organizationId: string; projectId: string; serverNonce: string;
   suppliers: ProcurementSupplierRead[]; requests: PurchaseRequestRead[];
 }) {
   const [state, action, pending] = useActionState(createPurchaseOrder, initial);
@@ -112,7 +124,7 @@ export function PurchaseOrderForm({
     <form action={action} className="form-grid">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
-      <Key prefix="gf25-po" />
+      <CommandKey prefix="gf25-po" state={state} serverNonce={serverNonce} />
       <label>المرجع الداخلي<input name="internalReference" required maxLength={80} /></label>
       <label>المورد <span className="muted">(اختياري)</span>
         <select name="supplierId">
@@ -135,10 +147,10 @@ export function PurchaseOrderForm({
   );
 }
 
-function SubmitAction({ organizationId, projectId, id, actionFn, label }: {
+function SubmitAction({ organizationId, projectId, id, actionFn, label, serverNonce }: {
   organizationId: string; projectId: string; id: string;
   actionFn: (_: ActionState, form: FormData) => Promise<ActionState>;
-  label: string;
+  label: string; serverNonce: string;
 }) {
   const [state, submit, pending] = useActionState(actionFn, initial);
   return (
@@ -147,41 +159,41 @@ function SubmitAction({ organizationId, projectId, id, actionFn, label }: {
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="purchaseRequestId" value={id} />
       <input type="hidden" name="purchaseOrderId" value={id} />
-      <Key prefix="gf25-doc-action" />
+      <CommandKey prefix="gf25-doc-action" state={state} serverNonce={serverNonce} />
       <Result state={state} pending={pending} label={label} />
     </form>
   );
 }
 
-export function SubmitRequestAction({ organizationId, projectId, requestId }: {
-  organizationId: string; projectId: string; requestId: string;
+export function SubmitRequestAction({ organizationId, projectId, requestId, serverNonce }: {
+  organizationId: string; projectId: string; requestId: string; serverNonce: string;
 }) {
-  return <SubmitAction organizationId={organizationId} projectId={projectId} id={requestId} actionFn={submitPurchaseRequest} label="إرسال للاعتماد" />;
+  return <SubmitAction organizationId={organizationId} projectId={projectId} id={requestId} actionFn={submitPurchaseRequest} label="إرسال للاعتماد" serverNonce={serverNonce} />;
 }
 
-export function ApproveRequestAction({ organizationId, projectId, requestId }: {
-  organizationId: string; projectId: string; requestId: string;
+export function ApproveRequestAction({ organizationId, projectId, requestId, serverNonce }: {
+  organizationId: string; projectId: string; requestId: string; serverNonce: string;
 }) {
-  return <SubmitAction organizationId={organizationId} projectId={projectId} id={requestId} actionFn={approvePurchaseRequest} label="اعتماد" />;
+  return <SubmitAction organizationId={organizationId} projectId={projectId} id={requestId} actionFn={approvePurchaseRequest} label="اعتماد" serverNonce={serverNonce} />;
 }
 
-export function SubmitOrderAction({ organizationId, projectId, orderId }: {
-  organizationId: string; projectId: string; orderId: string;
+export function SubmitOrderAction({ organizationId, projectId, orderId, serverNonce }: {
+  organizationId: string; projectId: string; orderId: string; serverNonce: string;
 }) {
-  return <SubmitAction organizationId={organizationId} projectId={projectId} id={orderId} actionFn={submitPurchaseOrder} label="إرسال للاعتماد" />;
+  return <SubmitAction organizationId={organizationId} projectId={projectId} id={orderId} actionFn={submitPurchaseOrder} label="إرسال للاعتماد" serverNonce={serverNonce} />;
 }
 
-export function ApproveOrderAction({ organizationId, projectId, orderId }: {
-  organizationId: string; projectId: string; orderId: string;
+export function ApproveOrderAction({ organizationId, projectId, orderId, serverNonce }: {
+  organizationId: string; projectId: string; orderId: string; serverNonce: string;
 }) {
-  return <SubmitAction organizationId={organizationId} projectId={projectId} id={orderId} actionFn={approvePurchaseOrder} label="اعتماد" />;
+  return <SubmitAction organizationId={organizationId} projectId={projectId} id={orderId} actionFn={approvePurchaseOrder} label="اعتماد" serverNonce={serverNonce} />;
 }
 
 // GF-026 — Receipt of goods against an APPROVED purchase order.
 export function ReceiptForm({
-  organizationId, projectId, order, lines,
+  organizationId, projectId, order, lines, serverNonce,
 }: {
-  organizationId: string; projectId: string;
+  organizationId: string; projectId: string; serverNonce: string;
   order: PurchaseOrderRead; lines: PurchaseOrderLineRead[];
 }) {
   const [state, action, pending] = useActionState(createPurchaseReceipt, initial);
@@ -199,7 +211,7 @@ export function ReceiptForm({
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="purchaseOrderId" value={order.id} />
-      <Key prefix="gf26-receipt" />
+      <CommandKey prefix="gf26-receipt" state={state} serverNonce={serverNonce} />
       <label className="full">مرجع دليل الاستلام<input name="evidenceReference" required maxLength={200} placeholder="مثال: سند استلام/فاتورة الاستلام رقم…" /></label>
       <label className="full">ملاحظات <span className="muted">(اختياري)</span><textarea name="notes" maxLength={2000} /></label>
       <div className="full">
