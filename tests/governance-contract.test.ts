@@ -34,7 +34,8 @@ describe('GF-012 canonical governance contract', () => {
     expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(merged\)/);
     expect(roadmap).toMatch(/GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate/);
     expect(execution).toMatch(/GF-013 — Agriculture Sector Foundation/);
-    expect(execution).toMatch(/Livestock is the active sector/);
+    expect(execution).toMatch(/Livestock \(GF-020–GF-024/);
+    expect(execution).toMatch(/GF-020 →\nGF-024 Livestock\) is \*\*closed\*\*/);
   });
 
   it('states the Agriculture delivery state truthfully across canonical docs', () => {
@@ -42,9 +43,11 @@ describe('GF-012 canonical governance contract', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
 
-    // GF-013 through GF-019 close Agriculture; Livestock is next authorized.
-    expect(policy).toMatch(/Agriculture GF-013 through GF-019 is technically implemented/);
-    expect(policy).toMatch(/Livestock is the active sector/);
+    // Real Estate, Agriculture, and Livestock are all technically implemented;
+    // R0 is merged and the active roadmap is R0–R17 with the hard stop at R13.
+    expect(policy).toMatch(/Agriculture \(GF-013 through GF-019\), and Livestock \(GF-020 through GF-024\) are technically implemented/);
+    expect(policy).toMatch(/R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance — is \*\*merged\*\*/);
+    expect(policy).toMatch(/hard stop at R13/);
     expect(policy).not.toMatch(/Agriculture is next\b/);
     expect(execution).toMatch(/GF-014 — Field Activity Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
     expect(execution).toMatch(/GF-015 — Field Input Application Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);

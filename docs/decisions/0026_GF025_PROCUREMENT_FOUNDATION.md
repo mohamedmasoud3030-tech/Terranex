@@ -17,7 +17,8 @@ The R0–R17 roadmap identifies **R4 — Procurement & Shared Operations** as th
 4. **Idempotency + audit:** every command is idempotent (advisory lock + `request_hash` payload fingerprint, `idempotency key payload mismatch` on re-use with a different payload) and writes a matching `audit_events` row.
 5. **Immutability:** order/request headers can never be deleted (only status transitions through guarded RPCs); all line rows are fully append-only.
 6. **RLS:** default-deny, forced RLS on all five tables, `is_active_member(organization_id)` select policy, direct authenticated writes denied; only `security_invoker` read views are exposed for the operator UI.
-7. **Not in GF-025:** receiving, pricing/commitment, invoicing, payment, stock/inventory consumption, approval-task engine, supplier lifecycle beyond ACTIVE/INACTIVE, and the Procurement management UI/application layer (delivered in the next step of the slice, which will also add the Arabic/RTL Procurement workspace under R9).
+7. **Application/UI layer (delivered in this slice):** an Arabic/RTL Procurement workspace at `/projects/[projectId]/procurement` (registered as a shared `procurement` section across all three sector navigations), with Supplier, Purchase Request, and Purchase Order forms (client-side dynamic line editor writing JSON), server actions mapping to the audited RPCs, typed read models over the `security_invoker` views, and a UI verification suite.
+8. **Not in GF-025:** receiving, pricing/commitment, invoicing, payment, stock/inventory consumption, approval-task engine, and supplier lifecycle beyond ACTIVE/INACTIVE — these are the next bounded steps of R4.
 
 ## Verification
 

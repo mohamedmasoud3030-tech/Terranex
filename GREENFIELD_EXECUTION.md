@@ -371,8 +371,9 @@ portion waits. The remaining independent gates, in order:
    genuinely missing independent gate (deferred farm-ERP scope in GF-019).
    **GF-025 — Procurement Foundation** (organization-scoped suppliers plus
    project-scoped purchase requests/orders, quantity-only, with idempotency,
-   audit, OWNER+maker/checker approval, forced RLS, and a verification suite)
-   is the first bounded step, started under `docs/decisions/0026_GF025_PROCUREMENT_FOUNDATION.md`.
+   audit, OWNER+maker/checker approval, forced RLS, a verification suite, and
+   the Arabic/RTL Procurement workspace under `/projects/[id]/procurement`) is
+   the first bounded step, under `docs/decisions/0026_GF025_PROCUREMENT_FOUNDATION.md`.
    Receiving and pricing/invoice/payment (Finance Core linkage) are the next
    steps of the slice. The local database gate requires CI because neither
    `psql` nor Docker is available in the agent sandbox (per `AGENTS.md`).
