@@ -23,14 +23,15 @@ on conflict (id) do update set
 create policy procurement_evidence_object_insert on storage.objects
 for insert to authenticated with check (
   bucket_id = 'procurement-evidence'
-  and array_length(storage.foldername(name), 1) = 2
+  and split_part(name,'/',4) = ''
+  and split_part(name,'/',3) ~ '^[0-9a-f-]{36}$'
   and public.is_active_member(case
-    when (storage.foldername(name))[1] ~ '^[0-9a-f-]{36}$'
-      then (storage.foldername(name))[1]::uuid else null end)
+    when split_part(name,'/',1) ~ '^[0-9a-f-]{36}$'
+      then split_part(name,'/',1)::uuid else null end)
   and exists (
     select 1 from public.investment_projects p
-    where p.organization_id::text = (storage.foldername(name))[1]
-      and p.id::text = (storage.foldername(name))[2]
+    where p.organization_id::text = split_part(name,'/',1)
+      and p.id::text = split_part(name,'/',2)
   )
 );
 
@@ -379,8 +380,8 @@ create policy procurement_evidence_unregistered_delete on storage.objects
 for delete to authenticated using (
   bucket_id='procurement-evidence'
   and public.is_active_member(case
-    when (storage.foldername(name))[1] ~ '^[0-9a-f-]{36}$'
-      then (storage.foldername(name))[1]::uuid else null end)
+    when split_part(name,'/',1) ~ '^[0-9a-f-]{36}$'
+      then split_part(name,'/',1)::uuid else null end)
   and not exists (select 1 from public.procurement_evidence_versions v
     where v.storage_bucket=storage.objects.bucket_id and v.storage_object_name=storage.objects.name)
 );
