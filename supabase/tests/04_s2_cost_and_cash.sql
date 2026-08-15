@@ -775,27 +775,26 @@ select 1/case when pg_typeof((select balance_minor_units from public.project_cas
 select 1/case when pg_typeof((select outstanding_minor_units from public.cost_obligation_position_read
   where obligation_id=:'s2_obl_wip'))='text'::regtype then 1 else 0 end as s2_obligation_transport_is_text;
 
--- Exact project subledger reproduction from journal lines. Includes the race
--- obligation (authorized 1000000 expense, 400000 paid, not reversed):
--- cash     = debit-credit    = 200000  (600000 reposted attribution + reversals
---                                       - 400000 active race payment);
--- payable  = credit-debit    = 1200000 (wip 600000 + race 1000000 - 400000 paid);
--- expense  = debit-credit    = 1000000 (race obligation; expense chain reversed);
+-- Exact project subledger reproduction from journal lines. Includes the funded
+-- race obligation (authorized 150000 expense, 50000 paid, not reversed):
+-- cash     = debit-credit    = 550000  (600000 active attribution - 50000 paid);
+-- payable  = credit-debit    = 700000  (wip 600000 + race 150000 - 50000 paid);
+-- expense  = debit-credit    = 150000  (race obligation; expense chain reversed);
 -- WIP      = debit-credit    = 600000  (never reversed).
 select 1/case when (
   select coalesce(sum(debit_minor_units),0)-coalesce(sum(credit_minor_units),0)
   from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
-  where jl.project_id=:'s2_project' and sa.role='BANK_CASH')=200000
+  where jl.project_id=:'s2_project' and sa.role='BANK_CASH')=550000
   then 1 else 0 end as s2_ledger_cash_exact;
 select 1/case when (
   select coalesce(sum(credit_minor_units),0)-coalesce(sum(debit_minor_units),0)
   from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
-  where jl.project_id=:'s2_project' and sa.role='SUPPLIER_PAYABLE')=1200000
+  where jl.project_id=:'s2_project' and sa.role='SUPPLIER_PAYABLE')=700000
   then 1 else 0 end as s2_ledger_payable_exact;
 select 1/case when (
   select coalesce(sum(debit_minor_units),0)-coalesce(sum(credit_minor_units),0)
   from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
-  where jl.project_id=:'s2_project' and sa.role='PROJECT_EXPENSE')=1000000
+  where jl.project_id=:'s2_project' and sa.role='PROJECT_EXPENSE')=150000
   then 1 else 0 end as s2_ledger_expense_exact;
 select 1/case when (
   select coalesce(sum(debit_minor_units),0)-coalesce(sum(credit_minor_units),0)
