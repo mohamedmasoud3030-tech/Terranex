@@ -99,8 +99,8 @@ select gf24_run('00000000-0000-4000-8000-000000000001', format($q$
     'gf24-purchase-1'
   )$q$, :'gf24_project', :'gf24_supplier', :'gf24_cohort')) gf24_purchase \gset
 select 1/case when (
-  select purchase_in = 20 and current_quantity = 120
-  from livestock_cohort_quantity_rollforward where cohort_id = :'gf24_cohort'
+  select purchase_in = 20 and unsold_live_quantity = 120
+  from livestock_cohort_results_read where cohort_id = :'gf24_cohort'
 ) then 1 else 0 end as gf24_purchase_increases_derived_quantity;
 select 1/case when (
   select opening_headcount = 100 from livestock_cohorts where id = :'gf24_cohort'
@@ -167,8 +167,8 @@ select gf24_run('00000000-0000-4000-8000-000000000001', format($q$
     'gf24-purchase-future'
   )$q$, :'gf24_project', :'gf24_supplier', :'gf24_cohort')) gf24_purchase_future \gset
 select 1/case when (
-  select purchase_in = 20 and current_quantity = 120
-  from livestock_cohort_quantity_rollforward where cohort_id = :'gf24_cohort'
+  select purchase_in = 20 and unsold_live_quantity = 120
+  from livestock_cohort_results_read where cohort_id = :'gf24_cohort'
 ) then 1 else 0 end as gf24_future_purchase_is_not_current_quantity;
 
 -- ---------------------------------------------------------------------------
@@ -217,8 +217,8 @@ select gf24_run('00000000-0000-4000-8000-000000000001', format($q$
     '10000000-0000-4000-8000-000000000001', %L, current_date, 'إذن تسليم حي', 'gf24-sale-a-recognize'
   )$q$, :'gf24_sale_a')) gf24_recognition_a \gset
 select 1/case when (
-  select sale_out=60 and current_quantity=60
-  from livestock_cohort_quantity_rollforward where cohort_id=:'gf24_cohort'
+  select sale_out=60 and unsold_live_quantity=60
+  from livestock_cohort_results_read where cohort_id=:'gf24_cohort'
 ) then 1 else 0 end as gf24_sale_out_issues_quantity;
 select 1/case when (
   select control_state='CONTROL_TRANSFERRED' and recognized_revenue_minor_units='480000'

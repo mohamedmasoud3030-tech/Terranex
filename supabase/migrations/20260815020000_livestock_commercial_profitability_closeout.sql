@@ -50,47 +50,11 @@ insert into public.livestock_quantity_event_types(
   ('SALE_OUT',    -1, 'صادر بيع',            'GF-024', false, false, false)
 on conflict (code) do nothing;
 
--- Extend the derived rollforward to surface the two new classes. The view is
--- derived truth only; rebuilding it changes no stored ledger row.
-drop view public.livestock_cohort_quantity_rollforward;
-create view public.livestock_cohort_quantity_rollforward
-with (security_invoker=on) as
-select
-  c.id as cohort_id,
-  c.organization_id,
-  c.project_id,
-  c.cohort_reference,
-  c.opening_headcount,
-  coalesce(e.births, 0)::integer as births,
-  coalesce(e.purchase_in, 0)::integer as purchase_in,
-  coalesce(e.mortality, 0)::integer as mortality,
-  coalesce(e.sale_out, 0)::integer as sale_out,
-  coalesce(e.split_in, 0)::integer as split_in,
-  coalesce(e.split_out, 0)::integer as split_out,
-  coalesce(e.merge_in, 0)::integer as merge_in,
-  coalesce(e.merge_out, 0)::integer as merge_out,
-  coalesce(e.quantity_increase, 0)::integer as quantity_increase,
-  coalesce(e.quantity_decrease, 0)::integer as quantity_decrease,
-  public.livestock_cohort_quantity_as_of(c.id, current_timestamp) as current_quantity
-from public.livestock_cohorts c
-left join lateral (
-  select
-    sum(case when q.event_type = 'BIRTH'      then q.quantity else 0 end) as births,
-    sum(case when q.event_type = 'PURCHASE_IN' then q.quantity else 0 end) as purchase_in,
-    sum(case when q.event_type = 'MORTALITY'  then q.quantity else 0 end) as mortality,
-    sum(case when q.event_type = 'SALE_OUT'   then q.quantity else 0 end) as sale_out,
-    sum(case when q.event_type = 'SPLIT_IN'   then q.quantity else 0 end) as split_in,
-    sum(case when q.event_type = 'SPLIT_OUT'  then q.quantity else 0 end) as split_out,
-    sum(case when q.event_type = 'MERGE_IN'   then q.quantity else 0 end) as merge_in,
-    sum(case when q.event_type = 'MERGE_OUT'  then q.quantity else 0 end) as merge_out,
-    sum(case when t.direction = 1  then q.quantity else 0 end) as quantity_increase,
-    sum(case when t.direction = -1 then q.quantity else 0 end) as quantity_decrease
-  from public.livestock_quantity_events q
-  join public.livestock_quantity_event_types t on t.code = q.event_type
-  where q.cohort_id = c.id
-    and q.effective_at >= public.gf022_cohort_inception_at(c.id)
-    and q.effective_at <= current_timestamp
-) e on true;
+-- The GF-022 rollforward view is left intact: its column list is canonical
+-- and the GF-022 concurrency invariant reads it directly. GF-024 surfaces the
+-- two commercial classes only through its own read models, computed from the
+-- same immutable event ledger. The existing aggregate increase/decrease and
+-- current_quantity columns already include PURCHASE_IN and SALE_OUT.
 
 -- ===========================================================================
 -- 3. SCOPE A — Bounded external purchase intake.
@@ -1707,17 +1671,27 @@ left join public.cost_obligations o on o.id = jl.obligation_id;
 -- 9.I — Reproducible closeout controls. HARD blocks close; WARN stays visible.
 -- ---------------------------------------------------------------------------
 create view public.livestock_cohort_integrity_issues_read with (security_invoker=on) as
--- Quantity rollforward must reconcile exactly per class. A Cohort whose
--- operational inception is still in the future contributes zero as-of opening
--- quantity, so the check mirrors the exact GF-022 invariant.
+-- Quantity rollforward must reconcile exactly per class (including the two
+-- commercial classes). A Cohort whose operational inception is still in the
+-- future contributes zero as-of opening quantity.
 select r.organization_id, r.project_id, r.cohort_id, 'ROLLFORWARD_MISMATCH'::text as code,
   'HARD'::text as severity, 'الرصيد العددي المشتق لا يطابق مجموع الأحداث الثابتة.'::text as message_ar
 from public.livestock_cohort_quantity_rollforward r
 join public.livestock_cohorts_read c on c.id = r.cohort_id
 where r.current_quantity <>
       (case when c.is_operational_as_of_now then r.opening_headcount else 0 end)
-      + r.births + r.purchase_in + r.split_in + r.merge_in
-      - r.mortality - r.sale_out - r.split_out - r.merge_out
+      + r.births
+      + coalesce((select sum(q.quantity) from public.livestock_quantity_events q
+                  where q.cohort_id = c.id and q.event_type = 'PURCHASE_IN'
+                    and q.effective_at >= public.gf022_cohort_inception_at(c.id)
+                    and q.effective_at <= current_timestamp), 0)
+      + r.split_in + r.merge_in
+      - r.mortality
+      - coalesce((select sum(q.quantity) from public.livestock_quantity_events q
+                  where q.cohort_id = c.id and q.event_type = 'SALE_OUT'
+                    and q.effective_at >= public.gf022_cohort_inception_at(c.id)
+                    and q.effective_at <= current_timestamp), 0)
+      - r.split_out - r.merge_out
 union all
 -- No negative derived quantity.
 select r.organization_id, r.project_id, r.cohort_id, 'NEGATIVE_QUANTITY'::text as code,
@@ -1875,8 +1849,10 @@ select
   h.name as herd_name, h.species, h.purpose,
   public.livestock_current_cohort_state(c.id) as lifecycle_state,
   r.opening_headcount,
-  r.births, r.purchase_in, r.split_in, r.merge_in,
-  r.mortality, r.sale_out, r.split_out, r.merge_out,
+  r.births, coalesce(comm.purchase_in, 0)::integer as purchase_in,
+  r.split_in, r.merge_in,
+  r.mortality, coalesce(comm.sale_out, 0)::integer as sale_out,
+  r.split_out, r.merge_out,
   r.current_quantity as unsold_live_quantity,
   coalesce(cs.sale_count, 0) as sale_count,
   coalesce(cs.recognized_revenue, 0)::text as recognized_revenue_minor_units,
@@ -1888,7 +1864,8 @@ select
   (coalesce(cs.recognized_revenue, 0) - coalesce(cost.operating_cost, 0))::text
     as operating_result_to_date_minor_units,
   p.reporting_currency as currency,
-  case when r.sale_out > 0 then round(coalesce(cs.recognized_revenue, 0)::numeric / r.sale_out)::bigint::text
+  case when coalesce(comm.sale_out, 0) > 0
+       then round(coalesce(cs.recognized_revenue, 0)::numeric / coalesce(comm.sale_out, 0))::bigint::text
        else null end as realized_average_selling_price_minor_units,
   'UNAVAILABLE_NOT_RECOGNIZED_BY_CURRENT_POLICY'::text as unsold_live_quantity_value_status,
   'UNAVAILABLE_NOT_RECOGNIZED_BY_CURRENT_POLICY'::text as biological_asset_value_status,
@@ -1899,6 +1876,15 @@ join public.investment_projects p on p.id = c.project_id and p.organization_id =
 join public.livestock_herds h
   on (h.id, h.organization_id, h.project_id) = (c.herd_id, c.organization_id, c.project_id)
 join public.livestock_cohort_quantity_rollforward r on r.cohort_id = c.id
+left join lateral (
+  select
+    coalesce(sum(q.quantity) filter (where q.event_type = 'PURCHASE_IN'), 0) as purchase_in,
+    coalesce(sum(q.quantity) filter (where q.event_type = 'SALE_OUT'), 0) as sale_out
+  from public.livestock_quantity_events q
+  where q.cohort_id = c.id
+    and q.effective_at >= public.gf022_cohort_inception_at(c.id)
+    and q.effective_at <= current_timestamp
+) comm on true
 left join commercial_summary cs on cs.cohort_id = c.id
 left join collection_summary cc on cc.cohort_id = c.id
 left join cost_summary cost on cost.cohort_id = c.id

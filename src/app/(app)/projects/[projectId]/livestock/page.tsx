@@ -341,19 +341,17 @@ function QuantityRollforward({
   return (
     <table>
       <caption className="muted">
-        العدد الحالي المشتق = عدد افتتاحي + ولادات + شراء خارجي + وارد من تقسيم/دمج − نفوق − صادر بيع − صادر إلى تقسيم/دمج.
-        الأحداث المستقبلية لا تغيّر هذا الرصيد. رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
+        العدد الحالي المشتق = عدد افتتاحي + أحداث سارية حتى الآن + وارد من تقسيم/دمج − نفوق − صادر إلى تقسيم/دمج.
+        الشراء الإضافي والبيع يظهران في قسمَي المشتريات والمبيعات والنتيجة. الأحداث المستقبلية لا تغيّر هذا الرصيد. رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
       </caption>
       <thead>
         <tr>
           <th scope="col">الدفعة</th>
           <th scope="col">عدد افتتاحي</th>
           <th scope="col">+ ولادات</th>
-          <th scope="col">+ شراء خارجي</th>
           <th scope="col">+ وارد من تقسيم</th>
           <th scope="col">+ وارد من دمج</th>
           <th scope="col">− نفوق</th>
-          <th scope="col">− صادر بيع</th>
           <th scope="col">− صادر إلى تقسيم</th>
           <th scope="col">− صادر إلى دمج</th>
           <th scope="col">= العدد الحالي المشتق</th>
@@ -365,11 +363,9 @@ function QuantityRollforward({
             <th scope="row">{row.cohort_reference}</th>
             <td>{row.opening_headcount}</td>
             <td>{row.births}</td>
-            <td>{row.purchase_in}</td>
             <td>{row.split_in}</td>
             <td>{row.merge_in}</td>
             <td>{row.mortality}</td>
-            <td>{row.sale_out}</td>
             <td>{row.split_out}</td>
             <td>{row.merge_out}</td>
             <td><strong>{row.current_quantity}</strong></td>

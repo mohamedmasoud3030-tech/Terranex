@@ -239,8 +239,7 @@ fi
 INVARIANT="$(psql_value "select bool_and(
   r.current_quantity =
     (case when c.is_operational_as_of_now then r.opening_headcount else 0 end)
-    + r.births + r.split_in + r.merge_in
-    - r.mortality - r.split_out - r.merge_out)
+    + r.quantity_increase - r.quantity_decrease)
   from public.livestock_cohort_quantity_rollforward r
   join public.livestock_cohorts_read c on c.id = r.cohort_id")"
 if [[ "$INVARIANT" != 't' ]]; then

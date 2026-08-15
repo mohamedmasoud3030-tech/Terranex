@@ -152,11 +152,12 @@ psql_db "$UPGRADE_DB" -Atc "$AUTH select attribute_livestock_cohort_cost('$ORG',
 
 # 80 opening + 20 purchase - 40 sale_out = 60 unsold; revenue 320000, cost 100000.
 CHECK="$(psql_db "$UPGRADE_DB" -Atc "select (
-  (select opening_headcount=80 and purchase_in=20 and sale_out=40 and current_quantity=60
+  (select opening_headcount=80 and current_quantity=60
      from livestock_cohort_quantity_rollforward where cohort_id='$COHORT')
   and (select recognized_revenue_minor_units='320000' and cash_collected_minor_units='320000'
        and attributed_operating_cost_minor_units='100000' and operating_result_to_date_minor_units='220000'
-       and unsold_live_quantity=60 from livestock_cohort_results_read where cohort_id='$COHORT')
+       and purchase_in=20 and sale_out=40 and unsold_live_quantity=60
+       from livestock_cohort_results_read where cohort_id='$COHORT')
 )::text")"
 [[ "$CHECK" == true ]] || {
   echo "ERROR: GF-024 post-upgrade workflow failed ($CHECK)" >&2

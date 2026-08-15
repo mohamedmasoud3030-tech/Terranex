@@ -167,9 +167,7 @@ export type QuantityRollforwardRead = {
   cohort_reference: string;
   opening_headcount: number;
   births: number;
-  purchase_in: number;
   mortality: number;
-  sale_out: number;
   split_in: number;
   split_out: number;
   merge_in: number;
@@ -260,7 +258,7 @@ export const getLivestockMovements = (projectId: string) => many<MovementRead>(
 export const getLivestockQuantityRollforward = (projectId: string) =>
   many<QuantityRollforwardRead>(
     'livestock_cohort_quantity_rollforward',
-    'cohort_id,organization_id,project_id,cohort_reference,opening_headcount,births,purchase_in,mortality,sale_out,split_in,split_out,merge_in,merge_out,quantity_increase,quantity_decrease,current_quantity',
+    'cohort_id,organization_id,project_id,cohort_reference,opening_headcount,births,mortality,split_in,split_out,merge_in,merge_out,quantity_increase,quantity_decrease,current_quantity',
     projectId,
     'cohort_reference',
   );
