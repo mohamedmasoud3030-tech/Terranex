@@ -1,6 +1,6 @@
 # Terranex Greenfield — 07 UX & Information Architecture
 
-**Status:** Product UX baseline v1  
+**Status:** Product UX baseline v1
 **Design objective:** Make the next correct action obvious while preserving financial and audit depth.
 
 ## 1. Experience thesis
@@ -124,7 +124,8 @@ Split view: source/evidence, business summary, posting preview, approvals and ex
 - Percentages disclose basis; returns show date range and cash-flow scope.
 - “As of” appears on every balance/report.
 - Estimated, proposed, approved, posted, reconciled, paid, reversed, and closed have distinct badges.
-- Loading, empty, filtered-empty, error, no-access, offline, conflict, and stale-data states are distinct.
+- Loading, empty, filtered-empty, error, no-access, offline, conflict, stale-data, and **not-defined-by-approved-policy** states are distinct.
+- When a money, ownership, entitlement, or distribution metric is blocked by an unresolved business rule, show **«غير محدد بسياسة معتمدة» / “Not defined by approved policy”** with the missing-decision context; never show zero, a guessed number, or a generic-industry estimate.
 - Dashboard totals link to filtered ledgers; no dead KPI cards.
 
 ## 8. Arabic and localization
@@ -145,6 +146,7 @@ Initial glossary decisions:
 | Commitment | التزام رأسمالي |
 | Capital call | طلب مساهمة رأسمالية |
 | Contribution | مساهمة مستلمة |
+| Capital deployment | توظيف / تمويل رأسمال للمشروع |
 | Allocation | تخصيص نتيجة/حصة |
 | Distribution | توزيع مستحق |
 | Realized result | نتيجة محققة |
@@ -176,8 +178,8 @@ Initial glossary decisions:
 | Change bank instruction | Old/new masked comparison, re-auth, independent approval |
 | Post payment | beneficiary, account, amount, purpose, evidence, duplicates, cash impact |
 | Close/reopen period | blocker checklist, affected reports, reason, approver |
-| Allocate result | source period, rule version, participant lines, rounding, comparison |
-| Approve distribution | available/distributable cash bridge, obligations/reserve, lines, payment separation |
+| Allocate result | source period, approved rule version, participant lines, rounding, comparison |
+| Approve distribution | approved distributable-cash policy/basis, resulting amount, participant lines, payment separation; if policy is unresolved, the action is unavailable |
 | Reverse posting | original impact, reversal date/period, reason, replacement link |
 | Import opening data | totals, mapping, rejected rows, control balance, sign-off |
 
