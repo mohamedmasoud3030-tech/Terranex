@@ -180,7 +180,7 @@ Pricing numbers are a commercial experiment, not a product requirement. The firs
 
 ## 11. Kill criteria and sequencing
 
-Build the common Investment Operations Core and one technically complete sector pack before expanding breadth. That construction gate is satisfied by the Real Estate S0-S7 path and its synthetic end-to-end showcase; this is implementation evidence, not customer acceptance or commercial proof. The first operating market remains Egypt. Agriculture is the authorized second bounded sector and Livestock follows after Agriculture reaches its technical gate. Build one sector at a time and reuse the common core rather than creating sector-specific ownership, finance, payment, approval, or audit engines.
+Technical sector expansion was deliberately sequenced **Real Estate → Agriculture → Livestock** so the shared core could be proven without competing sector-specific ownership, finance, payment, approval, or audit engines. That authorized construction sequence is now complete through Agriculture GF-019 and Livestock GF-024. Preserve those bounded contexts and technical evidence; do not treat the historical sequence as an instruction to reopen or rebuild a completed sector.
 
 The Portfolio realignment is a **canonical management-model correction**, not authorization to rebuild the existing runtime or to invent portfolio/investor economics. Implementation that depends on unresolved ownership, funding, pooling, allocation, distribution, or cross-project rules must stop at the relevant roadmap gate until the company owner’s decision is recorded in `docs/OPEN_BUSINESS_DECISIONS.md`.
 
@@ -196,7 +196,7 @@ Validate common behavior against established industry patterns, authoritative st
 | P-004 | One investment core plus three bounded sector contexts |
 | P-005 | Exact double-entry operational/investment subledger; statutory accounting is integrated/exported |
 | P-006 | First paid pilot ships platform core plus the sector of the first contracted customer |
-| P-007 | Technical sector construction may continue before customer validation: Real Estate first, Agriculture second, Livestock third; validation and commercial evidence remain separately gated |
+| P-007 | Technical sector construction was sequenced Real Estate first, Agriculture second, Livestock third; technical completion remains separate from customer/commercial validation |
 | P-008 | Investment Portfolio is the organization’s management/reporting parent above independent Investment Projects; it is not automatically a fund, legal entity, SPV, pooled vehicle, or investor pool |
 | P-009 | Portfolio capital deployment/project funding is distinct from investor contribution, ownership, allocation, distribution, and payment; unresolved investor/legal/economic rules are explicit business decisions, never inferred defaults |
 
@@ -210,5 +210,5 @@ Validate common behavior against established industry patterns, authoritative st
 - [AGRIVI Farm Enterprise](https://www.agrivi.com/products/360-farm-enterprise/)
 - [AgriWebb animal management](https://www.agriwebb.com/us/solutions/animal-management/)
 - [ILPA Capital Call & Distribution Template](https://ilpa.org/industry-guidance/templates-standards-model-documents/ilpa-templates-hub/ilpa-capital-call-distribution-template/)
-- [Egypt FRA — Financial Technology](https://fra.gov.eg/en/%D8%A7%D9%84%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9/)
+- [Egypt FRA — Financial Technology](https://fra.gov.eg/en/%D8%A7%D9%84%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9)
 - [Egypt FRA — Digital real-estate fund platforms](https://fra.gov.eg/fra_news/%D8%A7%D9%84%D8%B1%D9%82%D8%A7%D8%A8%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9-%D8%AA%D8%B5%D8%AF%D8%B1-%D8%B6%D9%88%D8%A7%D8%A8%D8%B7-%D8%A5%D9%86%D8%B4%D8%A7%D8%A1-%D8%A7%D9%84%D9%85%D9%86/)

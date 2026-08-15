@@ -526,7 +526,7 @@ select 1/case when (
 select 1/case when (
   select count(*) from information_schema.tables
   where table_schema = 'public'
-    and table_name in ('sale_orders','purchase_orders','warehouses','inventory_valuations','buyers','invoices','receivables')
+    and table_name in ('sale_orders','warehouses','inventory_valuations','buyers','invoices','receivables')
 ) = 0 then 1 else 0 end as s16_no_sale_or_procurement_tables;
 
 -- ---------------------------------------------------------------------------

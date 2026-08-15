@@ -34,7 +34,8 @@ describe('GF-012 canonical governance contract', () => {
     expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(merged\)/);
     expect(roadmap).toMatch(/GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate/);
     expect(execution).toMatch(/GF-013 — Agriculture Sector Foundation/);
-    expect(execution).toMatch(/Livestock is the active sector/);
+    expect(execution).toMatch(/Livestock \(GF-020–GF-024/);
+    expect(execution).toMatch(/GF-020 →\nGF-024 Livestock\) is \*\*closed\*\*/);
   });
 
   it('states the Agriculture delivery state truthfully across canonical docs', () => {
@@ -43,13 +44,17 @@ describe('GF-012 canonical governance contract', () => {
     const execution = read('GREENFIELD_EXECUTION.md');
 
     // R0 canonical text: all three sector paths are technically implemented
-    // for their authorized scopes, and the historical expansion sequence is
+    // for their authorized scopes, the historical expansion sequence is
     // closed at GF-024 (older "Livestock is the active sector" wording is
-    // stale per AGENTS.md itself).
+    // stale per AGENTS.md itself), R0 and the R1 Portfolio Foundation slice
+    // are merged, and the active roadmap is R0–R17 with the hard stop at R13.
     expect(policy).toMatch(
-      /Agriculture GF-013 through GF-019, and Livestock GF-020 through GF-024 are technically implemented/,
+      /Agriculture \(GF-013 through GF-019\), and Livestock \(GF-020 through GF-024\) are technically implemented/,
     );
     expect(policy).toMatch(/The historical sector-expansion sequence is closed at GF-024/);
+    expect(policy).toMatch(/R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance — is \*\*merged\*\*/);
+    expect(policy).toMatch(/R1 — Portfolio Foundation \(merged through PR #139\)/);
+    expect(policy).toMatch(/hard stop at R13/);
     expect(policy).not.toMatch(/Agriculture is next\b/);
     expect(execution).toMatch(/GF-014 — Field Activity Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
     expect(execution).toMatch(/GF-015 — Field Input Application Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
