@@ -97,7 +97,6 @@ select 1/case when (
 ) then 1 else 0 end as withdrawal_window_explicit_and_queryable;
 select 1/case when (select count(*)=2 from livestock_active_withdrawals where project_id=:'gf23_project')
  then 1 else 0 end as active_withdrawal_read_model_truthful;
-
 select 1/case when gf20_catch('00000000-0000-4000-8000-000000000001',format($q$
  select public.record_livestock_health_event(
   '10000000-0000-4000-8000-000000000001',%L,%L,null,'TREATMENT',null,null,%L,
@@ -304,11 +303,17 @@ select 1/case when gf20_owner_catch(format($q$
 $q$,:'gf23_ag_project')) like '%livestock project not found%'
  then 1 else 0 end as privileged_wrong_sector_rejected;
 
--- New operational facts create no hidden Finance/commercial side effects.
+-- GF-023 operational facts create no hidden Finance/commercial side effects.
+-- Later releases may register commercial event classes globally; the invariant
+-- here is that this GF-023 fixture itself never emits such events.
 select 1/case when (select count(*) from journal_batches)=:'gf23_jb_before'
  and (select count(*) from journal_lines)=:'gf23_jl_before'
  and (select count(*) from project_payments)=:'gf23_pay_before'
- and not exists(select 1 from livestock_quantity_event_types where code in ('SALE_OUT','PURCHASE_IN'))
+ and not exists(
+   select 1 from livestock_quantity_events
+   where project_id=:'gf23_project'
+     and event_type in ('SALE_OUT','PURCHASE_IN')
+ )
  then 1 else 0 end as no_finance_or_commercial_side_effect;
 
 select 'GF-023 Livestock Operations Completion PASS' result;
