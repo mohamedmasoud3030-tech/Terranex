@@ -63,7 +63,7 @@ Mandatory rules:
 
 ## Current delivery gate
 
-Real Estate, Agriculture GF-013 through GF-019, and Livestock GF-020 through GF-024 are technically implemented for their authorized scopes on `main`. GF-023 and GF-024 are merged; older text describing GF-021/GF-022 as the active slices is stale and must not drive new work.
+Agriculture GF-013 through GF-019 is technically implemented. Livestock is the active sector in the historical sector-expansion sequence, and Livestock GF-020 through GF-024 is now technically implemented for its authorized scope on `main`. GF-023 and GF-024 are merged; older text describing GF-021/GF-022 as the active slices is stale and must not drive new work.
 
 The active governance task is **R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance**. R0 is documentation/governance only:
 
