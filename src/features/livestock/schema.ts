@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isValidMajorMoney } from '@/shared/money';
 
 const uuid = z.string().uuid('معرّف غير صالح');
 const idempotencyKey = z.string().trim().min(8).max(120);
@@ -14,6 +15,12 @@ function optionalText(max: number) {
     z.string().trim().max(max).nullable().optional(),
   );
 }
+
+const dateRequired = z.string().min(1, 'التاريخ مطلوب');
+const majorMoney = (message: string) =>
+  z.string().trim().refine((value) => isValidMajorMoney(value, 'EGP'), message);
+const positiveCount = (message: string) =>
+  z.string().trim().regex(/^[1-9]\d*$/, message);
 
 export const SITE_TYPES = ['FARM', 'BARN', 'PASTURE', 'OTHER'] as const;
 export const SPECIES = ['CATTLE', 'BUFFALO', 'SHEEP', 'GOAT'] as const;
@@ -256,9 +263,6 @@ export const DISPOSAL_METHODS = [
   'PENDING',
 ] as const;
 
-const positiveCount = (message: string) =>
-  z.string().trim().regex(/^[1-9]\d*$/, message);
-
 export const livestockBirthSchema = z.object({
   ...context,
   cohortId: uuid,
@@ -360,3 +364,133 @@ export type LivestockBirthInput = z.infer<typeof livestockBirthSchema>;
 export type LivestockMortalityInput = z.infer<typeof livestockMortalitySchema>;
 export type LivestockSplitInput = z.infer<typeof livestockSplitSchema>;
 export type LivestockMergeInput = z.infer<typeof livestockMergeSchema>;
+
+// ---------------------------------------------------------------------------
+// GF-024 — Livestock commercial, profitability & closeout.
+//
+// Physical quantity is exact integer headcount; money is parsed to minor
+// units only at the RPC boundary. No schema accepts an editable profit,
+// COGS, inventory value, or fair-value figure.
+// ---------------------------------------------------------------------------
+
+/** Finance-oriented cost categories on a Cohort attribution (labels only). */
+export const LIVESTOCK_COST_CATEGORIES = [
+  'ACQUISITION',
+  'FEED',
+  'HEALTH',
+  'LABOR',
+  'FACILITIES',
+  'TRANSPORT',
+  'OTHER',
+] as const;
+
+const purchaseLineInputSchema = z.object({
+  cohortId: uuid,
+  quantity: positiveCount('عدد الشراء يجب أن يكون عددًا صحيحًا أكبر من صفر'),
+  /** Optional commercial agreement snapshot, never a posting. */
+  agreedUnitPrice: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? null : value,
+    majorMoney('سعر الاتفاق يجب أن يكون موجبًا بدقة العملة').nullable().optional(),
+  ),
+});
+
+const purchaseLinesJson = z.string().transform((value, ctx) => {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    ctx.addIssue({ code: 'custom', message: 'سطور الشراء غير صالحة' });
+    return z.NEVER;
+  }
+}).pipe(z.array(purchaseLineInputSchema).min(1, 'أضف سطر شراء واحدًا على الأقل').max(50));
+
+export const livestockPurchaseSchema = z.object({
+  ...context,
+  supplierPartyId: uuid,
+  purchaseReference: z.string().trim().min(1, 'مرجع الشراء مطلوب').max(120),
+  agreementReference: optionalText(200),
+  effectiveAt: z.string().min(1, 'تاريخ ووقت الاستلام مطلوب'),
+  evidenceReference: optionalText(200),
+  notes: optionalText(2000),
+  linesJson: purchaseLinesJson,
+});
+
+const saleLineInputSchema = z.object({
+  cohortId: uuid,
+  quantity: positiveCount('عدد البيع يجب أن يكون عددًا صحيحًا أكبر من صفر'),
+  unitPrice: majorMoney('سعر الوحدة يجب أن يكون موجبًا بدقة العملة'),
+});
+
+const saleLinesJson = z.string().transform((value, ctx) => {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    ctx.addIssue({ code: 'custom', message: 'سطور البيع غير صالحة' });
+    return z.NEVER;
+  }
+}).pipe(z.array(saleLineInputSchema).min(1, 'أضف سطر بيع واحدًا على الأقل').max(50));
+
+export const livestockSaleSchema = z.object({
+  ...context,
+  buyerPartyId: uuid,
+  saleReference: z.string().trim().min(1, 'مرجع البيع مطلوب').max(120),
+  agreementReference: optionalText(200),
+  saleDate: dateRequired,
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  terms: optionalText(1000),
+  evidenceReference: optionalText(200),
+  linesJson: saleLinesJson,
+});
+
+export const livestockSaleApprovalSchema = z.object({
+  ...context,
+  saleId: uuid,
+});
+
+export const livestockSaleRecognitionSchema = livestockSaleApprovalSchema.extend({
+  controlTransferDate: dateRequired,
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل التسليم مطلوب').max(200),
+});
+
+export const livestockSaleCollectionSchema = z.object({
+  ...context,
+  recognitionId: uuid,
+  cashAccountId: uuid,
+  amount: majorMoney('أدخل مبلغ تحصيل موجبًا بدقة العملة'),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  collectionDate: dateRequired,
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل التحصيل مطلوب').max(200),
+});
+
+export const livestockCostAttributionSchema = z.object({
+  ...context,
+  cohortId: uuid,
+  sourceJournalLineId: uuid,
+  amount: majorMoney('أدخل مبلغ التحمل موجبًا بدقة العملة'),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  costCategory: z.enum(LIVESTOCK_COST_CATEGORIES, { message: 'تصنيف التكلفة غير صالح' }),
+  policyReference: z.string().trim().min(3, 'مرجع سياسة التحمل مطلوب').max(200),
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل التحمل مطلوب').max(200),
+});
+
+export const livestockCostAttributionReversalSchema = z.object({
+  ...context,
+  attributionId: uuid,
+  reason: z.string().trim().min(3, 'سبب العكس مطلوب').max(500),
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل العكس مطلوب').max(200),
+});
+
+export const livestockCloseoutSchema = z.object({
+  ...context,
+  cohortId: uuid,
+  closeReason: z.string().trim().min(3, 'سبب الإقفال مطلوب').max(500),
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل الإقفال مطلوب').max(200),
+});
+
+export type LivestockPurchaseInput = z.infer<typeof livestockPurchaseSchema>;
+export type LivestockSaleInput = z.infer<typeof livestockSaleSchema>;
+export type LivestockSaleApprovalInput = z.infer<typeof livestockSaleApprovalSchema>;
+export type LivestockSaleRecognitionInput = z.infer<typeof livestockSaleRecognitionSchema>;
+export type LivestockSaleCollectionInput = z.infer<typeof livestockSaleCollectionSchema>;
+export type LivestockCostAttributionInput = z.infer<typeof livestockCostAttributionSchema>;
+export type LivestockCostAttributionReversalInput = z.infer<typeof livestockCostAttributionReversalSchema>;
+export type LivestockCloseoutInput = z.infer<typeof livestockCloseoutSchema>;

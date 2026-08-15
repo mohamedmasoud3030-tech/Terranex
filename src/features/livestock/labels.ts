@@ -131,3 +131,49 @@ export const DERIVED_ORIGIN_LABEL: Record<string, string> = {
   SPLIT_FROM_COHORT: 'ناتجة عن تقسيم دفعة — لا يوجد عدد افتتاحي',
   MERGED_FROM_COHORTS: 'ناتجة عن دمج دفعات — لا يوجد عدد افتتاحي',
 };
+
+// ---------------------------------------------------------------------------
+// GF-024 — Livestock commercial, profitability & closeout labels.
+// ---------------------------------------------------------------------------
+
+/** GF-024 quantity event classes added to the GF-022 registry. */
+export const COMMERCIAL_QUANTITY_EVENT_LABEL: Record<string, string> = {
+  PURCHASE_IN: 'شراء / إضافة خارجية',
+  SALE_OUT: 'صادر بيع',
+};
+
+export const SALE_CONTROL_STATE_LABEL: Record<string, string> = {
+  DRAFT: 'مسودة',
+  APPROVED: 'معتمد',
+  CONTROL_TRANSFERRED: 'تم نقل السيطرة',
+  SETTLED: 'محصّل بالكامل',
+};
+
+/** Finance-oriented cost categories (labels only; no posting). */
+export const LIVESTOCK_COST_CATEGORY_LABEL: Record<string, string> = {
+  ACQUISITION: 'اقتناء / شراء',
+  FEED: 'علف',
+  HEALTH: 'صحة وعلاج',
+  LABOR: 'عمالة',
+  FACILITIES: 'مرافق',
+  TRANSPORT: 'نقل',
+  OTHER: 'أخرى',
+};
+
+/** Honest metric-status labels; never a fabricated value. */
+export const METRIC_STATUS_LABEL: Record<string, string> = {
+  UNAVAILABLE_NOT_RECOGNIZED_BY_CURRENT_POLICY: 'غير متاح — لا يُعترف به بالسياسة الحالية',
+  NOT_GUESSED: 'غير مُخمَّن — لا توجد تكلفة بضاعة مباعة',
+};
+
+export function formatSaleControlState(state: string): string {
+  return SALE_CONTROL_STATE_LABEL[state] ?? state;
+}
+
+export function formatLivestockCostCategory(category: string): string {
+  return LIVESTOCK_COST_CATEGORY_LABEL[category] ?? category;
+}
+
+export function formatMetricStatus(status: string): string {
+  return METRIC_STATUS_LABEL[status] ?? status;
+}

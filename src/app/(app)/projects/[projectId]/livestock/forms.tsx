@@ -4,15 +4,23 @@ import { useActionState, useState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
 import { useCommandIdempotencyKey } from '@/features/livestock/use-command-idempotency-key';
 import {
+  approveLivestockSale,
+  attributeLivestockCohortCost,
+  closeLivestockCohort,
+  collectLivestockSaleReceivable,
   createLivestockCohort,
   createLivestockHerd,
   createLivestockProfile,
+  createLivestockSale,
   createLivestockSite,
   mergeLivestockCohorts,
+  recognizeLivestockSale,
   recordLivestockBirth,
   recordLivestockMortality,
   recordLivestockMovement,
+  recordLivestockPurchase,
   recordLivestockWeightEvent,
+  reverseLivestockCohortCostAttribution,
   splitLivestockCohort,
   transitionLivestockCohort,
 } from '@/features/livestock/actions';
@@ -20,6 +28,7 @@ import {
   COHORT_ORIGINS,
   DISPOSAL_METHODS,
   HERD_PURPOSES,
+  LIVESTOCK_COST_CATEGORIES,
   MORTALITY_CAUSES,
   SITE_TYPES,
   SPECIES,
@@ -29,6 +38,7 @@ import {
 } from '@/features/livestock/schema';
 import {
   DISPOSAL_METHOD_LABEL,
+  LIVESTOCK_COST_CATEGORY_LABEL,
   MORTALITY_CAUSE_LABEL,
   ORIGIN_LABEL,
   PURPOSE_LABEL,
@@ -42,8 +52,14 @@ import type {
   CohortRead,
   CurrentPlacementRead,
   HerdRead,
+  LivestockCostAttributionRead,
+  LivestockCostSourceRead,
+  LivestockSaleRead,
   SiteRead,
 } from '@/features/livestock/queries';
+
+type PartyOption = Readonly<{ id: string; legal_name: string }>;
+type CashAccountOption = Readonly<{ cash_account_id: string; name: string; currency: string }>;
 
 const initialState: ActionState = {};
 
@@ -857,6 +873,512 @@ export function MergeForm({
       </p>
       <div className="full">
         <SubmitResult state={state} pending={pending} label="دمج الدفعات" />
+      </div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GF-024 — Livestock commercial, profitability & closeout forms.
+// ---------------------------------------------------------------------------
+
+function PurchaseLinesEditor({
+  cohorts,
+}: Readonly<{ cohorts: readonly CohortRead[] }>) {
+  const [lines, setLines] = useState<Array<{
+    cohortId: string;
+    quantity: string;
+    agreedUnitPrice: string;
+  }>>([{ cohortId: cohorts[0]?.id ?? '', quantity: '', agreedUnitPrice: '' }]);
+  if (cohorts.length === 0) return null;
+  const update = (index: number, patch: Partial<(typeof lines)[number]>) => {
+    setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)));
+  };
+  return (
+    <div className="full stack">
+      {lines.map((line, index) => (
+        <div className="responsive-grid" key={index}>
+          <label>
+            <span>الدفعة</span>
+            <select
+              value={line.cohortId}
+              onChange={(event) => update(index, { cohortId: event.target.value })}
+            >
+              {cohorts.map((cohort) => (
+                <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>عدد الرؤوس</span>
+            <input
+              value={line.quantity}
+              onChange={(event) => update(index, { quantity: event.target.value })}
+              inputMode="numeric"
+              pattern="[1-9][0-9]*"
+              required
+            />
+          </label>
+          <label>
+            <span>سعر اتفاق الرأس <span className="muted">(اختياري — لقطة تجارية لا تُرحَّل)</span></span>
+            <input
+              value={line.agreedUnitPrice}
+              onChange={(event) => update(index, { agreedUnitPrice: event.target.value })}
+              inputMode="decimal"
+              placeholder="0.00"
+            />
+          </label>
+          <div>
+            <button
+              type="button"
+              onClick={() => setLines((current) => current.filter((_, i) => i !== index))}
+              disabled={lines.length === 1}
+            >
+              حذف السطر
+            </button>
+          </div>
+        </div>
+      ))}
+      <div>
+        <button type="button" onClick={() => setLines((current) => [...current, { cohortId: cohorts[0].id, quantity: '', agreedUnitPrice: '' }])}>
+          إضافة سطر شراء
+        </button>
+      </div>
+      <input type="hidden" name="linesJson" value={JSON.stringify(lines.map((line) => ({ ...line, quantity: line.quantity.trim(), agreedUnitPrice: line.agreedUnitPrice.trim() || null })))} />
+    </div>
+  );
+}
+
+function SaleLinesEditor({ cohorts }: Readonly<{ cohorts: readonly CohortRead[] }>) {
+  const [lines, setLines] = useState<Array<{ cohortId: string; quantity: string; unitPrice: string }>>(
+    [{ cohortId: cohorts[0]?.id ?? '', quantity: '', unitPrice: '' }],
+  );
+  if (cohorts.length === 0) return null;
+  const update = (index: number, patch: Partial<(typeof lines)[number]>) => {
+    setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)));
+  };
+  return (
+    <div className="full stack">
+      {lines.map((line, index) => (
+        <div className="responsive-grid" key={index}>
+          <label>
+            <span>الدفعة</span>
+            <select
+              value={line.cohortId}
+              onChange={(event) => update(index, { cohortId: event.target.value })}
+            >
+              {cohorts.map((cohort) => (
+                <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>عدد الرؤوس</span>
+            <input
+              value={line.quantity}
+              onChange={(event) => update(index, { quantity: event.target.value })}
+              inputMode="numeric"
+              pattern="[1-9][0-9]*"
+              required
+            />
+          </label>
+          <label>
+            <span>سعر الرأس</span>
+            <input
+              value={line.unitPrice}
+              onChange={(event) => update(index, { unitPrice: event.target.value })}
+              inputMode="decimal"
+              required
+            />
+          </label>
+          <div>
+            <button
+              type="button"
+              onClick={() => setLines((current) => current.filter((_, i) => i !== index))}
+              disabled={lines.length === 1}
+            >
+              حذف السطر
+            </button>
+          </div>
+        </div>
+      ))}
+      <div>
+        <button type="button" onClick={() => setLines((current) => [...current, { cohortId: cohorts[0].id, quantity: '', unitPrice: '' }])}>
+          إضافة سطر بيع
+        </button>
+      </div>
+      <input type="hidden" name="linesJson" value={JSON.stringify(lines.map((line) => ({ ...line, quantity: line.quantity.trim(), unitPrice: line.unitPrice.trim() })))} />
+    </div>
+  );
+}
+
+/** SCOPE A — external purchase intake (additive PURCHASE_IN, no Finance effect). */
+export function PurchaseForm({
+  cohorts,
+  parties,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  cohorts: readonly CohortRead[];
+  parties: readonly PartyOption[];
+}>) {
+  const [state, action, pending] = useActionState(recordLivestockPurchase, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-purchase', state, commandNonce);
+  if (cohorts.length === 0) return <p className="muted">فعّل دفعة أولًا قبل تسجيل شراء إضافي.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>المورد</span>
+        <select name="supplierPartyId">
+          {parties.map((party) => (
+            <option key={party.id} value={party.id}>{party.legal_name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>مرجع الشراء</span>
+        <input name="purchaseReference" required maxLength={120} />
+      </label>
+      <label>
+        <span>تاريخ ووقت الاستلام</span>
+        <input name="effectiveAt" type="datetime-local" required />
+      </label>
+      <label>
+        <span>مرجع العقد <span className="muted">(اختياري)</span></span>
+        <input name="agreementReference" maxLength={200} />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <label className="full">
+        <span>ملاحظات <span className="muted">(اختياري)</span></span>
+        <textarea name="notes" maxLength={2000} />
+      </label>
+      <PurchaseLinesEditor cohorts={cohorts} />
+      <p className="muted full">
+        إضافة شراء تزيد الرصيد العددي المشتق فقط. لا ينشئ عنها قيد محاسبي أو مستحق أو تقييم.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تسجيل الشراء" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE B — bounded sale draft (no quantity or accounting effect yet). */
+export function SaleForm({
+  cohorts,
+  parties,
+  currency,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  cohorts: readonly CohortRead[];
+  parties: readonly PartyOption[];
+  currency: string;
+}>) {
+  const [state, action, pending] = useActionState(createLivestockSale, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-sale', state, commandNonce);
+  if (cohorts.length === 0) return <p className="muted">فعّل دفعة أولًا قبل إنشاء مسودة بيع.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <input type="hidden" name="currency" value={currency} />
+      <label>
+        <span>المشتري</span>
+        <select name="buyerPartyId">
+          {parties.map((party) => (
+            <option key={party.id} value={party.id}>{party.legal_name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>مرجع البيع</span>
+        <input name="saleReference" required maxLength={120} />
+      </label>
+      <label>
+        <span>تاريخ البيع</span>
+        <input name="saleDate" type="date" required />
+      </label>
+      <label>
+        <span>مرجع العقد <span className="muted">(اختياري)</span></span>
+        <input name="agreementReference" maxLength={200} />
+      </label>
+      <label>
+        <span>شروط البيع <span className="muted">(اختياري)</span></span>
+        <input name="terms" maxLength={1000} />
+      </label>
+      <label>
+        <span>مرجع الدليل <span className="muted">(اختياري)</span></span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
+      <SaleLinesEditor cohorts={cohorts} />
+      <p className="muted full">
+        المسودة لا تصرف أي رأس ولا تعترف بأي إيراد. الصرف الفعلي والاعتراف المالي يحدثان عند نقل السيطرة.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="حفظ مسودة البيع" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE B — OWNER approval (control, not recognition). */
+export function SaleApprovalForm({
+  sales,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ sales: readonly LivestockSaleRead[] }>) {
+  const [state, action, pending] = useActionState(approveLivestockSale, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-sale-approve', state, commandNonce);
+  if (sales.length === 0) return <p className="muted">لا توجد مسودة بيع بانتظار الاعتماد.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>مسودة البيع</span>
+        <select name="saleId">
+          {sales.map((sale) => (
+            <option key={sale.sale_id} value={sale.sale_id}>{sale.sale_reference}</option>
+          ))}
+        </select>
+      </label>
+      <p className="muted full">الاعتماد خطوة رقابية؛ لا يحرك المخزون ولا يقيّد الإيراد.</p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="اعتماد البيع" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE B — control transfer: atomic SALE_OUT + revenue/receivable recognition. */
+export function SaleRecognitionForm({
+  sales,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ sales: readonly LivestockSaleRead[] }>) {
+  const [state, action, pending] = useActionState(recognizeLivestockSale, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-sale-recognize', state, commandNonce);
+  if (sales.length === 0) return <p className="muted">لا يوجد بيع معتمد بانتظار نقل السيطرة.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>البيع المعتمد</span>
+        <select name="saleId">
+          {sales.map((sale) => (
+            <option key={sale.sale_id} value={sale.sale_id}>{sale.sale_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>تاريخ نقل السيطرة</span>
+        <input name="controlTransferDate" type="date" required />
+      </label>
+      <label>
+        <span>مرجع دليل التسليم</span>
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <p className="muted full">
+        نقل السيطرة يصرف الرؤوس (SALE_OUT) ويعترف بالإيراد والذمة المدينة في معاملة واحدة؛ لا تكلفة بضاعة مباعة ولا تقييم.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="نقل السيطرة والاعتراف بالإيراد" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE C — collection against the recognized receivable. */
+export function SaleCollectionForm({
+  sales,
+  cashAccounts,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  sales: readonly LivestockSaleRead[];
+  cashAccounts: readonly CashAccountOption[];
+}>) {
+  const [state, action, pending] = useActionState(collectLivestockSaleReceivable, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-collection', state, commandNonce);
+  if (sales.length === 0) return <p className="muted">لا يوجد بيع معترف به بانتظار التحصيل.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>البيع المعترف به</span>
+        <select name="recognitionId">
+          {sales.map((sale) => (
+            <option key={sale.recognition_id!} value={sale.recognition_id!}>
+              {sale.sale_reference} · المتبقي {sale.outstanding_receivable_minor_units}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>حساب النقدية</span>
+        <select name="cashAccountId">
+          {cashAccounts.map((account) => (
+            <option key={account.cash_account_id} value={account.cash_account_id}>{account.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>مبلغ التحصيل</span>
+        <input name="amount" inputMode="decimal" required />
+      </label>
+      <label>
+        <span>تاريخ التحصيل</span>
+        <input name="collectionDate" type="date" required />
+      </label>
+      <label>
+        <span>مرجع دليل التحصيل</span>
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <p className="muted full">التحصيل نقدية مقابل ذمة مدينة؛ لا يُعاد تصنيفه كإيراد. السقف محسوب من الحقائق الثابتة.</p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تسجيل التحصيل" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE D — attribute a posted Finance expense to a Cohort (no posting). */
+export function CostAttributionForm({
+  cohorts,
+  sources,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{
+  cohorts: readonly CohortRead[];
+  sources: readonly LivestockCostSourceRead[];
+}>) {
+  const [state, action, pending] = useActionState(attributeLivestockCohortCost, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-cost', state, commandNonce);
+  if (sources.length === 0) return <p className="muted">لا يوجد مصدر مصروف تشغيلي مرحّل قابل للتحميل.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>الدفعة</span>
+        <select name="cohortId">
+          {cohorts.map((cohort) => (
+            <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>مصدر المصروف المرحّل</span>
+        <select name="sourceJournalLineId">
+          {sources.map((source) => (
+            <option key={source.source_journal_line_id} value={source.source_journal_line_id}>
+              {source.description} · المتاح {source.available_amount_minor_units}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>المبلغ المُحمَّل</span>
+        <input name="amount" inputMode="decimal" required />
+      </label>
+      <label>
+        <span>تصنيف التكلفة</span>
+        <select name="costCategory">
+          {LIVESTOCK_COST_CATEGORIES.map((category) => (
+            <option key={category} value={category}>{LIVESTOCK_COST_CATEGORY_LABEL[category]}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>مرجع السياسة</span>
+        <input name="policyReference" required minLength={3} maxLength={200} />
+      </label>
+      <label>
+        <span>مرجع الدليل</span>
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <p className="muted full">
+        التحمل بُعد تحليلي فوق قيد مالي مرحّل قائم؛ لا ينشئ قيدًا ولا قيمة مستقلة ولا ربحًا قابلًا للتحرير.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="تحميل التكلفة على الدفعة" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE D — append-only offset of a cost attribution. */
+export function CostAttributionReversalForm({
+  attributions,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ attributions: readonly LivestockCostAttributionRead[] }>) {
+  const [state, action, pending] = useActionState(reverseLivestockCohortCostAttribution, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-cost-reverse', state, commandNonce);
+  if (attributions.length === 0) return <p className="muted">لا يوجد تحميل تكلفة نشط لعكسه.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>تحميل التكلفة</span>
+        <select name="attributionId">
+          {attributions.map((attribution) => (
+            <option key={attribution.id} value={attribution.id}>
+              {LIVESTOCK_COST_CATEGORY_LABEL[attribution.cost_category]} · {attribution.attributed_amount_minor_units}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>سبب العكس</span>
+        <input name="reason" required minLength={3} maxLength={500} />
+      </label>
+      <label>
+        <span>مرجع الدليل</span>
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="عكس تحميل التكلفة" />
+      </div>
+    </form>
+  );
+}
+
+/** SCOPE E — technical closeout; never a lifecycle mutation. */
+export function CloseoutForm({
+  cohorts,
+  commandNonce,
+  ...context
+}: CommandContext & Readonly<{ cohorts: readonly CohortRead[] }>) {
+  const [state, action, pending] = useActionState(closeLivestockCohort, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('ls-closeout', state, commandNonce);
+  if (cohorts.length === 0) return <p className="muted">لا توجد دفعة لإقفالها تقنيًا.</p>;
+  return (
+    <form action={action} className="form-grid">
+      <CommandFields {...context} idempotencyKey={idempotencyKey} />
+      <label>
+        <span>الدفعة</span>
+        <select name="cohortId">
+          {cohorts.map((cohort) => (
+            <option key={cohort.id} value={cohort.id}>{cohort.cohort_reference}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>سبب الإقفال</span>
+        <input name="closeReason" required minLength={3} maxLength={500} />
+      </label>
+      <label>
+        <span>مرجع الدليل</span>
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <p className="muted full">
+        الإقفال تقني وليس انتقال حالة دورة حياة: الدفعة المستنفدة تبقى نشطة، والإقفال المالي يبقى عبر S6.
+      </p>
+      <div className="full">
+        <SubmitResult state={state} pending={pending} label="إقفال تقني للدفعة" />
       </div>
     </form>
   );
