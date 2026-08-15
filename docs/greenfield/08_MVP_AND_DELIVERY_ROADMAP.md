@@ -298,7 +298,7 @@ For held Real Estate assets, reuse the shared Finance Core to support the narrow
 
 Complete owner-facing Portfolio reporting and operational hardening: project-level composition, as-of/currency/completeness semantics, permissions/RLS, audit, migration/recovery proof, reconciliation paths, performance, Arabic/RTL/mobile/accessibility, and regression protection across the existing sectors. Portfolio remains a projection/management layer over project-authoritative truth.
 
-**R5 exit:** Portfolio can organize and review Projects, approve/observe non-economic deployment planning, drill into project truth, and include narrow Real Estate rental income without introducing unapproved investor/legal/economic behavior.
+**R5 exit:** Portfolio can organize and review Projects, approve/observe non-posting management deployment planning, drill into project truth, and include narrow Real Estate rental income without introducing unapproved investor/legal/economic behavior.
 
 ## 16. Hard stop after R5 — owner decision required
 
