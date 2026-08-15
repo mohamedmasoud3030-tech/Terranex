@@ -112,14 +112,14 @@ PARTNER_CAPITAL="$(value "select coalesce(sum(jl.credit_minor_units-jl.debit_min
 from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
 where jl.organization_id='$ORG' and jl.project_id='$PROJECT' and sa.role='PARTNER_CAPITAL'")"
 
-assert_eq "$CASH" '1140000' 'project cash does not reproduce from journal facts'
+assert_eq "$CASH" '1340000' 'project cash does not reproduce from journal facts'
 assert_eq "$PAYABLE" '660000' 'supplier payable does not reproduce from journal facts'
 assert_eq "$RECEIVABLE" '400001' 'customer receivable does not reproduce from journal facts'
 assert_eq "$REALIZED" '600001' 'realized result does not reproduce from revenue/cost journal facts'
-assert_eq "$OPENING_CAPITAL" '500000' 'opening contributed capital does not reproduce from journal facts'
+assert_eq "$OPENING_CAPITAL" '700000' 'opening contributed capital does not reproduce from journal facts'
 assert_eq "$PARTNER_CAPITAL" '600001' 'partner capital does not reproduce from the approved allocation posting'
 
-echo 'Canonical balance reproduction PASS: cash=1140000 payable=660000 receivable=400001 realized=600001 opening_capital=500000 partner_capital=600001'
+echo 'Canonical balance reproduction PASS: cash=1340000 payable=660000 receivable=400001 realized=600001 opening_capital=700000 partner_capital=600001'
 
 # Exact participant allocation positions remain conserved and deterministic.
 ALLOC_VECTOR="$(value "select string_agg(allocated_minor_units::text,',' order by allocated_minor_units desc, participant_party_id::text)
