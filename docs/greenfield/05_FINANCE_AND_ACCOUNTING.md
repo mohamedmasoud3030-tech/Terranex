@@ -1,6 +1,6 @@
 # Terranex Greenfield — 05 Finance & Accounting Model
 
-**Status:** Foundational finance contract v1  
+**Status:** Foundational finance contract v1
 **Purpose:** Exact project financial attribution plus approved investor-capital behavior. Portfolio roll-ups are derived management views. This is an accounting design input, not a claim of IFRS, tax, or statutory compliance.
 
 ## 1. Accounting boundary
@@ -27,7 +27,7 @@ The customer’s statutory general ledger remains external in v1. Terranex expor
 | Book/view | Purpose | Source |
 |---|---|---|
 | Project subledger | Asset, liability, income, cost, cash, and equity movements by project/sector object | Posted journal lines |
-| Partner capital ledger | Commitment, called, contributed, allocated income/loss, distributions, receivable/payable | Posted capital/accounting events |
+| Partner capital ledger | Commitment, called, contributed, allocated income/loss, distributions, receivable/payable when an approved participant model uses them | Posted capital/accounting events |
 | Cash/bank subledger | Book movements and bank reconciliation | Receipts/payments + statement matches |
 | Obligation ledger | Supplier/customer/partner amounts due and settlement state | Obligations, invoices/claims, settlements |
 | Operational inventory/asset rollforward | Quantity and cost linkage | Sector events + financial postings |
@@ -113,7 +113,7 @@ These values must not be collapsed:
 - **distribution payable**: approved value due to participant;
 - **cash paid**: settled distribution.
 
-Partner capital rollforward:
+Where an approved participant model uses partner capital, its rollforward is:
 
 $$
 ClosingCapital = OpeningCapital + Contributions + AllocatedIncome - AllocatedLoss - Distributions + OtherApprovedCapitalAdjustments
@@ -186,11 +186,11 @@ Portfolio profitability is a **derived roll-up of project-authoritative measures
 | Forecast at completion | Actual + open commitments + approved forecast remainder |
 | Management valuation | Latest approved valuation with date/method/source; separate from realized result |
 | Net asset view | Assets less liabilities under selected policy and data completeness |
-| Distributable cash | Approved formula: available cash less restricted/reserve/near-term obligations |
+| Distributable cash | Available only when an approved policy defines the exact scope, deductions/reserves, and calculation; otherwise not defined by approved policy |
 | MOIC | Total value/distributions basis divided by contributed capital, with basis disclosed |
 | IRR/XIRR | Dated cash-flow return using disclosed scope; never displayed without data-quality status |
 
-Do not show one unlabeled “profit.” At minimum distinguish realized result, unrealized valuation movement, cash surplus, and distributable cash.
+Do not show one unlabeled “profit.” At minimum distinguish realized result, unrealized valuation movement, cash surplus, and distributable cash. A blocked/undefined measure is not displayed as zero or estimated from a generic formula.
 
 ## 11. Asset and sector accounting policy matrix
 
@@ -216,7 +216,7 @@ Close gates:
 6. missing documents and pending material approvals resolved;
 7. FX rates and posting rules complete;
 8. sector cycle/milestone cut-off confirmed;
-9. partner capital rollforward balances to equity/control totals;
+9. partner capital rollforward balances to equity/control totals when the participant-capital model is enabled;
 10. close report and exception evidence approved.
 
 Closing stores control results and locks through a database-enforced rule. Reopen records reason, approver, affected statements, and revised-close version.
@@ -240,12 +240,12 @@ Egypt’s ETA exposes e-invoicing/e-receipt APIs for taxpayer ERP/POS systems. I
 
 - randomized journal batches cannot post unbalanced;
 - duplicate command/posting keys produce one material effect;
-- historical allocation is unchanged after a new agreement version;
-- concurrent distribution/payment requests cannot over-distribute;
+- historical allocation is unchanged after a new agreement version when allocation is enabled;
+- concurrent distribution/payment requests cannot over-distribute when distribution is enabled;
 - closed period rejects ordinary post and preserves approved late-post route;
 - reversal exactly negates source and links replacement;
 - cross-organization and cross-project references are rejected;
-- partner capital statement rolls forward exactly from postings;
+- partner capital statement rolls forward exactly from postings when that statement is enabled;
 - currency/rounding property tests preserve totals;
 - import/reconciliation retries are idempotent.
 
