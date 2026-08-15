@@ -210,5 +210,5 @@ Validate common behavior against established industry patterns, authoritative st
 - [AGRIVI Farm Enterprise](https://www.agrivi.com/products/360-farm-enterprise/)
 - [AgriWebb animal management](https://www.agriwebb.com/us/solutions/animal-management/)
 - [ILPA Capital Call & Distribution Template](https://ilpa.org/industry-guidance/templates-standards-model-documents/ilpa-templates-hub/ilpa-capital-call-distribution-template/)
-- [Egypt FRA — Financial Technology](https://fra.gov.eg/en/%D8%A7%D9%84%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9/)
+- [Egypt FRA — Financial Technology](https://fra.gov.eg/en/%D8%A7%D9%84%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9/)
 - [Egypt FRA — Digital real-estate fund platforms](https://fra.gov.eg/fra_news/%D8%A7%D9%84%D8%B1%D9%82%D8%A7%D8%A8%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9-%D8%AA%D8%B5%D8%AF%D8%B1-%D8%B6%D9%88%D8%A7%D8%A8%D8%B7-%D8%A5%D9%86%D8%B4%D8%A7%D8%A1-%D8%A7%D9%84%D9%85%D9%86/)
