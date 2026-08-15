@@ -182,7 +182,7 @@ select gf24_run('00000000-0000-4000-8000-000000000001', format($q$
     'gf24-sale-a'
   )$q$, :'gf24_project', :'gf24_buyer', :'gf24_cohort')) gf24_sale_a \gset
 select 1/case when (
-  select status='DRAFT' and line_count=1 and agreed_total_minor_units::bigint=480000
+  select control_state='DRAFT' and line_count=1 and agreed_total_minor_units::bigint=480000
   from livestock_sales_read where sale_id=:'gf24_sale_a'
 ) then 1 else 0 end as gf24_draft_sale_created;
 select 1/case when (
