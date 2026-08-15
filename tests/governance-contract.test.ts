@@ -42,9 +42,14 @@ describe('GF-012 canonical governance contract', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     const execution = read('GREENFIELD_EXECUTION.md');
 
-    // GF-013 through GF-019 close Agriculture; Livestock is next authorized.
-    expect(policy).toMatch(/Agriculture GF-013 through GF-019 is technically implemented/);
-    expect(policy).toMatch(/Livestock is the active sector/);
+    // R0 canonical text: all three sector paths are technically implemented
+    // for their authorized scopes, and the historical expansion sequence is
+    // closed at GF-024 (older "Livestock is the active sector" wording is
+    // stale per AGENTS.md itself).
+    expect(policy).toMatch(
+      /Agriculture GF-013 through GF-019, and Livestock GF-020 through GF-024 are technically implemented/,
+    );
+    expect(policy).toMatch(/The historical sector-expansion sequence is closed at GF-024/);
     expect(policy).not.toMatch(/Agriculture is next\b/);
     expect(execution).toMatch(/GF-014 — Field Activity Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
     expect(execution).toMatch(/GF-015 — Field Input Application Foundation\n\nStatus: \*\*MERGED — TECHNICALLY COMPLETE\*\*/);
@@ -77,5 +82,22 @@ describe('GF-012 canonical governance contract', () => {
     expect(execution).toMatch(/LATEST PRODUCTION ALIAS VERIFICATION PENDING/);
     expect(execution).toMatch(/real-customer validation, buyer UAT, and commercial Phase 2\/3 evidence: not started\/not passed/);
     expect(readme).toMatch(/synthetic demo is never customer evidence/);
+  });
+
+  it('records R1 Portfolio Foundation as management-only with economics excluded', () => {
+    const execution = read('GREENFIELD_EXECUTION.md');
+    const adr = read('docs/decisions/0025_R1_PORTFOLIO_FOUNDATION.md');
+    const migration = read('supabase/migrations/20260815030000_r1_portfolio_foundation.sql');
+
+    expect(execution).toMatch(/R1 — Portfolio Foundation/);
+    expect(execution).toMatch(/one current parent portfolio per\s+project/i);
+    // R1 must stay economically neutral: additive migration, no backfill.
+    expect(execution).toMatch(/additive and backfills nothing/i);
+    expect(adr).toMatch(/not\*?\*? a fund, SPV, legal entity/i);
+    expect(adr).toMatch(/BD-001/);
+    // The migration itself must not introduce investor/economic schema.
+    expect(migration.toLowerCase()).not.toMatch(/\binvestor_id\b/);
+    expect(migration.toLowerCase()).not.toMatch(/\bownership\b\s+(text|uuid|numeric)/);
+    expect(migration.toLowerCase()).not.toMatch(/\bnav\b/);
   });
 });

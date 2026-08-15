@@ -1,28 +1,8 @@
-'use client';
-
-import { useMemo, useState } from 'react';
-import type { ActionState } from '@/features/auth/actions';
-import { commandIdempotencyKey } from './idempotency';
-
 /**
- * Owns the current idempotency key for a mounted command form.
+ * GF-020 command-form idempotency hook.
  *
- * The nonce is generated in the owning Server Component and passed in as
- * `serverNonce`, so the server-rendered HTML and the client hydration agree on
- * the exact same key — no random value is produced during a client render. The
- * key is stable while the action state reports the same `successCount` (failed
- * retries reuse it) and rotates exactly once after a confirmed success
- * increments `successCount`.
+ * R1 (Portfolio Foundation) promoted the canonical implementation to
+ * `@/shared/idempotency`. This shim preserves the existing GF-020 import
+ * path and behavior exactly.
  */
-export function useCommandIdempotencyKey(
-  prefix: string,
-  state: ActionState,
-  serverNonce: string,
-): string {
-  const [nonce] = useState(serverNonce);
-  const successCount = state.successCount ?? 0;
-  return useMemo(
-    () => commandIdempotencyKey(prefix, nonce, successCount),
-    [prefix, nonce, successCount],
-  );
-}
+export { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';

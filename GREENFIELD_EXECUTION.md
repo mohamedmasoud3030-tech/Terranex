@@ -1,6 +1,6 @@
 # Greenfield Execution Status
 
-**Updated:** 2026-08-13  
+**Updated:** 2026-08-15  
 **Canonical branch:** `main`
 **Strategy:** Product-first, Egypt-first, thin vertical slices
 
@@ -335,6 +335,81 @@ Real Estate row in the forward-upgrade fixture survives the
 GF-013 migration and remains `sector = 'REAL_ESTATE'`.
 
 Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
+
+### R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance
+
+Status: **MERGED**. Documentation/governance only: Organization →
+Investment Portfolio → Investment Project as the management hierarchy,
+Portfolio as management/reporting parent (never automatically a fund, legal
+entity, SPV, pooled vehicle, or investor pool), Project as the independent
+operational/budget/financial-attribution/execution/close boundary, the
+portfolio-capital-deployment vs investor-capital separation, and the client
+idempotency-key lifecycle rule. No schema, runtime, or UI change was
+authorized by R0.
+
+### R1 — Portfolio Foundation
+
+Status: **IMPLEMENTED — VERIFIED LOCALLY, PR PENDING MERGE REVIEW**. Branch
+`r1/portfolio-foundation` from exact `origin/main`.
+
+Delivered in this slice:
+
+1. `investment_portfolios` — organization-scoped management/reporting
+   parent with identity, management purpose, a descriptive responsible
+   manager (ACTIVE member only, database-enforced), and the narrow
+   `DRAFT | ACTIVE | ARCHIVED` lifecycle. No currency, NAV, capital, fee,
+   reserve, investor, or ownership column: R1 has no economic semantics.
+2. `investment_portfolio_state_history` — append-only causal status chain
+   (S3/GF-013 pattern) with a database coherence trigger; explicit,
+   reason-carrying, expected-status-aware transitions
+   (`DRAFT → ACTIVE`, `ACTIVE → ARCHIVED`, `DRAFT → ARCHIVED`; no backward
+   or re-asserting transition). Activation creates nothing; archiving never
+   touches member projects.
+3. `portfolio_project_assignments` — one current parent portfolio per
+   project (canonical ERD cardinality), organization-coherent composite
+   foreign keys, soft-close-only rows so membership history remains
+   explainable, and delete/rewrite refusal triggers. The migration is
+   additive and backfills nothing: no existing project silently gains a
+   parent.
+4. Six security-definer commands (`create_investment_portfolio`,
+   `update_investment_portfolio_metadata`, `transition_investment_portfolio`,
+   `assign_project_to_portfolio`, `remove_project_from_portfolio`,
+   `move_project_to_portfolio`) with the GF-013 idempotency-key/request-hash/
+   advisory-lock pattern, same-transaction audit events, and
+   `is_active_member` authorization. Metadata update is convergent and
+   refused on archived portfolios.
+5. Default-deny forced RLS, single authenticated SELECT policy per table,
+   `security_invoker` read views, and authenticated-only command grants.
+6. Arabic/RTL Portfolio workspace inside the existing application shell:
+   list, create, detail with lifecycle actions, safe metadata editing,
+   project membership with assign/remove/move, membership and status
+   history, and Portfolio → Project drill-down into the existing sector
+   workspaces. No second shell, no duplicate project workspace, and no
+   financial number that would require an OPEN business decision.
+7. Client idempotency-key lifecycle promoted to `src/shared/idempotency`
+   (two real consumers per the shared-code rule); GF-020 import paths are
+   preserved through re-export shims.
+8. Database verification: `75_r1_portfolio_foundation.sql` (creation,
+   validation, idempotency, lifecycle rejection, manager membership guard,
+   same-organization membership, one-parent rule, remove/move controls,
+   append-only guards, write denial, audit), `76_r1_portfolio_two_tenant.sql`
+   (cross-tenant read/mutate/assign denial and FK coherence), and
+   `77_r1_portfolio_forward_upgrade.sh` (pre-R1 Real Estate/Agriculture/
+   Livestock fixtures preserved exactly; no fabricated memberships).
+   Application verification adds R1 schema/RPC/error/UI contract tests and
+   idempotency-key lifecycle regression for successive successful
+   submissions.
+9. Local gate note: the full `npm run db:test` gate PASSED in the delivery
+   environment on local PostgreSQL 17 (CI's canonical job runs PostgreSQL
+   16); lint, typecheck, `vitest run`, and `next build` all pass. The
+   repository CI app and database jobs remain the merge gate.
+
+Explicit non-scope: investor pooling, portfolio ownership, capital rules,
+cross-project transfers or netting, any second finance/ledger/audit core,
+and every item in `docs/OPEN_BUSINESS_DECISIONS.md` (BD-001 … BD-012 remain
+OPEN and unneeded by R1).
+
+Canonical decision: `docs/decisions/0025_R1_PORTFOLIO_FOUNDATION.md`.
 
 ## Explicitly deferred
 
