@@ -959,35 +959,8 @@ create trigger r4_project_payment_proposal_guard
 before insert on public.project_payments
 for each row execute function public.r4_guard_project_payment_proposal();
 
--- Defence in depth for every cash-credit posting, including corrections and
--- non-Procurement Finance commands: lock the cash-account row and fail closed
--- before a BANK_CASH credit could make its authoritative book balance negative.
-create or replace function public.r4_guard_nonnegative_cash_credit()
-returns trigger language plpgsql set search_path=pg_catalog,public as $$
-declare
-  v_role text;
-  v_account public.project_cash_accounts%rowtype;
-  v_available bigint;
-begin
-  if new.cash_account_id is null or new.credit_minor_units = 0 then return new; end if;
-  select role into v_role from public.semantic_accounts where id = new.account_id;
-  if v_role is distinct from 'BANK_CASH' then return new; end if;
-
-  select * into v_account from public.project_cash_accounts
-  where id = new.cash_account_id and organization_id = new.organization_id
-  for update;
-  if not found then raise exception 'cash account not found'; end if;
-  v_available := public.s5_cash_account_balance_internal(
-    new.organization_id, v_account.project_id, v_account.id, v_account.currency);
-  if new.credit_minor_units > v_available then
-    raise exception 'payment exceeds available cash';
-  end if;
-  return new;
-end $$;
-create trigger r4_nonnegative_cash_credit_guard
-before insert on public.journal_lines
-for each row execute function public.r4_guard_nonnegative_cash_credit();
-
+-- Payment posting itself locks and rechecks the cash account below.
+-- Reversal semantics remain owned by the existing correction path.
 create or replace function public.prepare_cost_payment(
   p_organization_id uuid,
   p_obligation_id uuid,

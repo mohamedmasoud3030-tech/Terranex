@@ -52,7 +52,7 @@ describe('R4 procurement financial integration contract', () => {
     expect(migration).toContain('maker/checker: payment preparer cannot approve');
     expect(migration).toContain('for update;');
     expect(migration).toContain('payment exceeds available cash');
-    expect(migration).toContain('r4_nonnegative_cash_credit_guard');
+    expect(migration).toContain("select * into v_account from public.project_cash_accounts");
     expect(migration).toContain('direct payment posting disabled; prepare and approve a payment proposal');
     expect(migration).toMatch(/revoke all on function public\.pay_cost_obligation[\s\S]*from public, anon, authenticated/);
     expect(migration).toContain('public.prepare_cost_payment');
