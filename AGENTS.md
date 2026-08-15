@@ -34,7 +34,7 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 - Do not refactor, port, or recreate legacy business logic by default.
 - Do not copy legacy entities, migrations, workflows, routes, financial rules, tests, or product documentation into Greenfield.
 - A generic technical fragment may be reused only after a written assessment proves it matches the Greenfield contracts and introduces no hidden domain assumption.
-- Real Estate remains the first implemented sector pack. Agriculture is the authorized second sector and Livestock follows it; build them sequentially, never as competing duplicate cores.
+- Sector expansion history is Real Estate first, Agriculture second, Livestock third; all three authorized technical paths now exist. Preserve their bounded contexts and shared core rather than reopening the historical sequence or creating competing duplicate cores.
 - Terranex is a private operational system in v1, not crowdfunding, custody, a public marketplace, or a statutory general ledger.
 - Investment Portfolio is a management/reporting parent above independent projects. Do not treat it as a fund, legal entity, SPV, pooled vehicle, investor pool, or second ledger unless an explicit later business decision establishes that meaning.
 
@@ -63,7 +63,7 @@ Mandatory rules:
 
 ## Current delivery gate
 
-Agriculture GF-013 through GF-019 is technically implemented. Livestock is the active sector in the historical sector-expansion sequence, and Livestock GF-020 through GF-024 is now technically implemented for its authorized scope on `main`. GF-023 and GF-024 are merged; older text describing GF-021/GF-022 as the active slices is stale and must not drive new work.
+Real Estate, Agriculture GF-013 through GF-019, and Livestock GF-020 through GF-024 are technically implemented for their currently authorized scopes. The historical sector-expansion sequence is closed at GF-024; older text describing Livestock or GF-021/GF-022 as the active slices is stale and must not drive new work.
 
 The active governance task is **R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance**. R0 is documentation/governance only:
 
