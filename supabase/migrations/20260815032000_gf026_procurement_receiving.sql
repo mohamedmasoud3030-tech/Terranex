@@ -18,13 +18,23 @@
 -- concurrent receipts — and again by a BEFORE INSERT trigger). The unit is
 -- derived server-side from the order line (never asserted by the browser).
 -- Receipts and their lines are append-only.
+--
+-- Structural coherence: every receipt line is bound by composite foreign
+-- keys to (a) its receipt header's (id, purchase_order, organization) and
+-- (id, project, organization), and (b) its order line's
+-- (id, purchase_order, organization), so the database itself makes a
+-- receipt line that references another purchase order's line — or a
+-- different project than its header — impossible even for a buggy or
+-- privileged future command.
 
 -- ===========================================================================
--- 0. Composite-FK support: purchase_order_lines needs (id, organization_id).
---    (id is already a PK, so this constraint only adds a supporting index.)
+-- 0. Composite-FK support: purchase_order_lines needs (id, purchase_order_id,
+--    organization_id) uniqueness so receipt lines can be structurally bound
+--    to the order line AND the order it belongs to.
 -- ===========================================================================
 alter table public.purchase_order_lines
-  add constraint purchase_order_lines_id_org_key unique (id, organization_id);
+  add constraint purchase_order_lines_id_po_org_key
+    unique (id, purchase_order_id, organization_id);
 
 -- ===========================================================================
 -- 1. Purchase Receipts (project-scoped, tied to an APPROVED purchase order)
@@ -46,6 +56,8 @@ create table public.purchase_receipts (
   foreign key (purchase_order_id, organization_id)
     references public.purchase_orders(id, organization_id) on delete restrict,
   unique (id, organization_id),
+  unique (id, project_id, organization_id),
+  unique (id, purchase_order_id, organization_id),
   unique (organization_id, idempotency_key)
 );
 
@@ -55,15 +67,31 @@ create table public.purchase_receipt_lines (
   project_id uuid not null references public.investment_projects(id) on delete restrict,
   purchase_receipt_id uuid not null references public.purchase_receipts(id) on delete restrict,
   purchase_order_line_id uuid not null references public.purchase_order_lines(id) on delete restrict,
+  -- The order the receipt belongs to (server-derived from the receipt
+  -- header, never asserted by the browser). Carried so the database can
+  -- structurally prove that every receipt line references an order line of
+  -- the SAME purchase order as the receipt header.
+  purchase_order_id uuid not null,
   quantity_received numeric(20,6) not null check (quantity_received > 0),
   unit text not null check (char_length(trim(unit)) between 1 and 20),
   notes text check (notes is null or char_length(trim(notes)) between 1 and 1000),
   created_at timestamptz not null default now(),
   unique (id, purchase_receipt_id),
-  foreign key (purchase_receipt_id, organization_id)
-    references public.purchase_receipts(id, organization_id) on delete restrict,
-  foreign key (purchase_order_line_id, organization_id)
-    references public.purchase_order_lines(id, organization_id) on delete restrict
+  -- Structural coherence: the receipt id + order id + organization must
+  -- match the receipt header (a receipt line can never point at another
+  -- order than its receipt's order) …
+  foreign key (purchase_receipt_id, purchase_order_id, organization_id)
+    references public.purchase_receipts(id, purchase_order_id, organization_id) on delete restrict,
+  -- … and the order line + order id + organization must match the order
+  -- line's own order (a receipt line can never reference a line belonging
+  -- to another purchase order), plus the header/line project coherence via
+  -- the receipt's (id, project, organization) key.
+  foreign key (purchase_order_line_id, purchase_order_id, organization_id)
+    references public.purchase_order_lines(id, purchase_order_id, organization_id) on delete restrict,
+  foreign key (purchase_receipt_id, project_id, organization_id)
+    references public.purchase_receipts(id, project_id, organization_id) on delete restrict,
+  foreign key (project_id, organization_id)
+    references public.investment_projects(id, organization_id) on delete restrict
 );
 
 create index purchase_receipts_org_project_idx on public.purchase_receipts(organization_id, project_id);
@@ -164,6 +192,26 @@ begin
   if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
     raise exception 'invalid idempotency key';
   end if;
+
+  -- Replay detection FIRST: the request fingerprint, key lock, and replay
+  -- lookup run before any state-dependent validation, so a response-loss
+  -- retry of an already-committed receipt returns the same result instead
+  -- of being rejected by the over-receipt check (which must only apply to
+  -- genuinely new receipts).
+  select encode(digest(
+    p_purchase_order_id::text || '|' || trim(p_evidence_reference) || '|'
+    || coalesce(trim(p_notes), '') || '|' || p_purchase_order_line_ids::text || '|' || p_quantities::text,
+    'sha256'), 'hex') into v_hash;
+  perform pg_advisory_xact_lock(hashtextextended(
+    p_organization_id::text || ':gf026-receipt:' || trim(p_idempotency_key), 0));
+
+  select * into v_existing from public.purchase_receipts
+   where organization_id = p_organization_id and idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
+    return v_existing.id;
+  end if;
+
   if not exists (
     select 1 from public.investment_projects p
      where p.id = p_project_id and p.organization_id = p_organization_id
@@ -205,20 +253,6 @@ begin
     if v_received + v_n > v_ordered then raise exception 'received quantity exceeds ordered quantity'; end if;
   end loop;
 
-  select encode(digest(
-    p_purchase_order_id::text || '|' || trim(p_evidence_reference) || '|'
-    || coalesce(trim(p_notes), '') || '|' || p_purchase_order_line_ids::text || '|' || p_quantities::text,
-    'sha256'), 'hex') into v_hash;
-  perform pg_advisory_xact_lock(hashtextextended(
-    p_organization_id::text || ':gf026-receipt:' || trim(p_idempotency_key), 0));
-
-  select * into v_existing from public.purchase_receipts
-   where organization_id = p_organization_id and idempotency_key = trim(p_idempotency_key);
-  if found then
-    if v_existing.request_hash <> v_hash then raise exception 'idempotency key payload mismatch'; end if;
-    return v_existing.id;
-  end if;
-
   insert into public.purchase_receipts(
     organization_id, project_id, purchase_order_id, evidence_reference, notes,
     received_by, idempotency_key, request_hash
@@ -229,15 +263,18 @@ begin
 
   for v_i in 1..cardinality(p_purchase_order_line_ids) loop
     -- Unit is derived from the order line; the browser never asserts it.
+    -- purchase_order_id is derived from the receipt header (server-side),
+    -- never from the browser, and binds the line to the receipt's order
+    -- through the composite foreign keys.
     select l.unit into v_unit from public.purchase_order_lines l
      where l.id = p_purchase_order_line_ids[v_i]
        and l.organization_id = p_organization_id;
     insert into public.purchase_receipt_lines(
       organization_id, project_id, purchase_receipt_id, purchase_order_line_id,
-      quantity_received, unit
+      purchase_order_id, quantity_received, unit
     ) values (
       p_organization_id, p_project_id, v_id, p_purchase_order_line_ids[v_i],
-      p_quantities[v_i], v_unit
+      p_purchase_order_id, p_quantities[v_i], v_unit
     );
   end loop;
 
