@@ -44,6 +44,9 @@ function domainError(prev: ActionState, message: string | undefined, fallback: s
   if (text.includes('organization owner required') || text.includes('maker/checker')) return fail(prev, 'اعتماد هذا المستند يتطلب مالك المنظمة، ويجب ألا يكون هو نفس طالب المستند.');
   if (text.includes('active supplier not found')) return fail(prev, 'المورد المحدد غير موجود أو غير نشط في هذه المنظمة.');
   if (text.includes('source purchase request not found')) return fail(prev, 'طلب الشراء المصدر غير موجود في هذه المنظمة.');
+  if (text.includes('source purchase request must belong to the same project and be approved')) return fail(prev, 'طلب الشراء المصدر يجب أن ينتمي إلى نفس المشروع ويكون معتمدًا.');
+  if (text.includes('source purchase request must be approved')) return fail(prev, 'طلب الشراء المصدر يجب أن يكون معتمدًا.');
+  if (text.includes('expected delivery date cannot be in the past')) return fail(prev, 'تاريخ التسليم المتوقع لا يمكن أن يكون في الماضي.');
   if (text.includes('purchase request not found')) return fail(prev, 'طلب الشراء غير موجود في هذه المنظمة.');
   if (text.includes('purchase order not found')) return fail(prev, 'أمر الشراء غير موجود في هذه المنظمة.');
   if (text.includes('purchase request is not in draft')) return fail(prev, 'طلب الشراء ليس في حالة مسودة ولا يمكن إرساله.');
