@@ -17,12 +17,12 @@ Primary navigation stays small:
 2. **Investments** — portfolios, projects, and opportunities;
 3. **Operations** — sector-specific work queues and plans;
 4. **Money** — cash, obligations, sales, capital, reconciliation, close;
-5. **Investors** — participants, calls, allocations, distributions, statements;
+5. **Investors** — shown only when an approved participant/investor model applies; participants, calls, allocations, distributions, statements;
 6. **Documents** — evidence, expiry, missing items;
 7. **Reports** — project/portfolio/investor packs;
 8. **Settings** — organization, roles, policies, integrations.
 
-On mobile, show Home, Investments, Operations, Money, and More. Investor-role users receive a separate minimal portal: Overview, Investments, Activity, Documents, Profile.
+On mobile, show Home, Investments, Operations, Money, and More. Investor-role users receive a separate minimal portal only when investor-facing behavior is enabled: Overview, Investments, Activity, Documents, Profile.
 
 ## 3. Portfolio workspace
 
@@ -43,9 +43,9 @@ Opening a project keeps persistent context:
 
 - name, sector, lifecycle, manager, date range;
 - data quality and close status;
-- cash, realized result, committed cost, valuation, distributable cash—each explicitly labeled;
+- cash, realized result, committed cost, valuation, and distributable cash only when an approved policy defines it—each explicitly labeled;
 - urgent exceptions and next milestone;
-- tabs: Overview, Operations, Money, Investors, Documents, Reports, Timeline.
+- tabs: Overview, Operations, Money, Investors (when enabled), Documents, Reports, Timeline.
 
 Sector tab vocabulary changes by sector; the project shell does not.
 
@@ -58,7 +58,7 @@ Sector tab vocabulary changes by sector; the project shell does not.
 ### Owner/investment manager
 
 - decisions/approvals due;
-- projects off plan, cash pressure, overdue obligations/calls;
+- projects off plan, cash pressure, overdue obligations/calls where applicable;
 - stale valuations and close status;
 - portfolio performance with explicit realized/valued distinction;
 - recent material events.
@@ -69,7 +69,7 @@ Sector tab vocabulary changes by sector; the project shell does not.
 - obligations/payment proposals;
 - missing evidence/mappings;
 - close checklist and posting/integration failures;
-- capital calls, allocations, distributions requiring action.
+- capital calls, allocations, distributions requiring action only when those workflows are enabled under approved terms.
 
 ### Sector operator
 
@@ -80,6 +80,8 @@ Sector tab vocabulary changes by sector; the project shell does not.
 - recent records and correction route.
 
 ### Investor
+
+When an investor role is enabled under an approved participant model:
 
 - own contributed capital, allocated result, distributions, and current position;
 - calls/notices and due dates;
@@ -105,7 +107,7 @@ Header contains state, reference, project, date, owner, amount/quantity, and act
 
 ### Wizard
 
-Use only for setup or complex, infrequent actions: project activation, agreement version, opening import, allocation, distribution, close. Steps show validation and saved draft; final review summarizes changes and effects before submit.
+Use only for setup or complex, infrequent actions: project activation, agreement version, opening import, allocation, distribution, close. Investor-specific wizard actions appear only when their governing workflow is enabled. Steps show validation and saved draft; final review summarizes changes and effects before submit.
 
 ### Quick capture
 
@@ -179,6 +181,8 @@ Initial glossary decisions:
 | Reverse posting | original impact, reversal date/period, reason, replacement link |
 | Import opening data | totals, mapping, rejected rows, control balance, sign-off |
 
+Investor/agreement-specific risky actions are present only when their governing model is enabled; the UX pattern does not authorize the underlying business rule.
+
 No dark patterns, false urgency, hidden fees, or optimistic “success” before server commit.
 
 ## 12. Empty-state onboarding
@@ -188,10 +192,10 @@ Real production accounts start empty. Onboarding uses a checklist, not fabricate
 1. configure organization/currency;
 2. invite minimum roles;
 3. create or select the management portfolio, then create the first project;
-4. add agreement and sector baseline;
+4. add approved agreement terms where applicable and the sector baseline;
 5. import/review opening data if needed;
-6. post first contribution/cost;
-7. generate first project statement.
+6. post the first applicable funding/contribution fact and first operating cost;
+7. generate the first required project statement/report.
 
 A separate clearly labeled sandbox/demo organization may contain guided sample data.
 
@@ -210,9 +214,9 @@ Validate each workflow during its delivery slice and before production release. 
 - one owner/manager;
 - one finance/accounting user;
 - one operator from the first launch sector;
-- one investor/partner.
+- one investor/partner only when investor-facing behavior is in scope.
 
-Tasks: activate project, record contribution, capture sector event, post cost/payment, close period, approve distribution, understand investor statement, correct an error. Measure completion, errors, terminology confusion, and reliance on facilitator—not visual preference alone.
+Always test project activation, sector-event capture, cost/payment, close, Portfolio → Project drill-down, and correction. When an approved investor model is enabled, additionally test contribution, allocation/distribution, and investor-statement understanding. Measure completion, errors, terminology confusion, and reliance on facilitator—not visual preference alone.
 
 ## 15. UX acceptance criteria
 
@@ -222,6 +226,6 @@ Tasks: activate project, record contribution, capture sector event, post cost/pa
 - no material action is available outside its permission/state;
 - mobile operator flow takes the minimum necessary fields and can draft offline;
 - finance can see business meaning and journal effect;
-- investor cannot see another investor’s data;
+- when an investor role is enabled, the investor cannot see another investor’s data;
 - Arabic layout is verified independently from English;
 - reports communicate date, policy/basis, status, and data completeness.
