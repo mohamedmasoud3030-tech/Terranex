@@ -1,7 +1,7 @@
 # Terranex — Open Business Decisions
 
 **Status:** Canonical unresolved-business register  
-**Owner:** Product owner / company owner for business intent; qualified accounting/legal review where the consequence requires it  
+**Decision authority:** Terranex product owner for general product boundaries/mechanics; the authorized owner/business decision-maker of the target company for that company’s legal, funding, investor, ownership, allocation, and distribution facts; qualified accounting/legal review where the consequence requires it  
 **Rule:** An OPEN item is not a backlog feature and is not permission to invent a default. It blocks only the implementation that depends on that unresolved decision.
 
 ## 1. Purpose
@@ -52,7 +52,7 @@ Until resolved:
 
 The R0 canonical realignment may define the management hierarchy and the future R1–R5 implementation gates. R1–R5 may implement only behavior that does **not** require guessing the open investor/legal/economic decisions above.
 
-**After R5, do not start a portfolio/investor-economics expansion that depends on any OPEN item.** The relevant item must first be changed to `RESOLVED`, with the owner decision and evidence recorded. This hard stop does not block independent sector operations, bug fixes, security work, or other bounded product work that does not depend on the unresolved rule.
+**After R5, do not start a portfolio/investor-economics expansion that depends on any OPEN item.** The relevant item must first be changed to `RESOLVED`, with the explicit owner decision and evidence recorded. This hard stop does not block independent sector operations, bug fixes, security work, or other bounded product work that does not depend on the unresolved rule.
 
 ## 5. Resolution record required
 
@@ -74,4 +74,4 @@ Implementation explicitly authorized:
 Still deferred / not implied:
 ```
 
-A spoken preference, UI label, legacy field, synthetic demo, existing code path, or matching monetary amount is not sufficient evidence by itself.
+An explicit answer from the authorized decision-maker is valid business evidence once it is recorded here (or in a linked approved ADR) with its scope and effective context. An unrecorded casual remark, UI label, legacy field, synthetic demo, existing code path, or matching monetary amount is not sufficient authority by itself.
