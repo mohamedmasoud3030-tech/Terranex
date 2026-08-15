@@ -5,7 +5,7 @@
 
 ## 1. Runtime shape
 
-Terranex uses one maintained Next.js App Router application deployed as one unit, backed by one Supabase project: PostgreSQL, Auth, and private Storage. The browser renders the experience; server code and database transactions remain authoritative for tenant access, approvals, balances, and financial effects.
+Terranex uses one maintained Next.js App Router application deployed as one unit, backed by one Supabase project: PostgreSQL, Auth, and private Storage. The logical product hierarchy is Organization → Investment Portfolio → Investment Project → sector objects; this hierarchy does not require microservices or a new ledger per level. The browser renders the experience; server code and database transactions remain authoritative for tenant access, approvals, balances, and financial effects.
 
 ```mermaid
 flowchart TD
@@ -48,7 +48,7 @@ Each batch completes one user-visible workflow across the necessary layers:
 6. loading, empty, error, forbidden, and responsive states;
 7. targeted tests and build verification.
 
-The conceptual domain catalog does not authorize placeholder entities, empty layers, generic CRUD, or prebuilt modules.
+The conceptual domain catalog does not authorize placeholder entities, empty layers, generic CRUD, or prebuilt modules. R0 portfolio realignment is documentation/governance only: it does not authorize portfolio schema, routes, services, migrations, or UI by itself.
 
 ## 4. Command and data flow
 
@@ -84,13 +84,15 @@ Commercial release targets OWASP ASVS Level 2 proportionately, but unused securi
 
 ## 7. Money boundary
 
-When financial slices begin:
+When financial slices begin or are extended:
 
 - money uses integer minor units plus ISO-4217 currency;
 - no floating-point monetary arithmetic;
 - balanced postings, idempotency, closed-period behavior, and reversal are database-enforced;
 - cash, revenue, expense, valuation, allocation, distribution, and payment remain separate facts;
-- statutory accounting and Egyptian tax/e-invoicing stay external/configured until professionally validated.
+- statutory accounting and Egyptian tax/e-invoicing stay external/configured until professionally validated;
+- portfolio roll-ups are projections over project truth, never a second mutable ledger;
+- portfolio capital deployment never becomes investor contribution/ownership/allocation/distribution without an explicit approved business rule.
 
 GF-002 may provide a shared money value/formatter only if the project form actually needs it; it must not build a ledger.
 
@@ -104,10 +106,22 @@ GF-002 may provide a shared money value/formatter only if the project form actua
 | PWA/offline drafts | field capture is implemented and weak connectivity is validated |
 | Background jobs | a bounded task cannot finish reliably in a request |
 | Read projections/materialized views | measured query/reporting needs exceed direct queries |
-| Internal package extraction | at least two real consumers and a stable boundary exist |
+| Internal package extraction | at least two real consumers and a stable boundary exists |
 | Second sector module | Common Core and Real Estate deliver a working end-to-end slice |
 
-## 9. Verification
+## 9. Domain-assumption safety boundary
+
+Architecture must fail closed on unresolved business semantics:
+
+- do not add schema columns/tables, enums, RPC branches, permissions, routes, or configuration options merely to “prepare for” an unknown investor/legal rule;
+- do not encode Portfolio as `fund`, `spv`, `legal_entity`, or `investor_pool` unless an approved decision establishes that meaning;
+- do not derive ownership or entitlement from contribution/payment history;
+- do not implement cross-project transfers, netting, recycling, or pooled cash from a dashboard/report requirement;
+- record the missing decision in `docs/OPEN_BUSINESS_DECISIONS.md` and stop that dependent implementation while continuing unrelated bounded work.
+
+The correct technical representation of an unknown business rule is **no implementation yet**, not a nullable column or generic rules engine.
+
+## 10. Verification
 
 For every completed slice, run the smallest truthful set:
 
@@ -120,7 +134,7 @@ For every completed slice, run the smallest truthful set:
 
 Financial slices later add concurrency, idempotency, balance, reversal, and period-lock proofs. Do not claim unrun gates.
 
-## 10. Initial decisions
+## 11. Initial decisions
 
 | ID | Decision |
 |---|---|
@@ -132,6 +146,7 @@ Financial slices later add concurrency, idempotency, balance, reversal, and peri
 | A-006 | Direct in-process behavior first; outbox/queues only with a real integration |
 | A-007 | Feature folders; shared extraction after two consumers |
 | A-008 | External statutory GL and Egypt adapters remain outside the v1 core |
+| A-009 | Portfolio is a logical management/reporting parent of projects; its introduction does not create a fund/legal entity, pooled economics, or second ledger |
 
 ## Sources
 
@@ -140,4 +155,4 @@ Financial slices later add concurrency, idempotency, balance, reversal, and peri
 - [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Supabase Auth](https://supabase.com/docs/guides/auth)
 - [Supabase Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control)
-- [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+- [OWASP ASVS](https://owasp.org/www-project/application-security-verification-standard/)
