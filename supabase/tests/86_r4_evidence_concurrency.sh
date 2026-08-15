@@ -3,9 +3,9 @@ set -euo pipefail
 
 # R4 two-session proof for immutable evidence/storage referential integrity.
 #
-# 1) Registration wins while DELETE has already evaluated an unregistered-object
-#    RLS snapshot: DELETE must still fail at the FK boundary and the object must
-#    remain present.
+# 1) Registration wins while DELETE races it: regardless of whether PostgreSQL
+#    reports the losing DELETE as an FK error or an RLS/EPQ zero-row no-op, the
+#    registered object/version/link must all remain present.
 # 2) DELETE wins first: registration must fail closed because the locked Storage
 #    object no longer exists, and no evidence metadata may be created.
 DB="${TERRANEX_TEST_DB:-terranex_test}"
@@ -27,9 +27,10 @@ tmpdir="$(mktemp -d)"; trap 'rm -rf "$tmpdir"' EXIT
 
 # ---------------------------------------------------------------------------
 # Race A: registration acquires the Storage row first and holds the transaction
-# open. DELETE begins while the version is still uncommitted, so its RLS
-# predicate can observe the old "unregistered" snapshot. The FK must still make
-# the DELETE lose after registration commits.
+# open. DELETE begins while the version is still uncommitted. The observable
+# SQL status of the losing DELETE is implementation-dependent (FK error vs
+# zero-row RLS/EPQ no-op); the invariant is that registration succeeds and the
+# object cannot disappear afterwards.
 # ---------------------------------------------------------------------------
 OBJ_A="$ORG/$PROJECT/86000000-0000-4000-8000-000000000001"
 psql_sql "set request.jwt.claim.sub='$MEMBER'; set role authenticated;
@@ -55,8 +56,8 @@ run_session "$DELETE_A" "$tmpdir/delete-a.log" & da=$!
 wait "$ra"; sra=$?
 wait "$da"; sda=$?
 set -e
-if [[ "$sra" -ne 0 || "$sda" -eq 0 ]]; then
-  echo "ERROR: registration-wins race expected register=success delete=failure; register=$sra delete=$sda" >&2
+if [[ "$sra" -ne 0 ]]; then
+  echo "ERROR: registration-wins race registration failed; register=$sra delete=$sda" >&2
   cat "$tmpdir/register-a.log" "$tmpdir/delete-a.log" >&2 || true
   exit 1
 fi
@@ -64,7 +65,9 @@ OBJ_A_COUNT="$(psql_value "select count(*) from storage.objects where bucket_id=
 VER_A_COUNT="$(psql_value "select count(*) from public.procurement_evidence_versions where storage_bucket='procurement-evidence' and storage_object_name='$OBJ_A'")"
 LINK_A_COUNT="$(psql_value "select count(*) from public.procurement_evidence_links where organization_id='$ORG' and idempotency_key='s86-register-wins'")"
 [[ "$OBJ_A_COUNT" == '1' && "$VER_A_COUNT" == '1' && "$LINK_A_COUNT" == '1' ]] || {
-  echo "ERROR: registration-wins race left object/version/link counts $OBJ_A_COUNT/$VER_A_COUNT/$LINK_A_COUNT" >&2; exit 1;
+  echo "ERROR: registration-wins race violated object/version/link invariant $OBJ_A_COUNT/$VER_A_COUNT/$LINK_A_COUNT (delete status $sda)" >&2
+  cat "$tmpdir/delete-a.log" >&2 || true
+  exit 1;
 }
 
 # ---------------------------------------------------------------------------
