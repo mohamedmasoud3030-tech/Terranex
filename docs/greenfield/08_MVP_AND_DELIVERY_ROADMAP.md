@@ -252,6 +252,16 @@ At the R0 base on 2026-08-15:
 - those facts are implementation evidence, not customer validation or authority to generalize investor/company economics;
 - the existing project-centric runtime remains untouched by R0 unless a later bounded implementation slice explicitly migrates it.
 
+### Historical Agriculture construction record
+
+Before the Portfolio realignment, Agriculture was deliberately completed through **three independently reviewed major phases** after the earlier foundations. This is a historical construction record, not the active roadmap:
+
+1. **GF-017 — Agricultural Land Asset, Acquisition & Control (merged)** — established the land investment/control object and preserved separation between acquisition/control and seasonal operations.
+2. **GF-018 — Agriculture Sale, Dispatch & Revenue (merged)** — added sale, dispatch/control transfer, shared-core revenue/receivable, and collection without guessing inventory value or COGS.
+3. **GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate** — completed authoritative cost attribution, cycle result/closeout, and the Agriculture technical gate.
+
+GF-013 through GF-019 are technically implemented. These statements preserve the completed sector history and do not reopen Agriculture, count as customer validation, or authorize new investor/company economics.
+
 ## 14. R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance
 
 **Scope: documentation/governance only.** R0 establishes:
