@@ -362,3 +362,29 @@ revoke all on function public.register_procurement_evidence(
 grant execute on function public.register_procurement_evidence(
   uuid,uuid,uuid,text,text,text,text,text,bigint,text,uuid,uuid,uuid,text
 ) to authenticated;
+
+-- Hosted Supabase commonly installs pgcrypto in `extensions`, while disposable
+-- PostgreSQL may install it in `public`. Keep the SECURITY DEFINER search path
+-- narrow and qualify digest at migration time for the actual extension schema.
+do $pgcrypto_compat$
+declare
+  v_pgcrypto_schema text;
+  v_definition text;
+  v_rewritten text;
+begin
+  select n.nspname into v_pgcrypto_schema
+    from pg_extension e join pg_namespace n on n.oid=e.extnamespace
+   where e.extname='pgcrypto';
+  if v_pgcrypto_schema is null then raise exception 'pgcrypto extension is required'; end if;
+  select pg_get_functiondef(p.oid) into v_definition
+    from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.proname='register_procurement_evidence' and p.prokind='f';
+  if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\(' then
+    v_rewritten := regexp_replace(v_definition,
+      '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
+      E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(', 'g');
+    if v_rewritten=v_definition then raise exception 'failed to qualify pgcrypto digest in R4 evidence command'; end if;
+    execute v_rewritten;
+  end if;
+end
+$pgcrypto_compat$;
