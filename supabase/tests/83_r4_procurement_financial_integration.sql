@@ -182,17 +182,19 @@ select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
   :'s83_self_proposal')) like '%maker/checker%'
   then 1 else 0 end as s83_payment_self_approval_rejected;
 
--- MEMBER prepares; a different OWNER revalidates cash/payable and posts.
-select s83_run('00000000-0000-4000-8000-000000000003', format(
+-- MEMBER 0009 (kept non-owner by suite 78) prepares; a different OWNER
+-- revalidates cash/payable and posts. Earlier suites intentionally promote
+-- 0003 to OWNER, so it cannot prove this authorization boundary here.
+select s83_run('00000000-0000-4000-8000-000000000009', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
   :'s83_obligation', :'s83_cash')) as s83_proposal1 \gset
-select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000009', format(
   $$select public.approve_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,'s83-member-payment-approval')$$,
   :'s83_proposal1')) like '%organization owner required%'
   then 1 else 0 end as s83_payment_member_cannot_approve;
-select 1/case when s83_run('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_run('00000000-0000-4000-8000-000000000009', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
   :'s83_obligation', :'s83_cash'))=:'s83_proposal1' then 1 else 0 end as s83_payment_proposal_replay_safe;
@@ -208,7 +210,7 @@ select 1/case when exists (
   select 1 from public.cost_payment_proposals p join public.project_payments pay
     on pay.payment_proposal_id=p.id
   where p.id=:'s83_proposal1' and p.status='POSTED'
-    and p.prepared_by='00000000-0000-4000-8000-000000000003'
+    and p.prepared_by='00000000-0000-4000-8000-000000000009'
     and p.approved_by='00000000-0000-4000-8000-000000000001'
     and p.prepared_by<>p.approved_by and pay.id=:'s83_payment1'
 ) then 1 else 0 end as s83_payment_maker_checker_persisted;
