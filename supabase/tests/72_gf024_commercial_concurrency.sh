@@ -152,7 +152,9 @@ fi
 # Race 3 — idempotent duplicate purchase submissions write one PURCHASE_IN.
 # ---------------------------------------------------------------------------
 DUP_COHORT="$(provision_cohort 'دفعة سباق الشراء المكرر GF024' 20 'gf24-race-dup')"
-PURCHASE_SQL="$AUTH select public.record_livestock_purchase('$ORG','$PROJECT','$BUYER','شراء سباق مكرر GF024','عقد مكرر',now(),'دليل مكرر',null,array['$DUP_COHORT'::uuid],array[5]::integer[],array[50000]::bigint[],'gf24-race-purchase-dup');"
+# A fixed effective_at keeps the two submissions byte-identical so the payload
+# hash is deterministic: the race proves one material effect, not a hash drift.
+PURCHASE_SQL="$AUTH select public.record_livestock_purchase('$ORG','$PROJECT','$BUYER','شراء سباق مكرر GF024','عقد مكرر',timestamptz '2026-08-06 08:00+00','دليل مكرر',null,array['$DUP_COHORT'::uuid],array[5]::integer[],array[50000]::bigint[],'gf24-race-purchase-dup');"
 set +e
 run_session "$PURCHASE_SQL" "$tmpdir/d1.log" & pa=$!
 run_session "$PURCHASE_SQL" "$tmpdir/d2.log" & pb=$!
