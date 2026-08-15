@@ -187,6 +187,11 @@ select s83_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
   :'s83_obligation', :'s83_cash')) as s83_proposal1 \gset
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.approve_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,'s83-member-payment-approval')$$,
+  :'s83_proposal1')) like '%organization owner required%'
+  then 1 else 0 end as s83_payment_member_cannot_approve;
 select 1/case when s83_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,

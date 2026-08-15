@@ -4,6 +4,9 @@ import path from 'node:path';
 import { supplierInvoiceSchema, supplierPaymentSchema } from '@/features/procurement/schema';
 
 const migration = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260815034000_r4_procurement_financial_integration.sql'), 'utf8');
+const historicalS2Suite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/04_s2_cost_and_cash.sql'), 'utf8');
+const historicalPhase2CSuite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/28_phase2c_financial_integrity.sql'), 'utf8');
+const r4Suite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/83_r4_procurement_financial_integration.sql'), 'utf8');
 const org = '10000000-0000-4000-8000-000000000001';
 const project = '20000000-0000-4000-8000-000000000002';
 const id = '30000000-0000-4000-8000-000000000003';
@@ -57,6 +60,16 @@ describe('R4 procurement financial integration contract', () => {
     expect(migration).toMatch(/revoke all on function public\.pay_cost_obligation[\s\S]*from public, anon, authenticated/);
     expect(migration).toContain('public.prepare_cost_payment');
     expect(migration).toContain('public.approve_cost_payment');
+  });
+
+  it('keeps historical payment fixtures replayable without weakening current R4 proofs', () => {
+    const paymentSignature = 'public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text)';
+    expect(historicalS2Suite).toContain(`to_regprocedure('${paymentSignature}') is null`);
+    expect(historicalS2Suite).toContain("execute 'select public.pay_cost_obligation($1,$2,$3,$4,$5,$6)'");
+    expect(historicalS2Suite).toContain("execute 'select public.prepare_cost_payment($1,$2,$3,$4,$5,$6)'");
+    expect(historicalPhase2CSuite).toContain(`to_regprocedure('${paymentSignature}') is null`);
+    expect(r4Suite).toContain('s83_payment_member_cannot_approve');
+    expect(r4Suite).toContain('s83_payment_maker_checker_persisted');
   });
 
   it('structurally enforces tenant/project coherence and locks financial ceilings', () => {

@@ -77,12 +77,29 @@ end $$;
 -- not repeat long identical token sequences.
 create or replace function p2c_pay(p_obligation uuid, p_cash uuid, p_amount bigint, p_date date, p_key text)
 returns uuid language plpgsql as $$
-declare v_approver uuid:='00000000-0000-4000-8000-000000000011'; v_proposal uuid;
+declare
+  v_approver uuid := '00000000-0000-4000-8000-000000000011';
+  v_proposal uuid;
+  v_payment uuid;
 begin
+  -- Phase 2C is also replayed by pre-R4 forward-upgrade gates. Resolve only
+  -- the payment API available in that historical schema.
+  if to_regprocedure('public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text)') is null then
+    execute 'select public.pay_cost_obligation($1,$2,$3,$4,$5,$6)'
+      into v_payment
+      using public.p2c_org(),p_obligation,p_cash,p_amount,p_date,p_key;
+    return v_payment;
+  end if;
+
   perform set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000013',true);
-  v_proposal:=public.prepare_cost_payment(public.p2c_org(),p_obligation,p_cash,p_amount,p_date,'proposal-'||p_key);
+  execute 'select public.prepare_cost_payment($1,$2,$3,$4,$5,$6)'
+    into v_proposal
+    using public.p2c_org(),p_obligation,p_cash,p_amount,p_date,'proposal-'||p_key;
   perform set_config('request.jwt.claim.sub',v_approver::text,true);
-  return public.approve_cost_payment(public.p2c_org(),v_proposal,p_key);
+  execute 'select public.approve_cost_payment($1,$2,$3)'
+    into v_payment
+    using public.p2c_org(),v_proposal,p_key;
+  return v_payment;
 end $$;
 create or replace function p2c_authorize_obl(p_obligation uuid, p_key text) returns uuid
 language plpgsql as $$ begin return public.authorize_cost_obligation(public.p2c_org(), p_obligation, p_key); end $$;

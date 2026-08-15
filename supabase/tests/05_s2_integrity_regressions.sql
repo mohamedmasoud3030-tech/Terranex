@@ -31,7 +31,7 @@ select 1/case when exists (
 select 1/case when s2_expect_raise(
   '00000000-0000-4000-8000-000000000001',
   format(
-    $$select public.prepare_cost_payment(
+    $$select public.s2_payment_workflow(
       '10000000-0000-4000-8000-000000000001',
       %L,
       %L,

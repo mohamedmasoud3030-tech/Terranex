@@ -53,8 +53,10 @@ exception when others then
   return sqlstate = p_sqlstate;
 end $$;
 
--- Test helper exercises the real two-step Finance workflow while preserving
--- the original S2 assertions around payment posting and retry keys.
+-- Compatibility helper for this historical S2 contract. A pre-R4 forward
+-- replay must exercise the S2-era direct command, while a current replay must
+-- use the hardened Finance proposal/approval boundary. Dynamic SQL prevents
+-- PostgreSQL from resolving functions that do not exist in the replayed era.
 create or replace function s2_payment_workflow(
   p_organization_id uuid, p_obligation_id uuid, p_cash_account_id uuid,
   p_amount_minor_units bigint, p_payment_date date, p_idempotency_key text
@@ -62,13 +64,26 @@ create or replace function s2_payment_workflow(
 declare
   v_approver uuid := '00000000-0000-4000-8000-000000000001';
   v_proposal uuid;
+  v_payment uuid;
 begin
+  if to_regprocedure('public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text)') is null then
+    execute 'select public.pay_cost_obligation($1,$2,$3,$4,$5,$6)'
+      into v_payment
+      using p_organization_id, p_obligation_id, p_cash_account_id,
+        p_amount_minor_units, p_payment_date, p_idempotency_key;
+    return v_payment;
+  end if;
+
   perform set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000003', true);
-  v_proposal := public.prepare_cost_payment(
-    p_organization_id, p_obligation_id, p_cash_account_id,
-    p_amount_minor_units, p_payment_date, 'proposal-' || p_idempotency_key);
+  execute 'select public.prepare_cost_payment($1,$2,$3,$4,$5,$6)'
+    into v_proposal
+    using p_organization_id, p_obligation_id, p_cash_account_id,
+      p_amount_minor_units, p_payment_date, 'proposal-' || p_idempotency_key;
   perform set_config('request.jwt.claim.sub', v_approver::text, true);
-  return public.approve_cost_payment(p_organization_id, v_proposal, p_idempotency_key);
+  execute 'select public.approve_cost_payment($1,$2,$3)'
+    into v_payment
+    using p_organization_id, v_proposal, p_idempotency_key;
+  return v_payment;
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -386,14 +401,15 @@ select 1/case when s2_try_cross_project_line()='REJECTED' then 1 else 0 end as s
 -- ---------------------------------------------------------------------------
 -- D. Payments: partial, exact outstanding, overpayment rejection, idempotency
 -- ---------------------------------------------------------------------------
-select s2_run('00000000-0000-4000-8000-000000000003', format(
-  $$select public.prepare_cost_payment('10000000-0000-4000-8000-000000000001',%L,%L,1,date '2026-08-25','s2-member-payment-proposal')$$,
-  :'s2_obl_expense', :'s2_account_a'));
-select id as s2_member_payment_proposal from public.cost_payment_proposals
-  where idempotency_key='s2-member-payment-proposal' \gset
+-- Preserve the original S2 authorization assertion only when replaying the
+-- S2-era API. Current maker/checker authorization is proved in suite 83.
+select (to_regprocedure('public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text)') is null)
+  as s2_uses_historical_payment_api \gset
+\if :s2_uses_historical_payment_api
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
-  $$select public.approve_cost_payment('10000000-0000-4000-8000-000000000001',%L,'s2-member-payment-approval')$$,
-  :'s2_member_payment_proposal'), 'P0001') then 1 else 0 end as s2_payment_member_cannot_approve;
+  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-member-0001')$$,
+  :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_member_denied;
+\endif
 
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
