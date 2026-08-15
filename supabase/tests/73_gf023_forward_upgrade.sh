@@ -50,6 +50,7 @@ fingerprint="select md5(jsonb_build_object(
 BEFORE="$(pg_db "$UPGRADE_DB" -Atc "$fingerprint")"
 ROLL_BEFORE="$(pg_db "$UPGRADE_DB" -Atc "select md5(coalesce(string_agg(cohort_id::text||':'||current_quantity::text,',' order by cohort_id::text),'')) from livestock_cohort_quantity_rollforward")"
 pg_db "$UPGRADE_DB" < "$ROOT/supabase/migrations/20260815010000_livestock_operations_completion.sql" >/dev/null
+pg_db "$UPGRADE_DB" < "$ROOT/supabase/migrations/20260815015000_gf023_identity_timeline_hardening.sql" >/dev/null
 AFTER="$(pg_db "$UPGRADE_DB" -Atc "$fingerprint")"
 ROLL_AFTER="$(pg_db "$UPGRADE_DB" -Atc "select md5(coalesce(string_agg(cohort_id::text||':'||current_quantity::text,',' order by cohort_id::text),'')) from livestock_cohort_quantity_rollforward")"
 [[ "$BEFORE" == "$AFTER" && "$ROLL_BEFORE" == "$ROLL_AFTER" ]] || { echo 'ERROR: GF-023 changed GF-022 or prior rows/quantity'; exit 1; }
@@ -76,4 +77,4 @@ CHECK="$(pg_db "$UPGRADE_DB" -Atc "select (
  and (select count(*)=6 from livestock_quantity_event_types)
 )::text")"
 [[ "$CHECK" == true ]] || { echo "ERROR: GF-023 post-upgrade workflow failed ($CHECK)"; exit 1; }
-echo "GF-023 forward-upgrade PASS: $PREREQ prerequisite migrations; GF-022 fingerprints and quantities preserved; health, identity, linked birth and feed exercised."
+echo "GF-023 forward-upgrade PASS: $PREREQ prerequisite migrations; GF-022 fingerprints and quantities preserved; health, identity hardening, linked birth and feed exercised."
