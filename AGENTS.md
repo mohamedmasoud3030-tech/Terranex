@@ -106,6 +106,16 @@ Real Estate completed the S0-S7 technical path and the GF-010/GF-011 hosted work
 - No secrets, real credentials, personal data, or unsanitized customer artifacts enter Git.
 - Do not access or modify production data, Supabase, Vercel, banking, or external accounting systems without explicit authorization.
 
+### Client idempotency-key lifecycle
+
+For UI/client command nonces and idempotency keys:
+
+- the same key must remain stable across retries of the **same logical submission**;
+- generate a new key only after confirmed success of the previous logical operation;
+- validation, authentication, transport, or server failure must **not** rotate the key;
+- after confirmed success, a later distinct submission from the same form/session must use a fresh key;
+- regression coverage is required for successive successful submissions from the same reusable form/session, not only retry behavior.
+
 ## Database development access
 
 - `npm run db:test` / `bash ./scripts/db-test.sh` is the canonical local database gate.
