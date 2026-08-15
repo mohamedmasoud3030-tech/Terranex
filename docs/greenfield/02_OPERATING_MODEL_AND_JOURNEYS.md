@@ -143,15 +143,15 @@ Lifecycle state does not replace asset or sector state. A project may be ACTIVE 
 
 ### J8 — Allocate result and distribute cash
 
-**Applicability:** Enable this journey only when an approved agreement/rule defines participant result entitlement and distribution mechanics for the Project. Do not activate it from contribution history or Portfolio membership.
+**Applicability:** Enable this journey only when an approved agreement/rule defines participant result entitlement and distribution mechanics for the governing scope. Do not activate it from contribution history or Portfolio membership.
 
-1. Finance selects a closed reporting period and effective agreement version.
+1. Finance selects a closed reporting period and the exact effective approved governing version.
 2. System calculates allocable realized result and each participant allocation; management valuation is excluded unless policy explicitly permits and is legally reviewed.
-3. Manager proposes distributable cash after reserves, obligations, and minimum cash policy.
+3. Manager proposes distributable cash only from the explicitly approved distributable-cash policy for that governing scope; if that policy is unresolved, the journey stops here and no amount is calculated.
 4. Reviewer approves the calculation snapshot and distribution notice.
 5. Finance prepares payment; another approver authorizes posting.
 6. Paid/rejected/returned states are recorded; capital accounts and payables update from postings.
-7. Investor receives a statement linking opening capital, contributions, allocated result, distributions, and closing balance.
+7. Investor receives the statement required by the approved participant model, linking the authoritative capital/result/distribution facts for that scope.
 
 ### J9 — Correct an error
 
@@ -213,7 +213,7 @@ Notifications are consequences of durable events, never the source of truth. In-
 
 - portfolio roll-ups are traceable to independent project truth and never create shared economics by implication;
 - portfolio capital deployment is distinguishable from investor contribution, ownership, allocation, distribution, and payment;
-- Every material workflow identifies maker, approver, posting event, evidence, exception path, and reversal path.
-- A user can never infer that payment equals expense, receipt equals revenue, valuation equals realized profit, or allocation equals distribution.
-- When investor-capital workflows are enabled, partner statements can be regenerated from posted events and effective agreement versions.
-- Sector events can exist without money; financial events can reference sector objects without embedding sector business logic in the finance core.
+- every material workflow identifies maker, approver, posting event, evidence, exception path, and reversal path;
+- a user can never infer that payment equals expense, receipt equals revenue, valuation equals realized profit, or allocation equals distribution;
+- when investor-capital workflows are enabled, partner statements can be regenerated from posted events and effective agreement versions;
+- sector events can exist without money; financial events can reference sector objects without embedding sector business logic in the finance core.
