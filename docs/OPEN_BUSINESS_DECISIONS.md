@@ -48,11 +48,13 @@ Until resolved:
 | BD-011 | OPEN | Can cash/capital move or be recycled between projects? If yes, under what approval and accounting/legal mechanism (due-to/from, loan, capital transfer, other)? Can project profits/losses be netted? | Cross-project transfers, pooling, recycling, and netting |
 | BD-012 | OPEN | What happens for investor entry/exit, interest transfer, partial withdrawal, funding default, death/succession, or legal-identity change, and which notices/statements are contractual requirements? | Investor lifecycle/transfer workflows and contractual notice model |
 
-## 4. R5 hard stop
+## 4. R13 hard stop
 
-The R0 canonical realignment may define the management hierarchy and the future R1–R5 implementation gates. R1–R5 may implement only behavior that does **not** require guessing the open investor/legal/economic decisions above.
+The R0 canonical realignment defines the management hierarchy and the R1–R17 implementation gates (see `docs/ROADMAP_R0_R17.md`). R1–R13 implement only behavior that does **not** require guessing the open investor/legal/economic decisions above. The strategy is **Build Everything Independent First**: complete every feature whose correctness does not depend on unresolved policy; defer only the smallest rule-dependent portion.
 
-**After R5, do not start a portfolio/investor-economics expansion that depends on any OPEN item.** The relevant item must first be changed to `RESOLVED`, with the explicit owner decision and evidence recorded. This hard stop does not block independent sector operations, bug fixes, security work, or other bounded product work that does not depend on the unresolved rule.
+**After R13, do not start a portfolio/investor-economics expansion that depends on any OPEN item.** The relevant item must first be changed to `RESOLVED`, with the explicit owner decision and evidence recorded. This hard stop does not block independent sector operations, bug fixes, security work, or other bounded product work that does not depend on the unresolved rule.
+
+Resolving the OPEN items is exactly the small **R14 policy pack** asked of the target company owner after R13: it spans legal structure (BD-001), funding source (BD-002), participation level (BD-003), ownership basis (BD-004), project funding (BD-005), profit/loss assignment (BD-006), valuation allocability (BD-007), distributable-cash formula (BD-008), operator economics (BD-009), tax/withholding (BD-010), cross-project cash movement (BD-011), and investor lifecycle (BD-012). Until then, no investor profit, entitlement, ownership, or distributable number may be shown as if it were final.
 
 ## 5. Resolution record required
 

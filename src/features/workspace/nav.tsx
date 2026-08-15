@@ -39,7 +39,8 @@ export type WorkspaceSection =
   | 'harvest-inventory'
   | 'agriculture-sales'
   | 'agriculture-results'
-  | 'livestock';
+  | 'livestock'
+  | 'procurement';
 
 type SectionDef = {
   id: WorkspaceSection;
@@ -64,6 +65,15 @@ const LIVESTOCK_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'livestock', label: 'المواقع والقطعان', description: 'مواقع التشغيل، القطعان الإدارية، والدفعات القابلة للعد', href: (p) => `/projects/${p}/livestock` },
 ];
 
+// Procurement is sector-independent and shared across every project, so it
+// appears in every sector's workspace (R4).
+const PROCUREMENT_SECTION: SectionDef = {
+  id: 'procurement',
+  label: 'المشتريات',
+  description: 'الموردون المشتركون، طلبات الشراء وأوامر الشراء',
+  href: (p) => `/projects/${p}/procurement`,
+};
+
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
   { id: 'land-assets', label: 'الأراضي والأصول', description: 'أصل الأرض، أساس السيطرة، العقد، والطرف المقابل وربط المزرعة', href: (p) => `/projects/${p}/agriculture#land-assets` },
@@ -72,19 +82,21 @@ const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'harvest-inventory', label: 'الحصاد والمخزون', description: 'أحداث الحصاد، تشغيلات المحصول، مواقع التخزين، وحركات المخزون', href: (p) => `/projects/${p}/agriculture#harvest` },
   { id: 'agriculture-sales', label: 'المبيعات والتحصيل', description: 'المشتري، صرف البيع، الإيراد، الذمم والتحصيلات', href: (p) => `/projects/${p}/agriculture#sales` },
   { id: 'agriculture-results', label: 'النتائج والإغلاق', description: 'نتيجة الدورة، تكلفة التشغيل، المراكز المفتوحة والإغلاق الآمن', href: (p) => `/projects/${p}/agriculture#results-closeout` },
+  PROCUREMENT_SECTION,
 ];
 
-export const REAL_ESTATE_SECTION_IDS = REAL_ESTATE_SECTIONS.map((s) => s.id);
-export const AGRICULTURE_SECTION_IDS = AGRICULTURE_SECTIONS.map((s) => s.id);
+export const REAL_ESTATE_SECTION_IDS = [...REAL_ESTATE_SECTIONS.map((s) => s.id), PROCUREMENT_SECTION.id];
+export const AGRICULTURE_SECTION_IDS = [...AGRICULTURE_SECTIONS.map((s) => s.id), PROCUREMENT_SECTION.id];
+export const LIVESTOCK_SECTION_IDS = [...LIVESTOCK_SECTIONS.map((s) => s.id), PROCUREMENT_SECTION.id];
 
 export function sectionsFor(sector: WorkspaceSector): ReadonlyArray<SectionDef> {
   if (sector === 'AGRICULTURE') return AGRICULTURE_SECTIONS;
-  if (sector === 'LIVESTOCK') return LIVESTOCK_SECTIONS;
-  return REAL_ESTATE_SECTIONS;
+  if (sector === 'LIVESTOCK') return [...LIVESTOCK_SECTIONS, PROCUREMENT_SECTION];
+  return [...REAL_ESTATE_SECTIONS, PROCUREMENT_SECTION];
 }
 
 export function sectionHref(section: WorkspaceSection, projectId: string): string {
-  const def = [...REAL_ESTATE_SECTIONS, ...AGRICULTURE_SECTIONS, ...LIVESTOCK_SECTIONS].find((s) => s.id === section);
+  const def = [...REAL_ESTATE_SECTIONS, ...AGRICULTURE_SECTIONS, ...LIVESTOCK_SECTIONS, PROCUREMENT_SECTION].find((s) => s.id === section);
   return def ? def.href(projectId) : `/projects/${projectId}`;
 }
 

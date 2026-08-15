@@ -49,11 +49,14 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Pre-R1 boundary: every migration except the R1 family.
+# Pre-R1 boundary: replay every migration ordered BEFORE the R1 family
+# (the R1 migration and everything ordered after it — e.g. the reconciled
+# R4 procurement migrations — are applied only in the upgrade phase).
 for file in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$file")" in
-    20260815030000*.sql) continue ;;
-  esac
+  base="$(basename "$file")"
+  if [[ "$base" == 20260815030000*.sql || "$base" > 20260815030000_ ]]; then
+    continue
+  fi
   psql_db "$UPGRADE_DB" < "$file"
 done
 
