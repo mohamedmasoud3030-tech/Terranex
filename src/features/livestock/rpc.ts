@@ -1,11 +1,20 @@
+import { parseMajorUnitsToMinor } from '@/shared/money';
 import type {
   LivestockBirthInput,
+  LivestockCloseoutInput,
   LivestockCohortInput,
+  LivestockCostAttributionInput,
+  LivestockCostAttributionReversalInput,
   LivestockHerdInput,
   LivestockMergeInput,
   LivestockMortalityInput,
   LivestockMovementInput,
   LivestockProfileInput,
+  LivestockPurchaseInput,
+  LivestockSaleApprovalInput,
+  LivestockSaleCollectionInput,
+  LivestockSaleInput,
+  LivestockSaleRecognitionInput,
   LivestockSiteInput,
   LivestockSplitInput,
   LivestockTransitionInput,
@@ -151,4 +160,83 @@ export const mergeRpcArguments = (input: LivestockMergeInput) => ({
   p_reason: input.reason,
   p_evidence_reference: input.evidenceReference ?? null,
   p_notes: input.notes ?? null,
+});
+
+// ---------------------------------------------------------------------------
+// GF-024 — Livestock commercial, profitability & closeout RPC arguments.
+// ---------------------------------------------------------------------------
+export const purchaseRpcArguments = (input: LivestockPurchaseInput) => ({
+  ...commandContext(input),
+  p_supplier_party_id: input.supplierPartyId,
+  p_purchase_reference: input.purchaseReference,
+  p_agreement_reference: input.agreementReference ?? null,
+  p_effective_at: input.effectiveAt,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_notes: input.notes ?? null,
+  p_cohort_ids: input.linesJson.map((line) => line.cohortId),
+  p_quantities: input.linesJson.map((line) => Number(line.quantity)),
+  p_agreed_unit_price_minor_units: input.linesJson.every((line) => line.agreedUnitPrice == null)
+    ? null
+    : input.linesJson.map((line) => (line.agreedUnitPrice == null ? null : parseMajorUnitsToMinor(line.agreedUnitPrice, 'EGP'))),
+});
+
+export const saleRpcArguments = (input: LivestockSaleInput) => ({
+  ...commandContext(input),
+  p_buyer_party_id: input.buyerPartyId,
+  p_sale_reference: input.saleReference,
+  p_agreement_reference: input.agreementReference ?? null,
+  p_sale_date: input.saleDate,
+  p_currency: input.currency,
+  p_terms: input.terms ?? null,
+  p_evidence_reference: input.evidenceReference ?? null,
+  p_cohort_ids: input.linesJson.map((line) => line.cohortId),
+  p_quantities: input.linesJson.map((line) => Number(line.quantity)),
+  p_unit_price_minor_units: input.linesJson.map((line) => parseMajorUnitsToMinor(line.unitPrice, input.currency)),
+});
+
+export const saleApprovalRpcArguments = (input: LivestockSaleApprovalInput) => ({
+  ...commandContext(input),
+  p_sale_id: input.saleId,
+});
+
+export const saleRecognitionRpcArguments = (input: LivestockSaleRecognitionInput) => ({
+  ...commandContext(input),
+  p_sale_id: input.saleId,
+  p_control_transfer_date: input.controlTransferDate,
+  p_evidence_reference: input.evidenceReference,
+});
+
+export const saleCollectionRpcArguments = (input: LivestockSaleCollectionInput) => ({
+  ...commandContext(input),
+  p_recognition_id: input.recognitionId,
+  p_cash_account_id: input.cashAccountId,
+  p_amount_minor_units: parseMajorUnitsToMinor(input.amount, input.currency),
+  p_collection_date: input.collectionDate,
+  p_evidence_reference: input.evidenceReference,
+});
+
+export const costAttributionRpcArguments = (input: LivestockCostAttributionInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_source_journal_line_id: input.sourceJournalLineId,
+  p_amount_minor_units: parseMajorUnitsToMinor(input.amount, input.currency),
+  p_cost_category: input.costCategory,
+  p_policy_reference: input.policyReference,
+  p_evidence_reference: input.evidenceReference,
+});
+
+export const costAttributionReversalRpcArguments = (
+  input: LivestockCostAttributionReversalInput,
+) => ({
+  ...commandContext(input),
+  p_attribution_id: input.attributionId,
+  p_reason: input.reason,
+  p_evidence_reference: input.evidenceReference,
+});
+
+export const closeoutRpcArguments = (input: LivestockCloseoutInput) => ({
+  ...commandContext(input),
+  p_cohort_id: input.cohortId,
+  p_close_reason: input.closeReason,
+  p_evidence_reference: input.evidenceReference,
 });

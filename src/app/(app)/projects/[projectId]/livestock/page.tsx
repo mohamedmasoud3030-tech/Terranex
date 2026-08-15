@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
-import { getCurrentMembership } from '@/features/finance/queries';
+import { getCurrentMembership, getCashAccountPositions } from '@/features/finance/queries';
+import { getParties } from '@/features/funding/queries';
 import {
   COHORT_STATE_LABEL,
   DISPOSAL_METHOD_LABEL,
+  LIVESTOCK_COST_CATEGORY_LABEL,
   MORTALITY_CAUSE_LABEL,
   OPERATION_TYPE_LABEL,
   ORIGIN_LABEL,
@@ -15,6 +17,9 @@ import {
   WEIGHT_CONFIDENCE_LABEL,
   WEIGHT_MEANING_LABEL,
   WEIGHT_METHOD_LABEL,
+  formatLivestockCostCategory,
+  formatMetricStatus,
+  formatSaleControlState,
   movementChangeLabel,
 } from '@/features/livestock/labels';
 import {
@@ -23,19 +28,37 @@ import {
   type CohortTimelineRead,
   type CurrentPlacementRead,
   type HerdRead,
+  type LivestockCohortIssueRead,
+  type LivestockCohortResultRead,
+  type LivestockCostAttributionRead,
+  type LivestockCostSourceRead,
+  type LivestockPurchaseLineRead,
+  type LivestockPurchaseRead,
+  type LivestockSaleCollectionRead,
+  type LivestockSaleLineRead,
+  type LivestockSaleRead,
   type MovementRead,
   type QuantityEventRead,
   type QuantityRollforwardRead,
   type SiteRead,
   type WeightEventRead,
+  getLivestockCohortIssues,
   getLivestockCohortLineage,
+  getLivestockCohortResults,
   getLivestockCohortTimeline,
   getLivestockCohorts,
+  getLivestockCostAttributions,
+  getLivestockCostSources,
   getLivestockCurrentPlacements,
   getLivestockHerds,
   getLivestockMovements,
+  getLivestockPurchaseLines,
+  getLivestockPurchases,
   getLivestockQuantityEvents,
   getLivestockQuantityRollforward,
+  getLivestockSaleCollections,
+  getLivestockSaleLines,
+  getLivestockSales,
   getLivestockSites,
   getLivestockWeightEvents,
 } from '@/features/livestock/queries';
@@ -45,12 +68,20 @@ import { newCommandNonce } from '@/features/livestock/idempotency';
 import {
   ActivateForm,
   BirthForm,
+  CloseoutForm,
   CohortForm,
+  CostAttributionForm,
+  CostAttributionReversalForm,
   HerdForm,
   MergeForm,
   MortalityForm,
   MovementForm,
   ProfileForm,
+  PurchaseForm,
+  SaleApprovalForm,
+  SaleCollectionForm,
+  SaleForm,
+  SaleRecognitionForm,
   SiteForm,
   SplitForm,
   WeightEventForm,
@@ -310,17 +341,19 @@ function QuantityRollforward({
   return (
     <table>
       <caption className="muted">
-        العدد الحالي المشتق = عدد افتتاحي + أحداث سارية حتى الآن + وارد من تقسيم/دمج − نفوق − صادر إلى تقسيم/دمج.
-        الأحداث المستقبلية لا تغيّر هذا الرصيد؛ الأحداث ذات الطابع الزمني نفسه تُحسب كدفعة واحدة. رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
+        العدد الحالي المشتق = عدد افتتاحي + ولادات + شراء خارجي + وارد من تقسيم/دمج − نفوق − صادر بيع − صادر إلى تقسيم/دمج.
+        الأحداث المستقبلية لا تغيّر هذا الرصيد. رصيد تشغيلي بالعدد، وليس تقييمًا ماليًا للمخزون.
       </caption>
       <thead>
         <tr>
           <th scope="col">الدفعة</th>
           <th scope="col">عدد افتتاحي</th>
           <th scope="col">+ ولادات</th>
+          <th scope="col">+ شراء خارجي</th>
           <th scope="col">+ وارد من تقسيم</th>
           <th scope="col">+ وارد من دمج</th>
           <th scope="col">− نفوق</th>
+          <th scope="col">− صادر بيع</th>
           <th scope="col">− صادر إلى تقسيم</th>
           <th scope="col">− صادر إلى دمج</th>
           <th scope="col">= العدد الحالي المشتق</th>
@@ -332,9 +365,11 @@ function QuantityRollforward({
             <th scope="row">{row.cohort_reference}</th>
             <td>{row.opening_headcount}</td>
             <td>{row.births}</td>
+            <td>{row.purchase_in}</td>
             <td>{row.split_in}</td>
             <td>{row.merge_in}</td>
             <td>{row.mortality}</td>
+            <td>{row.sale_out}</td>
             <td>{row.split_out}</td>
             <td>{row.merge_out}</td>
             <td><strong>{row.current_quantity}</strong></td>
@@ -433,6 +468,152 @@ function WeightLog({ events }: Readonly<{ events: readonly WeightEventRead[] }>)
   );
 }
 
+// ---------------------------------------------------------------------------
+// GF-024 — commercial, profitability & closeout display components.
+// ---------------------------------------------------------------------------
+
+function Purchases({
+  purchases,
+  lines,
+}: Readonly<{
+  purchases: readonly LivestockPurchaseRead[];
+  lines: readonly LivestockPurchaseLineRead[];
+}>) {
+  if (purchases.length === 0) return <p className="muted">لا توجد مشتريات إضافية بعد.</p>;
+  return (
+    <ol className="stack">
+      {purchases.map((purchase) => (
+        <li key={purchase.purchase_id}>
+          <strong>{purchase.purchase_reference}</strong>
+          <p>
+            المورد: {purchase.supplier_name} ·{' '}
+            <span className="muted">{dateTime(purchase.effective_at)}</span>
+          </p>
+          <ul className="muted">
+            {lines
+              .filter((line) => line.purchase_id === purchase.purchase_id)
+              .map((line) => (
+                <li key={line.purchase_line_id}>
+                  {line.cohort_reference} · {line.quantity} رأس
+                  {line.agreed_amount_minor_units
+                    ? <> · لقطة الاتفاق (لا تُرحَّل): {line.agreed_amount_minor_units}</>
+                    : null}
+                </li>
+              ))}
+          </ul>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function Sales({
+  sales,
+  lines,
+  collections,
+}: Readonly<{
+  sales: readonly LivestockSaleRead[];
+  lines: readonly LivestockSaleLineRead[];
+  collections: readonly LivestockSaleCollectionRead[];
+}>) {
+  if (sales.length === 0) return <p className="muted">لا توجد مبيعات بعد.</p>;
+  return (
+    <ol className="stack">
+      {sales.map((sale) => (
+        <li key={sale.sale_id}>
+          <strong>{sale.sale_reference}</strong>{' '}
+          <span className="status">{formatSaleControlState(sale.state)}</span>
+          <p>
+            المشتري: {sale.buyer_name} · <span className="muted">{sale.sale_date}</span>
+          </p>
+          <dl className="facts">
+            <div><dt>الإيراد المعترف به</dt><dd>{sale.recognized_revenue_minor_units}</dd></div>
+            <div><dt>المحصَّل</dt><dd>{sale.collected_minor_units}</dd></div>
+            <div><dt>الذمة المتبقية</dt><dd>{sale.outstanding_receivable_minor_units}</dd></div>
+          </dl>
+          <ul className="muted">
+            {lines
+              .filter((line) => line.sale_id === sale.sale_id)
+              .map((line) => (
+                <li key={line.sale_line_id}>
+                  {line.cohort_reference} · {line.quantity} رأس × {line.unit_price_minor_units}
+                </li>
+              ))}
+          </ul>
+          {collections.filter((collection) => collection.sale_id === sale.sale_id).length > 0 ? (
+            <details>
+              <summary>سجل التحصيل</summary>
+              <ul className="muted">
+                {collections
+                  .filter((collection) => collection.sale_id === sale.sale_id)
+                  .map((collection) => (
+                    <li key={collection.collection_id}>
+                      {collection.collection_date} · {collection.amount_minor_units} · {collection.cash_account_name}
+                    </li>
+                  ))}
+              </ul>
+            </details>
+          ) : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function CohortResults({ results }: Readonly<{ results: readonly LivestockCohortResultRead[] }>) {
+  if (results.length === 0) return <p className="muted">لا توجد نتائج لعرضها.</p>;
+  return (
+    <table>
+      <caption className="muted">
+        نتيجة تشغيلية قابلة لإعادة الحساب من حقائق ثابتة. الإيراد المعترف به والمحصَّل والتكلفة المُحمَّلة منفصلة؛
+        لا توجد تكلفة بضاعة مباعة ولا تقييم أصل حيوي ولا ربح قابل للتحرير.
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">الدفعة</th>
+          <th scope="col">العدد الحي غير المباع</th>
+          <th scope="col">الكمية المباعة</th>
+          <th scope="col">الإيراد المعترف به</th>
+          <th scope="col">النقد المحصَّل</th>
+          <th scope="col">التكلفة التشغيلية المُحمَّلة</th>
+          <th scope="col">النتيجة التشغيلية حتى الآن</th>
+          <th scope="col">حالة تكلفة البضاعة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {results.map((row) => (
+          <tr key={row.cohort_id}>
+            <th scope="row">{row.cohort_reference}</th>
+            <td>{row.unsold_live_quantity}</td>
+            <td>{row.sale_out}</td>
+            <td>{row.recognized_revenue_minor_units}</td>
+            <td>{row.cash_collected_minor_units}</td>
+            <td>{row.attributed_operating_cost_minor_units}</td>
+            <td>{row.operating_result_to_date_minor_units}</td>
+            <td><span className="muted">{formatMetricStatus(row.cogs_status)}</span></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function CohortIssues({ issues }: Readonly<{ issues: readonly LivestockCohortIssueRead[] }>) {
+  if (issues.length === 0) return <p className="muted">لا توجد استثناءات سلامة مفتوحة.</p>;
+  return (
+    <ul className="stack">
+      {issues.map((issue) => (
+        <li key={`${issue.cohort_id}-${issue.code}`}>
+          <span className={issue.severity === 'HARD' ? 'status' : undefined}>
+            {issue.severity === 'HARD' ? 'مانع' : 'تنبيه'} · {issue.code}
+          </span>
+          <p className="muted">{issue.message_ar}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function LivestockPage({
   params,
 }: Readonly<{ params: Promise<{ projectId: string }> }>) {
@@ -452,6 +633,17 @@ export default async function LivestockPage({
     weightEvents,
     quantityEvents,
     lineage,
+    parties,
+    cashAccounts,
+    purchases,
+    purchaseLines,
+    sales,
+    saleLines,
+    collections,
+    costSources,
+    costAttributions,
+    results,
+    issues,
   ] = await Promise.all([
     getCurrentMembership(project.organization_id),
     getLivestockSites(projectId),
@@ -464,6 +656,17 @@ export default async function LivestockPage({
     getLivestockWeightEvents(projectId),
     getLivestockQuantityEvents(projectId),
     getLivestockCohortLineage(projectId),
+    getParties(project.organization_id),
+    getCashAccountPositions(projectId),
+    getLivestockPurchases(projectId),
+    getLivestockPurchaseLines(projectId),
+    getLivestockSales(projectId),
+    getLivestockSaleLines(projectId),
+    getLivestockSaleCollections(projectId),
+    getLivestockCostSources(projectId),
+    getLivestockCostAttributions(projectId),
+    getLivestockCohortResults(projectId),
+    getLivestockCohortIssues(projectId),
   ]);
   if (!membership) {
     return (
@@ -492,6 +695,19 @@ export default async function LivestockPage({
   const positiveQuantityCohorts = operationalActiveCohorts.filter(
     (cohort) => (currentQuantityByCohort.get(cohort.id) ?? 0) > 0,
   );
+  // GF-024 commercial projections.
+  const partyOptions = parties.map((party) => ({ id: party.id, legal_name: party.legal_name }));
+  const cashAccountOptions = cashAccounts.map((account) => ({
+    cash_account_id: account.cash_account_id,
+    name: account.name,
+    currency: account.currency,
+  }));
+  const draftSales = sales.filter((sale) => sale.control_state === 'DRAFT');
+  const approvedSales = sales.filter((sale) => sale.control_state === 'APPROVED');
+  const collectableSales = sales.filter(
+    (sale) => sale.recognition_id != null && sale.outstanding_receivable_minor_units !== '0',
+  );
+  const activeAttributions = costAttributions.filter((attribution) => attribution.is_active);
   return (
     <section className="stack">
       <WorkspaceChrome
@@ -593,8 +809,70 @@ export default async function LivestockPage({
         <h2>سجل الأوزان</h2>
         <WeightLog events={weightEvents} />
       </section>
+      <section className="card stack">
+        <h2>المشتريات والإضافات</h2>
+        <PurchaseForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          cohorts={operationalActiveCohorts}
+          parties={partyOptions}
+        />
+        <Purchases purchases={purchases} lines={purchaseLines} />
+      </section>
+      <section className="card stack">
+        <h2>المبيعات</h2>
+        <SaleForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          cohorts={positiveQuantityCohorts}
+          parties={partyOptions}
+          currency={project.reporting_currency}
+        />
+        <Sales sales={sales} lines={saleLines} collections={collections} />
+      </section>
+      <section className="card stack">
+        <h2>اعتماد البيع</h2>
+        <SaleApprovalForm {...context} commandNonce={newCommandNonce()} sales={draftSales} />
+      </section>
+      <section className="card stack">
+        <h2>نقل السيطرة والاعتراف بالإيراد</h2>
+        <SaleRecognitionForm {...context} commandNonce={newCommandNonce()} sales={approvedSales} />
+      </section>
+      <section className="card stack">
+        <h2>التحصيل</h2>
+        <SaleCollectionForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          sales={collectableSales}
+          cashAccounts={cashAccountOptions}
+        />
+      </section>
+      <section className="card stack">
+        <h2>الربحية — تحميل التكلفة التشغيلية</h2>
+        <CostAttributionForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          cohorts={operationalActiveCohorts}
+          sources={costSources}
+        />
+        <CostAttributionReversalForm
+          {...context}
+          commandNonce={newCommandNonce()}
+          attributions={activeAttributions}
+        />
+      </section>
+      <section className="card stack">
+        <h2>الربحية — نتيجة الدفعة</h2>
+        <CohortResults results={results} />
+      </section>
+      <section className="card stack">
+        <h2>الإقفال</h2>
+        <CloseoutForm {...context} commandNonce={newCommandNonce()} cohorts={cohorts} />
+        <h3>استثناءات السلامة المفتوحة</h3>
+        <CohortIssues issues={issues} />
+      </section>
       <aside className="banner">
-        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو فترات حظر أو تحصين أو علف أو دورة تكاثر أو بيع أو تحصيل أو ربحية أو تقييم محاسبي. الأعداد المعروضة أرصدة تشغيلية مشتقة من أحداث ثابتة، وليست تقييمًا للمخزون ولا أثرًا محاسبيًا.
+        <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو فترات حظر أو تحصين أو علف أو دورة تكاثر. الدورة التجارية (شراء، بيع، تحصيل، ربحية، إقفال تقني) تعمل على الدفعة باستخدام النواة المالية المشتركة. لا تكلفة بضاعة مباعة ولا تقييم أصل حيوي ولا قيد IAS 41؛ الأعداد أرصدة تشغيلية مشتقة من أحداث ثابتة، وليست تقييمًا للمخزون ولا أثرًا محاسبيًا.
       </aside>
     </section>
   );
