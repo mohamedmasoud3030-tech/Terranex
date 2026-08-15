@@ -202,11 +202,13 @@ then 1 else 0 end as privileged_cross_species_lineage_rejected;
 
 -- ---------------------------------------------------------------------------
 -- Dedicated no-future-event Cohorts keep shape tests focused on operation
--- semantics rather than the temporal backstop for scheduled events.
+-- semantics rather than the temporal backstop for scheduled events. Their
+-- inception is yesterday so the deliberate `current_timestamp - 1 hour`
+-- privileged writes stay after inception even when CI runs just after UTC midnight.
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.create_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, %L,
-    'دفعة اختبار شكل أ', 'PURCHASED', current_date, 20, 'MIXED', null,
+    'دفعة اختبار شكل أ', 'PURCHASED', current_date - 1, 20, 'MIXED', null,
     null, null, null, null, null, 'gf68-shape-a'
   )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_shape_a \gset
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
@@ -217,7 +219,7 @@ select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.create_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, %L,
-    'دفعة اختبار شكل ب', 'PURCHASED', current_date, 20, 'MIXED', null,
+    'دفعة اختبار شكل ب', 'PURCHASED', current_date - 1, 20, 'MIXED', null,
     null, null, null, null, null, 'gf68-shape-b'
   )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_shape_b \gset
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
@@ -228,7 +230,7 @@ select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
   select public.create_livestock_cohort(
     '10000000-0000-4000-8000-000000000001', %L, %L, %L,
-    'دفعة اختبار شكل وجهة', 'PURCHASED', current_date, 20, 'MIXED', null,
+    'دفعة اختبار شكل وجهة', 'PURCHASED', current_date - 1, 20, 'MIXED', null,
     null, null, null, null, null, 'gf68-shape-dest'
   )$q$, :'gf68_project', :'gf68_herd_a', :'gf68_site')) gf68_shape_dest \gset
 select gf20_run('00000000-0000-4000-8000-000000000001', format($q$
