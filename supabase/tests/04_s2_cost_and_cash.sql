@@ -386,9 +386,14 @@ select 1/case when s2_try_cross_project_line()='REJECTED' then 1 else 0 end as s
 -- ---------------------------------------------------------------------------
 -- D. Payments: partial, exact outstanding, overpayment rejection, idempotency
 -- ---------------------------------------------------------------------------
+select s2_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.prepare_cost_payment('10000000-0000-4000-8000-000000000001',%L,%L,1,date '2026-08-25','s2-member-payment-proposal')$$,
+  :'s2_obl_expense', :'s2_account_a'));
+select id as s2_member_payment_proposal from public.cost_payment_proposals
+  where idempotency_key='s2-member-payment-proposal' \gset
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-member-0001')$$,
-  :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_member_denied;
+  $$select public.approve_cost_payment('10000000-0000-4000-8000-000000000001',%L,'s2-member-payment-approval')$$,
+  :'s2_member_payment_proposal'), 'P0001') then 1 else 0 end as s2_payment_member_cannot_approve;
 
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
