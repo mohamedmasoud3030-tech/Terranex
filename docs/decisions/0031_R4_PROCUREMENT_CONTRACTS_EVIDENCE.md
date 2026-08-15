@@ -27,13 +27,13 @@ Replacing a file creates a new version; it never overwrites the old object or me
 
 ### Command, idempotency and audit
 
-`register_procurement_evidence` atomically creates a document or its next version, creates the typed subject link and appends one audit event containing IDs, classification, checksum and size—not file content or secrets. It is active-member gated, request-fingerprinted and retry-safe. The application computes SHA-256 over the uploaded bytes and uses an object name stable for a retry of the same command/file payload.
+`register_procurement_evidence` first requires and row-locks the exact object in the private Storage catalog, then verifies its Storage-owned bucket/path, byte size and MIME metadata against the registration request. Only then does it atomically create a document or its next version, create the typed subject link and append one audit event containing IDs, classification, checksum and size—not file content or secrets. It is active-member gated, request-fingerprinted and retry-safe. The application computes SHA-256 over the uploaded bytes and uses an object name stable for a retry of the same command/file payload; Storage does not expose a content checksum, so SHA-256 remains independently reproducible from the immutable downloaded object rather than falsely claimed as Storage-verified.
 
 A contract is represented only as a classified, versioned commercial document linked to the Purchase Order it supports. Terranex does not infer legal terms, effective rights, renewal, termination, signature validity or accounting treatment from that classification.
 
 ### Approval evidence gates
 
-A commercial Purchase Order cannot transition from `SUBMITTED` to `APPROVED` without at least one registered `PURCHASE_ORDER` or `CONTRACT` file version linked to that order.
+A commercial Purchase Order cannot transition from `SUBMITTED` to `APPROVED` without at least one registered `PURCHASE_ORDER` or `CONTRACT` file version linked to that order whose exact Storage object still exists with matching size and MIME metadata. The invoice and receipt predicates apply the same non-orphan check, so metadata alone can never authorize approval.
 
 A Supplier Invoice cannot transition to `APPROVED` unless:
 

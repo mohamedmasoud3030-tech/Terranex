@@ -28,14 +28,18 @@ create or replace function s25a_attach_evidence(
   p_user uuid, p_organization uuid, p_project uuid, p_classification text,
   p_purchase_order uuid, p_purchase_receipt uuid, p_supplier_invoice uuid, p_key text
 ) returns uuid language plpgsql as $$
-declare v_result uuid;
+declare
+  v_result uuid;
+  v_object_name text := p_organization::text||'/'||p_project::text||'/'||gen_random_uuid()::text;
 begin
   perform set_config('request.jwt.claim.sub', p_user::text, true);
   perform set_config('role', 'authenticated', false);
+  insert into storage.objects(id,bucket_id,name,metadata)
+  values (gen_random_uuid(),'procurement-evidence',v_object_name,
+    jsonb_build_object('size',100,'mimetype','application/pdf'));
   select public.register_procurement_evidence(
     p_organization,p_project,null,p_classification,p_key,
-    p_organization::text||'/'||p_project::text||'/'||gen_random_uuid()::text,
-    p_key||'.pdf','application/pdf',100,repeat('a',64),
+    v_object_name,p_key||'.pdf','application/pdf',100,repeat('a',64),
     p_purchase_order,p_purchase_receipt,p_supplier_invoice,p_key
   ) into v_result;
   reset role;

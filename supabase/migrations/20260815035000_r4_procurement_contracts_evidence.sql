@@ -160,6 +160,9 @@ declare
   v_actor uuid := auth.uid();
   v_document public.procurement_evidence_documents%rowtype;
   v_existing public.procurement_evidence_links%rowtype;
+  v_object record;
+  v_storage_size bigint;
+  v_storage_mime text;
   v_document_id uuid;
   v_version_id uuid;
   v_link_id uuid;
@@ -213,6 +216,28 @@ begin
     || coalesce(p_supplier_invoice_id::text,''), 'sha256'), 'hex');
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':r4-evidence:' || trim(p_idempotency_key), 0));
+
+  -- The Storage catalog is authoritative for object existence and transport
+  -- metadata. Lock the row through this transaction: an unregistered-object
+  -- delete racing registration must finish first, or wait and then be denied
+  -- once the immutable version exists.
+  select o.bucket_id,o.name,o.metadata into v_object
+    from storage.objects o
+   where o.bucket_id='procurement-evidence' and o.name=p_storage_object_name
+   for share;
+  if not found then raise exception 'procurement evidence storage object not found'; end if;
+  if coalesce(v_object.metadata->>'size','') !~ '^[0-9]+$' then
+    raise exception 'procurement evidence storage object has invalid size metadata';
+  end if;
+  v_storage_size := (v_object.metadata->>'size')::bigint;
+  v_storage_mime := lower(coalesce(v_object.metadata->>'mimetype',''));
+  if v_storage_size is distinct from p_size_bytes then
+    raise exception 'procurement evidence size does not match storage object';
+  end if;
+  if v_storage_mime is distinct from lower(p_mime_type) then
+    raise exception 'procurement evidence MIME type does not match storage object';
+  end if;
+
   select * into v_existing from public.procurement_evidence_links
     where organization_id=p_organization_id and idempotency_key=trim(p_idempotency_key);
   if found then
@@ -274,8 +299,13 @@ begin
     select 1 from public.procurement_evidence_links l
     join public.procurement_evidence_versions v on v.id=l.evidence_version_id
     join public.procurement_evidence_documents d on d.id=v.document_id
+    join storage.objects o
+      on o.bucket_id=v.storage_bucket and o.name=v.storage_object_name
     where l.purchase_order_id=new.id and l.organization_id=new.organization_id
       and d.classification in ('CONTRACT','PURCHASE_ORDER')
+      and case when coalesce(o.metadata->>'size','') ~ '^[0-9]+$'
+        then (o.metadata->>'size')::bigint else null end = v.size_bytes
+      and lower(coalesce(o.metadata->>'mimetype',''))=v.mime_type
   ) then raise exception 'purchase order approval requires an immutable contract or purchase order file'; end if;
   return new;
 end $$;
@@ -291,8 +321,13 @@ begin
       select 1 from public.procurement_evidence_links l
       join public.procurement_evidence_versions v on v.id=l.evidence_version_id
       join public.procurement_evidence_documents d on d.id=v.document_id
+      join storage.objects o
+        on o.bucket_id=v.storage_bucket and o.name=v.storage_object_name
       where l.supplier_invoice_id=new.id and l.organization_id=new.organization_id
         and d.classification='SUPPLIER_INVOICE'
+        and case when coalesce(o.metadata->>'size','') ~ '^[0-9]+$'
+          then (o.metadata->>'size')::bigint else null end = v.size_bytes
+        and lower(coalesce(o.metadata->>'mimetype',''))=v.mime_type
     ) then raise exception 'supplier invoice approval requires an immutable invoice file'; end if;
     if exists (
       select 1 from public.supplier_invoice_lines il
@@ -301,8 +336,13 @@ begin
         select 1 from public.procurement_evidence_links l
         join public.procurement_evidence_versions v on v.id=l.evidence_version_id
         join public.procurement_evidence_documents d on d.id=v.document_id
+        join storage.objects o
+          on o.bucket_id=v.storage_bucket and o.name=v.storage_object_name
         where l.purchase_receipt_id=rl.purchase_receipt_id
           and l.organization_id=new.organization_id and d.classification='RECEIPT'
+          and case when coalesce(o.metadata->>'size','') ~ '^[0-9]+$'
+            then (o.metadata->>'size')::bigint else null end = v.size_bytes
+          and lower(coalesce(o.metadata->>'mimetype',''))=v.mime_type
       )
     ) then raise exception 'supplier invoice approval requires immutable evidence for every matched receipt'; end if;
   end if;

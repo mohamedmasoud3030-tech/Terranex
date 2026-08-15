@@ -76,6 +76,8 @@ function domainError(prev: ActionState, message: string | undefined, fallback: s
   if (text.includes('supplier invoice approval requires an immutable invoice')) return fail(prev, 'لا يمكن اعتماد الفاتورة قبل إرفاق ملف فاتورة المورد الثابت.');
   if (text.includes('every matched receipt')) return fail(prev, 'لا يمكن اعتماد الفاتورة قبل إرفاق دليل فعلي لكل استلام مطابق.');
   if (text.includes('evidence document not found') || text.includes('document identity')) return fail(prev, 'نسخة المستند الجديدة يجب أن تتبع نفس المستند والعنوان والتصنيف داخل المشروع.');
+  if (text.includes('evidence storage object not found')) return fail(prev, 'لم يثبت اكتمال رفع الملف الخاص. أعد رفع الملف ثم حاول مجددًا.');
+  if (text.includes('does not match storage object') || text.includes('storage object has invalid')) return fail(prev, 'بيانات الملف لا تطابق النسخة المحفوظة في التخزين الخاص.');
   if (text.includes('purchase order must be approved before receiving')) return fail(prev, 'لا يمكن الاستلام إلا على أمر شراء معتمد.');
   if (text.includes('received quantity exceeds ordered quantity')) return fail(prev, 'الكمية المستلمة تتجاوز الكمية المطلوبة لهذا السطر.');
   if (text.includes('order line not found for this order')) return fail(prev, 'سطر أمر الشراء المحدد لا ينتمي إلى هذا الأمر.');

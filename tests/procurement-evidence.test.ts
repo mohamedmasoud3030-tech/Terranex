@@ -45,10 +45,19 @@ describe('R4 Procurement Contracts & Evidence Closure', () => {
     expect(migration).toContain('num_nonnulls(purchase_order_id, purchase_receipt_id, supplier_invoice_id) = 1');
   });
 
-  it('gates PO and payable approval on actual immutable files', () => {
+  it('requires the actual locked Storage object and trusted transport metadata', () => {
+    expect(migration).toContain("from storage.objects o");
+    expect(migration).toContain("for share;");
+    expect(migration).toContain('procurement evidence storage object not found');
+    expect(migration).toContain("v_object.metadata->>'size'");
+    expect(migration).toContain("v_object.metadata->>'mimetype'");
+  });
+
+  it('gates PO and payable approval on non-orphan immutable files', () => {
     expect(migration).toContain('purchase order approval requires an immutable contract or purchase order file');
     expect(migration).toContain('supplier invoice approval requires an immutable invoice file');
     expect(migration).toContain('supplier invoice approval requires immutable evidence for every matched receipt');
+    expect(migration.match(/join storage\.objects o/g)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it('does not invent a contract suite, document workflow or duplicate audit core', () => {
