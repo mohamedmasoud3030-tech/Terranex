@@ -95,7 +95,7 @@ select id as s26_po_draft_line from public.purchase_order_lines
 where purchase_order_id = :'s26_po_draft' \gset
 select 1/case when s26a_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند استلام-د',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":5}]','s26a-rec-draft')$$,
+    ARRAY[%L]::uuid[],ARRAY[5]::numeric[],'s26a-rec-draft')$$,
   :'s26_project', :'s26_po_draft', :'s26_po_draft_line'))
   like '%must be approved before receiving%' then 1 else 0 end as s26_receipt_rejects_draft_po;
 
@@ -104,7 +104,7 @@ select 1/case when s26a_catch('00000000-0000-4000-8000-000000000003', format(
 -- ---------------------------------------------------------------------------
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند استلام-001',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":40}]','s26a-rec-001')$$,
+    ARRAY[%L]::uuid[],ARRAY[40]::numeric[],'s26a-rec-001')$$,
   :'s26_project', :'s26_po', :'s26_po_line_1')) as s26_receipt_1 \gset
 
 select 1/case when (select count(*) = 1 from public.purchase_receipt_lines
@@ -117,13 +117,13 @@ select 1/case when (select unit = :'s26_po_line_1_unit' from public.purchase_rec
 -- Idempotent replay returns the same receipt id.
 select 1/case when s26a_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند استلام-001',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":40}]','s26a-rec-001')$$,
+    ARRAY[%L]::uuid[],ARRAY[40]::numeric[],'s26a-rec-001')$$,
   :'s26_project', :'s26_po', :'s26_po_line_1')) = :'s26_receipt_1' then 1 else 0 end as s26_receipt_idempotent_replay;
 
 -- Same key, different payload -> payload mismatch.
 select 1/case when s26a_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند مختلف',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":50}]','s26a-rec-001')$$,
+    ARRAY[%L]::uuid[],ARRAY[50]::numeric[],'s26a-rec-001')$$,
   :'s26_project', :'s26_po', :'s26_po_line_1')) like '%idempotency key payload mismatch%' then 1 else 0 end
   as s26_receipt_payload_mismatch_rejected;
 
@@ -133,14 +133,14 @@ select 1/case when s26a_catch('00000000-0000-4000-8000-000000000003', format(
 -- 40 already received; receiving 61 more on the same 100-unit line over-receives.
 select 1/case when s26a_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند استلام-002',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":61}]','s26a-rec-over')$$,
+    ARRAY[%L]::uuid[],ARRAY[61]::numeric[],'s26a-rec-over')$$,
   :'s26_project', :'s26_po', :'s26_po_line_1')) like '%received quantity exceeds ordered quantity%' then 1 else 0 end
   as s26_over_receipt_rejected;
 
 -- Exactly the remainder (60) is accepted.
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'سند استلام-003',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":60}]','s26a-rec-remain')$$,
+    ARRAY[%L]::uuid[],ARRAY[60]::numeric[],'s26a-rec-remain')$$,
   :'s26_project', :'s26_po', :'s26_po_line_1')) as s26_receipt_remain \gset
 
 select 1/case when (select coalesce(sum(quantity_received),0) = 100 from public.purchase_receipt_lines
@@ -162,7 +162,7 @@ select 1/case when s26a_owner_catch(format(
 -- ---------------------------------------------------------------------------
 select 1/case when s26a_catch('00000000-0000-4000-8000-000000000002', format(
   $$select public.create_purchase_receipt('10000000-0000-4000-8000-000000000001',%L,%L,'تجاوز',null,
-    '[{"purchase_order_line_id":%L,"quantity_received":1}]','s26a-rec-cross')$$,
+    ARRAY[%L]::uuid[],ARRAY[1]::numeric[],'s26a-rec-cross')$$,
   :'s26_project', :'s26_po', :'s26_po_line_2')) like '%forbidden%' then 1 else 0 end as s26_receipt_cross_tenant_forbidden;
 
 -- Read isolation through the receiving read view.

@@ -23,7 +23,7 @@ The R0–R17 roadmap identifies **R4 — Procurement & Shared Operations** as th
 ## Verification
 
 - A SQL verification suite (`supabase/tests/75_gf025_procurement_foundation.sql`) covers tenant safety, idempotency + payload mismatch, request/order lifecycle, OWNER-only + maker/checker approval, append-only/no-delete guards, authenticated direct-write denial, and the supplier-linked read view.
-- The local database gate could not be run in the agent sandbox because neither `psql` nor Docker is available; per `AGENTS.md` it is reported **unresolved** and relies on the canonical GitHub Actions PostgreSQL 16 CI job before the PR is called ready. No gate is marked passed that was not run.
+- **Database gate: PASSED locally on a real PostgreSQL 17 server.** `scripts/db-test.sh` ran end-to-end (`EXIT=0`): GF-025/GF-026 migrations replay and the full SQL + concurrency + forward-upgrade suites pass with no regression. PostgreSQL-compatible fixes applied during this pass: expression-based inline `UNIQUE (... lower(trim(...)))` constraints were converted to equivalent `CREATE UNIQUE INDEX` statements (PostgreSQL rejects expressions inside inline table constraints), and mid-signature `DEFAULT NULL` parameters were removed (PostgreSQL requires trailing defaults) since the client always passes all arguments.
 
 ## Consequences
 

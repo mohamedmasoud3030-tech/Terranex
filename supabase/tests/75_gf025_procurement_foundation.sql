@@ -56,10 +56,16 @@ end $$;
 
 -- ---------------------------------------------------------------------------
 -- Setup: a project in org ...0001 (sector-independent procurement).
+-- Also register a dedicated MEMBER (0009) of org ...0001: earlier suites mutate
+-- 0003's role to OWNER, so a genuine non-owner actor is created here for the
+-- "non-owner cannot approve" / maker-checker assertions.
 -- ---------------------------------------------------------------------------
-select public.create_investment_project(
-  '10000000-0000-4000-8000-000000000001', 'مشروع اختبار المشتريات',
-  'GF025-PROJ', 'project for procurement verification'
+insert into auth.users values ('00000000-0000-4000-8000-000000000009') on conflict (id) do nothing;
+insert into public.memberships(organization_id, user_id, role)
+  values ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000009','MEMBER')
+  on conflict (organization_id, user_id) do update set role='MEMBER';
+select s25a_run('00000000-0000-4000-8000-000000000003',
+  $$select public.create_investment_project('10000000-0000-4000-8000-000000000001','مشروع اختبار المشتريات','GF025-PROJ','project for procurement verification','REAL_ESTATE')$$
 ) as s25_project \gset
 select id as s25_project_id from public.investment_projects
  where internal_reference='GF025-PROJ' and organization_id='10000000-0000-4000-8000-000000000001' \gset
@@ -113,9 +119,9 @@ select s25a_run('00000000-0000-4000-8000-000000000003',
 select 1/case when (select status='SUBMITTED' from public.purchase_requests where id=:'s25_pr')
   then 1 else 0 end as s25_pr_submitted_state;
 
--- requester (0003) cannot approve (maker/checker).
-select 1/case when s25a_catch('00000000-0000-4000-8000-000000000003', format(
-  $$select public.approve_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-approve-self')$$, :'s25_pr'))
+-- a genuine MEMBER (0009) cannot approve: only an OWNER may approve.
+select 1/case when s25a_catch('00000000-0000-4000-8000-000000000009', format(
+  $$select public.approve_purchase_request('10000000-0000-4000-8000-000000000001',%L,'s25a-pr-approve-by-member')$$, :'s25_pr'))
   like '%organization owner required%' then 1 else 0 end as s25_pr_non_owner_cannot_approve;
 
 -- owner (0001) approves.

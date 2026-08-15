@@ -37,8 +37,7 @@ create table public.procurement_suppliers (
   idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
   request_hash text not null check (char_length(request_hash) = 64),
   unique (id, organization_id),
-  unique (organization_id, idempotency_key),
-  unique (organization_id, lower(trim(name)))
+  unique (organization_id, idempotency_key)
 );
 
 -- ===========================================================================
@@ -68,8 +67,7 @@ create table public.purchase_requests (
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict,
   unique (id, organization_id),
-  unique (organization_id, idempotency_key),
-  unique (organization_id, project_id, lower(internal_reference))
+  unique (organization_id, idempotency_key)
 );
 
 create table public.purchase_request_lines (
@@ -125,8 +123,7 @@ create table public.purchase_orders (
   foreign key (source_purchase_request_id, organization_id)
     references public.purchase_requests(id, organization_id) on delete restrict,
   unique (id, organization_id),
-  unique (organization_id, idempotency_key),
-  unique (organization_id, project_id, lower(internal_reference))
+  unique (organization_id, idempotency_key)
 );
 
 create table public.purchase_order_lines (
@@ -147,9 +144,12 @@ create table public.purchase_order_lines (
 );
 
 create index procurement_suppliers_org_idx on public.procurement_suppliers(organization_id);
+create unique index procurement_suppliers_org_name_key on public.procurement_suppliers(organization_id, lower(trim(name)));
 create index purchase_requests_org_project_idx on public.purchase_requests(organization_id, project_id);
+create unique index purchase_requests_org_project_ref_key on public.purchase_requests(organization_id, project_id, lower(internal_reference));
 create index purchase_request_lines_req_idx on public.purchase_request_lines(purchase_request_id);
 create index purchase_orders_org_project_idx on public.purchase_orders(organization_id, project_id);
+create unique index purchase_orders_org_project_ref_key on public.purchase_orders(organization_id, project_id, lower(internal_reference));
 create index purchase_order_lines_order_idx on public.purchase_order_lines(purchase_order_id);
 
 -- ===========================================================================
@@ -240,9 +240,9 @@ create trigger gf025_supplier_no_delete
 create or replace function public.create_supplier(
   p_organization_id uuid,
   p_name text,
-  p_tax_number text default null,
-  p_payment_terms text default null,
-  p_notes text default null,
+  p_tax_number text,
+  p_payment_terms text,
+  p_notes text,
   p_idempotency_key text
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
@@ -302,8 +302,8 @@ create or replace function public.create_purchase_request(
   p_organization_id uuid,
   p_project_id uuid,
   p_internal_reference text,
-  p_description text default null,
-  p_lines jsonb default '[]',
+  p_description text,
+  p_lines jsonb,
   p_idempotency_key text
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
@@ -439,11 +439,11 @@ create or replace function public.create_purchase_order(
   p_organization_id uuid,
   p_project_id uuid,
   p_internal_reference text,
-  p_supplier_id uuid default null,
-  p_source_purchase_request_id uuid default null,
-  p_description text default null,
-  p_expected_delivery_date date default null,
-  p_lines jsonb default '[]',
+  p_supplier_id uuid,
+  p_source_purchase_request_id uuid,
+  p_description text,
+  p_expected_delivery_date date,
+  p_lines jsonb,
   p_idempotency_key text
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
@@ -656,3 +656,52 @@ create or replace view public.purchase_order_lines_read with (security_invoker=o
 select id, organization_id, project_id, purchase_order_id,
        item_description, quantity::text as quantity, unit, notes, created_at
 from public.purchase_order_lines;
+
+-- ===========================================================================
+-- 8. pgcrypto schema qualification (GF-025 commands)
+--    Terranex keeps SECURITY DEFINER search_path locked to pg_catalog,public.
+--    pgcrypto may live in `public` (local replay) or `extensions` (hosted
+--    Supabase); rewrite the unqualified digest() calls in this slice's
+--    commands to the owning schema, matching the repo convention.
+-- ===========================================================================
+do $pgcrypto_compat$
+declare
+  v_pgcrypto_schema text;
+  v_record record;
+  v_definition text;
+  v_rewritten text;
+begin
+  select n.nspname into v_pgcrypto_schema
+    from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+   where e.extname = 'pgcrypto';
+  if v_pgcrypto_schema is null then raise exception 'pgcrypto extension is required'; end if;
+
+  for v_record in
+    select p.oid
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.prokind = 'f'
+       and p.proname in (
+         'create_supplier','create_purchase_request','submit_purchase_request',
+         'approve_purchase_request','create_purchase_order','submit_purchase_order',
+         'approve_purchase_order'
+       )
+  loop
+    v_definition := pg_get_functiondef(v_record.oid);
+    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\(' then
+      v_rewritten := regexp_replace(
+        v_definition,
+        '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
+        E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
+        'g'
+      );
+      if v_rewritten = v_definition then
+        raise exception 'failed to qualify pgcrypto digest in GF-025 commands';
+      end if;
+      execute v_rewritten;
+    end if;
+  end loop;
+end
+$pgcrypto_compat$;

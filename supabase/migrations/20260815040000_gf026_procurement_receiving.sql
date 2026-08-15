@@ -141,8 +141,9 @@ create or replace function public.create_purchase_receipt(
   p_project_id uuid,
   p_purchase_order_id uuid,
   p_evidence_reference text,
-  p_notes text default null,
-  p_lines jsonb default '[]',
+  p_notes text,
+  p_purchase_order_line_ids uuid[],
+  p_quantities numeric[],
   p_idempotency_key text
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
@@ -176,28 +177,31 @@ begin
   if v_unit is null then raise exception 'purchase order not found'; end if;
   if v_unit <> 'APPROVED' then raise exception 'purchase order must be approved before receiving'; end if;
 
-  if jsonb_typeof(p_lines) <> 'array' or jsonb_array_length(p_lines) = 0 then
+  if p_purchase_order_line_ids is null or cardinality(p_purchase_order_line_ids) = 0 then
     raise exception 'at least one receipt line is required';
   end if;
-  for v_line in select * from jsonb_array_elements(p_lines) loop
-    v_n := (v_line->>'quantity_received')::numeric;
+  if cardinality(p_purchase_order_line_ids) <> cardinality(p_quantities) then
+    raise exception 'receipt line arrays must have equal length';
+  end if;
+  for v_i in 1..cardinality(p_purchase_order_line_ids) loop
+    v_n := p_quantities[v_i];
     if v_n is null or v_n <= 0 then raise exception 'invalid receipt line quantity'; end if;
     select l.quantity, l.unit into v_ordered, v_unit
       from public.purchase_order_lines l
-     where l.id = (v_line->>'purchase_order_line_id')::uuid
+     where l.id = p_purchase_order_line_ids[v_i]
        and l.purchase_order_id = p_purchase_order_id
        and l.organization_id = p_organization_id;
     if v_ordered is null then raise exception 'order line not found for this order'; end if;
     select coalesce(sum(rl.quantity_received), 0) into v_received
       from public.purchase_receipt_lines rl
-     where rl.purchase_order_line_id = (v_line->>'purchase_order_line_id')::uuid
+     where rl.purchase_order_line_id = p_purchase_order_line_ids[v_i]
        and rl.organization_id = p_organization_id;
     if v_received + v_n > v_ordered then raise exception 'received quantity exceeds ordered quantity'; end if;
   end loop;
 
   select encode(digest(
     p_purchase_order_id::text || '|' || trim(p_evidence_reference) || '|'
-    || coalesce(trim(p_notes), '') || '|' || (p_lines::jsonb)::text,
+    || coalesce(trim(p_notes), '') || '|' || p_purchase_order_line_ids::text || '|' || p_quantities::text,
     'sha256'), 'hex') into v_hash;
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':gf026-receipt:' || trim(p_idempotency_key), 0));
@@ -217,18 +221,17 @@ begin
     nullif(trim(p_notes), ''), v_actor, trim(p_idempotency_key), v_hash
   ) returning id into v_id;
 
-  for v_line in select * from jsonb_array_elements(p_lines) loop
+  for v_i in 1..cardinality(p_purchase_order_line_ids) loop
     -- Unit is derived from the order line; the browser never asserts it.
     select l.unit into v_unit from public.purchase_order_lines l
-     where l.id = (v_line->>'purchase_order_line_id')::uuid
+     where l.id = p_purchase_order_line_ids[v_i]
        and l.organization_id = p_organization_id;
     insert into public.purchase_receipt_lines(
       organization_id, project_id, purchase_receipt_id, purchase_order_line_id,
-      quantity_received, unit, notes
+      quantity_received, unit
     ) values (
-      p_organization_id, p_project_id, v_id, (v_line->>'purchase_order_line_id')::uuid,
-      (v_line->>'quantity_received')::numeric, v_unit,
-      nullif(trim(coalesce(v_line->>'notes','')), '')
+      p_organization_id, p_project_id, v_id, p_purchase_order_line_ids[v_i],
+      p_quantities[v_i], v_unit
     );
   end loop;
 
@@ -238,8 +241,8 @@ begin
   return v_id;
 end $$;
 
-revoke all on function public.create_purchase_receipt(uuid,uuid,uuid,text,text,jsonb,text) from public, anon;
-grant execute on function public.create_purchase_receipt(uuid,uuid,uuid,text,text,jsonb,text) to authenticated;
+revoke all on function public.create_purchase_receipt(uuid,uuid,uuid,text,text,uuid[],numeric[],text) from public, anon;
+grant execute on function public.create_purchase_receipt(uuid,uuid,uuid,text,text,uuid[],numeric[],text) to authenticated;
 
 -- ===========================================================================
 -- 4. RLS: default-deny, tenant-safe, read views only.
@@ -293,3 +296,46 @@ from public.purchase_order_lines ol
 left join public.purchase_receipt_lines rl
   on rl.purchase_order_line_id = ol.id and rl.organization_id = ol.organization_id
 group by ol.id, ol.organization_id, ol.project_id, ol.purchase_order_id, ol.item_description, ol.unit, ol.quantity;
+
+-- ===========================================================================
+-- 6. pgcrypto schema qualification (GF-026 commands)
+--    Same convention as the repo: qualify the unqualified digest() calls in
+--    this slice's commands to the schema that owns pgcrypto.
+-- ===========================================================================
+do $pgcrypto_compat$
+declare
+  v_pgcrypto_schema text;
+  v_record record;
+  v_definition text;
+  v_rewritten text;
+begin
+  select n.nspname into v_pgcrypto_schema
+    from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+   where e.extname = 'pgcrypto';
+  if v_pgcrypto_schema is null then raise exception 'pgcrypto extension is required'; end if;
+
+  for v_record in
+    select p.oid
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.prokind = 'f'
+       and p.proname in ('create_purchase_receipt')
+  loop
+    v_definition := pg_get_functiondef(v_record.oid);
+    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\(' then
+      v_rewritten := regexp_replace(
+        v_definition,
+        '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
+        E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
+        'g'
+      );
+      if v_rewritten = v_definition then
+        raise exception 'failed to qualify pgcrypto digest in GF-026 commands';
+      end if;
+      execute v_rewritten;
+    end if;
+  end loop;
+end
+$pgcrypto_compat$;

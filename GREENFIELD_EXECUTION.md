@@ -378,9 +378,11 @@ portion waits. The remaining independent gates, in order:
    quantities against an APPROVED Purchase Order, server-derived unit, over-
    receipt guard, append-only, Arabic/RTL receiving UI) under
    `docs/decisions/0027_GF026_PROCUREMENT_RECEIVING.md`. Pricing/invoice/
-   payment (Finance Core linkage) is the next step of the slice. The local
-   database gate requires CI because neither `psql` nor Docker is available in
-   the agent sandbox (per `AGENTS.md`).
+   payment (Finance Core linkage) is the next step of the slice.
+   **Database gate: PASSED.** PostgreSQL 17 was installed in the environment
+   and `scripts/db-test.sh` ran end-to-end (`EXIT=0`): GF-025/GF-026 migrations
+   replay and the full SQL + concurrency + forward-upgrade suites (S1–S7,
+   GF-016→GF-024) pass with no regression.
 2. **R2 / R3 remaining** — first-class Portfolio identity + roll-up read-models,
    and budget/forecast/commitment plus portfolio roll-up on the shared Finance
    Core (the financial engine itself is already authoritative).

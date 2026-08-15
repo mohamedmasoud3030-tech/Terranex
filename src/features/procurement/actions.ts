@@ -167,10 +167,8 @@ export async function createPurchaseReceipt(_: ActionState, form: FormData): Pro
     p_purchase_order_id: value.purchaseOrderId,
     p_evidence_reference: value.evidenceReference,
     p_notes: value.notes,
-    p_lines: value.linesJson.map((line) => ({
-      purchase_order_line_id: line.purchaseOrderLineId,
-      quantity_received: line.quantityReceived.replace(',', '.'),
-    })),
+    p_purchase_order_line_ids: value.linesJson.map((line) => line.purchaseOrderLineId),
+    p_quantities: value.linesJson.map((line) => line.quantityReceived.replace(',', '.')),
     p_idempotency_key: value.idempotencyKey,
   }, 'تعذر تسجيل الاستلام.', value.projectId);
 }

@@ -25,8 +25,10 @@ GF-025 delivered suppliers + purchase requests/orders (quantity-only). The next 
 ## Verification
 
 - SQL verification suite `supabase/tests/76_gf026_procurement_receiving.sql`: APPROVED-only gate, over-receipt rejection (including across receipts), server-derived unit, idempotency + payload mismatch, append-only, and two-tenant isolation.
-- Application verification: extended `tests/procurement-foundation.test.tsx` (receiving schema + `ReceiptForm` render). Typecheck, lint, and build pass locally.
-- The local database gate remains **unresolved** in the agent sandbox (neither `psql` nor Docker available) and must be run by the canonical GitHub Actions PostgreSQL 16 CI job before the PR is called ready.
+- **Command input shape:** `create_purchase_receipt` takes **parallel arrays** (`p_purchase_order_line_ids uuid[]`, `p_quantities numeric[]`) rather than a single JSON payload. This mirrors the GF-018 parallel-array pattern and avoids the PostgreSQL `psql` quoting hazard of embedding a UUID inside a JSON literal through `format('%L')`/stdin variable substitution, which silently corrupts the generated SQL. The client (`ReceiptForm` → `createPurchaseReceipt` action) still collects lines and sends the two parallel arrays.
+- Application verification: extended `tests/procurement-foundation.test.tsx` (receiving schema + `ReceiptForm` render). Typecheck, lint, build, and 554/554 app tests pass locally.
+- **Database gate: PASSED locally on a real PostgreSQL 17 server.** `scripts/db-test.sh` was run end-to-end (`EXIT=0`): all ordered migrations (including GF-025/GF-026) replay, the full SQL verification suite passes, and every concurrency and forward-upgrade shell suite (S1–S7 and GF-016 through GF-024) still passes, proving no regression from the Procurement slices.
+- Two pre-existing suites were updated only because GF-025 legitimately adds `purchase_orders`: `44_gf015_input_application.sql` and `47_gf016_harvest_inventory.sql` asserted that `purchase_orders` must not exist (correct when written, before any procurement slice). `purchase_orders` is removed from those "must not exist" lists with an explanatory note; all other still-undeferred tables remain asserted.
 
 ## Consequences
 
