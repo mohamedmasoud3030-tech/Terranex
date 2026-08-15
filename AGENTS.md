@@ -1,11 +1,11 @@
 # Terranex Greenfield — Agent Policy
 
-**Effective:** 2026-08-13
+**Effective:** 2026-08-15
 **Status:** Canonical for `main` and every branch created from it
 
 ## Mission
 
-Build Terranex as a greenfield Investment Operations OS for private investment operators in real estate, agriculture, and livestock. The shared investment, finance, control, and audit core is built once; sector behavior remains inside explicit bounded contexts.
+Build Terranex as a greenfield Investment Operations OS for private investment operators in real estate, agriculture, and livestock. The shared investment, finance, control, and audit core is built once; sector behavior remains inside explicit bounded contexts. The management hierarchy is Organization → Investment Portfolio → Investment Project; Portfolio organizes independent projects and must not silently acquire fund/legal/investor-pool semantics.
 
 ## Canonical sources
 
@@ -20,11 +20,12 @@ Read these files completely before changing the product:
 7. `docs/greenfield/06_SYSTEM_ARCHITECTURE_AND_SECURITY.md`
 8. `docs/greenfield/07_UX_INFORMATION_ARCHITECTURE.md`
 9. `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`
-10. `GREENFIELD_EXECUTION.md`
-11. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
-12. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
-13. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`
-14. `docs/DB_DEVELOPMENT.md`
+10. `docs/OPEN_BUSINESS_DECISIONS.md`
+11. `GREENFIELD_EXECUTION.md`
+12. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
+13. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
+14. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`
+15. `docs/DB_DEVELOPMENT.md`
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
@@ -35,35 +36,52 @@ No deleted or archived Terranex file is authoritative. The frozen legacy snapsho
 - A generic technical fragment may be reused only after a written assessment proves it matches the Greenfield contracts and introduces no hidden domain assumption.
 - Real Estate remains the first implemented sector pack. Agriculture is the authorized second sector and Livestock follows it; build them sequentially, never as competing duplicate cores.
 - Terranex is a private operational system in v1, not crowdfunding, custody, a public marketplace, or a statutory general ledger.
+- Investment Portfolio is a management/reporting parent above independent projects. Do not treat it as a fund, legal entity, SPV, pooled vehicle, investor pool, or second ledger unless an explicit later business decision establishes that meaning.
+
+## Anti-hallucination and domain-invention rules
+
+Terranex agents must distinguish four kinds of information and never collapse them:
+
+1. **Canonical product/business decision** — explicitly approved in current canonical docs/ADRs.
+2. **Implementation fact** — behavior that exists in code/migrations/tests; this proves what the system currently does, not that the behavior is universally correct business policy.
+3. **External evidence** — law, accounting/industry standard, mature product pattern, public reference artifact, or professional guidance; this can validate a pattern or constraint but does not prove this company uses a specific optional rule.
+4. **Assumption/open business decision** — anything material not established by the three categories above.
+
+Mandatory rules:
+
+- Never promote a guess, legacy practice, synthetic demo, fixture, UI label, existing column, coincidentally matching amount, industry convention, or “common” workflow into a company business rule.
+- Never infer legal/entity structure, fund/SPV status, investor pooling, ownership, entitlement, contribution basis, profit/loss allocation, distribution formula, reserves, fees, tax/withholding, cross-project netting/recycling, or investor lifecycle behavior from names or current data.
+- **Portfolio capital deployment/project funding is not investor contribution, ownership, allocation, distribution, or payment.** Keep each fact explicit.
+- Contribution amount does not imply ownership. Ownership does not imply profit-allocation basis. Allocation does not imply distributable cash. Approved distribution does not imply payment.
+- Portfolio/project roll-ups are derived management views. A dashboard requirement never authorizes a new ledger or cross-project accounting behavior.
+- External standards and mature platforms are research evidence only. Apply a rule only when it is mandatory for the product boundary or explicitly approved for Terranex/the target company.
+- For accounting, tax, regulatory, or legal consequences, preserve the product fact/evidence and require qualified validation where the treatment is not already established. Do not claim compliance by inference.
+- If a material implementation depends on an unresolved business rule, search the canonical sources and relevant authoritative evidence. If still unresolved, add/reference the item in `docs/OPEN_BUSINESS_DECISIONS.md`, stop **only the dependent scope**, and continue unrelated bounded work.
+- Do not evade an unresolved decision by adding generic configuration, a rules engine, nullable schema, an `OTHER` enum, a fake default percentage, or a placeholder workflow.
+- A later agent may delete or change an earlier user/agent idea when stronger evidence proves it unrealistic or incorrect; preserve the reason and source of the correction.
+- Never claim customer validation, legal approval, accounting approval, production evidence, or business-owner approval unless that evidence actually exists.
 
 ## Current delivery gate
 
-Current state: **Real Estate is technically implemented; Agriculture GF-013 through GF-019 is technically implemented; Livestock is the active sector; GF-020 is merged, and GF-021 (movement, quantity rollforward foundation, weight events) plus GF-022 (births, mortality, split, merge) are the active bounded slices**.
+Real Estate, Agriculture GF-013 through GF-019, and Livestock GF-020 through GF-024 are technically implemented for their authorized scopes on `main`. GF-023 and GF-024 are merged; older text describing GF-021/GF-022 as the active slices is stale and must not drive new work.
 
-Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core.
+The active governance task is **R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance**. R0 is documentation/governance only:
 
-Implementation is authorized now. Record decisions just in time for the active slice; do not create an architecture-document phase before working software. A slice may introduce only the schema, rules, UI, and tests it actually uses. Keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated until professionally validated.
+- no product feature implementation;
+- no database migrations/schema changes;
+- no runtime behavior changes;
+- no UI redesign/components/routes;
+- no placeholder services, tables, APIs, or generalized rules engines.
+
+After R0 is reviewed/merged, portfolio implementation proceeds only through separate bounded R1–R5 branches defined by the canonical roadmap. R1–R5 may not guess investor/legal/economic rules. After R5 there is a hard stop on dependent portfolio/investor-economics expansion until the relevant `docs/OPEN_BUSINESS_DECISIONS.md` items are resolved.
+
+Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation of established common product behavior. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core. Company-specific investor/legal/economic behavior, however, must not be fabricated under the product-first rule.
+
+Implementation outside the R0 docs-only branch is authorized only within the next approved bounded slice. Record decisions just in time for that slice; do not create an architecture-document phase before working software. A slice may introduce only the schema, rules, UI, and tests it actually uses. Keep Egypt-specific tax, statutory accounting, e-invoicing, and regulatory behavior isolated until professionally validated.
 
 The first operating market is Egypt. Arabic/RTL, EGP, Egyptian document terminology, and Egypt-ready configuration are launch priorities, but country-specific rules must not be hardcoded into the shared core.
 
-Real Estate has completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Real-customer evidence, buyer UAT, and commercial Phase 2/3 exits remain pending and must never be fabricated. Their absence does not block authorized product construction: Agriculture has passed its technical implementation gate. Livestock is the active sector; GF-020 is merged and GF-021/GF-022 are the active bounded slices, but no Livestock runtime belongs in the completed Agriculture work. No agent may reopen or rebuild the completed Real Estate architecture without a proven defect or an explicit product decision.
-
-Agriculture construction order, and its truthful state:
-
-- `GF-013 — Agriculture Sector Foundation` (`Farm → Field → CropCycle` and CropCycle-Field assignments): **merged, technically complete**.
-- `GF-014 — Field Activity Foundation` (append-only field activity against an existing assignment): **merged through PR #125, technically complete**.
-- `GF-015 — Field Input Application Foundation` (Input Item, Input Lot, Input Application against an existing Field Activity): **merged, technically complete**.
-- `GF-016 — Harvest & Inventory Flow Foundation` (Harvest Event, Harvest Lot, Storage Location, append-only Inventory Movement): **merged, technically complete**.
-- `GF-017 — Agricultural Land Asset, Acquisition & Control`: **merged through PR #128, technically complete**.
-- `GF-018 — Agriculture Sale, Dispatch & Revenue`: **merged, technically complete**.
-- `GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate`: **technically complete**.
-- **Active sector: Livestock.**
-  - `GF-020 — Livestock Sector Foundation` (`Site`/`Herd` → `Cohort`, immutable opening placement, causal lifecycle chain): **merged through PR #131, technically complete**.
-  - `GF-021 — Livestock Movement, Quantity Rollforward & Weight Events`: active bounded slice. Adds an append-only causal movement chain, a derived current-placement read model, the exact integer quantity-event architecture (no event class registered yet), and immutable WeightEvents.
-  - `GF-022 — Livestock Biological Quantity Events, Mortality, Births, Split & Merge`: active bounded slice, additive on the GF-021 ledger. Registers `BIRTH | MORTALITY | SPLIT_OUT | SPLIT_IN | MERGE_OUT | MERGE_IN`, binds both sides of a split/merge to one operation identity with a database-enforced conservation invariant, and makes a negative derived quantity unreachable.
-  - Livestock current state stays event-derived across every slice: no mutable `current_site_id`, `current_herd_id`, `current_headcount`, `current_weight`, `mortality_total`, or `births_total` is authoritative.
-
-Agriculture technical completeness is not commercial validation. No Agriculture slice counts as customer evidence, pilot evidence, or UAT.
+Real Estate completed the S0-S7 technical path and the GF-010/GF-011 hosted workspace work using a clearly synthetic showcase. Agriculture and Livestock completed their authorized technical construction through GF-019 and GF-024 respectively. Technical completion is **not** customer validation, buyer UAT, paid-pilot evidence, legal/accounting approval, or production-company evidence.
 
 ## Target architecture
 
@@ -74,6 +92,7 @@ Agriculture technical completeness is not commercial validation. No Agriculture 
 - No microservices, CQRS framework, event sourcing, generic repository, plugin/rules engine, transactional outbox, offline sync, PWA machinery, queues, or external integrations until an implemented workflow proves the need.
 - Company differences use small typed configuration or explicit bounded extensions; never tenant-specific forks.
 - Build one complete vertical slice at a time. The conceptual domain catalog is not a request to scaffold unused entities.
+- The Portfolio layer does not get a duplicate finance, ownership, payment, approval, or audit engine. Project-authoritative facts roll up through read models.
 
 ## Financial and security rules
 
@@ -82,6 +101,8 @@ Agriculture technical completeness is not commercial validation. No Agriculture 
 - Material commands are atomic, idempotent, version-aware, authorized, and auditable.
 - Posted facts are append-only; corrections use reversal/repost with a complete chain.
 - The browser never supplies authoritative balances, entitlements, or approval outcomes.
+- Never infer ownership, entitlement, or distribution rights from cash movement, contribution amount, Portfolio membership, or Project membership.
+- Keep Portfolio capital deployment, funding/accounting mechanism, investor contribution, ownership, result allocation, distribution, and payment as distinct concepts.
 - No secrets, real credentials, personal data, or unsanitized customer artifacts enter Git.
 - Do not access or modify production data, Supabase, Vercel, banking, or external accounting systems without explicit authorization.
 
@@ -99,7 +120,9 @@ Agriculture technical completeness is not commercial validation. No Agriculture 
 
 - Arabic/RTL is the primary experience; English/LTR remains supported.
 - Mobile-first density, WCAG 2.2 AA, keyboard support, and honest loading/error/empty/offline/conflict states are required.
-- Keep navigation shallow and project-centered; do not introduce nested page-within-page or tab sprawl.
+- Keep navigation shallow and context-aware: Portfolio → Project → source. Do not introduce nested page-within-page or tab sprawl.
+- Every Portfolio total must be traceable to Project composition; every Project total must be traceable to source facts/evidence.
+- Do not show portfolio ownership, pooled investor balance, portfolio distributable profit, or cross-project netted economics until the corresponding business decisions are resolved.
 - Do not imply that a draft, pending approval, unreconciled amount, or failed sync is final.
 
 ## Change discipline
@@ -107,6 +130,7 @@ Agriculture technical completeness is not commercial validation. No Agriculture 
 - Before starting any implementation branch, run `git fetch origin` and create the branch from the exact current `origin/main`; never trust a stale session/workspace branch as the base. `greenfield/foundation` is historical and non-authoritative unless Mohamed explicitly reactivates it.
 - Before opening or updating an implementation PR, verify `git rev-list --left-right --count origin/main...HEAD`; the branch must be **0 behind** its target. If it is behind, repair the lineage before delivery rather than opening a divergent PR.
 - Inspect the target comparison before delivery. A narrow vertical slice must not unexpectedly delete/reintroduce legacy files or show unrelated repository-wide churn.
+- Before a business-sensitive implementation PR, state which canonical decision(s) authorize the behavior and which `OPEN_BUSINESS_DECISIONS` IDs, if any, remain unresolved. Do not ship code whose correctness depends on an OPEN item.
 - Do not replace the canonical database runner with an embedded/alternate PostgreSQL implementation. Extend `scripts/db-test.sh` and `supabase/tests` only when the active slice needs new verification.
 - Work in one bounded vertical slice at a time.
 - Search before creating. There must be one canonical implementation for money, authorization, project identity, status, formatting, and UI primitives.
@@ -116,11 +140,13 @@ Agriculture technical completeness is not commercial validation. No Agriculture 
 - Never edit an applied migration; add an ordered forward migration with recovery and verification notes.
 - Preserve unrelated work and inspect the complete diff before committing.
 - Do not deploy production or merge to `main` unless Mohamed explicitly requests it.
-- Open a pull request for completed branch work and include scope, decisions, verification, risks, and the next gate.
+- Open a pull request for completed branch work and include scope, decisions, verification, risks, unresolved business dependencies, and the next gate.
 
 ## Verification expectations
 
-Use the smallest truthful gate for the current phase. Once runtime code exists, every completed slice must cover its affected layers and ultimately support:
+Use the smallest truthful gate for the current phase. A documentation/governance-only change must prove its diff is restricted to documentation/governance and perform cross-document consistency checks; it must not claim runtime/database gates that were not needed or run.
+
+Once runtime code exists in a changed slice, every completed slice must cover its affected layers and ultimately support:
 
 - typecheck, lint, unit/integration/contract/E2E, and build;
 - migration replay and upgrade paths;
@@ -133,4 +159,4 @@ Do not claim a gate passed unless it was run against the reported commit and env
 
 ## Definition of complete
 
-A task is complete only when the requested outcome is implemented, relevant evidence is committed, targeted verification passes, the diff contains no legacy leakage or secrets, and the PR clearly states what remains outside scope.
+A task is complete only when the requested outcome is implemented, relevant evidence is committed, targeted verification passes, the diff contains no legacy leakage or secrets, unresolved business dependencies are explicit, and the PR clearly states what remains outside scope.
