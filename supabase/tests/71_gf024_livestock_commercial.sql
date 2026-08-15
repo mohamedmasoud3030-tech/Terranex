@@ -189,8 +189,13 @@ select 1/case when (
   (select count(*) from journal_batches) = :'gf24_jb_before'
   and (select count(*) from livestock_quantity_events where event_type='SALE_OUT') = 0
 ) then 1 else 0 end as gf24_draft_has_no_effect;
--- Approval is an OWNER control; a MEMBER cannot approve.
-select 1/case when gf24_catch('00000000-0000-4000-8000-000000000003', format($q$
+-- Approval is an OWNER control; a plain ACTIVE MEMBER cannot approve.
+insert into auth.users values ('00000000-0000-4000-8000-000000000006')
+  on conflict (id) do nothing;
+insert into public.memberships(organization_id, user_id, role, status)
+values ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000006','MEMBER','ACTIVE')
+on conflict (organization_id, user_id) do update set role='MEMBER', status='ACTIVE';
+select 1/case when gf24_catch('00000000-0000-4000-8000-000000000006', format($q$
   select public.approve_livestock_sale('10000000-0000-4000-8000-000000000001',%L,'gf24-sale-a-approve-member')$q$,
   :'gf24_sale_a')) like '%owner required%' then 1 else 0 end as gf24_member_cannot_approve;
 select gf24_run('00000000-0000-4000-8000-000000000001', format($q$
