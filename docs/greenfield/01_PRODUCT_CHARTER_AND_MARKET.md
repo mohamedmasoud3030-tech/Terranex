@@ -8,11 +8,13 @@
 
 Terranex is an Arabic-first **Investment Operations OS** for owner-managed investment companies and private partnerships operating real-estate, crop-farming, and livestock projects.
 
+Inside an Organization, Terranex uses **Investment Portfolio → Investment Project** as the management hierarchy. The Portfolio groups independent projects for owner-level planning, capital-deployment visibility, and consolidated management reporting. It is **not automatically a fund, legal entity, SPV, pooled vehicle, or shared investor pool**. Each Investment Project remains the operational, budget, financial-attribution, execution, and close boundary for one deal/venture.
+
 It connects four things that are usually split across spreadsheets, chat, paper files, and accounting software:
 
-1. the investment agreement and ownership history;
-2. the real operational activity of the project;
-3. project cash, obligations, profit, and investor capital accounts;
+1. the approved investment agreement and participation history where those terms actually apply;
+2. the real operational activity of each project;
+3. project cash, obligations, realized result, approved capital activity, and traceable management roll-ups;
 4. approvals, evidence, statements, and an immutable audit trail.
 
 Terranex v1 is **not** a public investment marketplace, crowdfunding platform, broker, custodian, bank, wallet, or statutory accounting/ERP replacement. Public fundraising, pooled retail products, payment custody, and regulated investment advice are outside the product until separately licensed and designed.
@@ -28,7 +30,7 @@ An Egyptian or MENA owner-managed investment company with:
 - one finance person plus sector operators;
 - real-estate deals and/or farms/herds;
 - operations currently coordinated through Excel, WhatsApp, paper receipts, and an external accountant;
-- a recurring need to answer: **what do we own, what happened, how much did it cost, what is each partner entitled to, and what needs approval now?**
+- a recurring need to answer: **what do we own, what happened, how much did it cost, what is each partner entitled to where applicable, and what needs approval now?**
 
 ### Economic buyer
 
@@ -41,33 +43,35 @@ The managing partner, company owner, CFO, or investment director. They pay to re
 | Managing partner | See portfolio truth and approve material actions | No surprises; approvals take minutes |
 | Finance officer | Record money once and reconcile it to projects/investors | Every amount has source, allocation, and status |
 | Sector operator | Capture work, quantities, evidence, and issues from the field | Same-day reliable operational record |
-| Investor/partner | See own position, notices, documents, and distributions | Fewer calls and statement disputes |
+| Investor/partner | See own position, notices, documents, and distributions where governed | Fewer calls and statement disputes |
 | Auditor/accountant | Trace balances to immutable events and evidence | Reperformance without spreadsheet archaeology |
 
 ## 3. Problem statement
 
 Generic accounting systems know invoices and journal entries but usually do not know the operational object that created value: a land deal, development phase, crop cycle, harvest lot, herd cohort, or animal event. Sector tools know field or herd activity but generally do not maintain investment agreements, investor capital accounts, capital calls, allocations, and distributions. Investor portals communicate balances but do not originate operational truth.
 
-Terranex owns the connective layer: **agreement → operation → money → entitlement → evidence**.
+Terranex owns the connective layer: **portfolio context → project → operation → money → approved entitlement where applicable → evidence**.
 
 ## 4. Jobs to be done
 
-1. When starting a project, establish the legal/operational vehicle, investors, commitment terms, ownership history, budget, asset, and controls before money moves.
-2. When money or goods move, record the event once with amount, currency, counterparty, project, purpose, evidence, approval, and accounting effect.
-3. When field work happens, capture the sector-specific event and connect it to cost, inventory, yield, health, risk, and responsible person.
-4. When management asks about performance, show actual cash, accruals, commitments, cost-to-date, realized result, valuation, and forecast without mixing them.
-5. When profit is allocated or cash distributed, apply the signed agreement version, preserve calculation inputs, require approval, and generate partner statements.
-6. When a dispute or audit occurs, reproduce who did what, when, under which agreement, with which evidence and resulting balances.
+1. When organizing investments, group independent projects into a management Portfolio without merging their economic or operational truth.
+2. When starting a project, establish its legal/operational context, approved participants/terms where known, budget, asset, and controls before money moves.
+3. When money or goods move, record the event once with amount, currency, counterparty, project, purpose, evidence, approval, and accounting effect.
+4. When field work happens, capture the sector-specific event and connect it to cost, inventory, yield, health, risk, and responsible person.
+5. When management asks about performance, show portfolio roll-up and project drill-down across actual cash, accruals, commitments, cost-to-date, realized result, valuation, and forecast without mixing them.
+6. When profit is allocated or cash distributed under an approved investor agreement, apply the exact governing version, preserve calculation inputs, require approval, and generate partner statements.
+7. When a dispute or audit occurs, reproduce who did what, when, under which approved terms, with which evidence and resulting balances.
 
 ## 5. Product principles
 
 | Principle | Product consequence |
 |---|---|
-| Project is the economic boundary | Every material operation and monetary event is dimensioned by project |
+| Portfolio organizes management; Project owns execution/attribution | Portfolio rolls up independent projects; every material operation and monetary event remains project-dimensioned |
 | Sector truth stays sector-specific | No fake universal model for parcels, crop cycles, herds, or animals |
 | Money is exact | Integer minor units, explicit currency, balanced postings, no floating-point arithmetic |
-| Agreement drives entitlement | Ownership and allocation rules are effective-dated and never overwritten |
+| Approved agreement drives entitlement | Ownership and allocation rules exist only when supported by effective-dated approved terms and are never overwritten |
 | Cash is not profit | Cash, accrual profit, valuation, commitments, and distributable cash are separate measures |
+| Capital deployment is not investor capital | Portfolio/project funding decisions are not automatically contributions, ownership, allocation, distribution, or payment |
 | Evidence is first-class | Documents link to the event/version they support, not just a generic folder |
 | Correction is reversal | Posted financial history is append-only; errors are reversed and reposted |
 | Approval is a state transition | Sensitive actions cannot be “approved” by merely editing a status field |
@@ -78,14 +82,15 @@ Terranex owns the connective layer: **agreement → operation → money → enti
 
 ### Terranex owns in v1
 
-- organization, memberships, roles, projects, parties, and documents;
-- project investment terms, commitments, contributions, ownership interests, and effective versions;
+- organization, memberships, roles, **investment portfolios**, projects, parties, and documents;
+- Portfolio → Project management grouping and traceable project roll-up reporting;
+- project investment terms, commitments, contributions, ownership interests, and effective versions **only where those business terms are explicitly approved**;
 - cash accounts as operational subledgers, receipts/payments, obligations, approvals, and reconciliation status;
-- project-level double-entry investment subledger and partner capital accounts;
-- real-estate acquisition/development/disposal tracking;
+- project-level double-entry investment/operational subledger and approved partner capital accounts;
+- real-estate acquisition/development/disposal tracking plus **basic rental-income recognition/receivable/collection for held property**;
 - crop cycle planning, field activity, input use, harvest lots, inventory, and sales;
 - herd/cohort operations, individual animal identity where justified, health/weight/birth/death/movement, input use, and sales;
-- allocation, distribution proposals, approvals, payments, reversals, and investor statements;
+- allocation, distribution proposals, approvals, payments, reversals, and investor statements only under approved governing rules;
 - exports/integration contracts for statutory accounting and Egyptian e-invoicing later.
 
 ### Explicitly outside v1
@@ -94,7 +99,7 @@ Terranex owns the connective layer: **agreement → operation → money → enti
 - payroll, full procurement suite, tax return preparation, statutory consolidation, depreciation/tax books, and full ERP;
 - IoT, satellite imagery, automated valuation, bank API aggregation, and government submissions;
 - complex private-equity waterfalls, carried interest, preferred-return catch-ups, and multi-GAAP reporting;
-- property leasing/property management, food processing/manufacturing, and slaughterhouse operations.
+- **full lease administration/property management** such as tenant lifecycle, renewals, service charges, maintenance/work orders, and facilities operations; food processing/manufacturing; and slaughterhouse operations.
 
 ## 7. Competitive pattern study
 
@@ -107,6 +112,8 @@ The product combines mature patterns without copying any vendor’s data model:
 | AGRIVI centers farm, crop, field activity, team responsibility, inventory, and traceability | Cycle/field/activity/input/harvest records with operational accountability | Agronomy recommendation engine and supply-chain suite |
 | AgriWebb tracks animals, pastures, health, weight, breeding, movement, RFID, and mobile records | Cohort-first livestock records with optional individual identity | Country-specific compliance modules in v1 |
 | ILPA templates emphasize standardized, transparent capital-call/distribution notices | Consistent transaction types and investor-readable notices | Claiming ILPA compliance before a formal mapping audit |
+
+These patterns are external evidence, not authority for the first company’s legal structure, ownership basis, contribution model, or profit-allocation rules.
 
 ## 8. Regulatory posture
 
@@ -146,14 +153,15 @@ Pricing numbers are a commercial experiment, not a product requirement. The firs
 ### Activation
 
 - organization created;
-- first project configured with sector and agreement;
+- first Portfolio created/selected and first project configured with sector;
+- only required/approved agreement terms configured;
 - opening balances/import reviewed;
-- first contribution and first operating cost posted;
+- first funding/contribution event and first operating cost posted as applicable;
 - first project statement generated.
 
 ### Value metrics
 
-- time to produce partner statement;
+- time to produce project/partner statement where applicable;
 - percentage of financial events fully allocated to project/purpose;
 - unreconciled cash count and age;
 - overdue approvals/obligations;
@@ -167,11 +175,14 @@ Pricing numbers are a commercial experiment, not a product requirement. The firs
 - zero unbalanced posted journal batches;
 - zero destructive edits to posted events;
 - every distribution traceable to approved calculation and payment;
-- never label estimated/unapproved figures as actual or distributable.
+- never label estimated/unapproved figures as actual or distributable;
+- never infer portfolio-level investor economics from project membership or cash movement.
 
 ## 11. Kill criteria and sequencing
 
 Build the common Investment Operations Core and one technically complete sector pack before expanding breadth. That construction gate is satisfied by the Real Estate S0-S7 path and its synthetic end-to-end showcase; this is implementation evidence, not customer acceptance or commercial proof. The first operating market remains Egypt. Agriculture is the authorized second bounded sector and Livestock follows after Agriculture reaches its technical gate. Build one sector at a time and reuse the common core rather than creating sector-specific ownership, finance, payment, approval, or audit engines.
+
+The Portfolio realignment is a **canonical management-model correction**, not authorization to rebuild the existing runtime or to invent portfolio/investor economics. Implementation that depends on unresolved ownership, funding, pooling, allocation, distribution, or cross-project rules must stop at the relevant roadmap gate until the company owner’s decision is recorded in `docs/OPEN_BUSINESS_DECISIONS.md`.
 
 Validate common behavior against established industry patterns, authoritative standards, public/reference artifacts, and executable end-to-end scenarios; do not wait for customer interviews to begin implementation. Real customer evidence remains mandatory before claiming customer validation, buyer UAT, a paid pilot, or the commercial Phase 2/3 exits. When the first Egyptian company onboards, represent its differences through configuration, versioned policies, templates, or bounded extensions—not a tenant-specific fork. Stop or narrow any feature that cannot be justified as common product behavior or isolated cleanly from company-specific practice.
 
@@ -186,6 +197,8 @@ Validate common behavior against established industry patterns, authoritative st
 | P-005 | Exact double-entry operational/investment subledger; statutory accounting is integrated/exported |
 | P-006 | First paid pilot ships platform core plus the sector of the first contracted customer |
 | P-007 | Technical sector construction may continue before customer validation: Real Estate first, Agriculture second, Livestock third; validation and commercial evidence remain separately gated |
+| P-008 | Investment Portfolio is the organization’s management/reporting parent above independent Investment Projects; it is not automatically a fund, legal entity, SPV, pooled vehicle, or investor pool |
+| P-009 | Portfolio capital deployment/project funding is distinct from investor contribution, ownership, allocation, distribution, and payment; unresolved investor/legal/economic rules are explicit business decisions, never inferred defaults |
 
 ## Sources
 
