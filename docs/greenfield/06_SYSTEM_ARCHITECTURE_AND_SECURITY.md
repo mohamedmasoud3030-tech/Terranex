@@ -106,7 +106,7 @@ GF-002 may provide a shared money value/formatter only if the project form actua
 | PWA/offline drafts | field capture is implemented and weak connectivity is validated |
 | Background jobs | a bounded task cannot finish reliably in a request |
 | Read projections/materialized views | measured query/reporting needs exceed direct queries |
-| Internal package extraction | at least two real consumers and a stable boundary exists |
+| Internal package extraction | at least two real consumers and a stable boundary exist |
 | Second sector module | Common Core and Real Estate deliver a working end-to-end slice |
 
 ## 9. Domain-assumption safety boundary
@@ -155,4 +155,4 @@ Financial slices later add concurrency, idempotency, balance, reversal, and peri
 - [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Supabase Auth](https://supabase.com/docs/guides/auth)
 - [Supabase Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control)
-- [OWASP ASVS](https://owasp.org/www-project/application-security-verification-standard/)
+- [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
