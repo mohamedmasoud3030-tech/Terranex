@@ -67,7 +67,7 @@ function SubmitResult({ state, pending, label }: Readonly<{
   return <div className="full stack">
     {state.error ? <p className="error" role="alert">{state.error}</p> : null}
     {!state.error && (state.successCount ?? 0) > 0
-      ? <p className="status" role="status">تم الحفظ بنجاح كحقيقة تشغيلية ثابتة.</p>
+      ? <output className="status">تم الحفظ بنجاح كحقيقة تشغيلية ثابتة.</output>
       : null}
     <button type="submit" disabled={pending}>{pending ? 'جارٍ الحفظ…' : label}</button>
   </div>;

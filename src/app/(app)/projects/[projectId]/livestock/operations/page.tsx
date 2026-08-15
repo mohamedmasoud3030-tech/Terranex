@@ -6,6 +6,7 @@ import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import { newCommandNonce } from '@/features/livestock/idempotency';
 import { getLivestockCohorts, getLivestockQuantityRollforward } from '@/features/livestock/queries';
 import {
+  type HealthEventRead,
   getFcrMetrics,
   getFeedIssues,
   getFeedItems,
@@ -39,6 +40,23 @@ import {
 
 export const dynamic = 'force-dynamic';
 const dateTime = (value: string) => new Date(value).toLocaleString('ar-EG');
+
+function HealthLog({ all, filtered }: Readonly<{
+  all: readonly HealthEventRead[];
+  filtered: readonly HealthEventRead[];
+}>) {
+  if (all.length === 0) return <p className="muted">لا توجد وقائع صحية بعد.</p>;
+  if (filtered.length === 0) return <p className="muted">لا توجد نتائج مطابقة للمرشح الحالي.</p>;
+  return <ol className="stack">{filtered.map((event) => <li key={event.id}>
+    <strong>{HEALTH_EVENT_LABEL[event.event_type]} · {event.cohort_reference}{event.animal_identifier ? ` · ${event.animal_identifier}` : ''}</strong>
+    <p>{event.condition_name ?? event.product_name}{event.condition_classification ? ` · ${CONDITION_LABEL[event.condition_classification]}` : ''}</p>
+    {event.dose_quantity ? <p>{event.dose_quantity} {event.dose_unit} · {event.product_name}</p> : null}
+    <p className={event.withdrawal_status === 'ACTIVE' ? 'error' : 'muted'}>
+      {WITHDRAWAL_STATUS_LABEL[event.withdrawal_status]}
+      {event.withdrawal_ends_at ? ` · حتى ${dateTime(event.withdrawal_ends_at)}` : ''}
+    </p><small>{dateTime(event.effective_at)} · المنفذ: {event.practitioner_name}</small>
+  </li>)}</ol>;
+}
 
 export default async function LivestockOperationsPage({ params, searchParams }: Readonly<{
   params: Promise<{ projectId: string }>;
@@ -92,15 +110,7 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
           <option value="">كل الوقائع</option>{Object.entries(HEALTH_EVENT_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select></label><button type="submit">تطبيق المرشح</button>
       </form>
-      {health.length === 0 ? <p className="muted">لا توجد وقائع صحية بعد.</p> : filteredHealth.length === 0 ? <p className="muted">لا توجد نتائج مطابقة للمرشح الحالي.</p> : <ol className="stack">{filteredHealth.map((event) => <li key={event.id}>
-        <strong>{HEALTH_EVENT_LABEL[event.event_type]} · {event.cohort_reference}{event.animal_identifier ? ` · ${event.animal_identifier}` : ''}</strong>
-        <p>{event.condition_name ?? event.product_name}{event.condition_classification ? ` · ${CONDITION_LABEL[event.condition_classification]}` : ''}</p>
-        {event.dose_quantity ? <p>{event.dose_quantity} {event.dose_unit} · {event.product_name}</p> : null}
-        <p className={event.withdrawal_status === 'ACTIVE' ? 'error' : 'muted'}>
-          {WITHDRAWAL_STATUS_LABEL[event.withdrawal_status]}
-          {event.withdrawal_ends_at ? ` · حتى ${dateTime(event.withdrawal_ends_at)}` : ''}
-        </p><small>{dateTime(event.effective_at)} · المنفذ: {event.practitioner_name}</small>
-      </li>)}</ol>}
+      <HealthLog all={health} filtered={filteredHealth} />
     </section>
 
     <section className="card stack" id="animals">
