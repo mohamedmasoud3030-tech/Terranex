@@ -1,8 +1,7 @@
 create schema if not exists auth;
 create table if not exists auth.users(id uuid primary key);
 create or replace function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
-create role authenticated nologin;
-create role anon nologin;
+create role authenticated nologin; create role anon nologin;
 
 -- Minimal Supabase Storage catalog used only by disposable PostgreSQL replay.
 -- Hosted Supabase already supplies this schema, tables and foldername helper.
