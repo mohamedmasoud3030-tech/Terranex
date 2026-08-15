@@ -454,6 +454,7 @@ create table public.supplier_invoices (
   foreign key (supplier_id, party_id, organization_id)
     references public.procurement_suppliers(id, party_id, organization_id) on delete restrict,
   unique (id, organization_id),
+  unique (id, project_id, organization_id),
   unique (id, purchase_order_id, project_id, organization_id),
   unique (organization_id, idempotency_key)
 );
