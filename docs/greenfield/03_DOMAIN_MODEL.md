@@ -1,6 +1,6 @@
 # Terranex Greenfield — 03 Domain Model
 
-**Status:** Conceptual domain baseline v1 — not a database schema  
+**Status:** Conceptual domain baseline v1 — not a database schema
 **Rule:** Names from legacy Terranex have no authority unless represented here by a current business need.
 
 ## 1. Bounded contexts
@@ -40,12 +40,12 @@ flowchart TD
 | Project Participant | Party’s approved role in a project: sponsor, investor, operator, lender, vendor, customer, adviser |
 | Portfolio Capital Deployment | Approved management/funding decision assigning capital capacity/value to a project; not an investor contribution or entitlement |
 | Agreement Version | Effective-dated immutable terms for the scope actually approved; ownership/allocation/fee/distribution rules exist only when supported by real business terms |
-| Commitment | Maximum or scheduled value a participant agrees to contribute; not cash received |
-| Capital Call | Approved request for a contribution under an agreement |
-| Contribution | Posted cash or approved non-cash value contributed to a project |
-| Ownership Interest | Effective-dated economic/control interest; not assumed equal to contributed cash |
-| Allocation | Assignment of income/loss/cost/capital movement to a participant; not payment |
-| Distribution | Approved transfer of value from project to participant |
+| Commitment | Maximum or scheduled value a participant agrees to contribute under approved terms; not cash received |
+| Capital Call | Approved request for a contribution under an explicitly approved agreement scope; not a universal funding rule |
+| Contribution | Posted cash or approved non-cash value accepted from an identified participant under an approved agreement scope; its legal/economic Portfolio, Project, entity, or other boundary is not inferred |
+| Ownership Interest | Effective-dated economic/control interest under approved terms; not assumed equal to contributed cash |
+| Allocation | Assignment of income/loss/cost/capital movement to a participant under an approved rule; not payment |
+| Distribution | Approved payable/transfer of value to a participant under an approved governing scope; its Project, Portfolio, or legal-entity boundary is not inferred |
 | Operational Event | Timestamped sector fact such as work, harvest, movement, treatment, or milestone |
 | Monetary Event | Business fact that generates a balanced posting, such as receipt, obligation, payment, sale |
 | Evidence | Versioned file/metadata linked to the fact or decision it supports |
@@ -126,7 +126,7 @@ This is a conceptual ownership map, not an implementation backlog. Create an agg
 - `DistributionLine`
 - `DistributionPayment`
 
-**Invariants:** capital calls/contributions/allocation/distribution are investor/project-capital mechanisms, not synonyms for portfolio capital deployment; calls do not change cash/capital until contribution; allocation run references closed inputs and exact approved rule version; distribution cannot exceed an approved payable/distributable balance; paid value comes only from posted payment. If the investor model is unresolved, these aggregates must not be extended by assumption.
+**Invariants:** capital calls/contributions/allocation/distribution are investor-capital mechanisms enabled only under approved governing terms, not synonyms for portfolio capital deployment; calls do not change cash/capital until contribution; allocation run references closed inputs and exact approved rule version; distribution cannot exceed an approved payable/distributable balance; paid value comes only from posted payment. If the investor model is unresolved, these aggregates must not be extended or generalized by assumption.
 
 ### Finance aggregate
 
