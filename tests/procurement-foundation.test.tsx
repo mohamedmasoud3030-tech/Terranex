@@ -4,12 +4,18 @@ import { renderToString } from 'react-dom/server';
 import {
   approvePurchaseOrderSchema,
   purchaseOrderSchema,
+  purchaseReceiptSchema,
   purchaseRequestSchema,
   submitPurchaseRequestSchema,
   supplierSchema,
 } from '@/features/procurement/schema';
 import { sectionsFor } from '@/features/workspace/nav';
-import { PurchaseOrderForm, PurchaseRequestForm, SupplierForm } from '@/app/(app)/projects/[projectId]/procurement/forms';
+import {
+  PurchaseOrderForm,
+  PurchaseRequestForm,
+  ReceiptForm,
+  SupplierForm,
+} from '@/app/(app)/projects/[projectId]/procurement/forms';
 
 vi.mock('@/features/procurement/actions', () => ({
   createSupplier: vi.fn(),
@@ -19,6 +25,7 @@ vi.mock('@/features/procurement/actions', () => ({
   approvePurchaseRequest: vi.fn(),
   submitPurchaseOrder: vi.fn(),
   approvePurchaseOrder: vi.fn(),
+  createPurchaseReceipt: vi.fn(),
 }));
 
 const org = '10000000-0000-4000-8000-000000000001';
@@ -113,5 +120,75 @@ describe('GF-025 / R4 Procurement Foundation', () => {
 
     const orderHtml = renderToString(<PurchaseOrderForm organizationId={org} projectId={project} suppliers={[]} requests={[]} />);
     expect(orderHtml).toMatch(/name="idempotencyKey"/);
+  });
+
+  it('receiving schema requires positive quantity and rejects empty lines', () => {
+    const orderLineId = '30000000-0000-4000-8000-000000000003';
+    const good = purchaseReceiptSchema.safeParse({
+      organizationId: org,
+      projectId: project,
+      purchaseOrderId: '30000000-0000-4000-8000-000000000004',
+      evidenceReference: 'سند استلام-001',
+      linesJson: JSON.stringify([{ purchaseOrderLineId: orderLineId, quantityReceived: '40' }]),
+      idempotencyKey: 'gf26-rec-key-001',
+    });
+    expect(good.success).toBe(true);
+
+    const noLines = purchaseReceiptSchema.safeParse({
+      organizationId: org,
+      projectId: project,
+      purchaseOrderId: '30000000-0000-4000-8000-000000000004',
+      evidenceReference: 'سند استلام-002',
+      linesJson: JSON.stringify([]),
+      idempotencyKey: 'gf26-rec-key-002',
+    });
+    expect(noLines.success).toBe(false);
+
+    const missingEvidence = purchaseReceiptSchema.safeParse({
+      organizationId: org,
+      projectId: project,
+      purchaseOrderId: '30000000-0000-4000-8000-000000000004',
+      evidenceReference: 'ab',
+      linesJson: JSON.stringify([{ purchaseOrderLineId: orderLineId, quantityReceived: '1' }]),
+      idempotencyKey: 'gf26-rec-key-003',
+    });
+    expect(missingEvidence.success).toBe(false);
+  });
+
+  it('renders the receiving form with an idempotency key', () => {
+    const order = {
+      id: '30000000-0000-4000-8000-000000000004',
+      organization_id: org,
+      project_id: project,
+      internal_reference: 'PO-1',
+      supplier_id: null,
+      supplier_name: null,
+      source_purchase_request_id: null,
+      description: null,
+      status: 'APPROVED' as const,
+      expected_delivery_date: null,
+      requested_by: 'x',
+      submitted_by: null,
+      submitted_at: null,
+      approved_by: null,
+      approved_at: null,
+      rejection_reason: null,
+      created_at: '2026-01-01T00:00:00Z',
+      line_count: 1,
+    };
+    const lines = [{
+      id: '30000000-0000-4000-8000-000000000003',
+      organization_id: org,
+      project_id: project,
+      purchase_order_id: order.id,
+      item_description: 'علف ذرة',
+      quantity: '100',
+      unit: 'كجم',
+      notes: null,
+      created_at: '2026-01-01T00:00:00Z',
+    }];
+    const html = renderToString(<ReceiptForm organizationId={org} projectId={project} order={order} lines={lines} />);
+    expect(html).toMatch(/name="idempotencyKey"/);
+    expect(html).toMatch(/علف ذرة/);
   });
 });

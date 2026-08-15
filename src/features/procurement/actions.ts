@@ -7,6 +7,7 @@ import {
   approvePurchaseOrderSchema,
   approvePurchaseRequestSchema,
   purchaseOrderSchema,
+  purchaseReceiptSchema,
   purchaseRequestSchema,
   submitPurchaseOrderSchema,
   submitPurchaseRequestSchema,
@@ -45,6 +46,12 @@ function domainError(message: string | undefined, fallback: string): ActionState
   if (text.includes('invalid supplier name')) return fail('اسم المورد مطلوب (حرفان على الأقل).');
   if (text.includes('at least one') && text.includes('line')) return fail('أضف سطرًا واحدًا على الأقل.');
   if (text.includes('project not found')) return fail('المشروع غير موجود في هذه المنظمة.');
+  if (text.includes('purchase order must be approved before receiving')) return fail('لا يمكن الاستلام إلا على أمر شراء معتمد.');
+  if (text.includes('received quantity exceeds ordered quantity')) return fail('الكمية المستلمة تتجاوز الكمية المطلوبة لهذا السطر.');
+  if (text.includes('receipt line unit must match order line unit')) return fail('وحدة الاستلام يجب أن تطابق وحدة سطر الأمر.');
+  if (text.includes('invalid evidence reference')) return fail('مرجع دليل الاستلام مطلوب (3 أحرف على الأقل).');
+  if (text.includes('order line not found for this order')) return fail('سطر أمر الشراء المحدد لا ينتمي إلى هذا الأمر.');
+  if (text.includes('invalid receipt line quantity')) return fail('كمية الاستلام يجب أن تكون موجبة.');
   return fail(fallback);
 }
 
@@ -149,4 +156,21 @@ export async function approvePurchaseOrder(_: ActionState, form: FormData): Prom
     p_purchase_order_id: value.purchaseOrderId,
     p_idempotency_key: value.idempotencyKey,
   }, 'تعذر اعتماد أمر الشراء.', value.projectId);
+}
+
+export async function createPurchaseReceipt(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(purchaseReceiptSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('create_purchase_receipt', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_purchase_order_id: value.purchaseOrderId,
+    p_evidence_reference: value.evidenceReference,
+    p_notes: value.notes,
+    p_lines: value.linesJson.map((line) => ({
+      purchase_order_line_id: line.purchaseOrderLineId,
+      quantity_received: line.quantityReceived.replace(',', '.'),
+    })),
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تسجيل الاستلام.', value.projectId);
 }

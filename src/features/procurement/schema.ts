@@ -121,6 +121,36 @@ export const submitPurchaseOrderSchema = z.object({
 export const approvePurchaseOrderSchema = submitPurchaseOrderSchema;
 
 // ---------------------------------------------------------------------------
+// GF-026 — Purchase Receiving (receipt of goods against an APPROVED PO).
+// Quantity-only; unit is derived server-side from the order line.
+// ---------------------------------------------------------------------------
+const receiptLineInputSchema = z.object({
+  purchaseOrderLineId: uuid,
+  quantityReceived: positiveDecimal,
+});
+
+const receiptLinesJson = z.string().transform((value, ctx) => {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    ctx.addIssue({ code: 'custom', message: 'سطور الاستلام غير صالحة' });
+    return z.NEVER;
+  }
+}).pipe(z.array(receiptLineInputSchema).min(1, 'أضف سطر استلام واحدًا على الأقل').max(50));
+
+export const purchaseReceiptSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  purchaseOrderId: uuid,
+  evidenceReference: z.string().trim().min(3, 'مرجع دليل الاستلام مطلوب').max(200),
+  notes: optionalText(2000),
+  linesJson: receiptLinesJson,
+  idempotencyKey,
+});
+
+export type PurchaseReceiptInput = z.infer<typeof purchaseReceiptSchema>;
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 export type SupplierInput = z.infer<typeof supplierSchema>;

@@ -6,6 +6,7 @@ import {
   approvePurchaseOrder,
   approvePurchaseRequest,
   createPurchaseOrder,
+  createPurchaseReceipt,
   createPurchaseRequest,
   createSupplier,
   submitPurchaseOrder,
@@ -13,6 +14,8 @@ import {
 } from '@/features/procurement/actions';
 import type {
   ProcurementSupplierRead,
+  PurchaseOrderLineRead,
+  PurchaseOrderRead,
   PurchaseRequestRead,
 } from '@/features/procurement/queries';
 
@@ -172,4 +175,59 @@ export function ApproveOrderAction({ organizationId, projectId, orderId }: {
   organizationId: string; projectId: string; orderId: string;
 }) {
   return <SubmitAction organizationId={organizationId} projectId={projectId} id={orderId} actionFn={approvePurchaseOrder} label="اعتماد" />;
+}
+
+// GF-026 — Receipt of goods against an APPROVED purchase order.
+export function ReceiptForm({
+  organizationId, projectId, order, lines,
+}: {
+  organizationId: string; projectId: string;
+  order: PurchaseOrderRead; lines: PurchaseOrderLineRead[];
+}) {
+  const [state, action, pending] = useActionState(createPurchaseReceipt, initial);
+  const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const json = useMemo(
+    () => JSON.stringify(
+      lines
+        .filter((line) => (quantities[line.id] ?? '').trim() !== '')
+        .map((line) => ({ purchaseOrderLineId: line.id, quantityReceived: quantities[line.id] })),
+    ),
+    [lines, quantities],
+  );
+  return (
+    <form action={action} className="form-grid">
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="purchaseOrderId" value={order.id} />
+      <Key prefix="gf26-receipt" />
+      <label className="full">مرجع دليل الاستلام<input name="evidenceReference" required maxLength={200} placeholder="مثال: سند استلام/فاتورة الاستلام رقم…" /></label>
+      <label className="full">ملاحظات <span className="muted">(اختياري)</span><textarea name="notes" maxLength={2000} /></label>
+      <div className="full">
+        <input type="hidden" name="linesJson" value={json} />
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>الصنف</th><th>الوحدة</th><th>الكمية المستلمة</th></tr></thead>
+            <tbody>
+              {lines.map((line) => (
+                <tr key={line.id}>
+                  <td>{line.item_description}</td>
+                  <td>{line.unit}</td>
+                  <td>
+                    <input
+                      value={quantities[line.id] ?? ''}
+                      onChange={(e) => setQuantities((prev) => ({ ...prev, [line.id]: e.target.value }))}
+                      inputMode="decimal"
+                      placeholder="0.000000"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="muted">الكمية كمية مادية فقط، وتُشتق الوحدة من سطر الأمر. لا أسعار ولا مخزون مخمّن في هذه الشريحة.</p>
+      </div>
+      <div className="full"><Result state={state} pending={pending} label="تسجيل الاستلام" /></div>
+    </form>
+  );
 }

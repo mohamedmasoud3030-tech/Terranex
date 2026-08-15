@@ -5,7 +5,10 @@ import { getCurrentMembership } from '@/features/finance/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import {
   getPurchaseOrderLines,
+  getPurchaseOrderLinesReceiving,
   getPurchaseOrders,
+  getPurchaseReceiptLines,
+  getPurchaseReceipts,
   getPurchaseRequestLines,
   getPurchaseRequests,
   getSuppliers,
@@ -16,6 +19,7 @@ import {
   ApproveRequestAction,
   PurchaseOrderForm,
   PurchaseRequestForm,
+  ReceiptForm,
   SubmitOrderAction,
   SubmitRequestAction,
   SupplierForm,
@@ -33,13 +37,16 @@ export default async function ProcurementPage({
   if (!project) notFound();
   const organizationId = project.organization_id;
 
-  const [membership, suppliers, requests, requestLines, orders, orderLines] = await Promise.all([
+  const [membership, suppliers, requests, requestLines, orders, orderLines, receipts, receiptLines, receivingStatus] = await Promise.all([
     getCurrentMembership(organizationId),
     getSuppliers(organizationId),
     getPurchaseRequests(projectId),
     getPurchaseRequestLines(projectId),
     getPurchaseOrders(projectId),
     getPurchaseOrderLines(projectId),
+    getPurchaseReceipts(projectId),
+    getPurchaseReceiptLines(projectId),
+    getPurchaseOrderLinesReceiving(projectId),
   ]);
   if (!membership) {
     return <ForbiddenCard projectId={projectId} message="لا تملك عضوية نشطة في منظمة هذا المشروع." />;
@@ -58,6 +65,13 @@ export default async function ProcurementPage({
     existing.push(line);
     orderLinesByOrder.set(line.purchase_order_id, existing);
   }
+  const receiptLinesByReceipt = new Map<string, typeof receiptLines>();
+  for (const line of receiptLines) {
+    const existing = receiptLinesByReceipt.get(line.purchase_receipt_id) ?? [];
+    existing.push(line);
+    receiptLinesByReceipt.set(line.purchase_receipt_id, existing);
+  }
+  const receivingByLine = new Map(receivingStatus.map((s) => [s.purchase_order_line_id, s]));
 
   return (
     <section className="stack">
@@ -187,16 +201,24 @@ export default async function ProcurementPage({
                   {order.description ? <p className="muted">{order.description}</p> : null}
                   <div className="table-wrap">
                     <table>
-                      <thead><tr><th>الصنف</th><th>الكمية</th><th>الوحدة</th><th>ملاحظات</th></tr></thead>
+                      <thead><tr><th>الصنف</th><th>الكمية المطلوبة</th><th>الوحدة</th><th>المستلم</th><th>المتبقي</th><th>ملاحظات</th></tr></thead>
                       <tbody>
-                        {lines.map((line) => (
-                          <tr key={line.id}>
-                            <td>{line.item_description}</td>
-                            <td>{line.quantity}</td>
-                            <td>{line.unit}</td>
-                            <td>{line.notes ?? '—'}</td>
-                          </tr>
-                        ))}
+                        {lines.map((line) => {
+                          const rec = receivingByLine.get(line.id);
+                          const ordered = rec ? rec.ordered_quantity : line.quantity;
+                          const received = rec?.received_quantity ?? '0';
+                          const remaining = rec?.remaining_quantity ?? line.quantity;
+                          return (
+                            <tr key={line.id}>
+                              <td>{line.item_description}</td>
+                              <td>{ordered}</td>
+                              <td>{line.unit}</td>
+                              <td>{received}</td>
+                              <td>{remaining}</td>
+                              <td>{line.notes ?? '—'}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -209,6 +231,14 @@ export default async function ProcurementPage({
                   {order.status === 'SUBMITTED' && !canApprove
                     ? <p className="muted">الاعتماد يتطلب صلاحية مالك المنظمة.</p>
                     : null}
+                  {order.status === 'APPROVED' && lines.length > 0
+                    ? (
+                        <>
+                          <p className="muted">أمر معتمد — يمكن تسجيل الاستلام عليه.</p>
+                          <details><summary>تسجيل استلام</summary><ReceiptForm organizationId={organizationId} projectId={projectId} order={order} lines={lines} /></details>
+                        </>
+                      )
+                    : null}
                   {order.status === 'REJECTED' ? <p className="error">مرفوض: {order.rejection_reason}</p> : null}
                   {order.status === 'CANCELLED' ? <p className="error">ملغي: {order.rejection_reason}</p> : null}
                 </article>
@@ -219,9 +249,54 @@ export default async function ProcurementPage({
         <details><summary>إنشاء أمر شراء جديد (مسودة)</summary><PurchaseOrderForm organizationId={organizationId} projectId={projectId} suppliers={suppliers} requests={requests} /></details>
       </section>
 
+      <section className="card stack scroll-target" id="receipts">
+        <div className="section-heading">
+          <div>
+            <h2>الاستلامات</h2>
+            <p className="muted">استلام مادي ضد أمر شراء معتمد — سجل ثابت لا يعدَّل ولا يحذف.</p>
+          </div>
+          <span className="status">{receipts.length} استلام</span>
+        </div>
+        {receipts.length === 0 ? (
+          <div className="card empty"><p className="muted">لا توجد استلامات بعد. استلم على أمر شراء معتمد من القسم أعلاه.</p></div>
+        ) : (
+          <div className="stack">
+            {receipts.map((receipt) => {
+              const lines = receiptLinesByReceipt.get(receipt.id) ?? [];
+              return (
+                <article className="card stack" key={receipt.id}>
+                  <header className="topline">
+                    <div>
+                      <h3>{receipt.purchase_order_reference}</h3>
+                      <p className="muted">{receipt.supplier_name ?? 'بدون مورد'} · {formatDate(receipt.received_at)} · {receipt.line_count} سطر</p>
+                    </div>
+                  </header>
+                  <p className="muted">دليل الاستلام: {receipt.evidence_reference}{receipt.notes ? ` · ${receipt.notes}` : ''}</p>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>الصنف</th><th>الكمية المستلمة</th><th>الوحدة</th><th>ملاحظات</th></tr></thead>
+                      <tbody>
+                        {lines.map((line) => (
+                          <tr key={line.id}>
+                            <td>{line.item_description}</td>
+                            <td>{line.quantity_received}</td>
+                            <td>{line.unit}</td>
+                            <td>{line.notes ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       <section className="card stack">
         <h3>حدود هذه الشريحة</h3>
-        <p className="muted">المشتريات هنا سجل تشغيلي كمّي فقط: لا أسعار، لا التزام مالي، لا فاتورة أو دفع، لا استلام/مخزون. الربط المالي بالـFinance Core والاستلام يأتيان في الشريحة التالية من R4.</p>
+        <p className="muted">المشتريات والاستلام سجل تشغيلي كمّي فقط: لا أسعار، لا التزام مالي، لا فاتورة أو دفع، لا مخزون مخمّن أو تحقق من توفر رصيد. الربط المالي بالـFinance Core يأتي في الشريحة التالية من R4.</p>
         <p className="muted"><Link href={`/projects/${projectId}`}>← العودة إلى مساحة المشروع</Link></p>
       </section>
     </section>

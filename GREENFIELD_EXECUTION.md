@@ -374,9 +374,13 @@ portion waits. The remaining independent gates, in order:
    audit, OWNER+maker/checker approval, forced RLS, a verification suite, and
    the Arabic/RTL Procurement workspace under `/projects/[id]/procurement`) is
    the first bounded step, under `docs/decisions/0026_GF025_PROCUREMENT_FOUNDATION.md`.
-   Receiving and pricing/invoice/payment (Finance Core linkage) are the next
-   steps of the slice. The local database gate requires CI because neither
-   `psql` nor Docker is available in the agent sandbox (per `AGENTS.md`).
+   Receiving is delivered by **GF-026 — Procurement Receiving** (receipt of
+   quantities against an APPROVED Purchase Order, server-derived unit, over-
+   receipt guard, append-only, Arabic/RTL receiving UI) under
+   `docs/decisions/0027_GF026_PROCUREMENT_RECEIVING.md`. Pricing/invoice/
+   payment (Finance Core linkage) is the next step of the slice. The local
+   database gate requires CI because neither `psql` nor Docker is available in
+   the agent sandbox (per `AGENTS.md`).
 2. **R2 / R3 remaining** — first-class Portfolio identity + roll-up read-models,
    and budget/forecast/commitment plus portfolio roll-up on the shared Finance
    Core (the financial engine itself is already authoritative).
