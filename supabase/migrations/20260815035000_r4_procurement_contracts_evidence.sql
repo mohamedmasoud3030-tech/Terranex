@@ -20,19 +20,25 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+create or replace function public.r4_can_upload_evidence_object(p_name text)
+returns boolean language sql stable security definer set search_path=pg_catalog,public as $$
+  select split_part(p_name,'/',4)=''
+    and split_part(p_name,'/',3) ~ '^[0-9a-f-]{36}$'
+    and public.is_active_member(case
+      when split_part(p_name,'/',1) ~ '^[0-9a-f-]{36}$'
+        then split_part(p_name,'/',1)::uuid else null end)
+    and exists (
+      select 1 from public.investment_projects p
+      where p.organization_id::text=split_part(p_name,'/',1)
+        and p.id::text=split_part(p_name,'/',2)
+    )
+$$;
+revoke all on function public.r4_can_upload_evidence_object(text) from public,anon;
+grant execute on function public.r4_can_upload_evidence_object(text) to authenticated;
+
 create policy procurement_evidence_object_insert on storage.objects
 for insert to authenticated with check (
-  bucket_id = 'procurement-evidence'
-  and split_part(name,'/',4) = ''
-  and split_part(name,'/',3) ~ '^[0-9a-f-]{36}$'
-  and public.is_active_member(case
-    when split_part(name,'/',1) ~ '^[0-9a-f-]{36}$'
-      then split_part(name,'/',1)::uuid else null end)
-  and exists (
-    select 1 from public.investment_projects p
-    where p.organization_id::text = split_part(name,'/',1)
-      and p.id::text = split_part(name,'/',2)
-  )
+  bucket_id='procurement-evidence' and public.r4_can_upload_evidence_object(name)
 );
 
 -- SELECT is added after the authoritative version table exists. No UPDATE
@@ -379,9 +385,7 @@ for select to authenticated using (
 create policy procurement_evidence_unregistered_delete on storage.objects
 for delete to authenticated using (
   bucket_id='procurement-evidence'
-  and public.is_active_member(case
-    when split_part(name,'/',1) ~ '^[0-9a-f-]{36}$'
-      then split_part(name,'/',1)::uuid else null end)
+  and public.r4_can_upload_evidence_object(name)
   and not exists (select 1 from public.procurement_evidence_versions v
     where v.storage_bucket=storage.objects.bucket_id and v.storage_object_name=storage.objects.name)
 );
