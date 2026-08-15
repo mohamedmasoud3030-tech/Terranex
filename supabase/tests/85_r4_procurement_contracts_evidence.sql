@@ -63,7 +63,8 @@ select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
 select document_id as s85_document, title as s85_title, storage_object_name as s85_object
 from public.procurement_evidence_read where evidence_link_id=:'s85_link' \gset
 
--- The registered-object DELETE policy is fail-closed for authenticated users.
+-- Authenticated cleanup remains allowed only before registration. Once an
+-- immutable evidence version exists, RLS plus the storage FK keep the object.
 set request.jwt.claim.sub='00000000-0000-4000-8000-000000000003';
 set role authenticated;
 delete from storage.objects where bucket_id='procurement-evidence' and name=:'s85_object';
@@ -72,25 +73,26 @@ select 1/case when exists (select 1 from storage.objects
   where bucket_id='procurement-evidence' and name=:'s85_object')
   then 1 else 0 end as s85_registered_object_cannot_be_deleted;
 
--- Even if an administrative/out-of-band operation creates an orphan, the
--- approval predicate rechecks Storage and refuses to authorize from metadata.
-delete from storage.objects where bucket_id='procurement-evidence' and name=:'s85_object';
+-- If Storage transport metadata is changed out-of-band, the approval predicate
+-- rechecks the authoritative object and refuses to authorize stale metadata.
+update storage.objects
+   set metadata=jsonb_build_object('size',101,'mimetype','application/pdf')
+ where bucket_id='procurement-evidence' and name=:'s85_object';
 select 1/case when s25a_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_purchase_order(
-    '10000000-0000-4000-8000-000000000001',%L,'s85-po-approve-orphan')$$, :'s85_po'))
+    '10000000-0000-4000-8000-000000000001',%L,'s85-po-approve-storage-drift')$$, :'s85_po'))
   like '%requires an immutable contract or purchase order file%'
-  then 1 else 0 end as s85_orphan_evidence_cannot_approve;
+  then 1 else 0 end as s85_storage_drift_cannot_approve;
 
--- Restore the test object exactly, then the same evidence metadata is valid.
-set request.jwt.claim.sub='00000000-0000-4000-8000-000000000003';
-set role authenticated;
-insert into storage.objects(id,bucket_id,name,metadata) values (
-  gen_random_uuid(),'procurement-evidence',:'s85_object',
-  jsonb_build_object('size',100,'mimetype','application/pdf'));
-reset role;
+-- Restore the authoritative Storage metadata exactly, then the evidence is
+-- valid again and PO approval may proceed.
+update storage.objects
+   set metadata=jsonb_build_object('size',100,'mimetype','application/pdf')
+ where bucket_id='procurement-evidence' and name=:'s85_object';
 select s25a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_purchase_order(
     '10000000-0000-4000-8000-000000000001',%L,'s85-po-approve')$$, :'s85_po')) as s85_approved;
+
 set request.jwt.claim.sub='00000000-0000-4000-8000-000000000003';
 set role authenticated;
 insert into storage.objects(id,bucket_id,name,metadata) values (
