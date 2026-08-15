@@ -53,6 +53,7 @@ MEMBER='00000000-0000-4000-8000-000000000003'
 OWNER='00000000-0000-4000-8000-000000000001'
 
 PROJECT="$(psql_value "select id from public.investment_projects where organization_id='$ORG' and internal_reference='GF025-PROJ' limit 1")"
+SUPPLIER="$(psql_value "select id from public.procurement_suppliers where organization_id='$ORG' and party_id is not null limit 1")"
 if [[ -z "$PROJECT" ]]; then
   echo 'ERROR: GF-026 concurrency fixture prerequisite missing (GF025-PROJ project from suite 78).' >&2
   exit 1
@@ -62,8 +63,8 @@ fi
 PO="$(psql_value "select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001' limit 1")"
 if [[ -z "$PO" ]]; then
   psql_sql "set request.jwt.claim.sub='$MEMBER'; set role authenticated;
-    select public.create_purchase_order('$ORG','$PROJECT','PO-CONC-001',null,null,null,(current_date + 30),
-      '[{\"item_description\":\"علف سباق\",\"quantity\":100,\"unit\":\"كجم\"}]','s81-conc-po-create');
+    select public.create_purchase_order('$ORG','$PROJECT','PO-CONC-001','$SUPPLIER',null,null,(current_date + 30),'EGP','S81-COMMERCIAL-EVIDENCE',
+      '[{\"item_description\":\"علف سباق\",\"quantity\":100,\"unit\":\"كجم\",\"unit_price_minor_units\":100}]','s81-conc-po-create');
     select public.submit_purchase_order('$ORG',(select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001'),'s81-conc-po-submit');"
   psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
     select public.approve_purchase_order('$ORG',(select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001'),'s81-conc-po-approve');"

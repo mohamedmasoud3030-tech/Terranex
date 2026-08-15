@@ -77,6 +77,10 @@ insert into public.memberships(organization_id, user_id, role, status) values
   ('40000000-0000-4000-8000-000000000081', '00000000-0000-4000-8000-000000000082', 'MEMBER', 'ACTIVE')
 on conflict (organization_id, user_id) do nothing;
 
+insert into public.parties(id, organization_id, legal_name, party_type) values
+  ('40000000-0000-4000-8000-000000000083','40000000-0000-4000-8000-000000000081','طرف مورد التعايش','ORGANIZATION')
+on conflict (id) do nothing;
+
 -- Tenant-B untouched-count baselines (org 10000000-…-0001 from suite 78).
 select count(*) as s80_b_suppliers_before from public.procurement_suppliers
  where organization_id = '10000000-0000-4000-8000-000000000001' \gset
@@ -115,12 +119,12 @@ select 1/case when :'s80_pf1_active' is not null and :'s80_assign1' is not null 
 -- 2. Full shared Procurement flow on the Portfolio-managed project.
 -- ---------------------------------------------------------------------------
 select s80a_run('00000000-0000-4000-8000-000000000082', format(
-  $$select public.create_supplier('40000000-0000-4000-8000-000000000081',%L,null,null,null,'s80-supplier-1')$$,
+  $$select public.create_supplier('40000000-0000-4000-8000-000000000081','40000000-0000-4000-8000-000000000083',%L,null,null,null,'s80-supplier-1')$$,
   'مورد التعايش')) as s80_supplier \gset
 
 select s80a_run('00000000-0000-4000-8000-000000000082', format(
   $$select public.create_purchase_request('40000000-0000-4000-8000-000000000081',%L,'S80-PR-001','طلب تعايش',
-    '[{"item_description":"سماد تعايش","quantity":100,"unit":"كجم"}]','s80-pr-1')$$,
+    '[{"item_description":"سماد تعايش","quantity":100,"unit":"كجم","unit_price_minor_units":100}]','s80-pr-1')$$,
   :'s80_project_id')) as s80_pr \gset
 
 select s80a_run('00000000-0000-4000-8000-000000000082', format(
@@ -132,8 +136,8 @@ select s80a_run('00000000-0000-4000-8000-000000000081', format(
   :'s80_pr')) as s80_pr_approved;
 
 select s80a_run('00000000-0000-4000-8000-000000000082', format(
-  $$select public.create_purchase_order('40000000-0000-4000-8000-000000000081',%L,'S80-PO-001',%L,null,null,(current_date + 30),
-    '[{"item_description":"سماد تعايش","quantity":100,"unit":"كجم"}]','s80-po-1')$$,
+  $$select public.create_purchase_order('40000000-0000-4000-8000-000000000081',%L,'S80-PO-001',%L,null,null,(current_date + 30),'EGP','S80-COMMERCIAL-EVIDENCE',
+    '[{"item_description":"سماد تعايش","quantity":100,"unit":"كجم","unit_price_minor_units":100}]','s80-po-1')$$,
   :'s80_project_id', :'s80_supplier')) as s80_po \gset
 
 select s80a_run('00000000-0000-4000-8000-000000000082', format(
@@ -318,12 +322,12 @@ select 1/case when (
 --    through Portfolio commands, project scoping, views, or RPCs.
 -- ---------------------------------------------------------------------------
 select 1/case when s80a_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_supplier('40000000-0000-4000-8000-000000000081','مورد مخترق',null,null,null,'s80-cross-supplier')$$))
+  $$select public.create_supplier('40000000-0000-4000-8000-000000000081','40000000-0000-4000-8000-000000000083','مورد مخترق',null,null,null,'s80-cross-supplier')$$))
   like '%forbidden%' then 1 else 0 end as s80_cross_supplier_forbidden;
 
 select 1/case when s80a_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_purchase_request('40000000-0000-4000-8000-000000000081',%L,'S80-X','اختراق',
-    '[{"item_description":"اختراق","quantity":1,"unit":"كجم"}]','s80-cross-pr')$$, :'s80_project_id'))
+    '[{"item_description":"اختراق","quantity":1,"unit":"كجم","unit_price_minor_units":100}]','s80-cross-pr')$$, :'s80_project_id'))
   like '%forbidden%' then 1 else 0 end as s80_cross_pr_forbidden;
 
 select 1/case when s80a_catch('00000000-0000-4000-8000-000000000001', format(

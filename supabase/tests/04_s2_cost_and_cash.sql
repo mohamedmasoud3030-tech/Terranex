@@ -53,6 +53,39 @@ exception when others then
   return sqlstate = p_sqlstate;
 end $$;
 
+-- Compatibility helper for this historical S2 contract. A pre-R4 forward
+-- replay must exercise the S2-era direct command, while a current replay must
+-- use the hardened Finance proposal/approval boundary. Dynamic SQL prevents
+-- PostgreSQL from resolving functions that do not exist in the replayed era.
+create or replace function s2_payment_workflow(
+  p_organization_id uuid, p_obligation_id uuid, p_cash_account_id uuid,
+  p_amount_minor_units bigint, p_payment_date date, p_idempotency_key text
+) returns uuid language plpgsql as $$
+declare
+  v_approver uuid := '00000000-0000-4000-8000-000000000001';
+  v_proposal uuid;
+  v_payment uuid;
+begin
+  if to_regprocedure('public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text)') is null then
+    execute 'select public.pay_cost_obligation($1,$2,$3,$4,$5,$6)'
+      into v_payment
+      using p_organization_id, p_obligation_id, p_cash_account_id,
+        p_amount_minor_units, p_payment_date, p_idempotency_key;
+    return v_payment;
+  end if;
+
+  perform set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000003', true);
+  execute 'select public.prepare_cost_payment($1,$2,$3,$4,$5,$6)'
+    into v_proposal
+    using p_organization_id, p_obligation_id, p_cash_account_id,
+      p_amount_minor_units, p_payment_date, 'proposal-' || p_idempotency_key;
+  perform set_config('request.jwt.claim.sub', v_approver::text, true);
+  execute 'select public.approve_cost_payment($1,$2,$3)'
+    into v_payment
+    using p_organization_id, v_proposal, p_idempotency_key;
+  return v_payment;
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Fixtures: a MEMBER in org A, a supplier party, cash accounts
 -- ---------------------------------------------------------------------------
@@ -368,12 +401,18 @@ select 1/case when s2_try_cross_project_line()='REJECTED' then 1 else 0 end as s
 -- ---------------------------------------------------------------------------
 -- D. Payments: partial, exact outstanding, overpayment rejection, idempotency
 -- ---------------------------------------------------------------------------
+-- Preserve the original S2 authorization assertion only when replaying the
+-- S2-era API. Current maker/checker authorization is proved in suite 83.
+select (to_regprocedure('public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text)') is null)
+  as s2_uses_historical_payment_api \gset
+\if :s2_uses_historical_payment_api
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
   $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-member-0001')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_member_denied;
+\endif
 
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
   :'s2_obl_expense', :'s2_account_a'));
 select id as s2_payment_1 from public.project_payments where idempotency_key='s2-pay-1-000001' \gset
 
@@ -389,35 +428,35 @@ select 1/case when (select outstanding_minor_units from public.cost_obligation_p
   where obligation_id=:'s2_obl_expense')='250000' then 1 else 0 end as s2_outstanding_after_partial;
 
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,300000,date '2026-08-25','s2-pay-over-00001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,300000,date '2026-08-25','s2-pay-over-00001')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_overpayment_rejected;
 
 -- Retry: same key + same payload returns the original payment.
 select 1/case when s2_expect_ok('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
   :'s2_obl_expense', :'s2_account_a')) then 1 else 0 end as s2_payment_retry_ok;
 select 1/case when (select count(*) from public.project_payments where idempotency_key='s2-pay-1-000001')=1
   then 1 else 0 end as s2_payment_retry_single_effect;
 -- Same key + different payload -> reject.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,149999,date '2026-08-25','s2-pay-1-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,149999,date '2026-08-25','s2-pay-1-000001')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_payload_mismatch_rejected;
 
 -- Cross-project cash account rejected.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,1000,date '2026-08-25','s2-pay-cross-proj-01')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,1000,date '2026-08-25','s2-pay-cross-proj-01')$$,
   :'s2_obl_expense', :'s2_account_b'), 'P0001') then 1 else 0 end as s2_payment_cross_project_rejected;
 
 -- Pay the remainder in full.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,250000,date '2026-08-26','s2-pay-2-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,250000,date '2026-08-26','s2-pay-2-000001')$$,
   :'s2_obl_expense', :'s2_account_a'));
 select id as s2_payment_2 from public.project_payments where idempotency_key='s2-pay-2-000001' \gset
 
 select 1/case when (select outstanding_minor_units from public.cost_obligation_position_read
   where obligation_id=:'s2_obl_expense')='0' then 1 else 0 end as s2_outstanding_zero_after_full;
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,1,date '2026-08-27','s2-pay-after-full-01')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,1,date '2026-08-27','s2-pay-after-full-01')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_after_full_rejected;
 
 select 1/case when (select balance_minor_units from public.project_cash_position_read
@@ -425,7 +464,7 @@ select 1/case when (select balance_minor_units from public.project_cash_position
 
 -- A fresh obligation reserved for the real concurrency suite.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.create_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,'التزام سباق الدفعات',1000000,'EGP',date '2026-09-01','EXPENSE','s2-obl-race-0001')$$,
+  $$select public.create_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,'التزام سباق الدفعات',150000,'EGP',date '2026-09-01','EXPENSE','s2-obl-race-0001')$$,
   :'s2_project', :'s2_supplier_1'));
 select id as s2_obl_race from public.cost_obligations where idempotency_key='s2-obl-race-0001' \gset
 select s2_run('00000000-0000-4000-8000-000000000001', format(
@@ -434,13 +473,13 @@ select s2_run('00000000-0000-4000-8000-000000000001', format(
 -- Reconciliation-race fixture: an active payment with a matching statement
 -- line that stays unreconciled until 05_s2_concurrency.sh races on it.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,400000,date '2026-09-02','s2-pay-race-01')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,50000,date '2026-09-02','s2-pay-race-01')$$,
   :'s2_obl_race', :'s2_account_a'));
 select id as s2_pay_race from public.project_payments where idempotency_key='s2-pay-race-01' \gset
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
     array[date '2026-09-02'],
-    array['-400000'],
+    array['-50000'],
     array['EGP'],
     array['دفعة سباق التسوية'],
     array['TXN-RACE-RECON'],
@@ -691,17 +730,17 @@ select 1/case when (
     and ((sa.role='BANK_CASH' and jl.credit_minor_units=600000 and jl.debit_minor_units=0)
       or (sa.role='CONTRIBUTED_CAPITAL' and jl.debit_minor_units=600000 and jl.credit_minor_units=0))
 )=2 then 1 else 0 end as s2_attribution_reversal_exact_inverse;
--- Cash is exactly zero from the reversed chain plus the still-active race
--- payment (400000 out) that the concurrency suite owns.
+-- Only the still-active 50,000 race-fixture payment remains after reversing
+-- the ordinary payment and original contribution chains.
 select 1/case when (select balance_minor_units from public.project_cash_position_read
-  where cash_account_id=:'s2_account_a')='-400000' then 1 else 0 end as s2_cash_after_full_reversal_chain;
+  where cash_account_id=:'s2_account_a')='-50000' then 1 else 0 end as s2_cash_after_full_reversal_chain;
 
 -- After an explicit linked reversal the contribution may be posted again.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.attach_contribution_cash('10000000-0000-4000-8000-000000000001',%L,%L,%L,'s2-attach-a1-0003')$$,
   :'s2_project', :'s2_contrib_a1', :'s2_account_a'));
 select 1/case when (select balance_minor_units from public.project_cash_position_read
-  where cash_account_id=:'s2_account_a')='200000' then 1 else 0 end as s2_contribution_repost_after_reversal;
+  where cash_account_id=:'s2_account_a')='550000' then 1 else 0 end as s2_contribution_repost_after_reversal;
 
 -- ---------------------------------------------------------------------------
 -- H. Tenant isolation and authorization boundary
@@ -752,27 +791,26 @@ select 1/case when pg_typeof((select balance_minor_units from public.project_cas
 select 1/case when pg_typeof((select outstanding_minor_units from public.cost_obligation_position_read
   where obligation_id=:'s2_obl_wip'))='text'::regtype then 1 else 0 end as s2_obligation_transport_is_text;
 
--- Exact project subledger reproduction from journal lines. Includes the race
--- obligation (authorized 1000000 expense, 400000 paid, not reversed):
--- cash     = debit-credit    = 200000  (600000 reposted attribution + reversals
---                                       - 400000 active race payment);
--- payable  = credit-debit    = 1200000 (wip 600000 + race 1000000 - 400000 paid);
--- expense  = debit-credit    = 1000000 (race obligation; expense chain reversed);
+-- Exact project subledger reproduction from journal lines. Includes the funded
+-- race obligation (authorized 150000 expense, 50000 paid, not reversed):
+-- cash     = debit-credit    = 550000  (600000 active attribution - 50000 paid);
+-- payable  = credit-debit    = 700000  (wip 600000 + race 150000 - 50000 paid);
+-- expense  = debit-credit    = 150000  (race obligation; expense chain reversed);
 -- WIP      = debit-credit    = 600000  (never reversed).
 select 1/case when (
   select coalesce(sum(debit_minor_units),0)-coalesce(sum(credit_minor_units),0)
   from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
-  where jl.project_id=:'s2_project' and sa.role='BANK_CASH')=200000
+  where jl.project_id=:'s2_project' and sa.role='BANK_CASH')=550000
   then 1 else 0 end as s2_ledger_cash_exact;
 select 1/case when (
   select coalesce(sum(credit_minor_units),0)-coalesce(sum(debit_minor_units),0)
   from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
-  where jl.project_id=:'s2_project' and sa.role='SUPPLIER_PAYABLE')=1200000
+  where jl.project_id=:'s2_project' and sa.role='SUPPLIER_PAYABLE')=700000
   then 1 else 0 end as s2_ledger_payable_exact;
 select 1/case when (
   select coalesce(sum(debit_minor_units),0)-coalesce(sum(credit_minor_units),0)
   from public.journal_lines jl join public.semantic_accounts sa on sa.id=jl.account_id
-  where jl.project_id=:'s2_project' and sa.role='PROJECT_EXPENSE')=1000000
+  where jl.project_id=:'s2_project' and sa.role='PROJECT_EXPENSE')=150000
   then 1 else 0 end as s2_ledger_expense_exact;
 select 1/case when (
   select coalesce(sum(debit_minor_units),0)-coalesce(sum(credit_minor_units),0)

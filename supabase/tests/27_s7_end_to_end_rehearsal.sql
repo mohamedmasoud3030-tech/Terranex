@@ -258,8 +258,10 @@ select s7e_run(:'e2e_maker', format(
 select s7e_run(:'e2e_checker', format(
   $$select public.authorize_cost_obligation(%L,%L,'e2e-authorize-wip1')$$,
   :'e2e_org', :'e2e_wip_obligation'));
+-- The S2 compatibility helper uses the historical direct command on a
+-- historical forward replay and the R4 maker/checker workflow on current head.
 select s7e_run(:'e2e_checker', format(
-  $$select public.pay_cost_obligation(%L,%L,%L,600000,current_date,'e2e-pay-wip-0001')$$,
+  $$select public.s2_payment_workflow(%L,%L,%L,600000,current_date,'e2e-pay-wip-0001')$$,
   :'e2e_org', :'e2e_wip_obligation', :'e2e_cash'));
 select s7e_assert((select outstanding_minor_units::bigint = 0
   from public.cost_obligation_position_read where obligation_id = :'e2e_wip_obligation'),

@@ -468,7 +468,7 @@ not full Procurement.
 - leasing/property management and construction ERP/procurement/BOQ/change-order scope;
 - PWA/offline sync;
 - Agriculture capabilities beyond the completed GF-013–GF-019 investment operating scope, and Livestock capabilities beyond the merged GF-020 foundation and the active GF-021/GF-022 slices — specifically health/medicine/withdrawal, vaccination, reproduction/pregnancy/breeding, individual Animal/RFID identity, feed formulation/inventory/FCR, livestock procurement, sale/receivable/revenue, profitability, closeout, dairy/milk, and IAS 41 or fair-value biological-asset accounting;
-- Agriculture capabilities deferred beyond GF-019: input-stock receiving/balance and its valuation (physical receiving now exists as the shared R4 Procurement operational foundation, but the agriculture input-stock balance/valuation linkage is not built), procurement pricing/commitment and supplier invoicing/payment (the shared quantity-only Procurement operational foundation — organization-scoped suppliers, project-scoped purchase requests/orders, receiving — exists; Finance Core linkage is the next bounded step), input/harvest valuation, COGS policy, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit conversion, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
+- Agriculture capabilities deferred beyond GF-019: input-stock receiving/balance and its valuation (physical receiving and the shared R4 financial procure-to-pay linkage now exist, but agriculture input-stock balance/valuation linkage does not), input/harvest valuation, COGS policy, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit conversion, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
 ## Next active batch: R0–R17 alignment (hard stop at R13)
@@ -491,23 +491,24 @@ portion waits. The remaining independent gates, in order:
 
 1. **R4 — Procurement & Shared Operations** (suppliers, purchase
    requests/orders, receiving, invoices, payments, contracts, attachments,
-   approvals, shared inventory concepts, counterparties). This is the first
-   genuinely missing independent gate (deferred farm-ERP scope in GF-019).
-   **GF-025 — Procurement Foundation** (organization-scoped suppliers plus
-   project-scoped purchase requests/orders, quantity-only, with idempotency,
-   audit, OWNER+maker/checker approval, forced RLS, a verification suite, and
-   the Arabic/RTL Procurement workspace under `/projects/[id]/procurement`) is
-   the first bounded step, under `docs/decisions/0027_GF025_PROCUREMENT_FOUNDATION.md`.
-   Receiving is delivered by **GF-026 — Procurement Receiving** (receipt of
-   quantities against an APPROVED Purchase Order, server-derived unit, over-
-   receipt guard, append-only, Arabic/RTL receiving UI) under
-   `docs/decisions/0028_GF026_PROCUREMENT_RECEIVING.md`. Pricing/invoice/
-   payment (Finance Core linkage) is the next step of the slice.
-   **Database gate: PASSED.** PostgreSQL 17 was installed in the environment
-   and `scripts/db-test.sh` ran end-to-end (`EXIT=0`): the renumbered
-   GF-025/GF-026 migrations replay after the merged R1 migration and the full
-   SQL + concurrency + forward-upgrade suites (S1–S7, GF-016→GF-024, R1)
-   pass with no regression.
+   approvals, shared inventory concepts, counterparties). GF-025 and GF-026
+   deliver the shared operational core. **R4 Procurement Financial
+   Integration** (ADR 0030) now delivers the bounded financial spine:
+   authoritative Party-linked Supplier → exact commercial PO → approved
+   unposted commitment → Receiving → receipt-matched Supplier Invoice → the
+   existing Finance Core cost obligation/payable → shared Finance payment
+   proposal → independent OWNER approval/partial payment → existing bank
+   reconciliation. Project/tenant composite integrity, database-enforced
+   maker/checker, NULL-safe idempotency, row-locked invoice/payable ceilings,
+   cash-account locking with available-cash revalidation, immutable
+   posting/reversal rules, and the Arabic/RTL drill-down are included.
+   No Procurement ledger, payable, cash engine, payment table, reconciliation
+   engine, tax policy, inventory valuation, or Portfolio posting was created.
+   Remaining R4 work is contracts/attachments and only the shared inventory-
+   value concepts required by an authorized working flow; R4 therefore remains
+   open rather than being marked complete. The prior GF-025/GF-026 full database
+   gate remains historical evidence only; ADR 0030's new database gate is left
+   to authoritative CI where local PostgreSQL/Docker is unavailable.
 2. **R2 / R3 remaining** — Portfolio roll-up read-models and
    budget/forecast/commitment plus portfolio roll-up on the shared Finance
    Core (Portfolio identity + Project membership are already delivered by the

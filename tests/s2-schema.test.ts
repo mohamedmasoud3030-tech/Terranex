@@ -47,6 +47,7 @@ describe('S2 obligation validation', () => {
       obligationId,
       cashAccountId: accountId,
       amount: '150000',
+      currency: 'EGP',
       paymentDate: '2026-08-25',
       idempotencyKey: 'pay-00000001',
     }).success).toBe(true);
@@ -55,6 +56,7 @@ describe('S2 obligation validation', () => {
       obligationId,
       cashAccountId: accountId,
       amount: '-5',
+      currency: 'EGP',
       paymentDate: '2026-08-25',
       idempotencyKey: 'pay-00000002',
     }).success).toBe(false);

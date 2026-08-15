@@ -10,6 +10,7 @@ import {
   contributionAttributionSchema,
   obligationSchema,
   authorizeObligationSchema,
+  approvePaymentSchema,
   paymentSchema,
   reconcileSchema,
   reversalSchema,
@@ -35,6 +36,15 @@ function domainError(message: string | undefined, fallback: string): ActionState
   }
   if (text.includes('payment exceeds remaining payable')) {
     return fail('المبلغ يتجاوز المتبقي المستحق لهذا الالتزام.');
+  }
+  if (text.includes('payment exceeds available cash')) {
+    return fail('الرصيد المتاح في الحساب النقدي لا يكفي لهذه الدفعة.');
+  }
+  if (text.includes('maker/checker')) {
+    return fail('لا يجوز لمُعدّ مقترح الدفع اعتماده. يلزم مالك آخر مستقل.');
+  }
+  if (text.includes('payment proposal is already posted')) {
+    return fail('تم اعتماد مقترح الدفع وترحيله بالفعل.');
   }
   if (text.includes('only a draft obligation')) {
     return fail('لا يمكن تعديل التزام بعد اعتماده. استخدم العكس للتصحيح.');
@@ -163,26 +173,45 @@ export async function authorizeObligation(_: ActionState, form: FormData): Promi
   return {};
 }
 
-export async function payObligation(_: ActionState, form: FormData): Promise<ActionState> {
+export async function preparePayment(_: ActionState, form: FormData): Promise<ActionState> {
   const parsed = paymentSchema.safeParse({
     organizationId: form.get('organizationId'),
     obligationId: form.get('obligationId'),
     cashAccountId: form.get('cashAccountId'),
     amount: form.get('amount'),
+    currency: form.get('currency'),
     paymentDate: form.get('paymentDate'),
     idempotencyKey: form.get('idempotencyKey'),
   });
-  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات الدفعة غير صحيحة');
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات مقترح الدفع غير صحيحة');
   const supabase = await createClient();
-  const { error } = await supabase.rpc('pay_cost_obligation', {
+  const { error } = await supabase.rpc('prepare_cost_payment', {
     p_organization_id: parsed.data.organizationId,
     p_obligation_id: parsed.data.obligationId,
     p_cash_account_id: parsed.data.cashAccountId,
-    p_amount_minor_units: parseMajorUnitsToMinor(parsed.data.amount, 'EGP'),
+    p_amount_minor_units: parseMajorUnitsToMinor(parsed.data.amount, parsed.data.currency),
     p_payment_date: parsed.data.paymentDate,
     p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return domainError(error.message, 'تعذر تسجيل الدفعة. تحقق من المبلغ والصلاحيات.');
+  if (error) return domainError(error.message, 'تعذر إعداد مقترح الدفع. تحقق من الرصيد والمبلغ والفترة.');
+  refreshProject(String(form.get('projectId') || ''));
+  return {};
+}
+
+export async function approvePayment(_: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = approvePaymentSchema.safeParse({
+    organizationId: form.get('organizationId'),
+    paymentProposalId: form.get('paymentProposalId'),
+    idempotencyKey: form.get('idempotencyKey'),
+  });
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات اعتماد الدفع غير صحيحة');
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('approve_cost_payment', {
+    p_organization_id: parsed.data.organizationId,
+    p_payment_proposal_id: parsed.data.paymentProposalId,
+    p_idempotency_key: parsed.data.idempotencyKey,
+  });
+  if (error) return domainError(error.message, 'تعذر اعتماد الدفع. يلزم مالك مختلف ورصيد نقدي كافٍ.');
   refreshProject(String(form.get('projectId') || ''));
   return {};
 }
