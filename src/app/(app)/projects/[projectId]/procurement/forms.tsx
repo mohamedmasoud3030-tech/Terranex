@@ -20,8 +20,10 @@ import {
   recordSupplierInvoice,
   submitPurchaseOrder,
   submitPurchaseRequest,
+  uploadProcurementEvidence,
 } from '@/features/procurement/actions';
 import type {
+  ProcurementEvidenceRead,
   ProcurementSupplierRead,
   PurchaseOrderLineRead,
   PurchaseOrderRead,
@@ -200,6 +202,39 @@ export function SupplierPaymentForm({ organizationId, projectId, invoice, cashAc
     <label>حساب نقدية المشروع<select name="cashAccountId" required><option value="">اختر الحساب</option>{accounts.map((account) => <option key={account.cash_account_id} value={account.cash_account_id}>{account.name} — {formatMinorUnits(account.balance_minor_units, account.currency)}</option>)}</select></label>
     <label>مبلغ الدفعة ({invoice.currency})<input name="amount" inputMode="decimal" required /></label><label>تاريخ الدفعة<input type="date" name="paymentDate" required /></label>
     <div><Result state={state} pending={pending} label="إعداد مقترح دفع المورد" pendingLabel="جارٍ فحص الرصيد والإعداد…" /></div><p className="muted full">هذا مقترح فقط: تُفحص النقدية الآن، ثم يلزم مالك مختلف لاعتماده وإعادة فحص الرصيد قبل الترحيل. المطابقة البنكية خطوة مستقلة.</p>
+  </form>;
+}
+
+export function ProcurementEvidenceForm({ organizationId, projectId, subject, subjectId, evidence, serverNonce }: {
+  organizationId: string;
+  projectId: string;
+  subject: 'PURCHASE_ORDER' | 'RECEIPT' | 'SUPPLIER_INVOICE';
+  subjectId: string;
+  evidence: ProcurementEvidenceRead[];
+  serverNonce: string;
+}) {
+  const [state, action, pending] = useActionState(uploadProcurementEvidence, initial);
+  const subjectField = subject === 'PURCHASE_ORDER' ? 'purchaseOrderId' : subject === 'RECEIPT' ? 'purchaseReceiptId' : 'supplierInvoiceId';
+  const existing = evidence.filter((item) =>
+    subject === 'PURCHASE_ORDER' ? item.purchase_order_id === subjectId
+      : subject === 'RECEIPT' ? item.purchase_receipt_id === subjectId
+        : item.supplier_invoice_id === subjectId,
+  );
+  return <form action={action} className="form-grid" encType="multipart/form-data">
+    <input type="hidden" name="organizationId" value={organizationId} />
+    <input type="hidden" name="projectId" value={projectId} />
+    <input type="hidden" name={subjectField} value={subjectId} />
+    <CommandKey prefix="r4-procurement-evidence" state={state} serverNonce={serverNonce} />
+    <label>تصنيف الملف<select name="classification" required defaultValue={subject}>
+      {subject === 'PURCHASE_ORDER' && <><option value="PURCHASE_ORDER">أمر شراء</option><option value="CONTRACT">عقد تجاري</option></>}
+      {subject === 'RECEIPT' && <option value="RECEIPT">دليل استلام</option>}
+      {subject === 'SUPPLIER_INVOICE' && <option value="SUPPLIER_INVOICE">فاتورة مورد</option>}
+    </select></label>
+    <label>عنوان المستند<input name="title" required minLength={3} maxLength={200} /></label>
+    <label>نسخة جديدة من مستند سابق <span className="muted">(اختياري)</span><select name="documentId"><option value="">مستند جديد — الإصدار 1</option>{Array.from(new Map(existing.map((item) => [item.document_id, item])).values()).map((item) => <option key={item.document_id} value={item.document_id}>{item.title} — بعد الإصدار {item.version_number}</option>)}</select></label>
+    <label>الملف الخاص<input type="file" name="file" accept="application/pdf,image/jpeg,image/png" required /></label>
+    <p className="muted full">PDF أو JPEG أو PNG، بحد أقصى 10 MB. لإضافة إصدار جديد اختر المستند السابق واستخدم نفس العنوان والتصنيف. النسخ والروابط المسجلة لا تُعدّل ولا تُحذف.</p>
+    <div className="full"><Result state={state} pending={pending} label="رفع وربط الدليل" pendingLabel="جارٍ التحقق والرفع الخاص…" /></div>
   </form>;
 }
 

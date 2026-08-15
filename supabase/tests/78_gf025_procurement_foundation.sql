@@ -24,6 +24,24 @@ begin
   return v_result;
 end $$;
 
+create or replace function s25a_attach_evidence(
+  p_user uuid, p_organization uuid, p_project uuid, p_classification text,
+  p_purchase_order uuid, p_purchase_receipt uuid, p_supplier_invoice uuid, p_key text
+) returns uuid language plpgsql as $$
+declare v_result uuid;
+begin
+  perform set_config('request.jwt.claim.sub', p_user::text, true);
+  perform set_config('role', 'authenticated', false);
+  select public.register_procurement_evidence(
+    p_organization,p_project,null,p_classification,p_key,
+    p_organization::text||'/'||p_project::text||'/'||gen_random_uuid()::text,
+    p_key||'.pdf','application/pdf',100,repeat('a',64),
+    p_purchase_order,p_purchase_receipt,p_supplier_invoice,p_key
+  ) into v_result;
+  reset role;
+  return v_result;
+end $$;
+
 create or replace function s25a_catch(p_user uuid, p_sql text)
 returns text language plpgsql as $$
 declare v_msg text;
@@ -163,6 +181,9 @@ select s25a_run('00000000-0000-4000-8000-000000000003',
 select 1/case when (select status='SUBMITTED' from public.purchase_orders where id=:'s25_po')
   then 1 else 0 end as s25_po_submitted_state;
 
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s25_project_id', 'PURCHASE_ORDER', :'s25_po', null, null,
+  's25-po-file-001') as s25_po_evidence;
 select s25a_run('00000000-0000-4000-8000-000000000001',
   format($$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-approve')$$, :'s25_po')) as s25_po_approved;
 select 1/case when (select status='APPROVED' from public.purchase_orders where id=:'s25_po')
@@ -271,6 +292,9 @@ select 1/case when :'s25_po_idem_submit_1' = :'s25_po_idem' and :'s25_po_idem_su
   and (select count(*) = 1 from public.audit_events where entity_id = :'s25_po_idem' and event_type='PURCHASE_ORDER_SUBMITTED')
   then 1 else 0 end as s25_po_submit_replay_idempotent;
 
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s25_project_id', 'PURCHASE_ORDER', :'s25_po_idem', null, null,
+  's25-po-idem-file') as s25_po_idem_evidence;
 select s25a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s25a-po-idem-approve')$$, :'s25_po_idem')) as s25_po_idem_approve_1 \gset
 select s25a_run('00000000-0000-4000-8000-000000000001', format(

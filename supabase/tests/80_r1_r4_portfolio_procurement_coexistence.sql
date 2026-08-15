@@ -144,6 +144,9 @@ select s80a_run('00000000-0000-4000-8000-000000000082', format(
   $$select public.submit_purchase_order('40000000-0000-4000-8000-000000000081',%L,'s80-po-submit')$$,
   :'s80_po')) as s80_po_submitted;
 
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000082',
+  '40000000-0000-4000-8000-000000000081', :'s80_project_id', 'CONTRACT', :'s80_po', null, null,
+  's80-po-contract') as s80_po_evidence;
 select s80a_run('00000000-0000-4000-8000-000000000081', format(
   $$select public.approve_purchase_order('40000000-0000-4000-8000-000000000081',%L,'s80-po-approve')$$,
   :'s80_po')) as s80_po_approved;

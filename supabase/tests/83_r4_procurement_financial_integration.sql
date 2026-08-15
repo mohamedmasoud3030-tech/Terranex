@@ -35,8 +35,11 @@ select id as s83_other_project from public.investment_projects
 select id as s83_po from public.purchase_orders
  where organization_id='10000000-0000-4000-8000-000000000001'
    and internal_reference='PO-GF026-001' \gset
-select id as s83_receipt_line from public.purchase_receipt_lines
+select id as s83_receipt_line, purchase_receipt_id as s83_receipt from public.purchase_receipt_lines
  where purchase_order_id=:'s83_po' order by created_at limit 1 \gset
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s83_project', 'RECEIPT', null, :'s83_receipt', null,
+  's83-receipt-file') as s83_receipt_evidence;
 
 -- Approved commercial PO establishes an unposted, server-derived commitment.
 select 1/case when exists (
@@ -100,6 +103,9 @@ select 1/case when s83_catch('00000000-0000-4000-8000-000000000002', format(
 
 -- Owner/checker approval creates the existing authoritative cost_obligation and
 -- its normal Finance Core posting; no Procurement payable table exists.
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s83_project', 'SUPPLIER_INVOICE', null, null, :'s83_invoice',
+  's83-invoice-file') as s83_invoice_evidence;
 select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,'s83-invoice-approve-001')$$,
@@ -131,6 +137,9 @@ select s83_run('00000000-0000-4000-8000-000000000003', format(
     '[{"purchase_receipt_line_id":"%s","quantity_invoiced":40,"unit_price_minor_units":100}]',
     's83-invoice-over-create')$$,
   :'s83_project', :'s83_po', :'s83_receipt_line')) as s83_over_invoice \gset
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s83_project', 'SUPPLIER_INVOICE', null, null, :'s83_over_invoice',
+  's83-over-invoice-file') as s83_over_invoice_evidence;
 select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,'s83-invoice-over-approve')$$,
