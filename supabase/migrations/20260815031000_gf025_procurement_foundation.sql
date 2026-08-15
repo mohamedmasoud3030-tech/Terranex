@@ -20,6 +20,19 @@
 -- requires an active member; approval requires the organization OWNER and a
 -- maker/checker split (approver <> requester). Guarded status transitions and
 -- maker/checker are enforced on the persisted row so no write path bypasses it.
+--
+-- Workflow-transition idempotency: submit/approve commands are
+-- replay-idempotent — each transition persists its command idempotency key
+-- and request fingerprint exactly once on the header, a replay of the same
+-- logical command with the same key returns the same result without a
+-- duplicate audit event, and the same key with a different entity payload
+-- fails closed with 'idempotency key payload mismatch'.
+--
+-- Structural coherence: request/order lines and the order's source request
+-- are bound to their header's (id, project, organization) by composite
+-- foreign keys, so no persisted line or source reference can ever point
+-- across projects even if a future command contains a bug. The source
+-- request's APPROVED state is enforced by a guard trigger.
 
 -- ===========================================================================
 -- 1. Suppliers (organization-scoped, shared across projects)
@@ -56,6 +69,19 @@ create table public.purchase_requests (
   approved_by uuid references auth.users(id) on delete restrict,
   approved_at timestamptz,
   rejection_reason text check (rejection_reason is null or char_length(trim(rejection_reason)) between 1 and 500),
+  -- Workflow-transition idempotency evidence: each guarded transition records
+  -- its command idempotency key and request fingerprint exactly once, so a
+  -- response-loss retry of the same logical command replays the completed
+  -- transition (same result, no duplicate audit event) instead of failing
+  -- on state. Columns are filled only by the transition RPCs.
+  submit_idempotency_key text
+    check (submit_idempotency_key is null or char_length(submit_idempotency_key) between 8 and 120),
+  submit_request_hash text
+    check (submit_request_hash is null or char_length(submit_request_hash) = 64),
+  approve_idempotency_key text
+    check (approve_idempotency_key is null or char_length(approve_idempotency_key) between 8 and 120),
+  approve_request_hash text
+    check (approve_request_hash is null or char_length(approve_request_hash) = 64),
   created_at timestamptz not null default now(),
   idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
   request_hash text not null check (char_length(request_hash) = 64),
@@ -64,11 +90,22 @@ create table public.purchase_requests (
   check (status <> 'REJECTED' or rejection_reason is not null),
   -- maker/checker: the approver must differ from the requester.
   check (approved_by is null or approved_by <> requested_by),
+  -- transition evidence must exist exactly when the transition happened
+  check ((status = 'DRAFT') = (submit_idempotency_key is null and submit_request_hash is null)),
+  check ((status in ('APPROVED','REJECTED')) = (approve_idempotency_key is not null and approve_request_hash is not null)),
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict,
   unique (id, organization_id),
+  unique (id, project_id, organization_id),
   unique (organization_id, idempotency_key)
 );
+
+create unique index purchase_requests_org_submit_key_key
+  on public.purchase_requests(organization_id, submit_idempotency_key)
+  where submit_idempotency_key is not null;
+create unique index purchase_requests_org_approve_key_key
+  on public.purchase_requests(organization_id, approve_idempotency_key)
+  where approve_idempotency_key is not null;
 
 create table public.purchase_request_lines (
   id uuid primary key default gen_random_uuid(),
@@ -81,8 +118,11 @@ create table public.purchase_request_lines (
   notes text check (notes is null or char_length(trim(notes)) between 1 and 1000),
   created_at timestamptz not null default now(),
   unique (id, purchase_request_id),
-  foreign key (purchase_request_id, organization_id)
-    references public.purchase_requests(id, organization_id) on delete restrict,
+  -- Structural coherence: the header id + project + organization must match
+  -- the request header, so a line can never declare a different project than
+  -- its header even if a future command contains a bug.
+  foreign key (purchase_request_id, project_id, organization_id)
+    references public.purchase_requests(id, project_id, organization_id) on delete restrict,
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict
 );
@@ -99,6 +139,9 @@ create table public.purchase_orders (
   source_purchase_request_id uuid,
   description text check (description is null or char_length(trim(description)) between 1 and 2000),
   status text not null default 'DRAFT' check (status in ('DRAFT','SUBMITTED','APPROVED','REJECTED','CANCELLED')),
+  -- No wall-clock-relative CHECK lives here: an order created today is a
+  -- valid historical order tomorrow. The "not before the command date" rule
+  -- is enforced at the command boundary during creation only.
   expected_delivery_date date,
   requested_by uuid not null references auth.users(id) on delete restrict,
   submitted_by uuid references auth.users(id) on delete restrict,
@@ -106,6 +149,15 @@ create table public.purchase_orders (
   approved_by uuid references auth.users(id) on delete restrict,
   approved_at timestamptz,
   rejection_reason text check (rejection_reason is null or char_length(trim(rejection_reason)) between 1 and 500),
+  -- Workflow-transition idempotency evidence (same contract as purchase_requests).
+  submit_idempotency_key text
+    check (submit_idempotency_key is null or char_length(submit_idempotency_key) between 8 and 120),
+  submit_request_hash text
+    check (submit_request_hash is null or char_length(submit_request_hash) = 64),
+  approve_idempotency_key text
+    check (approve_idempotency_key is null or char_length(approve_idempotency_key) between 8 and 120),
+  approve_request_hash text
+    check (approve_request_hash is null or char_length(approve_request_hash) = 64),
   created_at timestamptz not null default now(),
   idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
   request_hash text not null check (char_length(request_hash) = 64),
@@ -115,16 +167,29 @@ create table public.purchase_orders (
   check (status <> 'CANCELLED' or rejection_reason is not null),
   -- maker/checker: the approver must differ from the requester.
   check (approved_by is null or approved_by <> requested_by),
-  check (expected_delivery_date is null or expected_delivery_date >= current_date),
+  -- transition evidence must exist exactly when the transition happened
+  check ((status = 'DRAFT') = (submit_idempotency_key is null and submit_request_hash is null)),
+  check ((status in ('APPROVED','REJECTED')) = (approve_idempotency_key is not null and approve_request_hash is not null)),
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict,
   foreign key (supplier_id, organization_id)
     references public.procurement_suppliers(id, organization_id) on delete restrict,
-  foreign key (source_purchase_request_id, organization_id)
-    references public.purchase_requests(id, organization_id) on delete restrict,
+  -- The source Purchase Request must belong to the SAME project and the same
+  -- organization (structural coherence); its APPROVED state is enforced by
+  -- gf025_guard_purchase_order_source_request (state is not FK-representable).
+  foreign key (source_purchase_request_id, project_id, organization_id)
+    references public.purchase_requests(id, project_id, organization_id) on delete restrict,
   unique (id, organization_id),
+  unique (id, project_id, organization_id),
   unique (organization_id, idempotency_key)
 );
+
+create unique index purchase_orders_org_submit_key_key
+  on public.purchase_orders(organization_id, submit_idempotency_key)
+  where submit_idempotency_key is not null;
+create unique index purchase_orders_org_approve_key_key
+  on public.purchase_orders(organization_id, approve_idempotency_key)
+  where approve_idempotency_key is not null;
 
 create table public.purchase_order_lines (
   id uuid primary key default gen_random_uuid(),
@@ -137,8 +202,11 @@ create table public.purchase_order_lines (
   notes text check (notes is null or char_length(trim(notes)) between 1 and 1000),
   created_at timestamptz not null default now(),
   unique (id, purchase_order_id),
-  foreign key (purchase_order_id, organization_id)
-    references public.purchase_orders(id, organization_id) on delete restrict,
+  -- Structural coherence: the header id + project + organization must match
+  -- the order header, so a line can never declare a different project than
+  -- its header even if a future command contains a bug.
+  foreign key (purchase_order_id, project_id, organization_id)
+    references public.purchase_orders(id, project_id, organization_id) on delete restrict,
   foreign key (project_id, organization_id)
     references public.investment_projects(id, organization_id) on delete restrict
 );
@@ -197,6 +265,37 @@ end $$;
 --  * request/order headers may change status through the audited RPCs
 --    (guarded by the state triggers above) but can never be deleted;
 --  * suppliers (a shared master) can be edited but never deleted.
+-- Source coherence guard: a Purchase Order may only source a Purchase
+-- Request in the APPROVED state. Same-project/same-organization membership
+-- is already enforced structurally by the composite foreign key on
+-- (source_purchase_request_id, project_id, organization_id); this trigger
+-- adds the state condition, which a foreign key cannot express. The source
+-- request's state cannot change afterwards (final states are frozen by the
+-- request state guard), so an insert/update-time check is sufficient.
+create or replace function public.gf025_guard_purchase_order_source_request() returns trigger
+language plpgsql set search_path = pg_catalog, public as $$
+declare
+  v_status text;
+begin
+  if new.source_purchase_request_id is not null then
+    select r.status into v_status
+      from public.purchase_requests r
+     where r.id = new.source_purchase_request_id
+       and r.organization_id = new.organization_id;
+    if v_status is null then
+      raise exception 'source purchase request not found';
+    end if;
+    if v_status <> 'APPROVED' then
+      raise exception 'source purchase request must be approved';
+    end if;
+  end if;
+  return new;
+end $$;
+
+create trigger gf025_purchase_order_source_request_guard
+  before insert or update of source_purchase_request_id on public.purchase_orders
+  for each row execute function public.gf025_guard_purchase_order_source_request();
+
 create or replace function public.gf025_guard_append_only() returns trigger
 language plpgsql set search_path = pg_catalog, public as $$
 begin
@@ -381,7 +480,14 @@ begin
   return v_id;
 end $$;
 
--- 5.3 submit_purchase_request — DRAFT -> SUBMITTED.
+-- 5.3 submit_purchase_request — DRAFT -> SUBMITTED (replay-idempotent).
+--
+-- Idempotency contract (matches the repository command pattern): the first
+-- execution performs the transition exactly once and persists its command
+-- key + request fingerprint on the header; a replay of the same logical
+-- command with the same key returns the same entity id without mutating
+-- state or writing a second audit event; the same key with a different
+-- entity payload fails closed with 'idempotency key payload mismatch'.
 create or replace function public.submit_purchase_request(
   p_organization_id uuid,
   p_purchase_request_id uuid,
@@ -389,23 +495,50 @@ create or replace function public.submit_purchase_request(
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_actor uuid := auth.uid();
+  v_hash text;
+  v_existing record;
   v_status text;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
+  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
+    raise exception 'invalid idempotency key';
+  end if;
+
+  v_hash := encode(digest(p_organization_id::text || '|'
+    || p_purchase_request_id::text || '|submit', 'sha256'), 'hex');
+  perform pg_advisory_xact_lock(hashtextextended(
+    p_organization_id::text || ':gf025-pr-submit:' || trim(p_idempotency_key), 0));
+
+  -- Replay path: the same logical submission with the same key returns the
+  -- already-completed result without a duplicate audit event.
+  select * into v_existing from public.purchase_requests
+   where organization_id = p_organization_id
+     and submit_idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.submit_request_hash <> v_hash then
+      raise exception 'idempotency key payload mismatch';
+    end if;
+    return v_existing.id;
+  end if;
+
   select status into v_status from public.purchase_requests
-   where id = p_purchase_request_id and organization_id = p_organization_id;
+   where id = p_purchase_request_id and organization_id = p_organization_id
+   for update;
   if v_status is null then raise exception 'purchase request not found'; end if;
   if v_status <> 'DRAFT' then raise exception 'purchase request is not in draft'; end if;
   update public.purchase_requests
-     set status = 'SUBMITTED', submitted_by = v_actor, submitted_at = now()
+     set status = 'SUBMITTED', submitted_by = v_actor, submitted_at = now(),
+         submit_idempotency_key = trim(p_idempotency_key),
+         submit_request_hash = v_hash
    where id = p_purchase_request_id and organization_id = p_organization_id;
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
   values (p_organization_id, v_actor, 'PURCHASE_REQUEST_SUBMITTED', 'purchase_request', p_purchase_request_id, '{}'::jsonb);
   return p_purchase_request_id;
 end $$;
 
--- 5.4 approve_purchase_request — SUBMITTED -> APPROVED, OWNER + maker/checker.
+-- 5.4 approve_purchase_request — SUBMITTED -> APPROVED, OWNER + maker/checker
+--     (replay-idempotent; same key/payload contract as the submit command).
 create or replace function public.approve_purchase_request(
   p_organization_id uuid,
   p_purchase_request_id uuid,
@@ -413,21 +546,45 @@ create or replace function public.approve_purchase_request(
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_actor uuid := auth.uid();
+  v_hash text;
+  v_existing record;
   v_status text;
   v_requested_by uuid;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
+  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
+    raise exception 'invalid idempotency key';
+  end if;
   perform public.s2_require_owner(p_organization_id);
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':gf025-pr-approve:' || p_purchase_request_id::text, 0));
+
+  v_hash := encode(digest(p_organization_id::text || '|'
+    || p_purchase_request_id::text || '|approve', 'sha256'), 'hex');
+
+  -- Replay path: the same logical approval with the same key returns the
+  -- already-completed result without a duplicate audit event.
+  select * into v_existing from public.purchase_requests
+   where organization_id = p_organization_id
+     and approve_idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.approve_request_hash <> v_hash then
+      raise exception 'idempotency key payload mismatch';
+    end if;
+    return v_existing.id;
+  end if;
+
   select status, requested_by into v_status, v_requested_by from public.purchase_requests
-   where id = p_purchase_request_id and organization_id = p_organization_id;
+   where id = p_purchase_request_id and organization_id = p_organization_id
+   for update;
   if v_status is null then raise exception 'purchase request not found'; end if;
   if v_status <> 'SUBMITTED' then raise exception 'purchase request is not submitted'; end if;
   if v_requested_by = v_actor then raise exception 'maker/checker: requester cannot approve'; end if;
   update public.purchase_requests
-     set status = 'APPROVED', approved_by = v_actor, approved_at = now()
+     set status = 'APPROVED', approved_by = v_actor, approved_at = now(),
+         approve_idempotency_key = trim(p_idempotency_key),
+         approve_request_hash = v_hash
    where id = p_purchase_request_id and organization_id = p_organization_id;
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
   values (p_organization_id, v_actor, 'PURCHASE_REQUEST_APPROVED', 'purchase_request', p_purchase_request_id, '{}'::jsonb);
@@ -470,10 +627,24 @@ begin
     select 1 from public.procurement_suppliers s
      where s.id = p_supplier_id and s.organization_id = p_organization_id and s.status = 'ACTIVE'
   ) then raise exception 'active supplier not found'; end if;
+  -- Source coherence: the referenced Purchase Request must belong to the
+  -- same organization AND the same project AND be APPROVED. The database
+  -- enforces the same rule structurally (composite foreign key + state
+  -- guard trigger); this is the command-boundary validation with a
+  -- user-facing error.
   if p_source_purchase_request_id is not null and not exists (
     select 1 from public.purchase_requests r
-     where r.id = p_source_purchase_request_id and r.organization_id = p_organization_id
-  ) then raise exception 'source purchase request not found'; end if;
+     where r.id = p_source_purchase_request_id
+       and r.organization_id = p_organization_id
+       and r.project_id = p_project_id
+       and r.status = 'APPROVED'
+  ) then raise exception 'source purchase request must belong to the same project and be approved'; end if;
+  -- Delivery-date rule lives at the command boundary: a new order cannot
+  -- carry a past expected delivery date, but stored historical orders keep
+  -- their past dates forever (no volatile wall-clock CHECK on the table).
+  if p_expected_delivery_date is not null and p_expected_delivery_date < current_date then
+    raise exception 'expected delivery date cannot be in the past';
+  end if;
   if p_description is not null and char_length(trim(p_description)) > 2000 then
     raise exception 'invalid description';
   end if;
@@ -495,7 +666,8 @@ begin
   select encode(digest(
     p_project_id::text || '|' || trim(p_internal_reference) || '|'
     || coalesce(p_supplier_id::text, '') || '|' || coalesce(p_source_purchase_request_id::text, '')
-    || '|' || coalesce(trim(p_description), '') || '|' || (p_lines::jsonb)::text,
+    || '|' || coalesce(trim(p_description), '') || '|'
+    || coalesce(p_expected_delivery_date::text, '') || '|' || (p_lines::jsonb)::text,
     'sha256'), 'hex') into v_hash;
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':gf025-po:' || trim(p_idempotency_key), 0));
@@ -531,7 +703,8 @@ begin
   return v_id;
 end $$;
 
--- 5.6 submit_purchase_order — DRAFT -> SUBMITTED.
+-- 5.6 submit_purchase_order — DRAFT -> SUBMITTED (replay-idempotent;
+--     same key/payload contract as the request submit command).
 create or replace function public.submit_purchase_order(
   p_organization_id uuid,
   p_purchase_order_id uuid,
@@ -539,23 +712,50 @@ create or replace function public.submit_purchase_order(
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_actor uuid := auth.uid();
+  v_hash text;
+  v_existing record;
   v_status text;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
+  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
+    raise exception 'invalid idempotency key';
+  end if;
+
+  v_hash := encode(digest(p_organization_id::text || '|'
+    || p_purchase_order_id::text || '|submit', 'sha256'), 'hex');
+  perform pg_advisory_xact_lock(hashtextextended(
+    p_organization_id::text || ':gf025-po-submit:' || trim(p_idempotency_key), 0));
+
+  -- Replay path: the same logical submission with the same key returns the
+  -- already-completed result without a duplicate audit event.
+  select * into v_existing from public.purchase_orders
+   where organization_id = p_organization_id
+     and submit_idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.submit_request_hash <> v_hash then
+      raise exception 'idempotency key payload mismatch';
+    end if;
+    return v_existing.id;
+  end if;
+
   select status into v_status from public.purchase_orders
-   where id = p_purchase_order_id and organization_id = p_organization_id;
+   where id = p_purchase_order_id and organization_id = p_organization_id
+   for update;
   if v_status is null then raise exception 'purchase order not found'; end if;
   if v_status <> 'DRAFT' then raise exception 'purchase order is not in draft'; end if;
   update public.purchase_orders
-     set status = 'SUBMITTED', submitted_by = v_actor, submitted_at = now()
+     set status = 'SUBMITTED', submitted_by = v_actor, submitted_at = now(),
+         submit_idempotency_key = trim(p_idempotency_key),
+         submit_request_hash = v_hash
    where id = p_purchase_order_id and organization_id = p_organization_id;
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
   values (p_organization_id, v_actor, 'PURCHASE_ORDER_SUBMITTED', 'purchase_order', p_purchase_order_id, '{}'::jsonb);
   return p_purchase_order_id;
 end $$;
 
--- 5.7 approve_purchase_order — SUBMITTED -> APPROVED, OWNER + maker/checker.
+-- 5.7 approve_purchase_order — SUBMITTED -> APPROVED, OWNER + maker/checker
+--     (replay-idempotent; same key/payload contract as the request approve).
 create or replace function public.approve_purchase_order(
   p_organization_id uuid,
   p_purchase_order_id uuid,
@@ -563,21 +763,45 @@ create or replace function public.approve_purchase_order(
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_actor uuid := auth.uid();
+  v_hash text;
+  v_existing record;
   v_status text;
   v_requested_by uuid;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
+  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
+    raise exception 'invalid idempotency key';
+  end if;
   perform public.s2_require_owner(p_organization_id);
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':gf025-po-approve:' || p_purchase_order_id::text, 0));
+
+  v_hash := encode(digest(p_organization_id::text || '|'
+    || p_purchase_order_id::text || '|approve', 'sha256'), 'hex');
+
+  -- Replay path: the same logical approval with the same key returns the
+  -- already-completed result without a duplicate audit event.
+  select * into v_existing from public.purchase_orders
+   where organization_id = p_organization_id
+     and approve_idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.approve_request_hash <> v_hash then
+      raise exception 'idempotency key payload mismatch';
+    end if;
+    return v_existing.id;
+  end if;
+
   select status, requested_by into v_status, v_requested_by from public.purchase_orders
-   where id = p_purchase_order_id and organization_id = p_organization_id;
+   where id = p_purchase_order_id and organization_id = p_organization_id
+   for update;
   if v_status is null then raise exception 'purchase order not found'; end if;
   if v_status <> 'SUBMITTED' then raise exception 'purchase order is not submitted'; end if;
   if v_requested_by = v_actor then raise exception 'maker/checker: requester cannot approve'; end if;
   update public.purchase_orders
-     set status = 'APPROVED', approved_by = v_actor, approved_at = now()
+     set status = 'APPROVED', approved_by = v_actor, approved_at = now(),
+         approve_idempotency_key = trim(p_idempotency_key),
+         approve_request_hash = v_hash
    where id = p_purchase_order_id and organization_id = p_organization_id;
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
   values (p_organization_id, v_actor, 'PURCHASE_ORDER_APPROVED', 'purchase_order', p_purchase_order_id, '{}'::jsonb);
