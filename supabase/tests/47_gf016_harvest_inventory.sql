@@ -523,6 +523,12 @@ select 1/case when (
   ))
 ) then 1 else 0 end as s16_sale_issue_phase_boundary_respected;
 
+-- Note: `purchase_orders` is intentionally excluded — GF-025 / R4 builds the
+-- shared Procurement slice (suppliers, purchase requests/orders, receiving) as
+-- a separate approved feature (ADR 0027/0028); its tables are not GF-016
+-- scaffolding and must not be treated as a violation. The architectural
+-- intent remains: no sector slice may own a second sector-specific
+-- procurement core — the shared Procurement core exists exactly once.
 select 1/case when (
   select count(*) from information_schema.tables
   where table_schema = 'public'

@@ -14,8 +14,10 @@
 --
 -- Control boundary: only an APPROVED purchase order may receive. Per order
 -- line, the cumulative received quantity may never exceed the ordered
--- quantity. The unit is derived server-side from the order line (never
--- asserted by the browser). Receipts and their lines are append-only.
+-- quantity (enforced in the RPC — with per-order-line row locking against
+-- concurrent receipts — and again by a BEFORE INSERT trigger). The unit is
+-- derived server-side from the order line (never asserted by the browser).
+-- Receipts and their lines are append-only.
 
 -- ===========================================================================
 -- 0. Composite-FK support: purchase_order_lines needs (id, organization_id).
@@ -186,11 +188,15 @@ begin
   for v_i in 1..cardinality(p_purchase_order_line_ids) loop
     v_n := p_quantities[v_i];
     if v_n is null or v_n <= 0 then raise exception 'invalid receipt line quantity'; end if;
+    -- FOR UPDATE: serializes concurrent receipts per order line so the
+    -- cumulative over-receipt check below observes committed quantities
+    -- from competing receipts before it proceeds.
     select l.quantity, l.unit into v_ordered, v_unit
       from public.purchase_order_lines l
      where l.id = p_purchase_order_line_ids[v_i]
        and l.purchase_order_id = p_purchase_order_id
-       and l.organization_id = p_organization_id;
+       and l.organization_id = p_organization_id
+     for update;
     if v_ordered is null then raise exception 'order line not found for this order'; end if;
     select coalesce(sum(rl.quantity_received), 0) into v_received
       from public.purchase_receipt_lines rl
@@ -296,6 +302,16 @@ from public.purchase_order_lines ol
 left join public.purchase_receipt_lines rl
   on rl.purchase_order_line_id = ol.id and rl.organization_id = ol.organization_id
 group by ol.id, ol.organization_id, ol.project_id, ol.purchase_order_id, ol.item_description, ol.unit, ol.quantity;
+
+-- Canonical read path: the operator UI reads through the security_invoker
+-- views as `authenticated`; the views themselves must be granted to the
+-- authenticated role (RLS on the underlying tables still applies per
+-- caller). Without this grant the application read path fails at runtime.
+grant select on
+  public.purchase_receipts_read,
+  public.purchase_receipt_lines_read,
+  public.purchase_order_lines_receiving_read
+to authenticated;
 
 -- ===========================================================================
 -- 6. pgcrypto schema qualification (GF-026 commands)

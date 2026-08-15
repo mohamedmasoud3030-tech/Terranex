@@ -657,6 +657,18 @@ select id, organization_id, project_id, purchase_order_id,
        item_description, quantity::text as quantity, unit, notes, created_at
 from public.purchase_order_lines;
 
+-- Canonical read path: the operator UI reads through the security_invoker
+-- views as `authenticated`; the views themselves must be granted to the
+-- authenticated role (RLS on the underlying tables still applies per
+-- caller). Without this grant the application read path fails at runtime.
+grant select on
+  public.procurement_suppliers_read,
+  public.purchase_requests_read,
+  public.purchase_request_lines_read,
+  public.purchase_orders_read,
+  public.purchase_order_lines_read
+to authenticated;
+
 -- ===========================================================================
 -- 8. pgcrypto schema qualification (GF-025 commands)
 --    Terranex keeps SECURITY DEFINER search_path locked to pg_catalog,public.

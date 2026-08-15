@@ -597,7 +597,7 @@ select 1/case when (
 -- valuation, or accounting artifact may have been fabricated by GF-015.
 -- Note: `purchase_orders` is intentionally excluded — GF-025 / R4 builds the
 -- shared Procurement slice (suppliers, purchase requests/orders, receiving) as
--- a separate approved feature (ADR 0026/0027); its tables are not GF-015
+-- a separate approved feature (ADR 0027/0028); its tables are not GF-015
 -- scaffolding and must not be treated as a violation.
 select 1/case when (
   select count(*) from information_schema.tables
