@@ -5,7 +5,7 @@
 
 ## 1. Experience thesis
 
-Terranex is not a dashboard collection. It is a set of controlled workspaces around an investment project. Users should enter through work requiring attention, act in context, and drill from every number to its composition and source evidence.
+Terranex is not a dashboard collection. It is a controlled navigation from **Investment Portfolio → Investment Project → sector/financial evidence**. Portfolio provides management context; the project remains the authoritative operating and financial-attribution workspace. Users should enter through work requiring attention, act in context, and drill from every number to its composition and source evidence.
 
 The product is Arabic/RTL first, mobile-first for field capture, and desktop-strong for finance, review, reconciliation, close, and reports.
 
@@ -14,7 +14,7 @@ The product is Arabic/RTL first, mobile-first for field capture, and desktop-str
 Primary navigation stays small:
 
 1. **Home** — my work, exceptions, portfolio pulse;
-2. **Investments** — projects and opportunities;
+2. **Investments** — portfolios, projects, and opportunities;
 3. **Operations** — sector-specific work queues and plans;
 4. **Money** — cash, obligations, sales, capital, reconciliation, close;
 5. **Investors** — participants, calls, allocations, distributions, statements;
@@ -24,7 +24,20 @@ Primary navigation stays small:
 
 On mobile, show Home, Investments, Operations, Money, and More. Investor-role users receive a separate minimal portal: Overview, Investments, Activity, Documents, Profile.
 
-## 3. Project workspace
+## 3. Portfolio workspace
+
+Opening an Investment Portfolio gives the owner a project-level management roll-up, not a pooled-investor ledger. It should show:
+
+- portfolio identity/purpose/responsible manager;
+- projects grouped by lifecycle/sector;
+- approved capital deployment by project and its status/basis;
+- project cash, realized result, committed cost, valuation, risks, and close state with explicit “as of” and currency semantics;
+- exceptions/approvals that require owner action;
+- drill-down from every total to project composition and then to the project source.
+
+The portfolio UI must **not** display “portfolio ownership”, “portfolio investor balance”, “portfolio distributable profit”, pooled cash, cross-project netting, or similar economic claims until the corresponding business decisions are approved.
+
+## 4. Project workspace
 
 Opening a project keeps persistent context:
 
@@ -40,7 +53,7 @@ Sector tab vocabulary changes by sector; the project shell does not.
 |---|---|---|
 | Assets, parcels, phases, milestones, valuations, disposal | Farm map, fields, cycles, activities, inputs, harvest lots | Sites, herds, cohorts, animals, health, weight, movement |
 
-## 4. Home by role
+## 5. Home by role
 
 ### Owner/investment manager
 
@@ -73,7 +86,7 @@ Sector tab vocabulary changes by sector; the project shell does not.
 - latest project update and documents;
 - visible “as of,” status, valuation basis, and contact route.
 
-## 5. Core screen patterns
+## 6. Core screen patterns
 
 ### Work queue
 
@@ -102,7 +115,7 @@ For frequent field events: project preselected, large touch targets, scan/photo 
 
 Split view: source/evidence, business summary, posting preview, approvals and exceptions. Debits/credits are available to finance but not the only explanation; show plain-language effect first.
 
-## 6. Number and status semantics
+## 7. Number and status semantics
 
 - Currency always includes code/symbol and organization formatting.
 - Negative values use sign and color/icon; color alone is insufficient.
@@ -112,7 +125,7 @@ Split view: source/evidence, business summary, posting preview, approvals and ex
 - Loading, empty, filtered-empty, error, no-access, offline, conflict, and stale-data states are distinct.
 - Dashboard totals link to filtered ledgers; no dead KPI cards.
 
-## 7. Arabic and localization
+## 8. Arabic and localization
 
 - Arabic is the authored source for product language; English is a translation.
 - RTL is structural, not a CSS mirror afterthought; directional icons and financial signs are reviewed.
@@ -125,6 +138,7 @@ Initial glossary decisions:
 
 | English | Arabic UI |
 |---|---|
+| Investment portfolio | محفظة استثمارية |
 | Investment project | مشروع استثماري |
 | Commitment | التزام رأسمالي |
 | Capital call | طلب مساهمة رأسمالية |
@@ -136,7 +150,7 @@ Initial glossary decisions:
 | Distributable cash | نقدية قابلة للتوزيع |
 | Reconciliation | مطابقة وتسوية |
 
-## 8. Mobile and offline
+## 9. Mobile and offline
 
 - Operator actions must work at 360px width with one primary action per screen.
 - Capture drafts show offline/local state and last sync attempt.
@@ -144,7 +158,7 @@ Initial glossary decisions:
 - Conflict UI compares local base, server current version, and user draft; money/approval conflicts require discard or explicit recreate—not automatic merge.
 - Finance-heavy tables provide responsive summary cards on mobile and full columns/export on desktop.
 
-## 9. Accessibility baseline
+## 10. Accessibility baseline
 
 - Target WCAG 2.2 AA for customer and investor interfaces.
 - Keyboard access, visible focus, correct landmarks/headings, semantic controls, form labels, error summary, and focus movement.
@@ -152,7 +166,7 @@ Initial glossary decisions:
 - Tables retain headers/relationships; complex charts have numeric table equivalents.
 - Confirmation dialogs state the object and consequence; destructive-looking corrections explain reversal behavior.
 
-## 10. Safety and trust UX
+## 11. Safety and trust UX
 
 | Risky action | Required UX |
 |---|---|
@@ -167,13 +181,13 @@ Initial glossary decisions:
 
 No dark patterns, false urgency, hidden fees, or optimistic “success” before server commit.
 
-## 11. Empty-state onboarding
+## 12. Empty-state onboarding
 
 Real production accounts start empty. Onboarding uses a checklist, not fabricated portfolio data:
 
 1. configure organization/currency;
 2. invite minimum roles;
-3. create first project;
+3. create or select the management portfolio, then create the first project;
 4. add agreement and sector baseline;
 5. import/review opening data if needed;
 6. post first contribution/cost;
@@ -181,7 +195,7 @@ Real production accounts start empty. Onboarding uses a checklist, not fabricate
 
 A separate clearly labeled sandbox/demo organization may contain guided sample data.
 
-## 12. Design-system foundations
+## 13. Design-system foundations
 
 - semantic color tokens for surface/text/border/action/success/warning/danger/info and sector accents;
 - typography optimized for Arabic reading and tabular numerals;
@@ -189,7 +203,7 @@ A separate clearly labeled sandbox/demo organization may contain guided sample d
 - primitives: button, input, money/quantity field, selection card, status badge, table, timeline, evidence viewer, approval panel, exception callout, drilldown metric;
 - domain components are composed from primitives and include state/permission handling.
 
-## 13. UX validation
+## 14. UX validation
 
 Validate each workflow during its delivery slice and before production release. Do not block the first code scaffold on an eight-flow prototype. For material workflows, include:
 
@@ -200,14 +214,14 @@ Validate each workflow during its delivery slice and before production release. 
 
 Tasks: activate project, record contribution, capture sector event, post cost/payment, close period, approve distribution, understand investor statement, correct an error. Measure completion, errors, terminology confusion, and reliance on facilitator—not visual preference alone.
 
-## 14. UX acceptance criteria
+## 15. UX acceptance criteria
 
+- a first-time owner can distinguish portfolio context from project context and drill Portfolio → Project → source;
 - a first-time user can identify the next action and project context;
-- every total drills to composition/source;
+- every portfolio total drills to project composition, and every project total drills to composition/source;
 - no material action is available outside its permission/state;
 - mobile operator flow takes the minimum necessary fields and can draft offline;
 - finance can see business meaning and journal effect;
 - investor cannot see another investor’s data;
 - Arabic layout is verified independently from English;
 - reports communicate date, policy/basis, status, and data completeness.
-
