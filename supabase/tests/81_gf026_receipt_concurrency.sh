@@ -65,7 +65,10 @@ if [[ -z "$PO" ]]; then
   psql_sql "set request.jwt.claim.sub='$MEMBER'; set role authenticated;
     select public.create_purchase_order('$ORG','$PROJECT','PO-CONC-001','$SUPPLIER',null,null,(current_date + 30),'EGP','S81-COMMERCIAL-EVIDENCE',
       '[{\"item_description\":\"علف سباق\",\"quantity\":100,\"unit\":\"كجم\",\"unit_price_minor_units\":100}]','s81-conc-po-create');
-    select public.submit_purchase_order('$ORG',(select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001'),'s81-conc-po-submit');"
+    select public.submit_purchase_order('$ORG',(select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001'),'s81-conc-po-submit');
+    select public.register_procurement_evidence('$ORG','$PROJECT',null,'PURCHASE_ORDER','s81 purchase order file',
+      '$ORG/$PROJECT/'||gen_random_uuid()::text,'s81-po.pdf','application/pdf',100,repeat('e',64),
+      (select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001'),null,null,'s81-po-file');"
   psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
     select public.approve_purchase_order('$ORG',(select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001'),'s81-conc-po-approve');"
   PO="$(psql_value "select id from public.purchase_orders where organization_id='$ORG' and internal_reference='PO-CONC-001' limit 1")"
