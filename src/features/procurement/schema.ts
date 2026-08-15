@@ -188,6 +188,13 @@ export const supplierPaymentSchema = z.object({
   }
 });
 
+export const approveSupplierPaymentSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  paymentProposalId: uuid,
+  idempotencyKey,
+});
+
 export type PurchaseReceiptInput = z.infer<typeof purchaseReceiptSchema>;
 export type SupplierInput = z.infer<typeof supplierSchema>;
 export type PurchaseRequestInput = z.infer<typeof purchaseRequestSchema>;

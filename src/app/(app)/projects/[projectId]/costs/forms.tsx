@@ -5,10 +5,11 @@ import type { Party } from '@/features/funding/queries';
 import type { CashAccountPosition } from '@/features/finance/queries';
 import { formatMinorUnits } from '@/shared/money';
 import {
+  approvePayment,
   authorizeObligation,
   createObligation,
   deleteObligationDraft,
-  payObligation,
+  preparePayment,
   reverseJournalBatch,
 } from '@/features/finance/actions';
 
@@ -129,8 +130,8 @@ export function PaymentForm({
   outstandingMinorUnits: string;
   cashAccounts: CashAccountPosition[];
 }) {
-  const [state, action, pending] = useActionState(payObligation, { error: undefined });
-  const idempotencyKey = useMemo(() => `pay-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(preparePayment, { error: undefined });
+  const idempotencyKey = useMemo(() => `pay-proposal-${crypto.randomUUID()}`, []);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -158,7 +159,33 @@ export function PaymentForm({
         <input type="date" name="paymentDate" required />
       </label>
       {state.error && <p className="error" role="alert">{state.error}</p>}
-      <button disabled={pending}>{pending ? 'جارٍ الترحيل…' : 'ترحيل دفعة من الحساب'}</button>
+      <button disabled={pending}>{pending ? 'جارٍ الإعداد…' : 'إعداد مقترح دفع'}</button>
+      <p className="muted">يُفحص الرصيد المتاح الآن، ثم يعيد مالك مختلف فحصه عند الاعتماد والترحيل.</p>
+    </form>
+  );
+}
+
+export function ApprovePaymentProposalButton({
+  organizationId,
+  projectId,
+  paymentProposalId,
+}: {
+  organizationId: string;
+  projectId: string;
+  paymentProposalId: string;
+}) {
+  const [state, action, pending] = useActionState(approvePayment, { error: undefined });
+  const idempotencyKey = useMemo(() => `pay-approval-${crypto.randomUUID()}`, []);
+  return (
+    <form action={action} className="stack">
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="paymentProposalId" value={paymentProposalId} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+      <button className="secondary" disabled={pending}>
+        {pending ? 'جارٍ الاعتماد والترحيل…' : 'اعتماد المقترح وترحيل الدفع'}
+      </button>
+      {state.error && <p className="error" role="alert">{state.error}</p>}
     </form>
   );
 }

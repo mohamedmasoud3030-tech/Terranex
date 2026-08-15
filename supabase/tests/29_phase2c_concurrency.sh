@@ -43,6 +43,7 @@ p2c_fail() {
 
 ORG='30000000-0000-4000-8000-000000000001'
 OWNER1='00000000-0000-4000-8000-000000000011'
+OWNER2='00000000-0000-4000-8000-000000000012'
 
 PROJECT="$(p2c_value "select id from public.investment_projects where organization_id='$ORG' and name='مشروع الفحص المالي' limit 1")"
 CASH="$(p2c_value "select id from public.project_cash_accounts where organization_id='$ORG' and name='حساب فحص 2C' limit 1")"
@@ -80,10 +81,15 @@ create trigger p2c_test_delay_payment before insert on public.project_payments
 for each row execute function public.p2c_test_delay_payment_insert();
 "
 
+p2c_sql "set request.jwt.claim.sub='$OWNER2'; set role authenticated;
+select public.prepare_cost_payment('$ORG','$RACE_OBL','$CASH',120000,date '$POSTING_DATE','p2c-race-proposal-session-a');
+select public.prepare_cost_payment('$ORG','$RACE_OBL','$CASH',120000,date '$POSTING_DATE','p2c-race-proposal-session-b');"
+PROPOSAL_A="$(p2c_value "select id from public.cost_payment_proposals where idempotency_key='p2c-race-proposal-session-a'")"
+PROPOSAL_B="$(p2c_value "select id from public.cost_payment_proposals where idempotency_key='p2c-race-proposal-session-b'")"
 SQL_PAY_A="set request.jwt.claim.sub='$OWNER1'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$RACE_OBL','$CASH',120000,date '$POSTING_DATE','p2c-race-pay-session-a');"
+select public.approve_cost_payment('$ORG','$PROPOSAL_A','p2c-race-pay-session-a');"
 SQL_PAY_B="set request.jwt.claim.sub='$OWNER1'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$RACE_OBL','$CASH',120000,date '$POSTING_DATE','p2c-race-pay-session-b');"
+select public.approve_cost_payment('$ORG','$PROPOSAL_B','p2c-race-pay-session-b');"
 
 set +e
 p2c_session "$SQL_PAY_A" "$tmpdir/pay-a.log" & pid_a=$!
@@ -173,8 +179,11 @@ create trigger p2c_test_delay_lines after insert on public.journal_lines
 for each row execute function public.p2c_test_delay_lines_after();
 "
 
+p2c_sql "set request.jwt.claim.sub='$OWNER2'; set role authenticated;
+select public.prepare_cost_payment('$ORG','$RACECLOSE_OBL','$RACE_CASH',90000,date '$POSTING_DATE','p2c-race-close-proposal');"
+RACE_PROPOSAL="$(p2c_value "select id from public.cost_payment_proposals where idempotency_key='p2c-race-close-proposal'")"
 SQL_POST="set request.jwt.claim.sub='$OWNER1'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$RACECLOSE_OBL','$RACE_CASH',90000,date '$POSTING_DATE','p2c-race-close-payment');"
+select public.approve_cost_payment('$ORG','$RACE_PROPOSAL','p2c-race-close-payment');"
 SQL_CLOSE="set request.jwt.claim.sub='$OWNER1'; set role authenticated;
 select public.s6_approve_close_run('$ORG','$RACE_CLOSE_RUN','p2c-race-close-approve');"
 
@@ -201,16 +210,16 @@ RACE_SNAPSHOT_CASH="$(p2c_value "select s.totals->>'cash_minor_units' from publi
 if [[ "$status_post" -eq 0 ]]; then
   [[ "$RACE_PAY_ROWS" == '1' && "$RACE_PAY_BATCHES" == '1' ]] \
     || p2c_fail "posting won the race but left rows=$RACE_PAY_ROWS batches=$RACE_PAY_BATCHES"
-  [[ "$RACE_SNAPSHOT_CASH" == '-90000' ]] \
-    || p2c_fail "posting crossed the close boundary silently: batch inside CLOSED period but snapshot cash is $RACE_SNAPSHOT_CASH (expected -90000)"
-  echo "Race 3 PASS: posting committed before the close lock and is captured in the close snapshot (cash -90000)"
+  [[ "$RACE_SNAPSHOT_CASH" == '0' ]] \
+    || p2c_fail "posting crossed the close boundary silently: batch inside CLOSED period but snapshot cash is $RACE_SNAPSHOT_CASH (expected 0 after funded payment)"
+  echo "Race 3 PASS: funded payment committed before the close lock and is captured in the close snapshot (cash 0)"
 else
   grep -q "no open accounting period" "$tmpdir/post-a.log" \
     || { cat "$tmpdir/post-a.log" >&2; p2c_fail "posting lost the race for an unexpected reason"; }
   [[ "$RACE_PAY_ROWS" == '0' && "$RACE_PAY_BATCHES" == '0' ]] \
     || p2c_fail "rejected posting left residue: rows=$RACE_PAY_ROWS batches=$RACE_PAY_BATCHES"
-  [[ "$RACE_SNAPSHOT_CASH" == '0' ]] \
-    || p2c_fail "snapshot cash is $RACE_SNAPSHOT_CASH although no posting crossed the boundary (expected 0)"
+  [[ "$RACE_SNAPSHOT_CASH" == '90000' ]] \
+    || p2c_fail "snapshot cash is $RACE_SNAPSHOT_CASH although no payment crossed the boundary (expected funded cash 90000)"
   echo "Race 3 PASS: posting racing the close was rejected deterministically with zero residue"
 fi
 

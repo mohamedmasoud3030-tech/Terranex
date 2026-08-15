@@ -53,6 +53,7 @@ assert_both_ok() {
 
 ORG='10000000-0000-4000-8000-000000000001'
 USER_ID='00000000-0000-4000-8000-000000000001'
+MAKER_ID='00000000-0000-4000-8000-000000000003'
 PROJECT="$(psql_value "select id from public.investment_projects where name='مشروع النخيل' limit 1")"
 ACCOUNT="$(psql_value "select id from public.project_cash_accounts where name='حساب بنك المشروع' limit 1")"
 OBL_RACE="$(psql_value "select id from public.cost_obligations where idempotency_key='s2-obl-race-0001' limit 1")"
@@ -102,10 +103,15 @@ create trigger s2_test_delay_payment before insert on public.project_payments
 for each row execute function public.s2_test_delay_payment_insert();
 "
 
+psql_sql "set request.jwt.claim.sub='$MAKER_ID'; set role authenticated;
+select public.prepare_cost_payment('$ORG','$OBL_RACE','$ACCOUNT',100000,date '$PAYMENT_DATE','s2-race-proposal-session-a');
+select public.prepare_cost_payment('$ORG','$OBL_RACE','$ACCOUNT',100000,date '$PAYMENT_DATE','s2-race-proposal-session-b');"
+PROPOSAL_A="$(psql_value "select id from public.cost_payment_proposals where idempotency_key='s2-race-proposal-session-a'")"
+PROPOSAL_B="$(psql_value "select id from public.cost_payment_proposals where idempotency_key='s2-race-proposal-session-b'")"
 SQL_PAY_A="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$OBL_RACE','$ACCOUNT',600000,date '$PAYMENT_DATE','s2-race-pay-session-a');"
+select public.approve_cost_payment('$ORG','$PROPOSAL_A','s2-race-pay-session-a');"
 SQL_PAY_B="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
-select public.pay_cost_obligation('$ORG','$OBL_RACE','$ACCOUNT',600000,date '$PAYMENT_DATE','s2-race-pay-session-b');"
+select public.approve_cost_payment('$ORG','$PROPOSAL_B','s2-race-pay-session-b');"
 
 set +e
 run_session "$SQL_PAY_A" "$tmpdir/pay-a.log" & pid_a=$!
@@ -119,8 +125,8 @@ PAID_TOTAL="$(psql_value "select coalesce(sum(pp.amount_minor_units),0) from pub
   join public.journal_batches jb on jb.source_type='PAYMENT' and jb.source_id=pp.id and jb.reversal_of_batch_id is null
   where pp.obligation_id='$OBL_RACE'")"
 PAID_COUNT="$(psql_value "select count(*) from public.project_payments where obligation_id='$OBL_RACE'")"
-if [[ "$PAID_TOTAL" != '1000000' || "$PAID_COUNT" != '2' ]]; then
-  echo "ERROR: payment race produced total=$PAID_TOTAL count=$PAID_COUNT (expected 1000000/2)" >&2
+if [[ "$PAID_TOTAL" != '150000' || "$PAID_COUNT" != '2' ]]; then
+  echo "ERROR: payment race produced total=$PAID_TOTAL count=$PAID_COUNT (expected 150000/2)" >&2
   exit 1
 fi
 

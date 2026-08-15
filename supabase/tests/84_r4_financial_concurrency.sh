@@ -48,20 +48,43 @@ APPROVED="$(psql_value "select count(*) from public.supplier_invoices where id i
 [[ "$APPROVED" == '1' ]] || { echo "ERROR: approved invoice race count $APPROVED" >&2; exit 1; }
 OBLIGATION="$(psql_value "select cost_obligation_id from public.supplier_invoices where id in ('$INV_A','$INV_B') and status='APPROVED'")"
 
-# The winning payable is 2,000 minor units. Two concurrent payments of 1,500
-# serialize on the same existing cost_obligation row; exactly one may post.
-PAY_A="set request.jwt.claim.sub='$OWNER'; set role authenticated; select public.pay_cost_obligation('$ORG','$OBLIGATION','$CASH',1500,current_date,'s84-payment-A');"
-PAY_B="set request.jwt.claim.sub='$OWNER'; set role authenticated; select public.pay_cost_obligation('$ORG','$OBLIGATION','$CASH',1500,current_date,'s84-payment-B');"
+# A second independently authorized payable makes this a true cross-obligation
+# race. Both 1,500 proposals see the same funded 2,000 account at preparation;
+# approval must lock that account, recompute cash, and admit exactly one.
+PARTY="$(psql_value "select party_id from public.cost_obligations where id='$OBLIGATION'")"
+psql_sql "set request.jwt.claim.sub='$MEMBER'; set role authenticated;
+select public.create_cost_obligation('$ORG','$PROJECT','$PARTY','التزام ثانٍ لسباق نقدية R4',2000,'EGP',current_date,'EXPENSE','s84-second-obligation');"
+OBLIGATION_B="$(psql_value "select id from public.cost_obligations where idempotency_key='s84-second-obligation'")"
+psql_sql "set request.jwt.claim.sub='$OWNER'; set role authenticated;
+select public.authorize_cost_obligation('$ORG','$OBLIGATION_B','s84-second-obligation-auth');"
+
+BANK="$(psql_value "select id from public.semantic_accounts where role='BANK_CASH'")"
+CAPITAL="$(psql_value "select id from public.semantic_accounts where role='CONTRIBUTED_CAPITAL'")"
+BATCH="$(psql_value "insert into public.journal_batches(organization_id,project_id,source_type,source_id,transaction_date,idempotency_key,request_hash,posted_by)
+values('$ORG','$PROJECT','CONTRIBUTION_CASH_ATTRIBUTION',gen_random_uuid(),current_date,'s84-explicit-cash-fixture',repeat('8',64),'$OWNER') returning id")"
+psql_sql "insert into public.journal_lines(batch_id,organization_id,project_id,account_id,debit_minor_units,credit_minor_units,currency,cash_account_id,transaction_date)
+values('$BATCH','$ORG','$PROJECT','$BANK',2000,0,'EGP','$CASH',current_date),
+      ('$BATCH','$ORG','$PROJECT','$CAPITAL',0,2000,'EGP',null,current_date);"
+
+psql_sql "set request.jwt.claim.sub='$MEMBER'; set role authenticated;
+select public.prepare_cost_payment('$ORG','$OBLIGATION','$CASH',1500,current_date,'s84-payment-proposal-A');
+select public.prepare_cost_payment('$ORG','$OBLIGATION_B','$CASH',1500,current_date,'s84-payment-proposal-B');"
+PROPOSAL_A="$(psql_value "select id from public.cost_payment_proposals where idempotency_key='s84-payment-proposal-A'")"
+PROPOSAL_B="$(psql_value "select id from public.cost_payment_proposals where idempotency_key='s84-payment-proposal-B'")"
+PAY_A="set request.jwt.claim.sub='$OWNER'; set role authenticated; select public.approve_cost_payment('$ORG','$PROPOSAL_A','s84-payment-A');"
+PAY_B="set request.jwt.claim.sub='$OWNER'; set role authenticated; select public.approve_cost_payment('$ORG','$PROPOSAL_B','s84-payment-B');"
 set +e
 run_session "$PAY_A" "$tmpdir/pa.log" & c=$!
 run_session "$PAY_B" "$tmpdir/pb.log" & d=$!
 wait "$c"; sc=$?; wait "$d"; sd=$?
 set -e
 if ! { [[ "$sc" -eq 0 && "$sd" -ne 0 ]] || [[ "$sc" -ne 0 && "$sd" -eq 0 ]]; }; then
-  echo "ERROR: competing payments expected exactly one success; A=$sc B=$sd" >&2
+  echo "ERROR: cross-obligation cash race expected exactly one success; A=$sc B=$sd" >&2
   cat "$tmpdir/pa.log" "$tmpdir/pb.log" >&2 || true; exit 1
 fi
-PAID="$(psql_value "select paid_minor_units from public.cost_obligation_position_read where obligation_id='$OBLIGATION'")"
-[[ "$PAID" == '1500' ]] || { echo "ERROR: concurrent payment total $PAID" >&2; exit 1; }
+PAYMENT_COUNT="$(psql_value "select count(*) from public.project_payments where obligation_id in ('$OBLIGATION','$OBLIGATION_B')")"
+CASH_BALANCE="$(psql_value "select balance_minor_units from public.project_cash_position_read where cash_account_id='$CASH'")"
+[[ "$PAYMENT_COUNT" == '1' ]] || { echo "ERROR: cross-obligation race posted $PAYMENT_COUNT payments" >&2; exit 1; }
+[[ "$CASH_BALANCE" == '500' ]] || { echo "ERROR: cross-obligation race left cash $CASH_BALANCE, expected 500" >&2; exit 1; }
 
 echo 'R4 procurement financial concurrency PASS'

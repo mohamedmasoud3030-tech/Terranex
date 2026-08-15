@@ -137,31 +137,98 @@ select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
   :'s83_over_invoice')) like '%exceeds remaining received quantity%'
   then 1 else 0 end as s83_invoice_receipt_ceiling_enforced;
 
--- Shared project cash/payment supports partial payment and prevents overpayment.
+-- Shared Finance payment is proposal -> independent approval -> posting.
+-- A new zero-balance account must fail before any proposal can be recorded.
 select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_project_cash_account(
     '10000000-0000-4000-8000-000000000001',%L,'حساب R4','EGP')$$,
   :'s83_project')) as s83_cash \gset
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.prepare_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,%L,1,current_date,'s83-zero-cash-proposal')$$,
+  :'s83_obligation', :'s83_cash')) like '%payment exceeds available cash%'
+  then 1 else 0 end as s83_zero_cash_payment_rejected;
+select 1/case when not has_function_privilege(
+  'authenticated', 'public.pay_cost_obligation(uuid,uuid,uuid,bigint,date,text)', 'EXECUTE')
+  then 1 else 0 end as s83_direct_payment_rpc_revoked;
+
+-- Explicit balanced test funding (not an application shortcut) gives exactly
+-- 1,000 minor units of available book cash for the two partial payments.
+select id as s83_bank_account from public.semantic_accounts where role='BANK_CASH' \gset
+select id as s83_capital_account from public.semantic_accounts where role='CONTRIBUTED_CAPITAL' \gset
+insert into public.journal_batches(
+  organization_id,project_id,source_type,source_id,transaction_date,
+  idempotency_key,request_hash,posted_by
+) values (
+  '10000000-0000-4000-8000-000000000001',:'s83_project','CONTRIBUTION_CASH_ATTRIBUTION',
+  gen_random_uuid(),current_date,'s83-explicit-cash-fixture',repeat('8',64),
+  '00000000-0000-4000-8000-000000000001'
+) returning id as s83_funding_batch \gset
+insert into public.journal_lines(
+  batch_id,organization_id,project_id,account_id,debit_minor_units,credit_minor_units,
+  currency,cash_account_id,transaction_date
+) values
+  (:'s83_funding_batch','10000000-0000-4000-8000-000000000001',:'s83_project',:'s83_bank_account',1000,0,'EGP',:'s83_cash',current_date),
+  (:'s83_funding_batch','10000000-0000-4000-8000-000000000001',:'s83_project',:'s83_capital_account',0,1000,'EGP',null,current_date);
+
+-- Even an OWNER may prepare, but can never approve their own proposal.
 select s83_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation(
-    '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-001')$$,
-  :'s83_obligation', :'s83_cash')) as s83_payment1 \gset
+  $$select public.prepare_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,%L,1,current_date,'s83-self-payment-proposal')$$,
+  :'s83_obligation', :'s83_cash')) as s83_self_proposal \gset
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,'s83-self-payment-approval')$$,
+  :'s83_self_proposal')) like '%maker/checker%'
+  then 1 else 0 end as s83_payment_self_approval_rejected;
+
+-- MEMBER prepares; a different OWNER revalidates cash/payable and posts.
+select s83_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.prepare_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
+  :'s83_obligation', :'s83_cash')) as s83_proposal1 \gset
+select 1/case when s83_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.prepare_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
+  :'s83_obligation', :'s83_cash'))=:'s83_proposal1' then 1 else 0 end as s83_payment_proposal_replay_safe;
+select s83_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,'s83-payment-001')$$,
+  :'s83_proposal1')) as s83_payment1 \gset
+select 1/case when s83_run('00000000-0000-4000-8000-000000000001', format(
+  $$select public.approve_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,'s83-payment-001')$$,
+  :'s83_proposal1'))=:'s83_payment1' then 1 else 0 end as s83_payment_approval_replay_safe;
+select 1/case when exists (
+  select 1 from public.cost_payment_proposals p join public.project_payments pay
+    on pay.payment_proposal_id=p.id
+  where p.id=:'s83_proposal1' and p.status='POSTED'
+    and p.prepared_by='00000000-0000-4000-8000-000000000003'
+    and p.approved_by='00000000-0000-4000-8000-000000000001'
+    and p.prepared_by<>p.approved_by and pay.id=:'s83_payment1'
+) then 1 else 0 end as s83_payment_maker_checker_persisted;
 
 select 1/case when (select payment_state='PARTIALLY_PAID' and paid_minor_units='400' and outstanding_minor_units='600'
   from public.supplier_invoices_read where id=:'s83_invoice') then 1 else 0 end as s83_partial_payment_derived;
 
-select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+  $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,601,current_date,'s83-payment-over')$$,
   :'s83_obligation', :'s83_cash')) like '%exceeds remaining payable%'
   then 1 else 0 end as s83_overpayment_rejected;
 
+select s83_run('00000000-0000-4000-8000-000000000003', format(
+  $$select public.prepare_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,%L,600,current_date,'s83-payment-proposal-002')$$,
+  :'s83_obligation', :'s83_cash')) as s83_proposal2 \gset
 select s83_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.pay_cost_obligation(
-    '10000000-0000-4000-8000-000000000001',%L,%L,600,current_date,'s83-payment-002')$$,
-  :'s83_obligation', :'s83_cash')) as s83_payment2 \gset
+  $$select public.approve_cost_payment(
+    '10000000-0000-4000-8000-000000000001',%L,'s83-payment-002')$$,
+  :'s83_proposal2')) as s83_payment2 \gset
 select 1/case when (select payment_state='FULLY_PAID' and paid_minor_units='1000' and outstanding_minor_units='0'
   from public.supplier_invoices_read where id=:'s83_invoice') then 1 else 0 end as s83_fully_paid_derived;
+select 1/case when (select balance_minor_units='0' from public.project_cash_position_read
+  where cash_account_id=:'s83_cash') then 1 else 0 end as s83_cash_never_negative;
 
 -- Existing bank import and exact reconciliation link the same shared payments.
 select s83_run('00000000-0000-4000-8000-000000000001', format(

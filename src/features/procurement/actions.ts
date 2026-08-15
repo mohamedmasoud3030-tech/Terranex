@@ -9,6 +9,7 @@ import {
   approvePurchaseOrderSchema,
   approvePurchaseRequestSchema,
   approveSupplierInvoiceSchema,
+  approveSupplierPaymentSchema,
   linkSupplierPartySchema,
   purchaseOrderSchema,
   purchaseReceiptSchema,
@@ -64,6 +65,7 @@ function domainError(prev: ActionState, message: string | undefined, fallback: s
   if (text.includes('receipt line not found')) return fail(prev, 'سطر الاستلام لا ينتمي إلى أمر الشراء المحدد.');
   if (text.includes('supplier invoice requires an approved')) return fail(prev, 'لا تُسجَّل الفاتورة إلا على أمر شراء معتمد.');
   if (text.includes('payment exceeds remaining payable')) return fail(prev, 'الدفعة تتجاوز المتبقي المستحق للفاتورة.');
+  if (text.includes('payment exceeds available cash')) return fail(prev, 'الرصيد المتاح في الحساب النقدي لا يكفي لهذه الدفعة.');
   if (text.includes('cash account must belong') || text.includes('payment currency')) return fail(prev, 'حساب النقدية يجب أن ينتمي إلى نفس المشروع والعملة.');
   if (text.includes('already exists') || text.includes('duplicate key')) return fail(prev, 'يوجد سجل بنفس المرجع في هذا النطاق.');
   if (text.includes('at least one') && text.includes('line')) return fail(prev, 'أضف سطرًا واحدًا على الأقل.');
@@ -225,16 +227,26 @@ export async function approveSupplierInvoice(prev: ActionState, form: FormData):
   }, 'تعذر اعتماد فاتورة المورد وإنشاء المستحق.', value.projectId, prev);
 }
 
-// Reuses the shared Finance Core payment command; no Procurement cash engine.
-export async function paySupplierInvoice(prev: ActionState, form: FormData): Promise<ActionState> {
+// Reuses the shared Finance Core proposal/approval workflow; no Procurement cash engine.
+export async function prepareSupplierPayment(prev: ActionState, form: FormData): Promise<ActionState> {
   const value = parse(prev, supplierPaymentSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
-  return rpc('pay_cost_obligation', {
+  return rpc('prepare_cost_payment', {
     p_organization_id: value.organizationId,
     p_obligation_id: value.obligationId,
     p_cash_account_id: value.cashAccountId,
     p_amount_minor_units: parseMajorUnitsToMinor(value.amount, value.currency),
     p_payment_date: value.paymentDate,
     p_idempotency_key: value.idempotencyKey,
-  }, 'تعذر تسجيل دفعة المورد.', value.projectId, prev);
+  }, 'تعذر إعداد مقترح دفع المورد.', value.projectId, prev);
+}
+
+export async function approveSupplierPayment(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, approveSupplierPaymentSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('approve_cost_payment', {
+    p_organization_id: value.organizationId,
+    p_payment_proposal_id: value.paymentProposalId,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر اعتماد مقترح الدفع. يلزم مالك مختلف ورصيد كافٍ.', value.projectId, prev);
 }

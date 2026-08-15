@@ -47,6 +47,18 @@ describe('R4 procurement financial integration contract', () => {
     expect(migration).not.toMatch(/create table public\.(procurement_payments|procurement_payables|procurement_ledger)/);
   });
 
+  it('requires a shared Finance maker/checker proposal and sufficient locked cash', () => {
+    expect(migration).toContain('create table public.cost_payment_proposals');
+    expect(migration).toContain('maker/checker: payment preparer cannot approve');
+    expect(migration).toContain('for update;');
+    expect(migration).toContain('payment exceeds available cash');
+    expect(migration).toContain('r4_nonnegative_cash_credit_guard');
+    expect(migration).toContain('direct payment posting disabled; prepare and approve a payment proposal');
+    expect(migration).toMatch(/revoke all on function public\.pay_cost_obligation[\s\S]*from public, anon, authenticated/);
+    expect(migration).toContain('public.prepare_cost_payment');
+    expect(migration).toContain('public.approve_cost_payment');
+  });
+
   it('structurally enforces tenant/project coherence and locks financial ceilings', () => {
     expect(migration).toContain('foreign key (purchase_order_id, supplier_id, project_id, organization_id)');
     expect(migration).toContain('foreign key (supplier_invoice_id, purchase_order_id, project_id, organization_id)');

@@ -51,6 +51,12 @@ export const paymentSchema = z.object({
   idempotencyKey,
 });
 
+export const approvePaymentSchema = z.object({
+  organizationId: z.string().uuid(),
+  paymentProposalId: z.string().uuid(),
+  idempotencyKey,
+});
+
 const bankCsvLine = z.object({
   transactionDate: z.string().min(1, 'التاريخ مطلوب في كل سطر'),
   amount: z.string().trim().min(1, 'المبلغ مطلوب في كل سطر'),
@@ -120,6 +126,7 @@ export type ContributionAttributionInput = z.infer<typeof contributionAttributio
 export type ObligationInput = z.infer<typeof obligationSchema>;
 export type AuthorizeObligationInput = z.infer<typeof authorizeObligationSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
+export type ApprovePaymentInput = z.infer<typeof approvePaymentSchema>;
 export type BankImportInput = z.infer<typeof bankImportSchema>;
 export type ReconcileInput = z.infer<typeof reconcileSchema>;
 export type VoidReconciliationInput = z.infer<typeof voidReconciliationSchema>;

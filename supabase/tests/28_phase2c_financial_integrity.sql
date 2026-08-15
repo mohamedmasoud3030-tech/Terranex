@@ -77,7 +77,13 @@ end $$;
 -- not repeat long identical token sequences.
 create or replace function p2c_pay(p_obligation uuid, p_cash uuid, p_amount bigint, p_date date, p_key text)
 returns uuid language plpgsql as $$
-begin return public.pay_cost_obligation(public.p2c_org(), p_obligation, p_cash, p_amount, p_date, p_key); end $$;
+declare v_approver uuid:=auth.uid(); v_proposal uuid;
+begin
+  perform set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000013',true);
+  v_proposal:=public.prepare_cost_payment(public.p2c_org(),p_obligation,p_cash,p_amount,p_date,'proposal-'||p_key);
+  perform set_config('request.jwt.claim.sub',v_approver::text,true);
+  return public.approve_cost_payment(public.p2c_org(),v_proposal,p_key);
+end $$;
 create or replace function p2c_authorize_obl(p_obligation uuid, p_key text) returns uuid
 language plpgsql as $$ begin return public.authorize_cost_obligation(public.p2c_org(), p_obligation, p_key); end $$;
 create or replace function p2c_create_obl(p_project uuid, p_party uuid, p_desc text, p_amount bigint, p_date date, p_treatment text, p_key text)
@@ -128,6 +134,29 @@ begin
   return v_id;
 end $$;
 
+-- Explicit balanced test funding; this is fixture setup, not a product command
+-- or an opening-balance shortcut exposed to application roles.
+create or replace function p2c_fund_cash(
+  p_project uuid, p_cash uuid, p_amount bigint, p_date date, p_key text
+) returns void language plpgsql as $$
+declare v_batch uuid; v_bank uuid; v_capital uuid;
+begin
+  select id into v_bank from public.semantic_accounts where role='BANK_CASH';
+  select id into v_capital from public.semantic_accounts where role='CONTRIBUTED_CAPITAL';
+  insert into public.journal_batches(
+    organization_id,project_id,source_type,source_id,transaction_date,idempotency_key,request_hash,posted_by
+  ) values (
+    public.p2c_org(),p_project,'CONTRIBUTION_CASH_ATTRIBUTION',gen_random_uuid(),p_date,
+    p_key,repeat('f',64),'00000000-0000-4000-8000-000000000011'
+  ) returning id into v_batch;
+  insert into public.journal_lines(
+    batch_id,organization_id,project_id,account_id,debit_minor_units,credit_minor_units,
+    currency,cash_account_id,transaction_date
+  ) values
+    (v_batch,public.p2c_org(),p_project,v_bank,p_amount,0,'EGP',p_cash,p_date),
+    (v_batch,public.p2c_org(),p_project,v_capital,0,p_amount,'EGP',null,p_date);
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Test-only identity fixture (mirrors 19_s5_distribution_capacity_fixture.sql):
 -- two OWNERs (maker/checker separation) and one plain MEMBER.
@@ -165,6 +194,7 @@ select id as p2c_inv3 from public.parties where legal_name='مستثمر فحص 
 
 select p2c_owner1_run(format($$select public.create_project_cash_account(public.p2c_org(),%L,'حساب فحص 2C','EGP')$$, :'p2c_project'));
 select id as p2c_cash from public.project_cash_accounts where name='حساب فحص 2C' \gset
+select p2c_fund_cash(:'p2c_project', :'p2c_cash', 200000, current_date, 'p2c-fixture-cash-main');
 
 select p2c_owner1_run(format($$select public.add_project_participant(public.p2c_org(),%L,%L)$$, :'p2c_project', :'p2c_inv1'));
 select p2c_owner1_run(format($$select public.add_project_participant(public.p2c_org(),%L,%L)$$, :'p2c_project', :'p2c_inv2'));
@@ -555,6 +585,7 @@ select p2c_owner1_run($$select public.create_investment_project(public.p2c_org()
 select id as p2c_race_project from public.investment_projects where name='مشروع سباق الإغلاق' \gset
 select p2c_owner1_run(format($$select public.create_project_cash_account(public.p2c_org(),%L,'حساب سباق الإغلاق','EGP')$$, :'p2c_race_project'));
 select id as p2c_race_cash from public.project_cash_accounts where name='حساب سباق الإغلاق' \gset
+select p2c_fund_cash(:'p2c_race_project', :'p2c_race_cash', 90000, current_date, 'p2c-fixture-cash-race-close');
 select p2c_owner1_run(format(
   $$select public.p2c_create_obl(%L,%L,'التزام سباق الإغلاق',90000,current_date,'EXPENSE','p2c-obl-raceclose-01')$$,
   :'p2c_race_project', :'p2c_supplier'));

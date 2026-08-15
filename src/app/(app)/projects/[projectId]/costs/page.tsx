@@ -9,10 +9,12 @@ import {
   getCurrentMembership,
   getLedgerForObligation,
   getObligationPositions,
+  getPaymentProposals,
 } from '@/features/finance/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import {
+  ApprovePaymentProposalButton,
   AuthorizeObligationButton,
   DeleteDraftButton,
   ObligationForm,
@@ -46,11 +48,12 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
   if (!project) notFound();
   const organizationId = project.organization_id;
 
-  const [membership, parties, obligations, cashAccounts] = await Promise.all([
+  const [membership, parties, obligations, cashAccounts, paymentProposals] = await Promise.all([
     getCurrentMembership(organizationId),
     getParties(organizationId),
     getObligationPositions(projectId),
     getCashAccountPositions(projectId),
+    getPaymentProposals(projectId),
   ]);
   const isOwner = membership?.role === 'OWNER';
   const partyName = new Map(parties.map((party) => [party.id, party.legal_name]));
@@ -157,9 +160,10 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                               obligationId={obligation.obligation_id}
                             />
                           )}
-                          {obligation.status === 'AUTHORIZED' && !obligation.is_reversed && isOwner && (
+                          {obligation.status === 'AUTHORIZED' && !obligation.is_reversed
+                            && obligation.outstanding_minor_units !== '0' && (
                             <details className="stack">
-                              <summary>دفعة</summary>
+                              <summary>إعداد مقترح دفع</summary>
                               <PaymentForm
                                 organizationId={organizationId}
                                 projectId={projectId}
@@ -170,6 +174,22 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                               />
                             </details>
                           )}
+                          {paymentProposals.filter((proposal) => proposal.obligation_id === obligation.obligation_id
+                            && proposal.status === 'PROPOSED').map((proposal) => (
+                            <div className="stack" key={proposal.payment_proposal_id}>
+                              <span className="status">مقترح دفع بانتظار معتمد مستقل</span>
+                              <small>{formatMinorUnits(proposal.amount_minor_units, proposal.currency)} · {proposal.cash_account_name} · {proposal.payment_date}</small>
+                              {isOwner && membership?.user_id !== proposal.prepared_by ? (
+                                <ApprovePaymentProposalButton
+                                  organizationId={organizationId}
+                                  projectId={projectId}
+                                  paymentProposalId={proposal.payment_proposal_id}
+                                />
+                              ) : (
+                                <small className="muted">لا يجوز للمُعدّ اعتماد مقترحه؛ يلزم مالك مختلف.</small>
+                              )}
+                            </div>
+                          ))}
                           {obligation.is_posted && !obligation.is_reversed && isOwner && obligation.authorization_batch_id && (
                             <details className="stack">
                               <summary>عكس القيد</summary>

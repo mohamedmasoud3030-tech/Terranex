@@ -496,10 +496,12 @@ portion waits. The remaining independent gates, in order:
    Integration** (ADR 0030) now delivers the bounded financial spine:
    authoritative Party-linked Supplier → exact commercial PO → approved
    unposted commitment → Receiving → receipt-matched Supplier Invoice → the
-   existing Finance Core cost obligation/payable → existing partial payment →
-   existing bank reconciliation. Project/tenant composite integrity,
-   maker/checker, NULL-safe idempotency, row-locked invoice/payment ceilings,
-   immutable posting/reversal rules, and the Arabic/RTL drill-down are included.
+   existing Finance Core cost obligation/payable → shared Finance payment
+   proposal → independent OWNER approval/partial payment → existing bank
+   reconciliation. Project/tenant composite integrity, database-enforced
+   maker/checker, NULL-safe idempotency, row-locked invoice/payable ceilings,
+   cash-account locking with available-cash revalidation, immutable
+   posting/reversal rules, and the Arabic/RTL drill-down are included.
    No Procurement ledger, payable, cash engine, payment table, reconciliation
    engine, tax policy, inventory valuation, or Portfolio posting was created.
    Remaining R4 work is contracts/attachments and only the shared inventory-

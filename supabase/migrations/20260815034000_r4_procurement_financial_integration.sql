@@ -9,8 +9,9 @@
 --   * receiving remains an operational quantity fact only;
 --   * an APPROVED supplier invoice creates and authorizes the existing
 --     Finance Core cost_obligation (expense/WIP debit, supplier payable credit);
---   * project_payments and reconciliation_matches remain authoritative for
---     payment and bank reconciliation;
+--   * shared Finance payment proposals enforce maker/checker and available
+--     cash before project_payments and reconciliation_matches remain
+--     authoritative for posted payment and bank reconciliation;
 --   * posted corrections continue through reverse_journal_batch.
 
 -- ===========================================================================
@@ -810,18 +811,525 @@ begin
 end $$;
 
 -- ===========================================================================
--- 3. RLS and shared management read models.
+-- 3. Shared Finance payment proposal, maker/checker and cash capacity.
+--    The proposal is a Finance workflow fact; project_payments remains the
+--    only immutable posted payment fact. No Procurement payment ledger exists.
+-- ===========================================================================
+alter table public.project_cash_accounts
+  add constraint project_cash_accounts_id_project_org_key
+    unique (id, project_id, organization_id);
+
+create table public.cost_payment_proposals (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete restrict,
+  project_id uuid not null references public.investment_projects(id) on delete restrict,
+  obligation_id uuid not null references public.cost_obligations(id) on delete restrict,
+  cash_account_id uuid not null references public.project_cash_accounts(id) on delete restrict,
+  amount_minor_units bigint not null check (amount_minor_units > 0),
+  currency text not null check (currency ~ '^[A-Z]{3}$'),
+  payment_date date not null,
+  status text not null default 'PROPOSED' check (status in ('PROPOSED','APPROVED','POSTED')),
+  prepared_by uuid not null references auth.users(id) on delete restrict,
+  prepared_at timestamptz not null default now(),
+  approved_by uuid references auth.users(id) on delete restrict,
+  approved_at timestamptz,
+  project_payment_id uuid,
+  idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
+  request_hash text not null check (char_length(request_hash) = 64),
+  approval_idempotency_key text
+    check (approval_idempotency_key is null or char_length(approval_idempotency_key) between 8 and 120),
+  approval_request_hash text
+    check (approval_request_hash is null or char_length(approval_request_hash) = 64),
+  created_at timestamptz not null default now(),
+  unique (organization_id, idempotency_key),
+  unique (id, organization_id),
+  unique (id, project_id, organization_id),
+  foreign key (project_id, organization_id)
+    references public.investment_projects(id, organization_id) on delete restrict,
+  foreign key (obligation_id, project_id, organization_id)
+    references public.cost_obligations(id, project_id, organization_id) on delete restrict,
+  foreign key (cash_account_id, project_id, organization_id)
+    references public.project_cash_accounts(id, project_id, organization_id) on delete restrict,
+  constraint cost_payment_proposals_state_check check (
+    (status = 'PROPOSED' and approved_by is null and approved_at is null
+      and approval_idempotency_key is null and approval_request_hash is null
+      and project_payment_id is null)
+    or
+    (status = 'APPROVED' and approved_by is not null and approved_at is not null
+      and approved_by <> prepared_by and approval_idempotency_key is not null
+      and approval_request_hash is not null and project_payment_id is null)
+    or
+    (status = 'POSTED' and approved_by is not null and approved_at is not null
+      and approved_by <> prepared_by and approval_idempotency_key is not null
+      and approval_request_hash is not null and project_payment_id is not null)
+  )
+);
+create index cost_payment_proposals_project_status_idx
+  on public.cost_payment_proposals(project_id, status, prepared_at);
+create index cost_payment_proposals_obligation_idx
+  on public.cost_payment_proposals(obligation_id, status);
+create unique index cost_payment_proposals_org_approval_key
+  on public.cost_payment_proposals(organization_id, approval_idempotency_key)
+  where approval_idempotency_key is not null;
+
+alter table public.project_payments
+  add column payment_proposal_id uuid,
+  add constraint project_payments_proposal_org_fkey
+    foreign key (payment_proposal_id, organization_id)
+    references public.cost_payment_proposals(id, organization_id) on delete restrict;
+create unique index project_payments_one_proposal
+  on public.project_payments(payment_proposal_id)
+  where payment_proposal_id is not null;
+alter table public.cost_payment_proposals
+  add constraint cost_payment_proposals_payment_org_fkey
+    foreign key (project_payment_id, organization_id)
+    references public.project_payments(id, organization_id) on delete restrict;
+
+-- Only the two controlled approval transitions may update a proposal. Its
+-- economics, maker and retry evidence are immutable from initial preparation.
+create or replace function public.r4_guard_payment_proposal_transition()
+returns trigger language plpgsql set search_path=pg_catalog,public as $$
+begin
+  if tg_op = 'DELETE' then
+    raise exception 'payment proposal is immutable; do not delete it';
+  end if;
+  if new.organization_id is distinct from old.organization_id
+     or new.project_id is distinct from old.project_id
+     or new.obligation_id is distinct from old.obligation_id
+     or new.cash_account_id is distinct from old.cash_account_id
+     or new.amount_minor_units is distinct from old.amount_minor_units
+     or new.currency is distinct from old.currency
+     or new.payment_date is distinct from old.payment_date
+     or new.prepared_by is distinct from old.prepared_by
+     or new.prepared_at is distinct from old.prepared_at
+     or new.idempotency_key is distinct from old.idempotency_key
+     or new.request_hash is distinct from old.request_hash
+     or new.created_at is distinct from old.created_at then
+    raise exception 'payment proposal commercial truth is immutable';
+  end if;
+  if old.status = 'PROPOSED' and new.status = 'APPROVED'
+     and old.approved_by is null and new.approved_by is not null
+     and old.approved_at is null and new.approved_at is not null
+     and old.approval_idempotency_key is null and new.approval_idempotency_key is not null
+     and old.approval_request_hash is null and new.approval_request_hash is not null
+     and old.project_payment_id is null and new.project_payment_id is null then
+    return new;
+  end if;
+  if old.status = 'APPROVED' and new.status = 'POSTED'
+     and new.approved_by is not distinct from old.approved_by
+     and new.approved_at is not distinct from old.approved_at
+     and new.approval_idempotency_key is not distinct from old.approval_idempotency_key
+     and new.approval_request_hash is not distinct from old.approval_request_hash
+     and old.project_payment_id is null and new.project_payment_id is not null then
+    return new;
+  end if;
+  raise exception 'invalid payment proposal transition';
+end $$;
+create trigger cost_payment_proposals_transition_guard
+before update or delete on public.cost_payment_proposals
+for each row execute function public.r4_guard_payment_proposal_transition();
+
+-- Every newly posted Finance Core supplier payment must trace to an independently
+-- approved proposal with exactly the same tenant, Project, account and money.
+create or replace function public.r4_guard_project_payment_proposal()
+returns trigger language plpgsql set search_path=pg_catalog,public as $$
+declare v_proposal public.cost_payment_proposals%rowtype;
+begin
+  if new.payment_proposal_id is null then
+    raise exception 'direct payment posting disabled; approved payment proposal required';
+  end if;
+  select * into v_proposal from public.cost_payment_proposals
+  where id = new.payment_proposal_id and organization_id = new.organization_id;
+  if not found or v_proposal.status <> 'APPROVED' then
+    raise exception 'payment requires an approved payment proposal';
+  end if;
+  if v_proposal.project_id is distinct from new.project_id
+     or v_proposal.obligation_id is distinct from new.obligation_id
+     or v_proposal.cash_account_id is distinct from new.cash_account_id
+     or v_proposal.amount_minor_units is distinct from new.amount_minor_units
+     or v_proposal.currency is distinct from new.currency
+     or v_proposal.payment_date is distinct from new.payment_date
+     or v_proposal.approved_by is distinct from new.paid_by
+     or v_proposal.prepared_by = new.paid_by then
+    raise exception 'payment does not match independently approved proposal';
+  end if;
+  return new;
+end $$;
+create trigger r4_project_payment_proposal_guard
+before insert on public.project_payments
+for each row execute function public.r4_guard_project_payment_proposal();
+
+-- Defence in depth for every cash-credit posting, including corrections and
+-- non-Procurement Finance commands: lock the cash-account row and fail closed
+-- before a BANK_CASH credit could make its authoritative book balance negative.
+create or replace function public.r4_guard_nonnegative_cash_credit()
+returns trigger language plpgsql set search_path=pg_catalog,public as $$
+declare
+  v_role text;
+  v_account public.project_cash_accounts%rowtype;
+  v_available bigint;
+begin
+  if new.cash_account_id is null or new.credit_minor_units = 0 then return new; end if;
+  select role into v_role from public.semantic_accounts where id = new.account_id;
+  if v_role is distinct from 'BANK_CASH' then return new; end if;
+
+  select * into v_account from public.project_cash_accounts
+  where id = new.cash_account_id and organization_id = new.organization_id
+  for update;
+  if not found then raise exception 'cash account not found'; end if;
+  v_available := public.s5_cash_account_balance_internal(
+    new.organization_id, v_account.project_id, v_account.id, v_account.currency);
+  if new.credit_minor_units > v_available then
+    raise exception 'payment exceeds available cash';
+  end if;
+  return new;
+end $$;
+create trigger r4_nonnegative_cash_credit_guard
+before insert on public.journal_lines
+for each row execute function public.r4_guard_nonnegative_cash_credit();
+
+create or replace function public.prepare_cost_payment(
+  p_organization_id uuid,
+  p_obligation_id uuid,
+  p_cash_account_id uuid,
+  p_amount_minor_units bigint,
+  p_payment_date date,
+  p_idempotency_key text
+) returns uuid language plpgsql security definer set search_path=pg_catalog,public as $$
+declare
+  v_actor uuid := auth.uid();
+  v_id uuid;
+  v_hash text;
+  v_existing public.cost_payment_proposals%rowtype;
+  v_obligation public.cost_obligations%rowtype;
+  v_account public.project_cash_accounts%rowtype;
+  v_paid numeric;
+  v_available bigint;
+begin
+  if v_actor is null then raise exception 'authentication required'; end if;
+  if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
+  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
+    raise exception 'idempotency key must be 8-120 characters';
+  end if;
+  if p_amount_minor_units is null or p_amount_minor_units <= 0 then
+    raise exception 'payment amount must be positive';
+  end if;
+  if p_payment_date is null then raise exception 'payment date required'; end if;
+
+  v_hash := encode(digest(
+    p_obligation_id::text || '|' || p_cash_account_id::text || '|'
+    || p_amount_minor_units::text || '|' || p_payment_date::text, 'sha256'), 'hex');
+  perform pg_advisory_xact_lock(hashtextextended(
+    p_organization_id::text || ':payment-proposal:' || trim(p_idempotency_key), 0));
+  select * into v_existing from public.cost_payment_proposals
+  where organization_id = p_organization_id and idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.request_hash is distinct from v_hash
+       or v_existing.obligation_id is distinct from p_obligation_id
+       or v_existing.cash_account_id is distinct from p_cash_account_id
+       or v_existing.amount_minor_units is distinct from p_amount_minor_units
+       or v_existing.payment_date is distinct from p_payment_date then
+      raise exception 'idempotency key payload mismatch';
+    end if;
+    return v_existing.id;
+  end if;
+
+  -- Global lock order is cash account, then obligation. Approval uses the same
+  -- order; different obligations competing for one account therefore serialize.
+  select * into v_account from public.project_cash_accounts
+  where id = p_cash_account_id and organization_id = p_organization_id
+  for update;
+  if not found then raise exception 'cash account not found'; end if;
+  select * into v_obligation from public.cost_obligations
+  where id = p_obligation_id and organization_id = p_organization_id
+  for update;
+  if not found then raise exception 'obligation not found'; end if;
+  if v_obligation.status <> 'AUTHORIZED' then
+    raise exception 'payment requires an authorized obligation';
+  end if;
+  if not exists (
+    select 1 from public.journal_batches jb
+    where jb.source_type = 'COST_OBLIGATION' and jb.source_id = v_obligation.id
+      and jb.organization_id = p_organization_id
+      and not exists (select 1 from public.journal_batches rb where rb.reversal_of_batch_id = jb.id)
+  ) then raise exception 'obligation authorization is reversed; no further payments'; end if;
+  if v_account.project_id <> v_obligation.project_id then
+    raise exception 'cash account must belong to the obligation project';
+  end if;
+  if v_account.currency <> v_obligation.currency then
+    raise exception 'payment currency must match the cash account';
+  end if;
+  if exists (select 1 from public.accounting_periods p
+             where p.organization_id = p_organization_id and p.project_id = v_obligation.project_id)
+     and not exists (select 1 from public.accounting_periods p
+                     where p.organization_id = p_organization_id and p.project_id = v_obligation.project_id
+                       and p.status = 'OPEN' and p_payment_date between p.start_date and p.end_date) then
+    raise exception 'no open accounting period covers payment date % for this project', p_payment_date;
+  end if;
+
+  select coalesce(sum(pp.amount_minor_units::numeric), 0) into v_paid
+  from public.project_payments pp
+  join public.journal_batches jb on jb.source_type = 'PAYMENT' and jb.source_id = pp.id
+  where pp.obligation_id = p_obligation_id and pp.organization_id = p_organization_id
+    and not exists (select 1 from public.journal_batches rb where rb.reversal_of_batch_id = jb.id);
+  if v_paid + p_amount_minor_units::numeric > v_obligation.amount_minor_units::numeric then
+    raise exception 'payment exceeds remaining payable';
+  end if;
+  v_available := public.s5_cash_account_balance_internal(
+    p_organization_id, v_account.project_id, v_account.id, v_account.currency);
+  if p_amount_minor_units > v_available then
+    raise exception 'payment exceeds available cash';
+  end if;
+
+  insert into public.cost_payment_proposals(
+    organization_id, project_id, obligation_id, cash_account_id,
+    amount_minor_units, currency, payment_date, prepared_by,
+    idempotency_key, request_hash
+  ) values (
+    p_organization_id, v_obligation.project_id, v_obligation.id, v_account.id,
+    p_amount_minor_units, v_obligation.currency, p_payment_date, v_actor,
+    trim(p_idempotency_key), v_hash
+  ) returning id into v_id;
+  insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
+  values (p_organization_id, v_actor, 'PAYMENT_PROPOSAL_PREPARED', 'cost_payment_proposal', v_id,
+    jsonb_build_object('project_id', v_obligation.project_id, 'obligation_id', v_obligation.id,
+      'cash_account_id', v_account.id, 'amount_minor_units', p_amount_minor_units,
+      'currency', v_obligation.currency, 'payment_date', p_payment_date,
+      'available_cash_minor_units_at_preparation', v_available));
+  return v_id;
+end $$;
+
+create or replace function public.approve_cost_payment(
+  p_organization_id uuid,
+  p_payment_proposal_id uuid,
+  p_idempotency_key text
+) returns uuid language plpgsql security definer set search_path=pg_catalog,public as $$
+declare
+  v_actor uuid := auth.uid();
+  v_proposal public.cost_payment_proposals%rowtype;
+  v_existing public.cost_payment_proposals%rowtype;
+  v_obligation public.cost_obligations%rowtype;
+  v_account public.project_cash_accounts%rowtype;
+  v_hash text;
+  v_paid numeric;
+  v_available bigint;
+  v_payment_id uuid;
+  v_batch_id uuid;
+  v_payable uuid;
+  v_bank_cash uuid;
+begin
+  if v_actor is null then raise exception 'authentication required'; end if;
+  if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
+  perform public.s2_require_owner(p_organization_id);
+  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
+    raise exception 'idempotency key must be 8-120 characters';
+  end if;
+  v_hash := encode(digest(p_payment_proposal_id::text || '|approve', 'sha256'), 'hex');
+  perform pg_advisory_xact_lock(hashtextextended(
+    p_organization_id::text || ':payment-approval:' || trim(p_idempotency_key), 0));
+  select * into v_existing from public.cost_payment_proposals
+  where organization_id = p_organization_id
+    and approval_idempotency_key = trim(p_idempotency_key);
+  if found then
+    if v_existing.id is distinct from p_payment_proposal_id
+       or v_existing.approval_request_hash is distinct from v_hash then
+      raise exception 'idempotency key payload mismatch';
+    end if;
+    if v_existing.status = 'POSTED' then return v_existing.project_payment_id; end if;
+  end if;
+
+  select * into v_proposal from public.cost_payment_proposals
+  where id = p_payment_proposal_id and organization_id = p_organization_id
+  for update;
+  if not found then raise exception 'payment proposal not found'; end if;
+  if v_proposal.status = 'POSTED' then
+    if v_proposal.approval_idempotency_key is not distinct from trim(p_idempotency_key)
+       and v_proposal.approval_request_hash is not distinct from v_hash then
+      return v_proposal.project_payment_id;
+    end if;
+    raise exception 'payment proposal is already posted';
+  end if;
+  if v_proposal.status <> 'PROPOSED' then raise exception 'payment proposal is not pending'; end if;
+  if v_proposal.prepared_by = v_actor then
+    raise exception 'maker/checker: payment preparer cannot approve';
+  end if;
+
+  select * into v_account from public.project_cash_accounts
+  where id = v_proposal.cash_account_id and organization_id = p_organization_id
+  for update;
+  if not found then raise exception 'cash account not found'; end if;
+  select * into v_obligation from public.cost_obligations
+  where id = v_proposal.obligation_id and organization_id = p_organization_id
+  for update;
+  if not found then raise exception 'obligation not found'; end if;
+  if v_obligation.status <> 'AUTHORIZED' then
+    raise exception 'payment requires an authorized obligation';
+  end if;
+  if not exists (
+    select 1 from public.journal_batches jb
+    where jb.source_type = 'COST_OBLIGATION' and jb.source_id = v_obligation.id
+      and jb.organization_id = p_organization_id
+      and not exists (select 1 from public.journal_batches rb where rb.reversal_of_batch_id = jb.id)
+  ) then raise exception 'obligation authorization is reversed; no further payments'; end if;
+  if v_account.project_id is distinct from v_proposal.project_id
+     or v_account.currency is distinct from v_proposal.currency
+     or v_obligation.project_id is distinct from v_proposal.project_id
+     or v_obligation.currency is distinct from v_proposal.currency then
+    raise exception 'payment proposal scope or currency no longer coherent';
+  end if;
+  if exists (select 1 from public.accounting_periods p
+             where p.organization_id = p_organization_id and p.project_id = v_proposal.project_id)
+     and not exists (select 1 from public.accounting_periods p
+                     where p.organization_id = p_organization_id and p.project_id = v_proposal.project_id
+                       and p.status = 'OPEN' and v_proposal.payment_date between p.start_date and p.end_date) then
+    raise exception 'no open accounting period covers payment date % for this project', v_proposal.payment_date;
+  end if;
+
+  select coalesce(sum(pp.amount_minor_units::numeric), 0) into v_paid
+  from public.project_payments pp
+  join public.journal_batches jb on jb.source_type = 'PAYMENT' and jb.source_id = pp.id
+  where pp.obligation_id = v_proposal.obligation_id and pp.organization_id = p_organization_id
+    and not exists (select 1 from public.journal_batches rb where rb.reversal_of_batch_id = jb.id);
+  if v_paid + v_proposal.amount_minor_units::numeric > v_obligation.amount_minor_units::numeric then
+    raise exception 'payment exceeds remaining payable';
+  end if;
+  v_available := public.s5_cash_account_balance_internal(
+    p_organization_id, v_account.project_id, v_account.id, v_account.currency);
+  if v_proposal.amount_minor_units > v_available then
+    raise exception 'payment exceeds available cash';
+  end if;
+
+  update public.cost_payment_proposals
+     set status = 'APPROVED', approved_by = v_actor, approved_at = now(),
+         approval_idempotency_key = trim(p_idempotency_key), approval_request_hash = v_hash
+   where id = v_proposal.id;
+
+  insert into public.project_payments(
+    organization_id, project_id, obligation_id, cash_account_id,
+    amount_minor_units, currency, payment_date, paid_by,
+    idempotency_key, request_hash, payment_proposal_id
+  ) values (
+    p_organization_id, v_proposal.project_id, v_proposal.obligation_id, v_proposal.cash_account_id,
+    v_proposal.amount_minor_units, v_proposal.currency, v_proposal.payment_date, v_actor,
+    trim(p_idempotency_key), v_proposal.request_hash, v_proposal.id
+  ) returning id into v_payment_id;
+
+  select id into v_payable from public.semantic_accounts where role = 'SUPPLIER_PAYABLE';
+  select id into v_bank_cash from public.semantic_accounts where role = 'BANK_CASH';
+  insert into public.journal_batches(
+    organization_id, project_id, source_type, source_id, transaction_date,
+    idempotency_key, request_hash, posted_by
+  ) values (
+    p_organization_id, v_proposal.project_id, 'PAYMENT', v_payment_id,
+    v_proposal.payment_date, 'payment-batch-' || v_payment_id::text,
+    v_proposal.request_hash, v_actor
+  ) returning id into v_batch_id;
+  insert into public.journal_lines(
+    batch_id, organization_id, project_id, account_id, debit_minor_units,
+    credit_minor_units, currency, cash_account_id, obligation_id, party_id, transaction_date
+  ) values
+    (v_batch_id, p_organization_id, v_proposal.project_id, v_payable,
+     v_proposal.amount_minor_units, 0, v_proposal.currency,
+     null, v_proposal.obligation_id, v_obligation.party_id, v_proposal.payment_date),
+    (v_batch_id, p_organization_id, v_proposal.project_id, v_bank_cash,
+     0, v_proposal.amount_minor_units, v_proposal.currency,
+     v_proposal.cash_account_id, null, null, v_proposal.payment_date);
+
+  update public.cost_payment_proposals
+     set status = 'POSTED', project_payment_id = v_payment_id
+   where id = v_proposal.id;
+  insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
+  values
+    (p_organization_id, v_actor, 'PAYMENT_PROPOSAL_APPROVED', 'cost_payment_proposal', v_proposal.id,
+      jsonb_build_object('project_id', v_proposal.project_id, 'prepared_by', v_proposal.prepared_by,
+        'approved_by', v_actor, 'project_payment_id', v_payment_id,
+        'available_cash_minor_units_at_approval', v_available)),
+    (p_organization_id, v_actor, 'PAYMENT_POSTED', 'project_payment', v_payment_id,
+      jsonb_build_object('project_id', v_proposal.project_id, 'obligation_id', v_proposal.obligation_id,
+        'cash_account_id', v_proposal.cash_account_id, 'payment_proposal_id', v_proposal.id,
+        'journal_batch_id', v_batch_id, 'amount_minor_units', v_proposal.amount_minor_units,
+        'currency', v_proposal.currency, 'payment_date', v_proposal.payment_date));
+  return v_payment_id;
+end $$;
+
+-- Keep the historical signature as a fail-closed internal tombstone so stale
+-- clients receive a precise error. API roles have no EXECUTE privilege.
+create or replace function public.pay_cost_obligation(
+  p_organization_id uuid,
+  p_obligation_id uuid,
+  p_cash_account_id uuid,
+  p_amount_minor_units bigint,
+  p_payment_date date,
+  p_idempotency_key text
+) returns uuid language plpgsql security definer set search_path=pg_catalog,public as $$
+begin
+  raise exception 'direct payment posting disabled; prepare and approve a payment proposal';
+end $$;
+revoke all on function public.pay_cost_obligation(uuid,uuid,uuid,bigint,date,text)
+  from public, anon, authenticated;
+
+-- ===========================================================================
+-- 4. RLS and shared management read models.
 -- ===========================================================================
 alter table public.supplier_invoices enable row level security;
 alter table public.supplier_invoices force row level security;
 alter table public.supplier_invoice_lines enable row level security;
 alter table public.supplier_invoice_lines force row level security;
+alter table public.cost_payment_proposals enable row level security;
+alter table public.cost_payment_proposals force row level security;
 create policy supplier_invoices_read on public.supplier_invoices for select to authenticated
   using (public.is_active_member(organization_id));
 create policy supplier_invoice_lines_read on public.supplier_invoice_lines for select to authenticated
   using (public.is_active_member(organization_id));
-revoke all on public.supplier_invoices, public.supplier_invoice_lines from public, anon, authenticated;
-grant select on public.supplier_invoices, public.supplier_invoice_lines to authenticated;
+create policy cost_payment_proposals_read on public.cost_payment_proposals for select to authenticated
+  using (public.is_active_member(organization_id));
+revoke all on public.supplier_invoices, public.supplier_invoice_lines,
+  public.cost_payment_proposals from public, anon, authenticated;
+grant select on public.supplier_invoices, public.supplier_invoice_lines,
+  public.cost_payment_proposals to authenticated;
+
+create or replace view public.cost_payment_proposals_read with (security_invoker=on) as
+select p.id as payment_proposal_id, p.organization_id, p.project_id,
+       p.obligation_id, p.cash_account_id, ca.name as cash_account_name,
+       p.amount_minor_units::text as amount_minor_units, p.currency, p.payment_date,
+       p.status, p.prepared_by, p.prepared_at, p.approved_by, p.approved_at,
+       p.project_payment_id, o.description as obligation_description
+from public.cost_payment_proposals p
+join public.cost_obligations o
+  on o.id = p.obligation_id and o.organization_id = p.organization_id
+join public.project_cash_accounts ca
+  on ca.id = p.cash_account_id and ca.organization_id = p.organization_id;
+
+-- Preserve the original shared payment view columns and append proposal
+-- provenance so Finance and Procurement can show maker/checker truth.
+create or replace view public.payment_status_read with (security_invoker=on) as
+select
+  p.id as payment_id,
+  p.organization_id,
+  p.project_id,
+  p.obligation_id,
+  p.cash_account_id,
+  p.amount_minor_units::text as amount_minor_units,
+  p.currency,
+  p.payment_date,
+  p.paid_by,
+  p.posted_at,
+  b.id as batch_id,
+  (rev.id is not null) as is_reversed,
+  rev.id as reversal_batch_id,
+  (m.id is not null) as is_reconciled,
+  m.id as match_id,
+  p.payment_proposal_id,
+  proposal.prepared_by,
+  proposal.approved_by
+from public.project_payments p
+join public.journal_batches b
+  on b.source_type = 'PAYMENT' and b.source_id = p.id
+left join public.journal_batches rev on rev.reversal_of_batch_id = b.id
+left join public.reconciliation_matches m
+  on m.payment_id = p.id and m.voided_at is null
+left join public.cost_payment_proposals proposal
+  on proposal.id = p.payment_proposal_id and proposal.organization_id = p.organization_id;
 
 -- Existing views retain their original columns and append R4 financial fields.
 create or replace view public.procurement_suppliers_read with (security_invoker=on) as
@@ -1000,25 +1508,30 @@ left join (
   from public.supplier_invoices_read where status = 'APPROVED' group by purchase_order_id
 ) fin on fin.purchase_order_id = c.purchase_order_id;
 
-grant select on public.procurement_suppliers_read, public.purchase_orders_read,
+grant select on public.cost_payment_proposals_read, public.payment_status_read,
+  public.procurement_suppliers_read, public.purchase_orders_read,
   public.purchase_order_lines_read, public.purchase_order_lines_receiving_read,
   public.project_procurement_commitments_read, public.purchase_receipt_invoice_basis_read,
   public.supplier_invoice_lines_read, public.supplier_invoices_read,
   public.procure_to_pay_order_read to authenticated;
 
 -- ===========================================================================
--- 4. Command grants and pgcrypto hosted-schema compatibility.
+-- 5. Command grants and pgcrypto hosted-schema compatibility.
 -- ===========================================================================
 revoke all on function public.link_supplier_party(uuid,uuid,uuid,text) from public, anon;
 revoke all on function public.create_supplier(uuid,uuid,text,text,text,text,text) from public, anon;
 revoke all on function public.create_purchase_order(uuid,uuid,text,uuid,uuid,text,date,text,text,jsonb,text) from public, anon;
 revoke all on function public.record_supplier_invoice(uuid,uuid,uuid,text,date,text,text,text,text,jsonb,text) from public, anon;
 revoke all on function public.approve_supplier_invoice(uuid,uuid,text) from public, anon;
+revoke all on function public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text) from public, anon;
+revoke all on function public.approve_cost_payment(uuid,uuid,text) from public, anon;
 grant execute on function public.link_supplier_party(uuid,uuid,uuid,text),
   public.create_supplier(uuid,uuid,text,text,text,text,text),
   public.create_purchase_order(uuid,uuid,text,uuid,uuid,text,date,text,text,jsonb,text),
   public.record_supplier_invoice(uuid,uuid,uuid,text,date,text,text,text,text,jsonb,text),
-  public.approve_supplier_invoice(uuid,uuid,text)
+  public.approve_supplier_invoice(uuid,uuid,text),
+  public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,text),
+  public.approve_cost_payment(uuid,uuid,text)
 to authenticated;
 
 -- The replacement approve function retained its signature and prior grant.
@@ -1043,7 +1556,8 @@ begin
      where n.nspname = 'public' and p.prokind = 'f'
        and p.proname = any(array[
          'link_supplier_party','create_supplier','create_purchase_order',
-         'approve_purchase_order','record_supplier_invoice','approve_supplier_invoice'
+         'approve_purchase_order','record_supplier_invoice','approve_supplier_invoice',
+         'prepare_cost_payment','approve_cost_payment'
        ]::text[])
   loop
     v_definition := pg_get_functiondef(v_record.oid);

@@ -37,6 +37,25 @@ export type ObligationPosition = {
   reversal_batch_id: string | null;
 };
 
+export type PaymentProposal = {
+  payment_proposal_id: string;
+  organization_id: string;
+  project_id: string;
+  obligation_id: string;
+  cash_account_id: string;
+  cash_account_name: string;
+  amount_minor_units: string;
+  currency: string;
+  payment_date: string;
+  status: 'PROPOSED' | 'APPROVED' | 'POSTED';
+  prepared_by: string;
+  prepared_at: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  project_payment_id: string | null;
+  obligation_description: string;
+};
+
 export type PaymentStatus = {
   payment_id: string;
   organization_id: string;
@@ -106,16 +125,16 @@ export type AuditEvent = {
   created_at: string;
 };
 
-export async function getCurrentMembership(organizationId: string): Promise<{ role: string } | null> {
+export async function getCurrentMembership(organizationId: string): Promise<{ user_id: string; role: string } | null> {
   const s = await createClient();
   const { data, error } = await s
     .from('memberships')
-    .select('role')
+    .select('user_id,role')
     .eq('organization_id', organizationId)
     .eq('status', 'ACTIVE')
     .maybeSingle();
   if (error) throwOperatorQuery(error);
-  return data as { role: string } | null;
+  return data as { user_id: string; role: string } | null;
 }
 
 export async function getCashAccountPositions(projectId: string): Promise<CashAccountPosition[]> {
@@ -138,6 +157,17 @@ export async function getObligationPositions(projectId: string): Promise<Obligat
     .order('created_at', { ascending: false });
   if (error) throwOperatorQuery(error);
   return data as ObligationPosition[];
+}
+
+export async function getPaymentProposals(projectId: string): Promise<PaymentProposal[]> {
+  const s = await createClient();
+  const { data, error } = await s
+    .from('cost_payment_proposals_read')
+    .select('payment_proposal_id,organization_id,project_id,obligation_id,cash_account_id,cash_account_name,amount_minor_units,currency,payment_date,status,prepared_by,prepared_at,approved_by,approved_at,project_payment_id,obligation_description')
+    .eq('project_id', projectId)
+    .order('prepared_at', { ascending: false });
+  if (error) throwOperatorQuery(error);
+  return data as PaymentProposal[];
 }
 
 export async function getPayments(projectId: string): Promise<PaymentStatus[]> {

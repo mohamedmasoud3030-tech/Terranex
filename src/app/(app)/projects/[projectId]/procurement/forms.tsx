@@ -10,12 +10,13 @@ import {
   approvePurchaseOrder,
   approvePurchaseRequest,
   approveSupplierInvoice,
+  approveSupplierPayment,
   createPurchaseOrder,
   createPurchaseReceipt,
   createPurchaseRequest,
   createSupplier,
   linkSupplierParty,
-  paySupplierInvoice,
+  prepareSupplierPayment,
   recordSupplierInvoice,
   submitPurchaseOrder,
   submitPurchaseRequest,
@@ -190,7 +191,7 @@ export function SupplierInvoiceForm({ organizationId, projectId, order, basis, s
 export function SupplierPaymentForm({ organizationId, projectId, invoice, cashAccounts, serverNonce }: {
   organizationId: string; projectId: string; invoice: SupplierInvoiceRead; cashAccounts: CashAccountPosition[]; serverNonce: string;
 }) {
-  const [state, action, pending] = useActionState(paySupplierInvoice, initial);
+  const [state, action, pending] = useActionState(prepareSupplierPayment, initial);
   if (!invoice.cost_obligation_id) return null;
   const accounts = cashAccounts.filter((account) => account.currency === invoice.currency);
   return <form action={action} className="form-grid compact">
@@ -198,6 +199,19 @@ export function SupplierPaymentForm({ organizationId, projectId, invoice, cashAc
     <CommandKey prefix="r4-payment" state={state} serverNonce={serverNonce} />
     <label>حساب نقدية المشروع<select name="cashAccountId" required><option value="">اختر الحساب</option>{accounts.map((account) => <option key={account.cash_account_id} value={account.cash_account_id}>{account.name} — {formatMinorUnits(account.balance_minor_units, account.currency)}</option>)}</select></label>
     <label>مبلغ الدفعة ({invoice.currency})<input name="amount" inputMode="decimal" required /></label><label>تاريخ الدفعة<input type="date" name="paymentDate" required /></label>
-    <div><Result state={state} pending={pending} label="ترحيل دفعة المورد" /></div><p className="muted full">يدعم الدفع الجزئي. قاعدة البيانات تمنع تجاوز المستحق؛ المطابقة البنكية خطوة مستقلة في مساحة النقدية.</p>
+    <div><Result state={state} pending={pending} label="إعداد مقترح دفع المورد" pendingLabel="جارٍ فحص الرصيد والإعداد…" /></div><p className="muted full">هذا مقترح فقط: تُفحص النقدية الآن، ثم يلزم مالك مختلف لاعتماده وإعادة فحص الرصيد قبل الترحيل. المطابقة البنكية خطوة مستقلة.</p>
+  </form>;
+}
+
+export function SupplierPaymentApprovalForm({ organizationId, projectId, paymentProposalId, serverNonce }: {
+  organizationId: string; projectId: string; paymentProposalId: string; serverNonce: string;
+}) {
+  const [state, action, pending] = useActionState(approveSupplierPayment, initial);
+  return <form action={action} className="stack">
+    <input type="hidden" name="organizationId" value={organizationId} />
+    <input type="hidden" name="projectId" value={projectId} />
+    <input type="hidden" name="paymentProposalId" value={paymentProposalId} />
+    <CommandKey prefix="r4-payment-approval" state={state} serverNonce={serverNonce} />
+    <Result state={state} pending={pending} label="اعتماد المقترح وترحيل الدفع" pendingLabel="جارٍ إعادة فحص النقدية والترحيل…" />
   </form>;
 }

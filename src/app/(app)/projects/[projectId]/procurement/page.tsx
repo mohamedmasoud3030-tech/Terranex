@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership, getCashAccountPositions } from '@/features/finance/queries';
+import { getCurrentMembership, getCashAccountPositions, getPaymentProposals } from '@/features/finance/queries';
 import { getParties } from '@/features/funding/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import {
@@ -26,7 +26,7 @@ import { newCommandNonce } from '@/shared/idempotency';
 import {
   ApproveInvoiceAction, ApproveOrderAction, ApproveRequestAction, LinkSupplierPartyForm,
   PurchaseOrderForm, PurchaseRequestForm, ReceiptForm, SubmitOrderAction, SubmitRequestAction,
-  SupplierForm, SupplierInvoiceForm, SupplierPaymentForm,
+  SupplierForm, SupplierInvoiceForm, SupplierPaymentApprovalForm, SupplierPaymentForm,
 } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -36,12 +36,12 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
   const project = await getProject(projectId);
   if (!project) notFound();
   const organizationId = project.organization_id;
-  const [membership, parties, cashAccounts, suppliers, requests, requestLines, orders, orderLines,
+  const [membership, parties, cashAccounts, paymentProposals, suppliers, requests, requestLines, orders, orderLines,
     receipts, receiptLines, receiving, invoiceBasis, invoices, invoiceLines, commitments] = await Promise.all([
     getCurrentMembership(organizationId), getParties(organizationId), getCashAccountPositions(projectId),
-    getSuppliers(organizationId), getPurchaseRequests(projectId), getPurchaseRequestLines(projectId),
-    getPurchaseOrders(projectId), getPurchaseOrderLines(projectId), getPurchaseReceipts(projectId),
-    getPurchaseReceiptLines(projectId), getPurchaseOrderLinesReceiving(projectId),
+    getPaymentProposals(projectId), getSuppliers(organizationId), getPurchaseRequests(projectId),
+    getPurchaseRequestLines(projectId), getPurchaseOrders(projectId), getPurchaseOrderLines(projectId),
+    getPurchaseReceipts(projectId), getPurchaseReceiptLines(projectId), getPurchaseOrderLinesReceiving(projectId),
     getPurchaseReceiptInvoiceBasis(projectId), getSupplierInvoices(projectId),
     getSupplierInvoiceLines(projectId), getProcurementCommitments(projectId),
   ]);
@@ -104,7 +104,14 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
         <div className="table-wrap"><table><thead><tr><th>الصنف</th><th>كمية الفاتورة</th><th>سعر الوحدة</th><th>المبلغ</th></tr></thead><tbody>{(invoiceLineMap.get(invoice.id) ?? []).map((line) => <tr key={line.id}><td>{line.item_description}</td><td>{line.quantity_invoiced} {line.unit}</td><td>{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td><td>{formatMinorUnits(line.line_amount_minor_units, line.currency)}</td></tr>)}</tbody></table></div>
         {invoice.status === 'SUBMITTED' && canApprove && <ApproveInvoiceAction organizationId={organizationId} projectId={projectId} invoiceId={invoice.id} serverNonce={newCommandNonce()} />}
         {invoice.payable_is_reversed && <p className="error">تم عكس قيد المستحق في Finance Core. الفاتورة الأصلية باقية كسجل مصدر ثابت ولا تقبل دفعات جديدة.</p>}
-        {invoice.status === 'APPROVED' && !invoice.payable_is_reversed && invoice.payment_state !== 'FULLY_PAID' && canApprove && <details><summary>دفع من حساب المشروع</summary><SupplierPaymentForm organizationId={organizationId} projectId={projectId} invoice={invoice} cashAccounts={cashAccounts} serverNonce={newCommandNonce()} /></details>}
+        {invoice.status === 'APPROVED' && !invoice.payable_is_reversed && invoice.payment_state !== 'FULLY_PAID' && <details><summary>إعداد مقترح دفع من حساب المشروع</summary><SupplierPaymentForm organizationId={organizationId} projectId={projectId} invoice={invoice} cashAccounts={cashAccounts} serverNonce={newCommandNonce()} /></details>}
+        {paymentProposals.filter((proposal) => proposal.obligation_id === invoice.cost_obligation_id && proposal.status === 'PROPOSED').map((proposal) => <div className="card stack" key={proposal.payment_proposal_id}>
+          <span className="status">مقترح دفع بانتظار معتمد مستقل</span>
+          <p>{formatMinorUnits(proposal.amount_minor_units, proposal.currency)} · {proposal.cash_account_name} · {formatDate(proposal.payment_date)}</p>
+          {canApprove && membership.user_id !== proposal.prepared_by
+            ? <SupplierPaymentApprovalForm organizationId={organizationId} projectId={projectId} paymentProposalId={proposal.payment_proposal_id} serverNonce={newCommandNonce()} />
+            : <p className="muted">لا يجوز للمُعدّ اعتماد مقترحه؛ يلزم مالك مختلف.</p>}
+        </div>)}
         {invoice.paid_minor_units !== '0' && invoice.reconciliation_state !== 'RECONCILED' && <p className="muted">تم الدفع لكنه لم يطابق بنكيًا بالكامل. <Link href={`/projects/${projectId}/cash`}>افتح النقدية والمطابقة ←</Link></p>}
         {invoice.reconciliation_state === 'RECONCILED' && <p className="status">تمت المطابقة البنكية عبر آلية Finance Core المشتركة.</p>}
       </article>)}
