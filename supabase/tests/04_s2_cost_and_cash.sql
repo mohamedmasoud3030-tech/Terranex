@@ -714,17 +714,17 @@ select 1/case when (
     and ((sa.role='BANK_CASH' and jl.credit_minor_units=600000 and jl.debit_minor_units=0)
       or (sa.role='CONTRIBUTED_CAPITAL' and jl.debit_minor_units=600000 and jl.credit_minor_units=0))
 )=2 then 1 else 0 end as s2_attribution_reversal_exact_inverse;
--- Cash is exactly zero from the reversed chain plus the still-active race
--- payment (400000 out) that the concurrency suite owns.
+-- Only the still-active 50,000 race-fixture payment remains after reversing
+-- the ordinary payment and original contribution chains.
 select 1/case when (select balance_minor_units from public.project_cash_position_read
-  where cash_account_id=:'s2_account_a')='-400000' then 1 else 0 end as s2_cash_after_full_reversal_chain;
+  where cash_account_id=:'s2_account_a')='-50000' then 1 else 0 end as s2_cash_after_full_reversal_chain;
 
 -- After an explicit linked reversal the contribution may be posted again.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.attach_contribution_cash('10000000-0000-4000-8000-000000000001',%L,%L,%L,'s2-attach-a1-0003')$$,
   :'s2_project', :'s2_contrib_a1', :'s2_account_a'));
 select 1/case when (select balance_minor_units from public.project_cash_position_read
-  where cash_account_id=:'s2_account_a')='200000' then 1 else 0 end as s2_contribution_repost_after_reversal;
+  where cash_account_id=:'s2_account_a')='550000' then 1 else 0 end as s2_contribution_repost_after_reversal;
 
 -- ---------------------------------------------------------------------------
 -- H. Tenant isolation and authorization boundary
