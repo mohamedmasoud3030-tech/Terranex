@@ -81,7 +81,7 @@ Lifecycle state does not replace asset or sector state. A project may be ACTIVE 
 5. Configure project accounts and opening budget.
 6. Add sector baseline: real-estate asset, farm/fields, or herd/cohorts.
 7. System validates totals, dates, required evidence, role conflicts, and accounting setup.
-8. Reviewer approves; activation creates an immutable agreement snapshot and audit event.
+8. Reviewer approves; activation records the immutable approved project setup and, where agreement terms exist, the agreement snapshot, plus an audit event.
 
 **Invariant:** operations that affect entitlement cannot predate the effective agreement unless entered through an approved opening/import workflow.
 
@@ -95,6 +95,8 @@ Lifecycle state does not replace asset or sector state. A project may be ACTIVE 
 **Hard boundary:** this journey does not decide who economically owns the portfolio, who funds it, whether project funding is debt/equity/current-account movement, or how profits return to investors. Those rules remain open until the owner answers `docs/OPEN_BUSINESS_DECISIONS.md`.
 
 ### J3 — Call and receive investor capital
+
+**Applicability:** Enable this journey only when an approved project/investor agreement actually uses capital calls/contributions. Its existence in the product model is not a default funding rule for every company or project.
 
 1. Manager prepares a capital call with purpose, due date, amount, currency, and allocation basis.
 2. System calculates each participant share from the effective agreement and shows rounding residual handling.
@@ -140,6 +142,8 @@ Lifecycle state does not replace asset or sector state. A project may be ACTIVE 
 5. Generate project pack: cash, P&L bridge, commitments, operational KPIs, valuation status, investor capital rollforward, and exceptions.
 
 ### J8 — Allocate result and distribute cash
+
+**Applicability:** Enable this journey only when an approved agreement/rule defines participant result entitlement and distribution mechanics for the Project. Do not activate it from contribution history or Portfolio membership.
 
 1. Finance selects a closed reporting period and effective agreement version.
 2. System calculates allocable realized result and each participant allocation; management valuation is excluded unless policy explicitly permits and is legally reviewed.
