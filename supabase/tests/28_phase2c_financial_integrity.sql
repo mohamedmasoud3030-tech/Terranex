@@ -77,7 +77,7 @@ end $$;
 -- not repeat long identical token sequences.
 create or replace function p2c_pay(p_obligation uuid, p_cash uuid, p_amount bigint, p_date date, p_key text)
 returns uuid language plpgsql as $$
-declare v_approver uuid:=auth.uid(); v_proposal uuid;
+declare v_approver uuid:='00000000-0000-4000-8000-000000000011'; v_proposal uuid;
 begin
   perform set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000013',true);
   v_proposal:=public.prepare_cost_payment(public.p2c_org(),p_obligation,p_cash,p_amount,p_date,'proposal-'||p_key);

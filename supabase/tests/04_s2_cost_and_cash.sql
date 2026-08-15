@@ -60,7 +60,7 @@ create or replace function s2_payment_workflow(
   p_amount_minor_units bigint, p_payment_date date, p_idempotency_key text
 ) returns uuid language plpgsql as $$
 declare
-  v_approver uuid := auth.uid();
+  v_approver uuid := '00000000-0000-4000-8000-000000000001';
   v_proposal uuid;
 begin
   perform set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000003', true);
