@@ -40,16 +40,22 @@ vi.mock('@/features/procurement/actions', () => ({
 
 const org = '10000000-0000-4000-8000-000000000001';
 const project = '20000000-0000-4000-8000-000000000002';
+const party = '30000000-0000-4000-8000-000000000003';
 const nonce = '99999999-aaaa-4bbb-8ccc-000000000099';
 const lines = JSON.stringify([
   { itemDescription: 'سماد يوريا', quantity: '100', unit: 'كجم' },
   { itemDescription: 'مبيد حشري', quantity: '20', unit: 'لتر' },
+]);
+const commercialLines = JSON.stringify([
+  { itemDescription: 'سماد يوريا', quantity: '100', unit: 'كجم', unitPrice: '12.50' },
+  { itemDescription: 'مبيد حشري', quantity: '20', unit: 'لتر', unitPrice: '40.00' },
 ]);
 
 describe('GF-025 / R4 Procurement Foundation', () => {
   it('supplier schema accepts a valid supplier and rejects empty name', () => {
     const ok = supplierSchema.safeParse({
       organizationId: org,
+      partyId: party,
       name: 'مورد الأسمدة المصرية',
       idempotencyKey: 'gf25-test-key-001',
     });
@@ -87,16 +93,23 @@ describe('GF-025 / R4 Procurement Foundation', () => {
     expect(negativeQty.success).toBe(false);
   });
 
-  it('purchase order accepts an optional supplier and future delivery date', () => {
+  it('purchase order requires exact commercial terms and a supplier', () => {
     const good = purchaseOrderSchema.safeParse({
       organizationId: org,
       projectId: project,
       internalReference: 'PO-001',
-      supplierId: '30000000-0000-4000-8000-000000000003',
-      linesJson: lines,
+      supplierId: party,
+      currency: 'EGP',
+      commercialReference: 'عرض سعر-001',
+      linesJson: commercialLines,
       idempotencyKey: 'gf25-po-key-001',
     });
     expect(good.success).toBe(true);
+    expect(purchaseOrderSchema.safeParse({
+      organizationId: org, projectId: project, internalReference: 'PO-002',
+      supplierId: '', currency: 'EGP', commercialReference: 'عرض سعر-002',
+      linesJson: commercialLines, idempotencyKey: 'gf25-po-key-002',
+    }).success).toBe(false);
   });
 
   it('document action schemas carry the request/order id', () => {
@@ -188,6 +201,9 @@ describe('GF-025 / R4 Procurement Foundation', () => {
       rejection_reason: null,
       created_at: '2026-01-01T00:00:00Z',
       line_count: 1,
+      currency: 'EGP',
+      commercial_reference: 'عرض-1',
+      commercial_total_minor_units: '10000',
     };
     const lines = [{
       id: '30000000-0000-4000-8000-000000000003',
@@ -199,6 +215,9 @@ describe('GF-025 / R4 Procurement Foundation', () => {
       unit: 'كجم',
       notes: null,
       created_at: '2026-01-01T00:00:00Z',
+      unit_price_minor_units: '100',
+      line_amount_minor_units: '10000',
+      currency: 'EGP',
     }];
     const html = renderToString(<ReceiptForm organizationId={org} projectId={project} order={order} lines={lines} serverNonce={nonce} />);
     expect(html).toMatch(/name="idempotencyKey"/);

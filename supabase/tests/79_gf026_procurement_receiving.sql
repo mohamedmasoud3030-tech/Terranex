@@ -57,17 +57,19 @@ end $$;
 -- Resolve the procurement project created by the GF-025 suite.
 select id as s26_project from public.investment_projects
  where internal_reference='GF025-PROJ' and organization_id='10000000-0000-4000-8000-000000000001' \gset
+select id as s26_party from public.parties
+ where organization_id='10000000-0000-4000-8000-000000000001' order by created_at offset 1 limit 1 \gset
 
 -- ---------------------------------------------------------------------------
 -- Setup: supplier + an approved purchase order (2 lines: 100 kg, 20 L).
 -- ---------------------------------------------------------------------------
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
-  $$select public.create_supplier('10000000-0000-4000-8000-000000000001',%L,'T-77','صافي 30 يوم',null,'s26a-supplier-001')$$,
-  'مورد الأعلاف')) as s26_supplier \gset
+  $$select public.create_supplier('10000000-0000-4000-8000-000000000001',%L,%L,'T-77','صافي 30 يوم',null,'s26a-supplier-001')$$,
+  :'s26_party', 'مورد الأعلاف')) as s26_supplier \gset
 
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
-  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-001',%L,null,null,(current_date + 30),
-    '[{"item_description":"علف ذرة","quantity":100,"unit":"كجم"},{"item_description":"مركز بروتين","quantity":20,"unit":"لتر"}]',
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-001',%L,null,null,(current_date + 30),'EGP','R4-RECEIVING-EVIDENCE',
+    '[{"item_description":"علف ذرة","quantity":100,"unit":"كجم","unit_price_minor_units":100},{"item_description":"مركز بروتين","quantity":20,"unit":"لتر","unit_price_minor_units":100}]',
     's26a-po-001')$$, :'s26_project', :'s26_supplier')) as s26_po \gset
 
 select id as s26_po_line_1, unit as s26_po_line_1_unit
@@ -89,8 +91,8 @@ select 1/case when (select status='APPROVED' from public.purchase_orders where i
 -- ---------------------------------------------------------------------------
 -- Create a second, still-DRAFT order and confirm it cannot receive.
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
-  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-DRAFT',null,null,null,(current_date + 30),
-    '[{"item_description":"دقيق","quantity":5,"unit":"كجم"}]','s26a-po-draft')$$, :'s26_project')) as s26_po_draft \gset
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-DRAFT',%L,null,null,(current_date + 30),'EGP','R4-RECEIVING-EVIDENCE',
+    '[{"item_description":"دقيق","quantity":5,"unit":"كجم","unit_price_minor_units":100}]','s26a-po-draft')$$, :'s26_project', :'s26_supplier')) as s26_po_draft \gset
 select id as s26_po_draft_line from public.purchase_order_lines
 where purchase_order_id = :'s26_po_draft' \gset
 select 1/case when s26a_catch('00000000-0000-4000-8000-000000000003', format(
@@ -199,8 +201,8 @@ select 1/case when (select count(*) = 1 from public.purchase_receipt_lines
 
 -- A second approved PO (single 100-unit line) + its own receipt.
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
-  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-B',null,null,null,(current_date + 30),
-    '[{"item_description":"شعير","quantity":100,"unit":"كجم"}]','s26a-po-b')$$, :'s26_project')) as s26_po_b \gset
+  $$select public.create_purchase_order('10000000-0000-4000-8000-000000000001',%L,'PO-GF026-B',%L,null,null,(current_date + 30),'EGP','R4-RECEIVING-EVIDENCE',
+    '[{"item_description":"شعير","quantity":100,"unit":"كجم","unit_price_minor_units":100}]','s26a-po-b')$$, :'s26_project', :'s26_supplier')) as s26_po_b \gset
 select id as s26_po_b_line from public.purchase_order_lines
  where purchase_order_id = :'s26_po_b' \gset
 select s26a_run('00000000-0000-4000-8000-000000000003', format(

@@ -169,6 +169,7 @@ export async function payObligation(_: ActionState, form: FormData): Promise<Act
     obligationId: form.get('obligationId'),
     cashAccountId: form.get('cashAccountId'),
     amount: form.get('amount'),
+    currency: form.get('currency'),
     paymentDate: form.get('paymentDate'),
     idempotencyKey: form.get('idempotencyKey'),
   });
@@ -178,7 +179,7 @@ export async function payObligation(_: ActionState, form: FormData): Promise<Act
     p_organization_id: parsed.data.organizationId,
     p_obligation_id: parsed.data.obligationId,
     p_cash_account_id: parsed.data.cashAccountId,
-    p_amount_minor_units: parseMajorUnitsToMinor(parsed.data.amount, 'EGP'),
+    p_amount_minor_units: parseMajorUnitsToMinor(parsed.data.amount, parsed.data.currency),
     p_payment_date: parsed.data.paymentDate,
     p_idempotency_key: parsed.data.idempotencyKey,
   });

@@ -46,6 +46,7 @@ export const paymentSchema = z.object({
   obligationId: z.string().uuid(),
   cashAccountId: z.string().uuid(),
   amount: moneyAmount,
+  currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
   paymentDate: z.string().min(1, 'تاريخ الدفعة مطلوب'),
   idempotencyKey,
 });

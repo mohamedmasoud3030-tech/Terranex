@@ -136,6 +136,7 @@ export function PaymentForm({
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="obligationId" value={obligationId} />
+      <input type="hidden" name="currency" value={currency} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <label>
         الحساب النقدي

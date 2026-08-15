@@ -1,305 +1,115 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership } from '@/features/finance/queries';
+import { getCurrentMembership, getCashAccountPositions } from '@/features/finance/queries';
+import { getParties } from '@/features/funding/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import {
+  getProcurementCommitments,
   getPurchaseOrderLines,
   getPurchaseOrderLinesReceiving,
   getPurchaseOrders,
+  getPurchaseReceiptInvoiceBasis,
   getPurchaseReceiptLines,
   getPurchaseReceipts,
   getPurchaseRequestLines,
   getPurchaseRequests,
+  getSupplierInvoiceLines,
+  getSupplierInvoices,
   getSuppliers,
 } from '@/features/procurement/queries';
-import { formatDate, formatDocumentState, formatQuantity, formatSupplierStatus } from '@/features/procurement/labels';
+import {
+  formatDate, formatDocumentState, formatPaymentState, formatReconciliationState, formatSupplierStatus,
+} from '@/features/procurement/labels';
+import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
 import {
-  ApproveOrderAction,
-  ApproveRequestAction,
-  PurchaseOrderForm,
-  PurchaseRequestForm,
-  ReceiptForm,
-  SubmitOrderAction,
-  SubmitRequestAction,
-  SupplierForm,
+  ApproveInvoiceAction, ApproveOrderAction, ApproveRequestAction, LinkSupplierPartyForm,
+  PurchaseOrderForm, PurchaseRequestForm, ReceiptForm, SubmitOrderAction, SubmitRequestAction,
+  SupplierForm, SupplierInvoiceForm, SupplierPaymentForm,
 } from './forms';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProcurementPage({
-  params,
-}: {
-  params: Promise<{ projectId: string }>;
-}) {
+export default async function ProcurementPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const project = await getProject(projectId);
   if (!project) notFound();
   const organizationId = project.organization_id;
-
-  const [membership, suppliers, requests, requestLines, orders, orderLines, receipts, receiptLines, receivingStatus] = await Promise.all([
-    getCurrentMembership(organizationId),
-    getSuppliers(organizationId),
-    getPurchaseRequests(projectId),
-    getPurchaseRequestLines(projectId),
-    getPurchaseOrders(projectId),
-    getPurchaseOrderLines(projectId),
-    getPurchaseReceipts(projectId),
-    getPurchaseReceiptLines(projectId),
-    getPurchaseOrderLinesReceiving(projectId),
+  const [membership, parties, cashAccounts, suppliers, requests, requestLines, orders, orderLines,
+    receipts, receiptLines, receiving, invoiceBasis, invoices, invoiceLines, commitments] = await Promise.all([
+    getCurrentMembership(organizationId), getParties(organizationId), getCashAccountPositions(projectId),
+    getSuppliers(organizationId), getPurchaseRequests(projectId), getPurchaseRequestLines(projectId),
+    getPurchaseOrders(projectId), getPurchaseOrderLines(projectId), getPurchaseReceipts(projectId),
+    getPurchaseReceiptLines(projectId), getPurchaseOrderLinesReceiving(projectId),
+    getPurchaseReceiptInvoiceBasis(projectId), getSupplierInvoices(projectId),
+    getSupplierInvoiceLines(projectId), getProcurementCommitments(projectId),
   ]);
-  if (!membership) {
-    return <ForbiddenCard projectId={projectId} message="لا تملك عضوية نشطة في منظمة هذا المشروع." />;
-  }
+  if (!membership) return <ForbiddenCard projectId={projectId} message="لا تملك عضوية نشطة في منظمة هذا المشروع." />;
   const canApprove = membership.role === 'OWNER';
 
-  const requestLinesByRequest = new Map<string, typeof requestLines>();
-  for (const line of requestLines) {
-    const existing = requestLinesByRequest.get(line.purchase_request_id) ?? [];
-    existing.push(line);
-    requestLinesByRequest.set(line.purchase_request_id, existing);
-  }
-  const orderLinesByOrder = new Map<string, typeof orderLines>();
-  for (const line of orderLines) {
-    const existing = orderLinesByOrder.get(line.purchase_order_id) ?? [];
-    existing.push(line);
-    orderLinesByOrder.set(line.purchase_order_id, existing);
-  }
-  const receiptLinesByReceipt = new Map<string, typeof receiptLines>();
-  for (const line of receiptLines) {
-    const existing = receiptLinesByReceipt.get(line.purchase_receipt_id) ?? [];
-    existing.push(line);
-    receiptLinesByReceipt.set(line.purchase_receipt_id, existing);
-  }
-  const receivingByLine = new Map(receivingStatus.map((s) => [s.purchase_order_line_id, s]));
+  const group = <T,>(rows: T[], key: (row: T) => string) => {
+    const map = new Map<string, T[]>();
+    rows.forEach((row) => map.set(key(row), [...(map.get(key(row)) ?? []), row]));
+    return map;
+  };
+  const requestLineMap = group(requestLines, (line) => line.purchase_request_id);
+  const orderLineMap = group(orderLines, (line) => line.purchase_order_id);
+  const receiptLineMap = group(receiptLines, (line) => line.purchase_receipt_id);
+  const invoiceLineMap = group(invoiceLines, (line) => line.supplier_invoice_id);
+  const receivingMap = new Map(receiving.map((line) => [line.purchase_order_line_id, line]));
+  const commitmentMap = new Map(commitments.map((commitment) => [commitment.purchase_order_id, commitment]));
 
-  return (
-    <section className="stack">
-      <WorkspaceChrome
-        projectId={projectId}
-        active="procurement"
-        title="المشتريات والعمليات المشتركة"
-        subtitle="الموردون المشتركون، طلبات الشراء، وأوامر الشراء عبر القطاعات — بدون أرقام مالية في هذه المرحلة."
-        internalReference={project.internal_reference}
-        sector={project.sector}
-      />
+  return <section className="stack">
+    <WorkspaceChrome projectId={projectId} active="procurement" title="المشتريات والدورة المالية"
+      subtitle="طلب شراء ← أمر تجاري ← استلام ← فاتورة مورد ← مستحق ← دفع ← مطابقة بنكية"
+      internalReference={project.internal_reference} sector={project.sector} />
 
-      <section className="card stack scroll-target" id="suppliers">
-        <div className="section-heading">
-          <div>
-            <h2>الموردون</h2>
-            <p className="muted">موردون على مستوى المنظمة، مشتركون بين كل مشاريعها وقطاعاتها.</p>
-          </div>
-          <span className="status">{suppliers.length} مورد</span>
-        </div>
-        {suppliers.length === 0 ? (
-          <div className="card empty"><p className="muted">لا يوجد موردون بعد.</p></div>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>الاسم</th><th>الرقم الضريبي</th><th>شروط السداد</th><th>الحالة</th></tr></thead>
-              <tbody>
-                {suppliers.map((supplier) => (
-                  <tr key={supplier.id}>
-                    <td>{supplier.name}</td>
-                    <td>{supplier.tax_number ?? '—'}</td>
-                    <td>{supplier.payment_terms ?? '—'}</td>
-                    <td><span className="status">{formatSupplierStatus(supplier.status)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <details><summary>تسجيل مورد جديد</summary><SupplierForm organizationId={organizationId} projectId={projectId} serverNonce={newCommandNonce()} /></details>
-      </section>
-
-      <section className="card stack scroll-target" id="requests">
-        <div className="section-heading">
-          <div>
-            <h2>طلبات الشراء</h2>
-            <p className="muted">طلب → إرسال → اعتماد (يتطلب مالك المنظمة، ولا يعتمد طالب المستند).</p>
-          </div>
-          <span className="status">{requests.length} طلب</span>
-        </div>
-        {requests.length === 0 ? (
-          <div className="card empty"><p className="muted">لا توجد طلبات شراء بعد.</p></div>
-        ) : (
-          <div className="stack">
-            {requests.map((request) => {
-              const lines = requestLinesByRequest.get(request.id) ?? [];
-              return (
-                <article className="card stack" key={request.id}>
-                  <header className="topline">
-                    <div><h3>{request.internal_reference}</h3><p className="muted">{formatDate(request.created_at)} · {request.line_count} سطر</p></div>
-                    <span className="status">{formatDocumentState(request.status)}</span>
-                  </header>
-                  {request.description ? <p className="muted">{request.description}</p> : null}
-                  <div className="table-wrap">
-                    <table>
-                      <thead><tr><th>الصنف</th><th>الكمية</th><th>الوحدة</th><th>ملاحظات</th></tr></thead>
-                      <tbody>
-                        {lines.map((line) => (
-                          <tr key={line.id}>
-                            <td>{line.item_description}</td>
-                            <td>{line.quantity}</td>
-                            <td>{line.unit}</td>
-                            <td>{line.notes ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {request.status === 'DRAFT'
-                    ? <SubmitRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />
-                    : null}
-                  {request.status === 'SUBMITTED' && canApprove
-                    ? <ApproveRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />
-                    : null}
-                  {request.status === 'SUBMITTED' && !canApprove
-                    ? <p className="muted">الاعتماد يتطلب صلاحية مالك المنظمة.</p>
-                    : null}
-                  {request.status === 'APPROVED'
-                    ? <p className="muted">طلب معتمد — يمكن إنشاء أمر شراء منه.</p>
-                    : null}
-                  {request.status === 'REJECTED' ? <p className="error">مرفوض: {request.rejection_reason}</p> : null}
-                </article>
-              );
-            })}
-          </div>
-        )}
-        <details><summary>إنشاء طلب شراء جديد (مسودة)</summary><PurchaseRequestForm organizationId={organizationId} projectId={projectId} serverNonce={newCommandNonce()} /></details>
-      </section>
-
-      <section className="card stack scroll-target" id="orders">
-        <div className="section-heading">
-          <div>
-            <h2>أوامر الشراء</h2>
-            <p className="muted">أمر → إرسال → اعتماد. اختياريًا مرتبط بمورد أو بطلب شراء معتمد.</p>
-          </div>
-          <span className="status">{orders.length} أمر</span>
-        </div>
-        {orders.length === 0 ? (
-          <div className="card empty"><p className="muted">لا توجد أوامر شراء بعد.</p></div>
-        ) : (
-          <div className="stack">
-            {orders.map((order) => {
-              const lines = orderLinesByOrder.get(order.id) ?? [];
-              return (
-                <article className="card stack" key={order.id}>
-                  <header className="topline">
-                    <div>
-                      <h3>{order.internal_reference}</h3>
-                      <p className="muted">
-                        {order.supplier_name ?? 'بدون مورد'}
-                        {order.expected_delivery_date ? ` · تسليم متوقع ${formatDate(order.expected_delivery_date)}` : ''}
-                        {' · '}{order.line_count} سطر
-                      </p>
-                    </div>
-                    <span className="status">{formatDocumentState(order.status)}</span>
-                  </header>
-                  {order.description ? <p className="muted">{order.description}</p> : null}
-                  <div className="table-wrap">
-                    <table>
-                      <thead><tr><th>الصنف</th><th>الكمية المطلوبة</th><th>الوحدة</th><th>المستلم</th><th>المتبقي</th><th>ملاحظات</th></tr></thead>
-                      <tbody>
-                        {lines.map((line) => {
-                          const rec = receivingByLine.get(line.id);
-                          const ordered = rec ? rec.ordered_quantity : line.quantity;
-                          const received = rec?.received_quantity ?? '0';
-                          const remaining = rec?.remaining_quantity ?? line.quantity;
-                          return (
-                            <tr key={line.id}>
-                              <td>{line.item_description}</td>
-                              <td>{ordered}</td>
-                              <td>{line.unit}</td>
-                              <td>{received}</td>
-                              <td>{remaining}</td>
-                              <td>{line.notes ?? '—'}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  {order.status === 'DRAFT'
-                    ? <SubmitOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />
-                    : null}
-                  {order.status === 'SUBMITTED' && canApprove
-                    ? <ApproveOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />
-                    : null}
-                  {order.status === 'SUBMITTED' && !canApprove
-                    ? <p className="muted">الاعتماد يتطلب صلاحية مالك المنظمة.</p>
-                    : null}
-                  {order.status === 'APPROVED' && lines.length > 0
-                    ? (
-                        <>
-                          <p className="muted">أمر معتمد — يمكن تسجيل الاستلام عليه.</p>
-                          <details><summary>تسجيل استلام</summary><ReceiptForm organizationId={organizationId} projectId={projectId} order={order} lines={lines} serverNonce={newCommandNonce()} /></details>
-                        </>
-                      )
-                    : null}
-                  {order.status === 'REJECTED' ? <p className="error">مرفوض: {order.rejection_reason}</p> : null}
-                  {order.status === 'CANCELLED' ? <p className="error">ملغي: {order.rejection_reason}</p> : null}
-                </article>
-              );
-            })}
-          </div>
-        )}
-        <details><summary>إنشاء أمر شراء جديد (مسودة)</summary><PurchaseOrderForm organizationId={organizationId} projectId={projectId} suppliers={suppliers} requests={requests} serverNonce={newCommandNonce()} /></details>
-      </section>
-
-      <section className="card stack scroll-target" id="receipts">
-        <div className="section-heading">
-          <div>
-            <h2>الاستلامات</h2>
-            <p className="muted">استلام مادي ضد أمر شراء معتمد — سجل ثابت لا يعدَّل ولا يحذف.</p>
-          </div>
-          <span className="status">{receipts.length} استلام</span>
-        </div>
-        {receipts.length === 0 ? (
-          <div className="card empty"><p className="muted">لا توجد استلامات بعد. استلم على أمر شراء معتمد من القسم أعلاه.</p></div>
-        ) : (
-          <div className="stack">
-            {receipts.map((receipt) => {
-              const lines = receiptLinesByReceipt.get(receipt.id) ?? [];
-              return (
-                <article className="card stack" key={receipt.id}>
-                  <header className="topline">
-                    <div>
-                      <h3>{receipt.purchase_order_reference}</h3>
-                      <p className="muted">{receipt.supplier_name ?? 'بدون مورد'} · {formatDate(receipt.received_at)} · {receipt.line_count} سطر</p>
-                    </div>
-                  </header>
-                  <p className="muted">دليل الاستلام: {receipt.evidence_reference}{receipt.notes ? ` · ${receipt.notes}` : ''}</p>
-                  <div className="table-wrap">
-                    <table>
-                      <thead><tr><th>الصنف</th><th>الكمية المستلمة</th><th>الوحدة</th><th>ملاحظات</th></tr></thead>
-                      <tbody>
-                        {lines.map((line) => (
-                          <tr key={line.id}>
-                            <td>{line.item_description}</td>
-                            <td>{line.quantity_received}</td>
-                            <td>{line.unit}</td>
-                            <td>{line.notes ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section className="card stack">
-        <h3>حدود هذه الشريحة</h3>
-        <p className="muted">المشتريات والاستلام سجل تشغيلي كمّي فقط: لا أسعار، لا التزام مالي، لا فاتورة أو دفع، لا مخزون مخمّن أو تحقق من توفر رصيد. الربط المالي بالـFinance Core يأتي في الشريحة التالية من R4.</p>
-        <p className="muted"><Link href={`/projects/${projectId}`}>← العودة إلى مساحة المشروع</Link></p>
-      </section>
+    <section className="card stack"><div className="section-heading"><div><h2>الموردون والأطراف المالية</h2><p className="muted">ملف المورد تشغيلي؛ الهوية المالية هي Party المشتركة مع Finance Core.</p></div><span className="status">{suppliers.length} مورد</span></div>
+      {suppliers.length === 0 ? <p className="muted">لا يوجد موردون بعد.</p> : <div className="table-wrap"><table><thead><tr><th>المورد</th><th>الطرف المالي</th><th>شروط السداد</th><th>الحالة</th></tr></thead><tbody>{suppliers.map((supplier) => <tr key={supplier.id}><td>{supplier.name}</td><td>{supplier.party_name ?? (canApprove ? <LinkSupplierPartyForm organizationId={organizationId} projectId={projectId} supplierId={supplier.id} parties={parties} serverNonce={newCommandNonce()} /> : 'غير مربوط')}</td><td>{supplier.payment_terms ?? '—'}</td><td>{formatSupplierStatus(supplier.status)}</td></tr>)}</tbody></table></div>}
+      <details><summary>تسجيل مورد جديد</summary><SupplierForm organizationId={organizationId} projectId={projectId} parties={parties} serverNonce={newCommandNonce()} /></details>
     </section>
-  );
+
+    <section className="card stack"><div className="section-heading"><div><h2>طلبات الشراء</h2><p className="muted">احتياج تشغيلي مستقل عن الالتزام والدفع.</p></div><span className="status">{requests.length} طلب</span></div>
+      {requests.map((request) => <article className="card stack" key={request.id}><header className="topline"><h3>{request.internal_reference}</h3><span className="status">{formatDocumentState(request.status)}</span></header>
+        <div className="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead><tbody>{(requestLineMap.get(request.id) ?? []).map((line) => <tr key={line.id}><td>{line.item_description}</td><td>{line.quantity}</td><td>{line.unit}</td></tr>)}</tbody></table></div>
+        {request.status === 'DRAFT' && <SubmitRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />}
+        {request.status === 'SUBMITTED' && canApprove && <ApproveRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />}
+      </article>)}
+      <details><summary>إنشاء طلب شراء</summary><PurchaseRequestForm organizationId={organizationId} projectId={projectId} serverNonce={newCommandNonce()} /></details>
+    </section>
+
+    <section className="card stack"><div className="section-heading"><div><h2>أوامر الشراء التجارية والالتزامات</h2><p className="muted">الاعتماد ينشئ التزام شراء غير مرحّل؛ لا يسجل مصروفًا أو مستحقًا أو نقدية.</p></div><span className="status">{orders.length} أمر</span></div>
+      {orders.map((order) => {
+        const lines = orderLineMap.get(order.id) ?? [];
+        const commitment = commitmentMap.get(order.id);
+        return <article className="card stack" key={order.id}><header className="topline"><div><h3>{order.internal_reference}</h3><p className="muted">{order.supplier_name ?? '—'} · {order.commercial_reference ?? 'أمر قديم دون شروط مالية'} · {formatDate(order.expected_delivery_date)}</p></div><span className="status">{formatDocumentState(order.status)}</span></header>
+          {order.currency && <div className="metrics-grid"><article><span className="muted">المطلوب تجاريًا</span><strong>{formatMinorUnits(order.commercial_total_minor_units, order.currency)}</strong></article><article><span className="muted">المفوتر المعتمد</span><strong>{formatMinorUnits(commitment?.invoiced_minor_units ?? '0', order.currency)}</strong></article><article><span className="muted">التزام متبقٍ</span><strong>{formatMinorUnits(commitment?.remaining_commitment_minor_units ?? order.commercial_total_minor_units, order.currency)}</strong></article></div>}
+          <div className="table-wrap"><table><thead><tr><th>الصنف</th><th>المطلوب</th><th>المستلم</th><th>المتبقي للاستلام</th><th>سعر الوحدة</th><th>إجمالي السطر</th></tr></thead><tbody>{lines.map((line) => { const state = receivingMap.get(line.id); return <tr key={line.id}><td>{line.item_description}</td><td>{state?.ordered_quantity ?? line.quantity} {line.unit}</td><td>{state?.received_quantity ?? '0'} {line.unit}</td><td>{state?.remaining_quantity ?? line.quantity} {line.unit}</td><td>{line.unit_price_minor_units && line.currency ? formatMinorUnits(line.unit_price_minor_units, line.currency) : '—'}</td><td>{line.line_amount_minor_units && line.currency ? formatMinorUnits(line.line_amount_minor_units, line.currency) : '—'}</td></tr>; })}</tbody></table></div>
+          {order.status === 'DRAFT' && <SubmitOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />}
+          {order.status === 'SUBMITTED' && canApprove && <ApproveOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />}
+          {order.status === 'APPROVED' && <><details><summary>تسجيل استلام</summary><ReceiptForm organizationId={organizationId} projectId={projectId} order={order} lines={lines} serverNonce={newCommandNonce()} /></details><details><summary>تسجيل فاتورة مورد من الاستلامات</summary><SupplierInvoiceForm organizationId={organizationId} projectId={projectId} order={order} basis={invoiceBasis} serverNonce={newCommandNonce()} /></details></>}
+        </article>;
+      })}
+      <details><summary>إنشاء أمر شراء تجاري</summary><PurchaseOrderForm organizationId={organizationId} projectId={projectId} suppliers={suppliers} requests={requests} currency={project.reporting_currency} serverNonce={newCommandNonce()} /></details>
+    </section>
+
+    <section className="card stack"><div className="section-heading"><div><h2>الاستلام</h2><p className="muted">حقيقة كمية ثابتة؛ لا تعني فاتورة معتمدة ولا دفعًا.</p></div><span className="status">{receipts.length} استلام</span></div>
+      {receipts.map((receipt) => <article className="card stack" key={receipt.id}><header className="topline"><h3>{receipt.purchase_order_reference}</h3><span>{formatDate(receipt.received_at)}</span></header><p className="muted">دليل: {receipt.evidence_reference}</p><ul>{(receiptLineMap.get(receipt.id) ?? []).map((line) => <li key={line.id}>{line.item_description}: {line.quantity_received} {line.unit}</li>)}</ul></article>)}
+    </section>
+
+    <section className="card stack"><div className="section-heading"><div><h2>فواتير الموردين والمستحقات</h2><p className="muted">الاعتماد يرحّل المستحق في Finance Core. الدفع والمطابقة البنكية حالتان منفصلتان.</p></div><span className="status">{invoices.length} فاتورة</span></div>
+      {invoices.length === 0 ? <p className="muted">لا توجد فواتير موردين بعد. سجّل الفاتورة من أمر مستلم أعلاه.</p> : invoices.map((invoice) => <article className="card stack" key={invoice.id}><header className="topline"><div><h3>{invoice.invoice_reference} — {invoice.supplier_name}</h3><p className="muted">أمر {invoice.purchase_order_reference} · {formatDate(invoice.invoice_date)} · دليل {invoice.evidence_reference}</p></div><span className="status">{formatDocumentState(invoice.status)}</span></header>
+        <div className="metrics-grid"><article><span className="muted">قيمة الفاتورة</span><strong>{formatMinorUnits(invoice.invoice_total_minor_units, invoice.currency)}</strong></article><article><span className="muted">مدفوع</span><strong>{formatMinorUnits(invoice.paid_minor_units, invoice.currency)}</strong><small>{formatPaymentState(invoice.payment_state)}</small></article><article><span className="muted">متبقي مستحق</span><strong>{formatMinorUnits(invoice.outstanding_minor_units, invoice.currency)}</strong></article><article><span className="muted">المطابقة البنكية</span><strong>{formatReconciliationState(invoice.reconciliation_state)}</strong><small>{formatMinorUnits(invoice.reconciled_minor_units, invoice.currency)}</small></article></div>
+        <div className="table-wrap"><table><thead><tr><th>الصنف</th><th>كمية الفاتورة</th><th>سعر الوحدة</th><th>المبلغ</th></tr></thead><tbody>{(invoiceLineMap.get(invoice.id) ?? []).map((line) => <tr key={line.id}><td>{line.item_description}</td><td>{line.quantity_invoiced} {line.unit}</td><td>{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td><td>{formatMinorUnits(line.line_amount_minor_units, line.currency)}</td></tr>)}</tbody></table></div>
+        {invoice.status === 'SUBMITTED' && canApprove && <ApproveInvoiceAction organizationId={organizationId} projectId={projectId} invoiceId={invoice.id} serverNonce={newCommandNonce()} />}
+        {invoice.payable_is_reversed && <p className="error">تم عكس قيد المستحق في Finance Core. الفاتورة الأصلية باقية كسجل مصدر ثابت ولا تقبل دفعات جديدة.</p>}
+        {invoice.status === 'APPROVED' && !invoice.payable_is_reversed && invoice.payment_state !== 'FULLY_PAID' && canApprove && <details><summary>دفع من حساب المشروع</summary><SupplierPaymentForm organizationId={organizationId} projectId={projectId} invoice={invoice} cashAccounts={cashAccounts} serverNonce={newCommandNonce()} /></details>}
+        {invoice.paid_minor_units !== '0' && invoice.reconciliation_state !== 'RECONCILED' && <p className="muted">تم الدفع لكنه لم يطابق بنكيًا بالكامل. <Link href={`/projects/${projectId}/cash`}>افتح النقدية والمطابقة ←</Link></p>}
+        {invoice.reconciliation_state === 'RECONCILED' && <p className="status">تمت المطابقة البنكية عبر آلية Finance Core المشتركة.</p>}
+      </article>)}
+    </section>
+
+    <section className="card stack"><h3>حدود محاسبية واضحة</h3><p className="muted">أمر الشراء ≠ الاستلام ≠ فاتورة المورد ≠ المستحق ≠ الدفع ≠ المطابقة البنكية. لا ضريبة آلية ولا تقييم مخزون ولا دفتر موازٍ. التصحيح المالي بعكس القيد وإعادة الترحيل من مساحة التكاليف/النقدية.</p><p><Link href={`/projects/${projectId}/cash`}>النقدية والمطابقة البنكية ←</Link> · <Link href={`/projects/${projectId}/costs`}>المستحقات والقيود ←</Link></p></section>
+  </section>;
 }
