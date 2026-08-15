@@ -448,15 +448,21 @@ select 1/case when gf24_run('00000000-0000-4000-8000-000000000001', format($q$
 -- ---------------------------------------------------------------------------
 -- 10. Security: RLS, direct-DML denial, inactive member, immutable facts.
 -- ---------------------------------------------------------------------------
-select 1/case when gf24_catch('00000000-0000-4000-8000-000000000001', $q$
+select 1/case when gf24_catch('00000000-0000-4000-8000-000000000001', format($q$
+  delete from public.livestock_sale_collections where id = %L
+$q$, :'gf24_collection_1')) like '%permission denied%' then 1 else 0 end as gf24_direct_dml_denied;
+-- Even a privileged/import path cannot attach a Livestock sale to another sector.
+select 1/case when gf24_owner_catch(format($q$
   insert into public.livestock_sales(
     organization_id, project_id, buyer_party_id, sale_reference, sale_date,
     currency, prepared_by, idempotency_key, request_hash
   ) values (
-    '10000000-0000-4000-8000-000000000001', :'gf24_project', :'gf24_buyer',
+    '10000000-0000-4000-8000-000000000001', %L, %L,
     'بيع مخترق', current_date, 'EGP', '00000000-0000-4000-8000-000000000001',
     'gf24-direct-dml', repeat('a', 64)
-  )$q$) like '%permission denied%' then 1 else 0 end as gf24_direct_dml_denied;
+  )
+$q$, :'gf24_re_project', :'gf24_buyer')) like '%livestock project not found%'
+then 1 else 0 end as gf24_privileged_sector_bypass_rejected;
 -- Append-only and immutable facts are database triggers, not just RPC rules.
 select 1/case when gf24_owner_catch(format($q$
   update public.livestock_sales set sale_reference='مغشوش' where id=%L$q$, :'gf24_sale_a'))
