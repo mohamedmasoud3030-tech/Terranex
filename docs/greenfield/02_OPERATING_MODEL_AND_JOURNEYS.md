@@ -33,7 +33,7 @@ flowchart TD
 | Investor | Profile and requested documents | Acknowledge notices when enabled | See other investors or operational private data |
 | Auditor/read-only | Reports, evidence, audit trail | None | Modify any record |
 
-Rules are organization-configurable only within safe templates. Default: maker and approver must be different users for bank payments, agreement activation, allocation, distribution, period close/reopen, and opening-balance import.
+Rules are organization-configurable only within safe templates. Default: maker and approver must be different users for bank payments, agreement activation, allocation, distribution, period close/reopen, and opening-balance import when those workflows are enabled.
 
 ## 3. Investment portfolio operating layer
 
@@ -51,12 +51,12 @@ Rules:
 
 | State | Entry condition | Allowed work | Exit gate |
 |---|---|---|---|
-| DRAFT | Project shell created | Configure sector, parties, agreement, budget, asset | Required setup complete |
+| DRAFT | Project shell created | Configure sector, parties/approved terms where applicable, budget, asset | Required setup complete |
 | DUE_DILIGENCE | Opportunity accepted for review | Documents, checks, assumptions, valuation, decision memo | Approved investment decision |
-| FUNDING | Active agreement and commitment plan | Capital calls, contribution receipts, acquisition obligations | Minimum funding/acquisition condition met |
+| FUNDING | Approved project setup and funding plan | Project funding/deployment; capital calls/contributions only when governed; acquisition obligations | Minimum approved funding/acquisition condition met |
 | ACTIVE | Project controls active | Full sector operations and finance | Approved exit/closure plan |
 | EXITING | Disposal/harvest liquidation/closure started | Settlement, receivable collection, asset disposition | No unresolved material obligations |
-| CLOSED | Periods closed and final statement approved | Read/report, permitted late adjustment by reopen workflow | Reopen approval only |
+| CLOSED | Periods closed and final statement/report approved | Read/report, permitted late adjustment by reopen workflow | Reopen approval only |
 | CANCELLED | Pre-activation cancellation | Read-only plus documented reason | No transition back; clone if needed |
 
 Lifecycle state does not replace asset or sector state. A project may be ACTIVE while one crop cycle is closed and another is planned.
@@ -136,10 +136,10 @@ Lifecycle state does not replace asset or sector state. A project may be ACTIVE 
 ### J7 — Close a period and report performance
 
 1. Resolve or explain unreconciled cash, unmatched documents, negative inventory, missing rates, and overdue approvals.
-2. Record accruals, allocations, inventory counts, production, impairment/valuation proposals, and reversals.
-3. Run subledger controls: balanced batches, project dimensions, partner capital rollforward, asset/inventory rollforward.
+2. Record accruals, allocations when governed, inventory counts, production, impairment/valuation proposals, and reversals.
+3. Run subledger controls: balanced batches, project dimensions, applicable partner-capital rollforward, asset/inventory rollforward.
 4. Reviewer approves close; system stores control results and locks the period.
-5. Generate project pack: cash, P&L bridge, commitments, operational KPIs, valuation status, investor capital rollforward, and exceptions.
+5. Generate project pack: cash, P&L bridge, commitments, operational KPIs, valuation status, applicable investor-capital rollforward, and exceptions.
 
 ### J8 — Allocate result and distribute cash
 
@@ -174,7 +174,7 @@ Home and project workspaces prioritize actionable exceptions, not passive charts
 
 - approvals waiting on me;
 - unidentified/unreconciled cash;
-- overdue capital calls and obligations;
+- overdue capital calls where enabled and overdue obligations;
 - missing evidence or broken matches;
 - negative/implausible stock or animal state;
 - planned work overdue;
@@ -205,8 +205,8 @@ Notifications are consequences of durable events, never the source of truth. In-
 |---|---|---|
 | Daily | Cash/approval/exception digest | Owner, finance |
 | Weekly | Project operations vs plan and budget | Manager, sector lead |
-| Monthly | Project performance and capital rollforward | Owner, finance, investors |
-| Cycle/exit | Crop, herd cohort, or real-estate deal closeout | Management, investor |
+| Monthly | Project performance and applicable capital rollforward | Owner, finance, investors where enabled |
+| Cycle/exit | Crop, herd cohort, or real-estate deal closeout | Management, investor where enabled |
 | Ad hoc | Audit trail and evidence package | Auditor, dispute review |
 
 ## 10. Acceptance criteria for the operating model
@@ -215,5 +215,5 @@ Notifications are consequences of durable events, never the source of truth. In-
 - portfolio capital deployment is distinguishable from investor contribution, ownership, allocation, distribution, and payment;
 - Every material workflow identifies maker, approver, posting event, evidence, exception path, and reversal path.
 - A user can never infer that payment equals expense, receipt equals revenue, valuation equals realized profit, or allocation equals distribution.
-- Partner statements can be regenerated from posted events and effective agreement versions.
+- When investor-capital workflows are enabled, partner statements can be regenerated from posted events and effective agreement versions.
 - Sector events can exist without money; financial events can reference sector objects without embedding sector business logic in the finance core.
