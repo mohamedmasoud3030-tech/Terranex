@@ -57,7 +57,7 @@ The conceptual domain catalog does not authorize placeholder entities, empty lay
 - Normal single-record writes may use a server action with the authenticated Supabase client.
 - Multi-record or financially material writes use one transactional PostgreSQL function/RPC with validation, authorization, idempotency, and audit in the same transaction.
 - Database constraints and RLS are authoritative even when application validation also exists.
-- Posted financial facts will be immutable and corrected by reversal when those slices are implemented; GF-002 contains no ledger.
+- Posted financial facts are immutable and corrected by reversal/repost under the established Finance Core controls.
 
 ## 5. Tenancy and authorization
 
@@ -68,7 +68,7 @@ The conceptual domain catalog does not authorize placeholder entities, empty lay
 - Server code never trusts a client-supplied organization ID without resolving and authorizing membership.
 - Service-role credentials never enter browser code and are not used as a routine bypass for user commands.
 
-GF-002 proves isolation with at least two organizations and attempts to read and mutate across the boundary.
+Tenant-isolation verification uses at least two organizations and attempts to read and mutate across the boundary.
 
 ## 6. Security baseline
 
@@ -84,7 +84,7 @@ Commercial release targets OWASP ASVS Level 2 proportionately, but unused securi
 
 ## 7. Money boundary
 
-When financial slices begin or are extended:
+For financial slices and extensions:
 
 - money uses integer minor units plus ISO-4217 currency;
 - no floating-point monetary arithmetic;
@@ -93,8 +93,6 @@ When financial slices begin or are extended:
 - statutory accounting and Egyptian tax/e-invoicing stay external/configured until professionally validated;
 - portfolio roll-ups are projections over project truth, never a second mutable ledger;
 - portfolio capital deployment never becomes investor contribution/ownership/allocation/distribution without an explicit approved business rule.
-
-GF-002 may provide a shared money value/formatter only if the project form actually needs it; it must not build a ledger.
 
 ## 8. Deferred capabilities
 
@@ -107,7 +105,7 @@ GF-002 may provide a shared money value/formatter only if the project form actua
 | Background jobs | a bounded task cannot finish reliably in a request |
 | Read projections/materialized views | measured query/reporting needs exceed direct queries |
 | Internal package extraction | at least two real consumers and a stable boundary exist |
-| Second sector module | Common Core and Real Estate deliver a working end-to-end slice |
+| Additional cross-sector infrastructure | at least two implemented sector consumers prove one stable shared need |
 
 ## 9. Domain-assumption safety boundary
 
