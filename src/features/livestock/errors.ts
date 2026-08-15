@@ -82,6 +82,20 @@ const ERROR_RULES: readonly ErrorRule[] = [
   { includes: 'Cohort inception', message: 'لا يمكن تسجيل الواقعة قبل بداية تشغيل الدفعة الموثقة.' },
   { includes: 'derived Cohort origin does not match', message: 'مصدر الدفعة الناتجة لا يطابق نوع العملية.' },
   { includes: 'producing operation', message: 'يجب أن ترتبط الدفعة الناتجة بعملية إنتاج واحدة مكتملة.' },
+  // GF-023 — bounded operations completion.
+  { includes: 'medicine product reference already exists', message: 'مرجع الدواء/اللقاح مستخدم بالفعل في هذا المشروع.' },
+  { includes: 'Animal identifier already exists', message: 'معرّف الحيوان مستخدم بالفعل داخل هذا المشروع.' },
+  { includes: 'Animal is not a member', message: 'الحيوان المعرّف لا ينتمي إلى الدفعة المختارة عند وقت الواقعة.' },
+  { includes: 'identified Animal count exceeds', message: 'عدد الحيوانات المعرّفة يتجاوز رصيد الدفعة عند وقت التعريف.' },
+  { includes: 'product kind does not match', message: 'نوع المنتج لا يطابق الواقعة: اختر دواءً للعلاج أو لقاحًا للتطعيم.' },
+  { includes: 'requires product, dose, unit and route', message: 'العلاج أو التطعيم يتطلب المنتج والجرعة والوحدة وطريق الإعطاء.' },
+  { includes: 'requires a condition classification', message: 'التشخيص يتطلب تصنيف الحالة.' },
+  { includes: 'reproduction birth outcome does not match', message: 'نتيجة الولادة لا تطابق واقعة الولادة العددية في GF-022.' },
+  { includes: 'authoritative birth outcome requires', message: 'الأثر العددي للولادة يتطلب عدد مواليد أحياء موجبًا وواقعة GF-022 مطابقة.' },
+  { includes: 'observation-only birth outcome', message: 'الملاحظة التكاثرية لا يجوز أن ترتبط بأثر عددي.' },
+  { includes: 'feed item reference already exists', message: 'مرجع العلف مستخدم بالفعل في هذا المشروع.' },
+  { includes: 'feed issue unit does not match', message: 'وحدة الصرف لا تطابق الوحدة المعرّفة لصنف العلف.' },
+  { includes: 'operational effective time precedes', message: 'لا يمكن تسجيل الواقعة قبل بداية تشغيل الدفعة.' },
 ];
 
 export function livestockErrorMessage(databaseMessage?: string): string {
