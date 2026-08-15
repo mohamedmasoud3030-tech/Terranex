@@ -1,8 +1,9 @@
 -- GF-023 review hardening — temporal integrity for optional Animal identity.
 --
--- A backdated identity must not make any already-known later point in the
--- Cohort timeline contain more identified Animals than the authoritative
--- GF-022 quantity ledger supports. Identity remains a zero-quantity fact.
+-- A backdated identity must not invalidate any already-accepted later identity
+-- checkpoint. Identity remains a zero-quantity provenance fact; this hardening
+-- deliberately does not infer individual life status from later Cohort-level
+-- mortality, sale, split, merge, or other quantity events.
 
 create or replace function public.gf023_validate_animal() returns trigger
 language plpgsql security definer set search_path=pg_catalog,public as $$
@@ -23,12 +24,12 @@ begin
     null, new.identified_at, false
   );
 
-  -- Because Animal facts are immutable, a retroactive insert affects identity
-  -- count at every later instant. Validate the resulting timeline at the new
-  -- identity instant, every later existing identity checkpoint, and every
-  -- already-known later GF-022 quantity checkpoint. This prevents a T2 identity
-  -- followed by a backdated T1 identity from silently producing 2 identities
-  -- against a one-head Cohort at T2.
+  -- A retroactive identity is visible at every later identity checkpoint. The
+  -- new fact is valid only if the resulting identified count remains supported
+  -- at its own instant and at every already-accepted later identification
+  -- instant. We intentionally do not add arbitrary later quantity checkpoints:
+  -- GF-023 has no individual death/transfer/current-status model, so doing that
+  -- would falsely treat every identified Animal as permanently active.
   for v_checkpoint in
     select checkpoints.checkpoint
     from (
@@ -38,11 +39,6 @@ begin
       from public.livestock_animals a
       where a.identification_cohort_id = new.identification_cohort_id
         and a.identified_at > new.identified_at
-      union
-      select q.effective_at
-      from public.livestock_quantity_events q
-      where q.cohort_id = new.identification_cohort_id
-        and q.effective_at > new.identified_at
     ) as checkpoints
     order by checkpoints.checkpoint
   loop
