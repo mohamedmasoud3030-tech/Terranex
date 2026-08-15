@@ -6,6 +6,7 @@ import { getParties } from '@/features/funding/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import {
   getProcurementCommitments,
+  getProcurementEvidence,
   getPurchaseOrderLines,
   getPurchaseOrderLinesReceiving,
   getPurchaseOrders,
@@ -25,7 +26,7 @@ import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
 import {
   ApproveInvoiceAction, ApproveOrderAction, ApproveRequestAction, LinkSupplierPartyForm,
-  PurchaseOrderForm, PurchaseRequestForm, ReceiptForm, SubmitOrderAction, SubmitRequestAction,
+  ProcurementEvidenceForm, PurchaseOrderForm, PurchaseRequestForm, ReceiptForm, SubmitOrderAction, SubmitRequestAction,
   SupplierForm, SupplierInvoiceForm, SupplierPaymentApprovalForm, SupplierPaymentForm,
 } from './forms';
 
@@ -37,13 +38,13 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
   if (!project) notFound();
   const organizationId = project.organization_id;
   const [membership, parties, cashAccounts, paymentProposals, suppliers, requests, requestLines, orders, orderLines,
-    receipts, receiptLines, receiving, invoiceBasis, invoices, invoiceLines, commitments] = await Promise.all([
+    receipts, receiptLines, receiving, invoiceBasis, invoices, invoiceLines, commitments, evidence] = await Promise.all([
     getCurrentMembership(organizationId), getParties(organizationId), getCashAccountPositions(projectId),
     getPaymentProposals(projectId), getSuppliers(organizationId), getPurchaseRequests(projectId),
     getPurchaseRequestLines(projectId), getPurchaseOrders(projectId), getPurchaseOrderLines(projectId),
     getPurchaseReceipts(projectId), getPurchaseReceiptLines(projectId), getPurchaseOrderLinesReceiving(projectId),
     getPurchaseReceiptInvoiceBasis(projectId), getSupplierInvoices(projectId),
-    getSupplierInvoiceLines(projectId), getProcurementCommitments(projectId),
+    getSupplierInvoiceLines(projectId), getProcurementCommitments(projectId), getProcurementEvidence(projectId),
   ]);
   if (!membership) return <ForbiddenCard projectId={projectId} message="لا تملك عضوية نشطة في منظمة هذا المشروع." />;
   const canApprove = membership.role === 'OWNER';
@@ -59,6 +60,14 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
   const invoiceLineMap = group(invoiceLines, (line) => line.supplier_invoice_id);
   const receivingMap = new Map(receiving.map((line) => [line.purchase_order_line_id, line]));
   const commitmentMap = new Map(commitments.map((commitment) => [commitment.purchase_order_id, commitment]));
+  const orderEvidence = group(evidence.filter((item) => item.purchase_order_id), (item) => item.purchase_order_id!);
+  const receiptEvidence = group(evidence.filter((item) => item.purchase_receipt_id), (item) => item.purchase_receipt_id!);
+  const invoiceEvidence = group(evidence.filter((item) => item.supplier_invoice_id), (item) => item.supplier_invoice_id!);
+  const evidenceList = (items: typeof evidence) => items.length === 0
+    ? <p className="error">لا يوجد ملف دليل فعلي مسجل.</p>
+    : <ul>{items.map((item) => <li key={item.evidence_link_id}>{item.download_url
+      ? <a href={item.download_url} target="_blank" rel="noreferrer">{item.title} — الإصدار {item.version_number}</a>
+      : <span>{item.title} — الإصدار {item.version_number}</span>} <small className="muted">{item.original_filename} · SHA-256 {item.sha256.slice(0, 12)}…</small></li>)}</ul>;
 
   return <section className="stack">
     <WorkspaceChrome projectId={projectId} active="procurement" title="المشتريات والدورة المالية"
@@ -86,6 +95,8 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
         return <article className="card stack" key={order.id}><header className="topline"><div><h3>{order.internal_reference}</h3><p className="muted">{order.supplier_name ?? '—'} · {order.commercial_reference ?? 'أمر قديم دون شروط مالية'} · {formatDate(order.expected_delivery_date)}</p></div><span className="status">{formatDocumentState(order.status)}</span></header>
           {order.currency && <div className="metrics-grid"><article><span className="muted">المطلوب تجاريًا</span><strong>{formatMinorUnits(order.commercial_total_minor_units, order.currency)}</strong></article><article><span className="muted">المفوتر المعتمد</span><strong>{formatMinorUnits(commitment?.invoiced_minor_units ?? '0', order.currency)}</strong></article><article><span className="muted">التزام متبقٍ</span><strong>{formatMinorUnits(commitment?.remaining_commitment_minor_units ?? order.commercial_total_minor_units, order.currency)}</strong></article></div>}
           <div className="table-wrap"><table><thead><tr><th>الصنف</th><th>المطلوب</th><th>المستلم</th><th>المتبقي للاستلام</th><th>سعر الوحدة</th><th>إجمالي السطر</th></tr></thead><tbody>{lines.map((line) => { const state = receivingMap.get(line.id); return <tr key={line.id}><td>{line.item_description}</td><td>{state?.ordered_quantity ?? line.quantity} {line.unit}</td><td>{state?.received_quantity ?? '0'} {line.unit}</td><td>{state?.remaining_quantity ?? line.quantity} {line.unit}</td><td>{line.unit_price_minor_units && line.currency ? formatMinorUnits(line.unit_price_minor_units, line.currency) : '—'}</td><td>{line.line_amount_minor_units && line.currency ? formatMinorUnits(line.line_amount_minor_units, line.currency) : '—'}</td></tr>; })}</tbody></table></div>
+          <div><strong>ملفات الأمر/العقد</strong>{evidenceList(orderEvidence.get(order.id) ?? [])}</div>
+          <details><summary>إرفاق أمر شراء/عقد أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="PURCHASE_ORDER" subjectId={order.id} evidence={evidence} serverNonce={newCommandNonce()} /></details>
           {order.status === 'DRAFT' && <SubmitOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />}
           {order.status === 'SUBMITTED' && canApprove && <ApproveOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />}
           {order.status === 'APPROVED' && <><details><summary>تسجيل استلام</summary><ReceiptForm organizationId={organizationId} projectId={projectId} order={order} lines={lines} serverNonce={newCommandNonce()} /></details><details><summary>تسجيل فاتورة مورد من الاستلامات</summary><SupplierInvoiceForm organizationId={organizationId} projectId={projectId} order={order} basis={invoiceBasis} serverNonce={newCommandNonce()} /></details></>}
@@ -95,13 +106,15 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
     </section>
 
     <section className="card stack"><div className="section-heading"><div><h2>الاستلام</h2><p className="muted">حقيقة كمية ثابتة؛ لا تعني فاتورة معتمدة ولا دفعًا.</p></div><span className="status">{receipts.length} استلام</span></div>
-      {receipts.map((receipt) => <article className="card stack" key={receipt.id}><header className="topline"><h3>{receipt.purchase_order_reference}</h3><span>{formatDate(receipt.received_at)}</span></header><p className="muted">دليل: {receipt.evidence_reference}</p><ul>{(receiptLineMap.get(receipt.id) ?? []).map((line) => <li key={line.id}>{line.item_description}: {line.quantity_received} {line.unit}</li>)}</ul></article>)}
+      {receipts.map((receipt) => <article className="card stack" key={receipt.id}><header className="topline"><h3>{receipt.purchase_order_reference}</h3><span>{formatDate(receipt.received_at)}</span></header><p className="muted">مرجع الدليل: {receipt.evidence_reference}</p><ul>{(receiptLineMap.get(receipt.id) ?? []).map((line) => <li key={line.id}>{line.item_description}: {line.quantity_received} {line.unit}</li>)}</ul>{evidenceList(receiptEvidence.get(receipt.id) ?? [])}<details><summary>إرفاق دليل الاستلام أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="RECEIPT" subjectId={receipt.id} evidence={evidence} serverNonce={newCommandNonce()} /></details></article>)}
     </section>
 
     <section className="card stack"><div className="section-heading"><div><h2>فواتير الموردين والمستحقات</h2><p className="muted">الاعتماد يرحّل المستحق في Finance Core. الدفع والمطابقة البنكية حالتان منفصلتان.</p></div><span className="status">{invoices.length} فاتورة</span></div>
       {invoices.length === 0 ? <p className="muted">لا توجد فواتير موردين بعد. سجّل الفاتورة من أمر مستلم أعلاه.</p> : invoices.map((invoice) => <article className="card stack" key={invoice.id}><header className="topline"><div><h3>{invoice.invoice_reference} — {invoice.supplier_name}</h3><p className="muted">أمر {invoice.purchase_order_reference} · {formatDate(invoice.invoice_date)} · دليل {invoice.evidence_reference}</p></div><span className="status">{formatDocumentState(invoice.status)}</span></header>
         <div className="metrics-grid"><article><span className="muted">قيمة الفاتورة</span><strong>{formatMinorUnits(invoice.invoice_total_minor_units, invoice.currency)}</strong></article><article><span className="muted">مدفوع</span><strong>{formatMinorUnits(invoice.paid_minor_units, invoice.currency)}</strong><small>{formatPaymentState(invoice.payment_state)}</small></article><article><span className="muted">متبقي مستحق</span><strong>{formatMinorUnits(invoice.outstanding_minor_units, invoice.currency)}</strong></article><article><span className="muted">المطابقة البنكية</span><strong>{formatReconciliationState(invoice.reconciliation_state)}</strong><small>{formatMinorUnits(invoice.reconciled_minor_units, invoice.currency)}</small></article></div>
         <div className="table-wrap"><table><thead><tr><th>الصنف</th><th>كمية الفاتورة</th><th>سعر الوحدة</th><th>المبلغ</th></tr></thead><tbody>{(invoiceLineMap.get(invoice.id) ?? []).map((line) => <tr key={line.id}><td>{line.item_description}</td><td>{line.quantity_invoiced} {line.unit}</td><td>{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td><td>{formatMinorUnits(line.line_amount_minor_units, line.currency)}</td></tr>)}</tbody></table></div>
+        <div><strong>ملف فاتورة المورد</strong>{evidenceList(invoiceEvidence.get(invoice.id) ?? [])}</div>
+        <details><summary>إرفاق فاتورة المورد أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="SUPPLIER_INVOICE" subjectId={invoice.id} evidence={evidence} serverNonce={newCommandNonce()} /></details>
         {invoice.status === 'SUBMITTED' && canApprove && <ApproveInvoiceAction organizationId={organizationId} projectId={projectId} invoiceId={invoice.id} serverNonce={newCommandNonce()} />}
         {invoice.payable_is_reversed && <p className="error">تم عكس قيد المستحق في Finance Core. الفاتورة الأصلية باقية كسجل مصدر ثابت ولا تقبل دفعات جديدة.</p>}
         {invoice.status === 'APPROVED' && !invoice.payable_is_reversed && invoice.payment_state !== 'FULLY_PAID' && <details><summary>إعداد مقترح دفع من حساب المشروع</summary><SupplierPaymentForm organizationId={organizationId} projectId={projectId} invoice={invoice} cashAccounts={cashAccounts} serverNonce={newCommandNonce()} /></details>}

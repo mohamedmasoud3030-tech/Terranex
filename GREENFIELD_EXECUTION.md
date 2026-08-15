@@ -502,13 +502,15 @@ portion waits. The remaining independent gates, in order:
    maker/checker, NULL-safe idempotency, row-locked invoice/payable ceilings,
    cash-account locking with available-cash revalidation, immutable
    posting/reversal rules, and the Arabic/RTL drill-down are included.
-   No Procurement ledger, payable, cash engine, payment table, reconciliation
-   engine, tax policy, inventory valuation, or Portfolio posting was created.
-   Remaining R4 work is contracts/attachments and only the shared inventory-
-   value concepts required by an authorized working flow; R4 therefore remains
-   open rather than being marked complete. The prior GF-025/GF-026 full database
-   gate remains historical evidence only; ADR 0030's new database gate is left
-   to authoritative CI where local PostgreSQL/Docker is unavailable.
+   **R4 Contracts & Evidence Closure** (ADR 0031) now adds private, versioned
+   PO/contract/receipt/Supplier-Invoice files, typed exact-version links,
+   checksum and append-only audit provenance, short-lived signed reads, and
+   approval gates that require the real PO/contract → receipt → invoice evidence
+   chain. No Procurement ledger, payable, cash engine, payment table,
+   reconciliation engine, contract-management suite, tax policy, inventory
+   valuation, or Portfolio posting was created. Remaining R4 work is only the
+   bounded shared inventory-value concepts required by an authorized working
+   flow, followed by the R4 closeout audit; R4 therefore remains open.
 2. **R2 / R3 remaining** — Portfolio roll-up read-models and
    budget/forecast/commitment plus portfolio roll-up on the shared Finance
    Core (Portfolio identity + Project membership are already delivered by the

@@ -80,6 +80,9 @@ where purchase_order_id = :'s26_po' and item_description='مركز بروتين'
 
 select s26a_run('00000000-0000-4000-8000-000000000003',
   format($$select public.submit_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s26a-po-submit')$$, :'s26_po')) as s26_po_submitted;
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s26_project', 'PURCHASE_ORDER', :'s26_po', null, null,
+  's26-po-file-001') as s26_po_evidence;
 select s26a_run('00000000-0000-4000-8000-000000000001',
   format($$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s26a-po-approve')$$, :'s26_po')) as s26_po_approved;
 
@@ -207,6 +210,9 @@ select id as s26_po_b_line from public.purchase_order_lines
  where purchase_order_id = :'s26_po_b' \gset
 select s26a_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.submit_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s26a-po-b-submit')$$, :'s26_po_b')) as s26_po_b_submitted;
+select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000001', :'s26_project', 'PURCHASE_ORDER', :'s26_po_b', null, null,
+  's26-po-b-file') as s26_po_b_evidence;
 select s26a_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_purchase_order('10000000-0000-4000-8000-000000000001',%L,'s26a-po-b-approve')$$, :'s26_po_b')) as s26_po_b_approved;
 select s26a_run('00000000-0000-4000-8000-000000000003', format(

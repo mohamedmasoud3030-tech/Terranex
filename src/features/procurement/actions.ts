@@ -1,5 +1,6 @@
 'use server';
 
+import { createHash } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import type { ActionState } from '@/features/auth/actions';
 import { createClient } from '@/shared/supabase/server';
@@ -14,6 +15,7 @@ import {
   purchaseOrderSchema,
   purchaseReceiptSchema,
   purchaseRequestSchema,
+  procurementEvidenceSchema,
   submitPurchaseOrderSchema,
   submitPurchaseRequestSchema,
   supplierInvoiceSchema,
@@ -70,6 +72,12 @@ function domainError(prev: ActionState, message: string | undefined, fallback: s
   if (text.includes('already exists') || text.includes('duplicate key')) return fail(prev, 'يوجد سجل بنفس المرجع في هذا النطاق.');
   if (text.includes('at least one') && text.includes('line')) return fail(prev, 'أضف سطرًا واحدًا على الأقل.');
   if (text.includes('project not found')) return fail(prev, 'المشروع غير موجود في هذه المنظمة.');
+  if (text.includes('purchase order approval requires')) return fail(prev, 'لا يمكن اعتماد أمر الشراء قبل إرفاق ملف أمر الشراء أو العقد الثابت.');
+  if (text.includes('supplier invoice approval requires an immutable invoice')) return fail(prev, 'لا يمكن اعتماد الفاتورة قبل إرفاق ملف فاتورة المورد الثابت.');
+  if (text.includes('every matched receipt')) return fail(prev, 'لا يمكن اعتماد الفاتورة قبل إرفاق دليل فعلي لكل استلام مطابق.');
+  if (text.includes('evidence document not found') || text.includes('document identity')) return fail(prev, 'نسخة المستند الجديدة يجب أن تتبع نفس المستند والعنوان والتصنيف داخل المشروع.');
+  if (text.includes('evidence storage object not found')) return fail(prev, 'لم يثبت اكتمال رفع الملف الخاص. أعد رفع الملف ثم حاول مجددًا.');
+  if (text.includes('does not match storage object') || text.includes('storage object has invalid')) return fail(prev, 'بيانات الملف لا تطابق النسخة المحفوظة في التخزين الخاص.');
   if (text.includes('purchase order must be approved before receiving')) return fail(prev, 'لا يمكن الاستلام إلا على أمر شراء معتمد.');
   if (text.includes('received quantity exceeds ordered quantity')) return fail(prev, 'الكمية المستلمة تتجاوز الكمية المطلوبة لهذا السطر.');
   if (text.includes('order line not found for this order')) return fail(prev, 'سطر أمر الشراء المحدد لا ينتمي إلى هذا الأمر.');
@@ -249,4 +257,57 @@ export async function approveSupplierPayment(prev: ActionState, form: FormData):
     p_payment_proposal_id: value.paymentProposalId,
     p_idempotency_key: value.idempotencyKey,
   }, 'تعذر اعتماد مقترح الدفع. يلزم مالك مختلف ورصيد كافٍ.', value.projectId, prev);
+}
+
+export async function uploadProcurementEvidence(prev: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(prev, procurementEvidenceSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  const file = form.get('file');
+  if (!(file instanceof File) || file.size === 0) return fail(prev, 'اختر ملف دليل فعلي.');
+  if (file.size > 10 * 1024 * 1024) return fail(prev, 'حجم الملف يجب ألا يتجاوز 10 ميجابايت.');
+  if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+    return fail(prev, 'الملفات المدعومة: PDF أو JPEG أو PNG فقط.');
+  }
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const checksum = createHash('sha256').update(bytes).digest('hex');
+  // Stable for response-loss retries of the same payload, but changes when a
+  // caller incorrectly reuses the command key with a different file.
+  const objectDigest = createHash('sha256')
+    .update(`${value.organizationId}|${value.projectId}|${value.idempotencyKey}|${checksum}`)
+    .digest('hex');
+  const objectId = `${objectDigest.slice(0, 8)}-${objectDigest.slice(8, 12)}-4${objectDigest.slice(13, 16)}-a${objectDigest.slice(17, 20)}-${objectDigest.slice(20, 32)}`;
+  const objectName = `${value.organizationId}/${value.projectId}/${objectId}`;
+  const supabase = await createClient();
+  const uploaded = await supabase.storage.from('procurement-evidence').upload(objectName, bytes, {
+    contentType: file.type,
+    upsert: false,
+  });
+  const alreadyUploaded = uploaded.error && /exist|duplicate/i.test(uploaded.error.message);
+  if (uploaded.error && !alreadyUploaded) return domainError(prev, uploaded.error.message, 'تعذر رفع ملف الدليل الخاص.');
+
+  const { error } = await supabase.rpc('register_procurement_evidence', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_document_id: value.documentId,
+    p_classification: value.classification,
+    p_title: value.title,
+    p_storage_object_name: objectName,
+    p_original_filename: file.name,
+    p_mime_type: file.type,
+    p_size_bytes: file.size,
+    p_sha256: checksum,
+    p_purchase_order_id: value.purchaseOrderId,
+    p_purchase_receipt_id: value.purchaseReceiptId,
+    p_supplier_invoice_id: value.supplierInvoiceId,
+    p_idempotency_key: value.idempotencyKey,
+  });
+  if (error) {
+    // Registered objects are protected by Storage RLS; only an upload which
+    // failed before metadata registration can be removed by this caller.
+    if (!alreadyUploaded) await supabase.storage.from('procurement-evidence').remove([objectName]);
+    return domainError(prev, error.message, 'تعذر تسجيل وربط ملف الدليل.');
+  }
+  refresh(value.projectId);
+  return commandSuccessState(prev);
 }

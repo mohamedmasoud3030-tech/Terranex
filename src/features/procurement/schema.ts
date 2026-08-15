@@ -195,6 +195,30 @@ export const approveSupplierPaymentSchema = z.object({
   idempotencyKey,
 });
 
+export const procurementEvidenceSchema = z.object({
+  organizationId: uuid,
+  projectId: uuid,
+  documentId: optionalUuid,
+  classification: z.enum(['CONTRACT', 'PURCHASE_ORDER', 'RECEIPT', 'SUPPLIER_INVOICE']),
+  title: z.string().trim().min(3, 'عنوان المستند مطلوب').max(200),
+  purchaseOrderId: optionalUuid,
+  purchaseReceiptId: optionalUuid,
+  supplierInvoiceId: optionalUuid,
+  idempotencyKey,
+}).superRefine((data, ctx) => {
+  const subjects = [data.purchaseOrderId, data.purchaseReceiptId, data.supplierInvoiceId].filter(Boolean);
+  if (subjects.length !== 1) ctx.addIssue({ code: 'custom', message: 'يجب ربط الملف بحقيقة مشتريات واحدة' });
+  if (data.purchaseOrderId && !['CONTRACT', 'PURCHASE_ORDER'].includes(data.classification)) {
+    ctx.addIssue({ code: 'custom', path: ['classification'], message: 'أمر الشراء يقبل ملف أمر أو عقد فقط' });
+  }
+  if (data.purchaseReceiptId && data.classification !== 'RECEIPT') {
+    ctx.addIssue({ code: 'custom', path: ['classification'], message: 'الاستلام يتطلب ملف استلام' });
+  }
+  if (data.supplierInvoiceId && data.classification !== 'SUPPLIER_INVOICE') {
+    ctx.addIssue({ code: 'custom', path: ['classification'], message: 'الفاتورة تتطلب ملف فاتورة مورد' });
+  }
+});
+
 export type PurchaseReceiptInput = z.infer<typeof purchaseReceiptSchema>;
 export type SupplierInput = z.infer<typeof supplierSchema>;
 export type PurchaseRequestInput = z.infer<typeof purchaseRequestSchema>;

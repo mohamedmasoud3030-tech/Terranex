@@ -31,6 +31,17 @@ for suffix in A B; do
 done
 INV_A="$(psql_value "select id from public.supplier_invoices where organization_id='$ORG' and invoice_reference='INV-R4-RACE-A'")"
 INV_B="$(psql_value "select id from public.supplier_invoices where organization_id='$ORG' and invoice_reference='INV-R4-RACE-B'")"
+for suffix in A B; do
+  invoice_var="INV_${suffix}"; invoice_id="${!invoice_var}"
+  [[ "$suffix" == 'A' ]] && object_uuid='84000000-0000-4000-8000-000000000001' || object_uuid='84000000-0000-4000-8000-000000000002'
+  psql_sql "set request.jwt.claim.sub='$MEMBER'; set role authenticated;
+    insert into storage.objects(id,bucket_id,name,metadata) values (
+      gen_random_uuid(),'procurement-evidence','$ORG/$PROJECT/$object_uuid',
+      jsonb_build_object('size',100,'mimetype','application/pdf'));
+    select public.register_procurement_evidence('$ORG','$PROJECT',null,'SUPPLIER_INVOICE','s84-invoice-file-$suffix',
+      '$ORG/$PROJECT/$object_uuid','s84-invoice-$suffix.pdf','application/pdf',100,repeat('b',64),
+      null,null,'$invoice_id','s84-invoice-file-$suffix');"
+done
 
 tmpdir="$(mktemp -d)"; trap 'rm -rf "$tmpdir"' EXIT
 APPROVE_A="set request.jwt.claim.sub='$OWNER'; set role authenticated; select public.approve_supplier_invoice('$ORG','$INV_A','s84-invoice-approve-A');"

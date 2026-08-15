@@ -96,6 +96,16 @@ export type SupplierInvoiceLineRead = {
   unit_price_minor_units: string; line_amount_minor_units: string; currency: string;
 };
 
+export type ProcurementEvidenceRead = {
+  evidence_link_id: string; organization_id: string; project_id: string; document_id: string;
+  evidence_version_id: string; classification: 'CONTRACT' | 'PURCHASE_ORDER' | 'RECEIPT' | 'SUPPLIER_INVOICE';
+  title: string; version_number: number; original_filename: string; mime_type: string;
+  size_bytes: string; sha256: string; storage_bucket: string; storage_object_name: string;
+  uploaded_by: string; uploaded_at: string; purchase_order_id: string | null;
+  purchase_receipt_id: string | null; supplier_invoice_id: string | null;
+  linked_by: string; linked_at: string; download_url: string | null;
+};
+
 export type ProcurementCommitmentRead = {
   purchase_order_id: string; organization_id: string; project_id: string; supplier_id: string;
   party_id: string; internal_reference: string; committed_at: string; currency: string;
@@ -179,3 +189,17 @@ export const getProcurementCommitments = (projectId: string) => many<Procurement
   'purchase_order_id,organization_id,project_id,supplier_id,party_id,internal_reference,committed_at,currency,committed_minor_units,invoiced_minor_units,remaining_commitment_minor_units,accounting_effect',
   { projectId }, 'committed_at',
 );
+
+export async function getProcurementEvidence(projectId: string): Promise<ProcurementEvidenceRead[]> {
+  const rows = await many<Omit<ProcurementEvidenceRead, 'download_url'>>(
+    'procurement_evidence_read',
+    'evidence_link_id,organization_id,project_id,document_id,evidence_version_id,classification,title,version_number,original_filename,mime_type,size_bytes,sha256,storage_bucket,storage_object_name,uploaded_by,uploaded_at,purchase_order_id,purchase_receipt_id,supplier_invoice_id,linked_by,linked_at',
+    { projectId }, 'uploaded_at',
+  );
+  if (rows.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage.from('procurement-evidence')
+    .createSignedUrls(rows.map((row) => row.storage_object_name), 300);
+  if (error) throwOperatorQuery(error);
+  return rows.map((row, index) => ({ ...row, download_url: data?.[index]?.signedUrl ?? null }));
+}
