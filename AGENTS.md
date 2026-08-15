@@ -25,7 +25,8 @@ Read these files completely before changing the product:
 12. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
 13. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
 14. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`
-15. `docs/DB_DEVELOPMENT.md`
+15. `docs/ROADMAP_R0_R17.md` (R0–R17 sequence; hard stop at R13; R14–R17 policy pack)
+16. `docs/DB_DEVELOPMENT.md`
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
@@ -63,17 +64,19 @@ Mandatory rules:
 
 ## Current delivery gate
 
-Real Estate, Agriculture GF-013 through GF-019, and Livestock GF-020 through GF-024 are technically implemented for their currently authorized scopes. The historical sector-expansion sequence is closed at GF-024; older text describing Livestock or GF-021/GF-022 as the active slices is stale and must not drive new work.
+Real Estate (S0–S7, GF-010/GF-011), Agriculture (GF-013 through GF-019), and Livestock (GF-020 through GF-024) are technically implemented for their currently authorized scopes. The historical sector-expansion sequence is closed at GF-024; older text describing Livestock or GF-021/GF-022 as the active slices is stale and must not drive new work. R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance — is **merged** and no longer the active task.
 
-The active governance task is **R0 — Canonical Portfolio Realignment & Anti-Hallucination Governance**. R0 is documentation/governance only:
+## Current delivery gate: R0–R17 roadmap, hard stop at R13
 
-- no product feature implementation;
-- no database migrations/schema changes;
-- no runtime behavior changes;
-- no UI redesign/components/routes;
-- no placeholder services, tables, APIs, or generalized rules engines.
+The canonical roadmap is now the **R0–R17** sequence defined in `docs/ROADMAP_R0_R17.md` and referenced in `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`. The controlling strategy is **Build Everything Independent First**:
 
-After R0 is reviewed/merged, portfolio implementation proceeds only through separate bounded R1–R5 branches defined by the canonical roadmap. R1–R5 may not guess investor/legal/economic rules. After R5 there is a hard stop on dependent portfolio/investor-economics expansion until the relevant `docs/OPEN_BUSINESS_DECISIONS.md` items are resolved.
+- **R0 — Canonical Realignment:** merged. `Portfolio ≠ Project ≠ Asset ≠ Legal Vehicle ≠ Operating Cycle`; Terranex agents never invent Investor Economics.
+- **R1 – R12 (independent build):** implement every feature whose correctness does **not** depend on unresolved legal/economic policy. Sector work (Real Estate, Agriculture, Livestock), the shared Finance Core, Portfolio/Project/Asset management, procurement, reporting, management UX, and production hardening proceed without waiting for the target company's investor answers.
+- **R13 — Full Company Simulation:** prove every pound is traceable across a large synthetic scenario (RE/Ag/Livestock portfolios, purchases, revenue, cash, valuations, sales, closeouts). No invented investor entitlements.
+- **Hard stop at R13:** after R13, do not start portfolio/investor-economics expansion that depends on an OPEN item in `docs/OPEN_BUSINESS_DECISIONS.md` until the owner resolves it.
+- **R14 – R17 (small policy pack):** only after the owner answers the 13 business-policy questions (the policy pack) do we reflect the real agreement (R14), investor economics (R15), distribution & investor statements (R16), and final company UAT (R17).
+
+**Deferral rule:** a feature whose correctness depends on an unresolved rule stops **only the rule-dependent portion**, not the feature or the feature's independent 90%. Build the independent part now; keep the entitlement/allocatable-number surface inert until the policy is fixed. Never invent a default, a fake percentage, an `OTHER` enum, a generic rules engine, or a guessed entitlement rule to avoid the stop. Never display an investor profit/entitlement number computed from an unapproved basis.
 
 Terranex follows a **product-first** strategy. Customer interviews, a design partner, or customer documents are not prerequisites for implementation of established common product behavior. Build the common Investment Operations Core from the approved Greenfield model, established industry patterns, authoritative standards, and explicit test scenarios; then configure or extend it for each company without forking the core. Company-specific investor/legal/economic behavior, however, must not be fabricated under the product-first rule.
 

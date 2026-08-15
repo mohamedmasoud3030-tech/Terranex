@@ -276,43 +276,52 @@ GF-013 through GF-019 are technically implemented. These statements preserve the
 
 **R0 does not authorize** schema, migrations, routes, services, runtime behavior, UI components, or placeholders.
 
-## 15. R1–R5 execution gates after R0
+## 15. R1–R13 independent build, R13 hard stop, R14–R17 policy pack
 
-These are bounded future implementation gates. Each requires a fresh branch from current `main`, its own review, and the full changed-layer verification. Do not combine them into R0.
+The canonical roadmap is the **R0–R17 sequence** in `docs/ROADMAP_R0_R17.md`. The controlling strategy is **Build Everything Independent First**: complete every feature whose correctness does not depend on unresolved legal/economic policy; defer only the smallest rule-dependent portion. The hard stop is moved from R5 to R13 so the company owner is asked only after the product is already ~85–95% complete. Each gate is a separate bounded branch from current `main` with the full changed-layer verification.
 
-### R1 — Portfolio Foundation
+### R1 — Production Foundation
+Organization, users/memberships, party registry, roles/capabilities, RLS, audit trail, maker/checker, documents/evidence, idempotency, exact money, period model, notifications foundation, Arabic/RTL foundation. (Largely present in S0–S2/S6/S7.)
 
-Implement only the minimum organization-scoped Portfolio identity and Project parent/association required by the canonical hierarchy. Preserve every existing Project ID, sector object, journal source, agreement, and historical financial fact. Migration/backfill must be deterministic, auditable, and economically neutral.
+### R2 — Portfolio + Project + Asset Core
+Portfolio → Projects → Assets → Documents → Decisions → Risks → Budgets → Operational/financial position; many independent Projects inside one Portfolio. Portfolio remains a management/reporting parent over project-authoritative truth — not a fund, legal entity, SPV, pooled vehicle, or second ledger.
 
-**Not in R1:** investor pooling, portfolio ownership, new capital rules, cross-project transfers, duplicate finance core.
+### R3 — Complete Financial Control
+Budget, forecast, commitment, obligation, accrual, expense/actual, revenue, receivable, payable, payment, receipt, cash, bank accounts, bank reconciliation, project subledger, reversal/repost, period close, portfolio roll-up. (Shared Finance Core S2–S6 already implements the authoritative engine.) The only deferred part is **who among investors is entitled to how much of the result** — not the accounts themselves.
 
-### R2 — Portfolio Workspace & Project Drill-Down
+### R4 — Procurement & Shared Operations
+Suppliers, purchase requests, purchase orders, receiving, invoices, payments, contracts, attachments, approvals, shared inventory concepts where needed, counterparties — so Agriculture/Livestock do not reinvent procurement and suppliers. This slice is deferred farm-ERP scope in GF-019 and is the first genuinely missing independent gate.
 
-Add Arabic/RTL Portfolio list/detail and derived project roll-ups for lifecycle, sector, cash, realized result, committed cost, valuation, close state, and actionable exceptions. Every total must drill to Project composition and then to source truth. Handle multi-currency honestly; do not silently sum unlike currencies.
+### R5 — Real Estate (complete)
+Opportunity/due diligence, acquisition, asset registration, purchase costs, holding, basic rental income, holding expenses, valuation history, development/improvement projects, disposal, realized result, asset profitability, project profitability — without turning into a large property-management SaaS. (Technically implemented S0–S7/GF-010/GF-011.)
 
-**Not in R2:** writable portfolio balances or investor economics.
+### R6 — Livestock (complete)
+Site, herd, cohort/batch, animal categories, purchase/birth, placement/movement, feed, veterinary/health, vaccination, weight, mortality, production, sale, inventory consumption, direct/allocated operating costs, cycle economics, herd/project profitability — bound to the Finance Core, not a parallel ledger. (Technically implemented GF-020–GF-024.)
 
-### R3 — Portfolio Capital Deployment Planning
+### R7 — Agriculture (complete)
+Farm, field, crop, crop cycle/season, planting, inputs, irrigation activity, fertilizer/pesticide usage, labor/activity costs, harvest, yield, produce inventory, waste/loss, sale, cycle profitability, field profitability — the operating cycle is real. (Technically implemented GF-013–GF-019.)
 
-Add an approved **management deployment fact** that records intended/approved capital availability by Project, purpose, currency, date, evidence, and approval. It remains non-posting until a separately approved funding/accounting mechanism exists. Show planned/approved/deployed/used semantics only when their source facts exist.
+### R8 — Cross-Sector Asset & Performance Layer
+Unify what can be unified without distorting each sector: asset register, acquisition cost, current approved valuation, operating income/cost, maintenance/improvement, disposal, realized vs unrealized result, project/portfolio/sector performance — so the owner sees how much Real Estate, Livestock, and Agriculture each made, where capital is, where cash is, and which projects are losing.
 
-**Not in R3:** treating deployment as investor contribution, ownership, distribution, loan, inter-project receivable/payable, or cash transfer by implication.
+### R9 — Management UX (complete)
+Home/executive dashboard, Portfolios, Projects, Assets, Real Estate, Agriculture, Livestock, Money, Procurement, Documents, Approvals, Reports, Settings; mobile/tablet/desktop + Arabic/RTL.
 
-### R4 — Basic Real Estate Rental Income
+### R10 — Investor Transparency (read-models only, no invented rights)
+Investor/party identity, secure login, documents available to that party, project updates, photos/evidence, portfolio/project activity, published reports, notices, statements framework, as-of date, valuation basis, data freshness. **Do not display** a computed investor profit/entitlement number until the real contract and accrual basis are fixed. Build the UI and read-model architecture now; keep the entitlement-dependent field inert until R15.
 
-For held Real Estate assets, reuse the shared Finance Core to support the narrow investment-revenue path: rental evidence/period → revenue/receivable recognition under approved policy → partial/multiple collection → project reporting/reconciliation/correction. Maintain property/asset traceability.
+### R11 — Reporting & Control
+Portfolio position, project P&L/economic result, cash position, budget vs actual, commitments, receivables, payables, asset register, valuation movement, procurement, livestock performance, agriculture yield/economics, real-estate returns, audit/approval reports, exceptions. Investor-specific financial statements wait only for their policy.
 
-**Not in R4:** tenant CRM, lease administration suite, renewals, service charges, facilities operations, maintenance/work orders, or a second receivable/payment engine.
+### R12 — Production Hardening
+Backups/restore proof, migration replay, RLS/security tests, concurrency tests, idempotency tests, financial invariant tests, audit tests, performance indexes, error handling, observability, data export, opening-data import, document storage, production configuration, seed/demo templates, disaster-recovery procedure.
 
-### R5 — Portfolio Reporting, Controls & Hardening
+### R13 — Full Company Simulation
+A large synthetic scenario: a Real Estate portfolio with ≥3 projects, a Livestock portfolio with several herd/cohort operations, an Agriculture portfolio with farm + fields + multiple crop cycles; pass purchases, expenses, revenue, cash, assets, valuations, sales, receivables, payables, losses, project close, and portfolio reporting; prove every pound is traceable. Use company/internal capital or neutral funding facts — never invented investor entitlements.
 
-Complete owner-facing Portfolio reporting and operational hardening: project-level composition, as-of/currency/completeness semantics, permissions/RLS, audit, migration/recovery proof, reconciliation paths, performance, Arabic/RTL/mobile/accessibility, and regression protection across the existing sectors. Portfolio remains a projection/management layer over project-authoritative truth.
+## 16. Hard stop after R13 — owner decision required (the policy pack)
 
-**R5 exit:** Portfolio can organize and review Projects, approve/observe non-posting management deployment planning, drill into project truth, and include narrow Real Estate rental income without introducing unapproved investor/legal/economic behavior.
-
-## 16. Hard stop after R5 — owner decision required
-
-After R5, **stop before implementing any feature whose correctness depends on unresolved portfolio/investor legal or economic rules**. Do not implement or extend:
+**R13 is the hard stop.** After R13, stop before implementing any feature whose correctness depends on unresolved portfolio/investor legal or economic rules. Do not implement or extend:
 
 - portfolio-level investors or pooled capital;
 - portfolio/project ownership semantics;
@@ -321,6 +330,19 @@ After R5, **stop before implementing any feature whose correctness depends on un
 - cross-project netting, recycling, cash/capital transfers, or shared reserves;
 - management/operator economics, tax/withholding automation, or investor lifecycle behavior not already governed.
 
-The company owner must resolve the relevant IDs in `docs/OPEN_BUSINESS_DECISIONS.md`. Accounting/legal review is additionally required where the chosen business rule has accounting, tax, regulatory, or legal consequences. Only then may the next bounded roadmap be designed.
+At R13 the target company owner is asked only the **small R14 policy pack** — the 13 questions only they/their contracts can answer (investor inside Portfolio or Project; exact legal right; whether management moves capital between projects; whether the company co-invests; whether one Project's loss offsets another's profit; how loss is distributed; how/when the company takes its share; the definition of distributable profit; whether a reserve exists; whether profits are reinvested; exit/transfer terms; legal owner of assets; the actual contract used). Some answers require reading the real contract and legal/accounting documents, not just oral replies.
+
+The company owner must resolve the relevant IDs in `docs/OPEN_BUSINESS_DECISIONS.md`. Accounting/legal review is additionally required where the chosen business rule has accounting, tax, regulatory, or legal consequences. Only then may the R15–R17 work proceed.
+
+## 17. R15–R17 after the policy pack is fixed
+
+### R15 — Investor Economics
+Capital commitments, contributions, economic participation, profit/loss allocation, operator economics, reserves, reinvestment — reflecting the real agreement, never invented defaults.
+
+### R16 — Distribution & Investor Statements
+Distribution payable, approval, payment, investor ledger, statements.
+
+### R17 — Final Company UAT
+Enter real data and reconcile it against the company's own accounts.
 
 This hard stop does not block independent sector work, security/data-integrity fixes, or other product work that does not depend on those open decisions.

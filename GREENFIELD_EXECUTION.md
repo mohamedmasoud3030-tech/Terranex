@@ -1,6 +1,6 @@
 # Greenfield Execution Status
 
-**Updated:** 2026-08-13  
+**Updated:** 2026-08-15  
 **Canonical branch:** `main`
 **Strategy:** Product-first, Egypt-first, thin vertical slices
 
@@ -350,52 +350,51 @@ Canonical decision: `docs/decisions/0013_GF013_AGRICULTURE_FOUNDATION.md`.
 - Agriculture capabilities deferred beyond GF-019: input-stock receiving/balance, purchase orders / procurement / supplier ERP, input/harvest valuation, COGS policy, storage capacity planning, warehouse zones/bins, advanced lot splitting/merging, `AgronomyObservation`, sale returns/credit notes/invoicing, IAS 41 posting logic, agronomy recommendations, weather providers, GIS / map integrations, generic unit conversion, and any second ledger, ownership model, payment engine, investor balance, approval framework, or audit truth;
 - generic repositories, plugin/rules frameworks, CQRS/event sourcing, microservices and speculative shared layers.
 
-## Next active batch
+## Next active batch: R0–R17 alignment (hard stop at R13)
 
-Real Estate and Agriculture are **TECHNICALLY IMPLEMENTED** for their authorized
-scopes. `GF-013` through `GF-019` form the completed Agriculture chain.
-**Livestock is the active sector. GF-020 is merged; GF-021 and GF-022 are the active bounded slices.** This status is not permission to
-place Livestock schema or runtime inside GF-019, and Real Estate remains closed
-to unrelated changes.
+The historical sector-expansion sequence (GF-013 → GF-019 Agriculture, GF-020 →
+GF-024 Livestock) is **closed**. Real Estate (S0–S7, GF-010/GF-011), Agriculture
+(GF-013–GF-019), and Livestock (GF-020–GF-024, including GF-023 Operations
+Completion and GF-024 Commercial, Profitability & Closeout) are **technically
+implemented** for their authorized scopes. R0 — Canonical Portfolio Realignment
+& Anti-Hallucination Governance — is **merged**.
 
-Livestock construction order, and its truthful state:
+The canonical roadmap is now **R0–R17** with the hard stop moved from R5 to
+**R13** (`docs/ROADMAP_R0_R17.md`). Strategy: **Build Everything Independent
+First**. The independent build R1–R13 continues without waiting for the target
+company's investor/legal/economic answers; only the smallest rule-dependent
+portion waits. The remaining independent gates, in order:
 
-- `GF-020 — Livestock Sector Foundation` (`Site`/`Herd` → `Cohort`, immutable
-  opening placement, one causal lifecycle chain): **merged through PR #131,
-  technically complete**.
-- `GF-021 — Livestock Movement, Quantity Rollforward & Weight Events`: delivered
-  as the independently reviewable first commit of PR #132. Delivers an append-only
-  causal movement chain
-  (`UNIQUE (previous_movement_id)`, one root per Cohort, same-Cohort composite
-  predecessor FK, database-level no-op rejection, source-equals-current-placement
-  validator), a derived current-placement read model that raises on ambiguity
-  instead of using `LIMIT 1`, the exact integer quantity-event architecture with
-  **zero** event classes registered, and immutable WeightEvents across
-  `INDIVIDUAL_MEASURED | COHORT_TOTAL | SAMPLED_AVERAGE | ESTIMATED` with
-  method-specific required/forbidden metadata enforced by CHECK constraints.
-  Its quantity registry is intentionally empty; GF-022 extends it additively.
-- `GF-022 — Livestock Biological Quantity Events, Mortality, Births, Split &
-  Merge`: delivered as the independently reviewable second commit of PR #132,
-  with forward-only review hardening. Registers
-  `BIRTH | MORTALITY | SPLIT_OUT | SPLIT_IN | MERGE_OUT | MERGE_IN`; binds both
-  sides of a split/merge to one `livestock_quantity_operations` identity with a
-  deferred conservation trigger proving `sum(out) = sum(in)`; makes a negative
-  derived quantity unreachable through a per-Cohort advisory lock plus a
-  deferred non-negative trigger; gives operation-derived Cohorts a zero opening
-  headcount under the new `SPLIT_FROM_COHORT` / `MERGED_FROM_COHORTS` origins so
-  quantity is never double-counted; and does NOT mutate lifecycle state when a
-  Cohort reaches zero. Rollforward:
-  `current = opening + births + split_in + merge_in − mortality − split_out − merge_out`
-  as of `current_timestamp`; future events are scheduled facts and same-time
-  events are one atomic bucket. It also stores qualitative weight confidence and
-  constrained mortality disposal state. Normal Cohorts do not expose opening
-  quantity before their date-only `origin_date` boundary; operation-derived
-  Cohorts use the exact producing operation `effective_at`, including for future
-  split/merge scheduling. GF-023 has not started.
+1. **R4 — Procurement & Shared Operations** (suppliers, purchase
+   requests/orders, receiving, invoices, payments, contracts, attachments,
+   approvals, shared inventory concepts, counterparties). This is the first
+   genuinely missing independent gate (deferred farm-ERP scope in GF-019).
+   **GF-025 — Procurement Foundation** (organization-scoped suppliers plus
+   project-scoped purchase requests/orders, quantity-only, with idempotency,
+   audit, OWNER+maker/checker approval, forced RLS, and a verification suite)
+   is the first bounded step, started under `docs/decisions/0026_GF025_PROCUREMENT_FOUNDATION.md`.
+   Receiving and pricing/invoice/payment (Finance Core linkage) are the next
+   steps of the slice. The local database gate requires CI because neither
+   `psql` nor Docker is available in the agent sandbox (per `AGENTS.md`).
+2. **R2 / R3 remaining** — first-class Portfolio identity + roll-up read-models,
+   and budget/forecast/commitment plus portfolio roll-up on the shared Finance
+   Core (the financial engine itself is already authoritative).
+3. **R10 — Investor Transparency (read-models only)** — identity, secure login,
+   party documents, updates/evidence, activity, published reports, notices,
+   statements framework, as-of date, valuation basis, data freshness — with all
+   entitlement-dependent fields inert until R15. Never show a computed investor
+   profit/entitlement number on an unapproved basis.
+4. **R11/R9 — consolidated owner reporting + Portfolio/Procurement workspaces.**
+5. **R12 — remaining production hardening** (observability, data export,
+   document storage, DR procedure, performance indexes, remaining security).
+6. **R13 — Full Company Simulation** (RE + Ag + Livestock portfolios, full
+   money/asset/valuation/sale/loss/close cycle, every pound traceable) — the
+   hard-stop proof.
 
-Real-customer validation remains a separate parallel evidence track. No
-synthetic fixture may impersonate customer, UAT, production or commercial
-verification.
+After R13, ask the owner only the small **R14 policy pack**, then complete
+R15–R17 (agreement reflection, investor economics, distribution/statements,
+final company UAT). No synthetic fixture may impersonate customer, UAT,
+production or commercial verification.
 
 ## Decision rules
 
