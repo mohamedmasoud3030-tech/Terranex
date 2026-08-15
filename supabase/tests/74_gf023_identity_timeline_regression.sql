@@ -13,7 +13,7 @@ select id gf23t_herd from livestock_herds where project_id=:'gf23t_project' and 
 select gf20_run('00000000-0000-4000-8000-000000000001',format($q$
  select public.create_livestock_cohort(
   '10000000-0000-4000-8000-000000000001',%L,%L,%L,'دفعة رجعية GF023',
-  'PURCHASED',current_date-10,1,'UNKNOWN',null,null,null,null,'دليل افتتاحي',null,'gf23-temporal-cohort-reject')
+  'PURCHASED',current_date-10,1,'MIXED',null,null,null,null,'دليل افتتاحي',null,'gf23-temporal-cohort-reject')
 $q$,:'gf23t_project',:'gf23t_herd',:'gf23t_site')) gf23t_reject_cohort \gset
 select gf20_run('00000000-0000-4000-8000-000000000001',format($q$
  select public.transition_livestock_cohort(
@@ -48,7 +48,7 @@ then 1 else 0 end as rejected_backdate_preserves_identity_and_quantity_truth;
 select gf20_run('00000000-0000-4000-8000-000000000001',format($q$
  select public.create_livestock_cohort(
   '10000000-0000-4000-8000-000000000001',%L,%L,%L,'دفعة رجعية صالحة GF023',
-  'BORN',current_date-10,1,'UNKNOWN',null,null,null,null,'دليل افتتاحي',null,'gf23-temporal-cohort-allow')
+  'BORN',current_date-10,1,'MIXED',null,null,null,null,'دليل افتتاحي',null,'gf23-temporal-cohort-allow')
 $q$,:'gf23t_project',:'gf23t_herd',:'gf23t_site')) gf23t_allow_cohort \gset
 select gf20_run('00000000-0000-4000-8000-000000000001',format($q$
  select public.transition_livestock_cohort(
