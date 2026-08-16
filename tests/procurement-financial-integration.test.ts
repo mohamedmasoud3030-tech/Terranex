@@ -4,7 +4,7 @@ import path from 'node:path';
 import { supplierInvoiceSchema, supplierPaymentSchema } from '@/features/procurement/schema';
 
 const migration = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260815034000_r4_procurement_financial_integration.sql'), 'utf8');
-const p2Migration = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260816000100_p2_vendor_finance_hardening.sql'), 'utf8');
+const p2Migration = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260815040100_p2_vendor_finance_hardening.sql'), 'utf8');
 const historicalS2Suite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/04_s2_cost_and_cash.sql'), 'utf8');
 const historicalPhase2CSuite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/28_phase2c_financial_integrity.sql'), 'utf8');
 const r4Suite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/83_r4_procurement_financial_integration.sql'), 'utf8');
