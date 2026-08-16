@@ -33,6 +33,8 @@ Until resolved:
 
 ## 3. Open decisions
 
+**R14 status (2026-08-16):** the owner-facing questionnaire for all twelve items has been issued to the target company المجموعة العربية المتحدة as `docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md`, with the technical mapping and dormant-code audit in `docs/R14_POLICY_IMPACT_MATRIX.md`. Issuing the questionnaire resolves nothing: every item below remains OPEN until the authorized owner's explicit decision is recorded per §5.
+
 | ID | Status | Decision required from owner | Blocks |
 |---|---|---|---|
 | BD-001 | OPEN | Is the Portfolio only a management grouping, or is there a real legal/entity/contract boundary above projects? If there is one, what exactly is it? | Any legal/fund/SPV/entity semantics at portfolio level |
