@@ -2,11 +2,10 @@
 --
 -- The public SECURITY DEFINER wrapper must require an authenticated active
 -- member for application/PostgREST callers. Direct invocation by the function
--- owner is also allowed so migration/replay verification can exercise the
--- read model without fabricating an application JWT. This is not an
--- application bypass: a DB owner already has unrestricted database authority,
--- while PostgREST connects as a different session role and must pass the JWT
--- membership checks below.
+-- owner is also allowed only when there is NO JWT actor, so migration/replay
+-- verification can exercise the read model without fabricating application
+-- identity. As soon as auth.uid() is present, membership is mandatory even if
+-- the SQL session itself is privileged.
 
 create or replace function public.portfolio_financial_rollup_asof(
   p_organization_id uuid,
@@ -47,7 +46,7 @@ set search_path=pg_catalog,public
 as $$
 declare
   v_actor uuid := auth.uid();
-  v_direct_owner_call boolean := session_user = current_user;
+  v_direct_owner_call boolean := auth.uid() is null and session_user = current_user;
 begin
   if p_asof_date is null then
     raise exception 'as-of date required';
