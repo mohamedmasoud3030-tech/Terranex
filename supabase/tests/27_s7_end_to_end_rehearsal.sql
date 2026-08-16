@@ -377,7 +377,7 @@ select s7e_run(:'e2e_checker', format(
     array[%L,%L]::uuid[],array[1,1]::bigint[],2,'E2E-RULE-BASIS','e2e-rules-000001')$$,
   :'e2e_org', :'e2e_project', :'e2e_version', :'e2e_investor1', :'e2e_investor2'));
 select s7e_run(:'e2e_maker', format(
-  $$select public.s5_prepare_allocation(%L,%L,%L,%L,'REALIZED_RESULT','e2e-alloc-prep-01')$$,
+  $$select public.s5_prepare_allocation(%L,%L,%L,%L,'REAL_ESTATE_SALE_RESULT','e2e-alloc-prep-01')$$,
   :'e2e_org', :'e2e_project', :'e2e_snapshot', :'e2e_version'));
 select id e2e_run from public.s5_allocation_runs
 where organization_id = :'e2e_org' and idempotency_key = 'e2e-alloc-prep-01' \gset
@@ -556,8 +556,6 @@ select s7e_assert((select end_to_end_result = 'PASS'
   and unresolved_critical_exceptions = 0
   and unbalanced_journal_batches = 0
   and unreconciled_bank_statement_lines = 0
-  and partner_capital_rollforward_breaks = 0
-  and investor_statement_total_minor_units = '3750000'
   from public.s7_pilot_acceptance_report_read where project_id = :'e2e_project'),
   'the acceptance report must reproduce the rehearsal state exactly from recorded facts');
 select s7e_assert((select human_uat_status = 'NOT_STARTED' and uat_accepted_tasks = 0

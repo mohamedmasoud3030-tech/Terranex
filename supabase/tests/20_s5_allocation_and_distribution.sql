@@ -57,9 +57,9 @@ where project_id=:'s5_project' and status='ACTIVE' limit 1 \gset
 select s.id s5_snapshot,s.period_id s5_source_period
 from public.close_run_snapshots s
 where s.organization_id=:'s5_org' and s.project_id=:'s5_project'
-  and public.s5_realized_result_as_of_snapshot(s.organization_id,s.project_id,s.id)<>0
+  and public.s5_real_estate_sale_result_as_of_snapshot(s.organization_id,s.project_id,s.id)<>0
 order by s.captured_at limit 1 \gset
-select public.s5_realized_result_as_of_snapshot(
+select public.s5_real_estate_sale_result_as_of_snapshot(
   :'s5_org',:'s5_project',:'s5_snapshot') s5_source_amount \gset
 select s5_assert(:'s5_source_amount'::bigint>0,'fixture must contain positive realized result');
 
@@ -105,7 +105,7 @@ select s5_assert((select count(*)=1 from public.s5_allocation_rule_basis
 -- OWNER 3 is the maker; OWNER 1 is the checker. Both are privileged to approve,
 -- so the self-approval rejection below proves DB-enforced SoD rather than RBAC.
 select s5_run(:'s5_maker',format(
-  $$select public.s5_prepare_allocation(%L,%L,%L,%L,'REALIZED_RESULT','s5-allocation-prepare-001')$$,
+  $$select public.s5_prepare_allocation(%L,%L,%L,%L,'REAL_ESTATE_SALE_RESULT','s5-allocation-prepare-001')$$,
   :'s5_org',:'s5_project',:'s5_snapshot',:'s5_version'));
 select id s5_run_id from public.s5_allocation_runs
 where organization_id=:'s5_org' and idempotency_key='s5-allocation-prepare-001' \gset

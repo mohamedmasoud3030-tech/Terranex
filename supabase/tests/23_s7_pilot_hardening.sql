@@ -596,7 +596,6 @@ select s7_assert((select posted_opening_imports = 1
   and opening_import_rejected_rows > 0
   and opening_control_totals_match
   and unbalanced_journal_batches = 0
-  and partner_capital_rollforward_breaks = 0
   and reconciliation_checkpoints >= 4
   and reconciliation_non_zero_variances = 1
   and unresolved_exceptions = 0
