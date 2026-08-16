@@ -16,17 +16,19 @@
 The company-specific legal rights, signed economics, discretionary commercial policy, and management authorities cannot be invented by engineering. There is a genuine owner/company-record dependency. But the repository is **not blocked only on the owner**:
 
 1. many current prompts are document requests or legal/accounting determinations, not owner choices;
-2. BD-002 and BD-005 duplicate the same funding-instrument inventory;
-3. BD-006, BD-007, BD-008, and BD-009 mix contractual economics, accounting recognition, cash availability, fees, and owner risk appetite;
-4. BD-010 is primarily a tax-accountant and product-scope task, not an owner-policy question;
-5. the alternatives omit material mechanics that the existing implementation already depends on, including effective dates, amendment precedence, return of capital versus income, overfunding/refunds, recallability/reinvestment, deficit capital, fee offsets, and final closeout;
-6. several options are misleading. In particular, a shareholder owns shares, not the company's underlying assets; a capital account is an accounting record rather than a legal ownership instrument; an unrealized fair-value gain can be accounting profit under an applicable policy even though it is not cash; and Portfolio-level participation does not by itself require project P&L to be collapsed;
-7. the supposedly dormant S5 chain is executable by authenticated database clients and creates real journals; the permanent demo has already executed that chain;
-8. live intake still requires at least one Project investor, an active Project agreement, and a positive commitment for every investor, even though BD-002/003/005 say those facts are unknown;
-9. S5's allocable-result function predates Agriculture, Livestock, and rental revenue and omits them; its distribution-capacity formula is an unapproved historical formula; and S5 payments have no bank-statement reconciliation path;
-10. live pilot/control views show “partner capital” and “investor statement total” and use partner-capital consistency in technical readiness while the relevant policy is OPEN.
+2. BD-002 (who/source funds) and BD-005 (the legal/accounting funding mechanism) are distinct but overlapping and dependent; they should share one evidence-intake schedule without merging or deleting either decision;
+3. BD-001 (Portfolio legal status), BD-003 (participation scope), and BD-004 (meaning of the interest) are distinct decisions even though one consolidated legal/contract evidence intake can support all three;
+4. BD-006, BD-007, BD-008, and BD-009 require separate decisions but their current prompts mix contractual economics, accounting recognition, cash availability, fees, and owner risk appetite;
+5. BD-010 must be split: current law, rates, applicability, and accounting treatment belong to tax/accounting/legal professionals; what Terranex should record, calculate, withhold, report, or defer remains a Product/Business decision after that professional schedule exists;
+6. the alternatives omit material mechanics that the existing implementation already depends on, including effective dates, amendment precedence, return of capital versus income, overfunding/refunds, recallability/reinvestment, deficit capital, fee offsets, and final closeout;
+7. several options are misleading. In particular, a shareholder owns shares, not the company's underlying assets; a capital account is an accounting record rather than a legal ownership instrument; an unrealized fair-value gain can be accounting profit under an applicable policy even though it is not cash; and Portfolio-level participation does not by itself require Project P&L to be collapsed;
+8. the supposedly dormant S5 chain has RPC execute grants to `authenticated`, with active-membership checks and selected OWNER/maker-checker gates inside the commands, but no separate BD/policy-activation gate. It is therefore database-executable rather than policy-inert; the permanent demo has executed the governed chain;
+9. live intake still requires at least one Project investor, an active Project agreement, and a positive commitment for every investor, even though BD-002/003/005 say those facts are unknown;
+10. S5's allocable-result function predates Agriculture, Livestock, and rental revenue and omits them; its distribution-capacity formula is an unapproved historical bridge; and S5 payments have no bank-statement reconciliation path;
+11. S5 lacks a typed distribution-purpose and ordering model. Return-of-capital, refund/excess-capital, in-kind, and recallable/reinvestment flows are unsupported rather than proven to be silently classified as the existing allocation-based distribution;
+12. live pilot/control views show “partner capital” and “investor statement total” and use partner-capital consistency in technical readiness while the relevant policy is OPEN.
 
-The current pack contains **12 numbered owner items and at least 44 atomic prompts**. This audit reduces the draft owner-only contact to **6 conditional, pre-filled confirmation/approval questions**. None is ready to send until company documents have been inventoried, accountant and lawyer schedules have been produced, and a corrective engineering PR has made policy-dependent commands and readiness/output truly inert.
+The current pack contains **12 numbered owner items and at least 44 atomic prompts**. This audit preserves **all 12 canonical BD decisions as separate records** and replaces the raw pack with **12 conditional, pre-filled, one-decision-per-item confirmation/approval drafts**. None is ready to send until company documents have been inventoried, accountant and lawyer schedules have been produced, and a corrective engineering PR has made policy-dependent commands and readiness/output truly inert.
 
 ## 2. Frozen evidence base
 
@@ -81,7 +83,7 @@ The policy-sensitive RPC surface includes:
 - S5: `s5_configure_allocation_rules` (current nine-argument evidence wrapper), `s5_prepare_allocation`, `s5_approve_allocation`, `s5_prepare_distribution`, `s5_approve_distribution`, `s5_pay_distribution`;
 - S7/intake: opening capital/distribution mapping, reconciliation checkpoints, acceptance report, and guided-intake declarations.
 
-All are present in the cumulative schema. S1 and S5 execute grants are to `authenticated`; individual functions then apply active-membership and, for selected S5/S2 approval/posting steps, OWNER checks. There is no BD-status or policy-activation gate.
+All are present in the cumulative schema. S1 and S5 execute grants are to `authenticated`, but the grant is only the outer database exposure: the functions enforce active-organization membership; S5 configuration, allocation approval, distribution approval, and distribution payment additionally require OWNER, and maker/checker constraints apply to approvals. The policy defect is not an absence of authorization checks. It is the absence of a separate BD-status/policy-activation gate, leaving the chain database-executable before company policy is approved.
 
 ### 2.4 Targeted reproduction and test evidence
 
@@ -106,6 +108,8 @@ This is diagnostic evidence, not exoneration:
 
 No diagnostic fixture was added. No database replay was necessary to prove the static reachability and formula contradictions.
 
+**Current PR evidence:** Greenfield CI completed on `078aece77693bc0ec3b8cc3eb79d11d26cb5a87c` after the initial delivery. The `app`, `database`, and SonarCloud checks are all **SUCCESS/GREEN** on that audited documentation head. The later precision-cleanup commit described by this revision must receive its own checks; no earlier green result is projected onto a new head.
+
 ## 3. Source-of-truth classification
 
 Every row below has exactly one classification.
@@ -120,9 +124,9 @@ Every row below has exactly one classification.
 | Portfolio tables contain identity/lifecycle/membership only and no ledger, investor, ownership, capital, reserve, or fee field | **B. IMPLEMENTATION FACT** | `20260815030000_r1_portfolio_foundation.sql` |
 | S1 stores only Project-scoped `INVESTOR` participants and one agreement envelope per Project | **B. IMPLEMENTATION FACT** | `20260810000200_s1_terms_and_funding.sql` |
 | Any active member can draft and activate that Project agreement and issue calls; S1 activation freezes participants and sets Project lifecycle to `FUNDING` | **B. IMPLEMENTATION FACT** | latest S1 functions in `20260811000100`; no OWNER call |
-| `attach_contribution_cash` posts Dr Bank Cash / Cr Contributed Capital | **B. IMPLEMENTATION FACT** | `20260811000300_s2_cost_and_cash.sql:643-748` |
+| When explicitly invoked, OWNER-gated `attach_contribution_cash` posts Dr Bank Cash / Cr Contributed Capital; recording a Contribution alone does not post this journal | **B. IMPLEMENTATION FACT** | `20260811000300_s2_cost_and_cash.sql:643-748` |
 | Guided intake treats investors, an active Project agreement, and a positive commitment for each investor as mandatory | **B. IMPLEMENTATION FACT** | `readiness.ts:260-303`; targeted tests |
-| S5 RPCs are callable by authenticated clients and approved steps create journal batches/lines | **B. IMPLEMENTATION FACT** | execute grants and function bodies in S5 migrations |
+| S5 RPCs have execute grants to `authenticated`; functions enforce active membership, selected OWNER gates, and maker/checker, and approved steps create journal batches/lines without a separate policy-activation check | **B. IMPLEMENTATION FACT** | execute grants and function bodies in S5 migrations |
 | Current S5 allocable result includes only RE sale revenue, RE cost of sale, and mapped selling expense | **B. IMPLEMENTATION FACT** | `s5_realized_result_as_of_snapshot`, lines 478-515 |
 | Current S5 “distributable cash” is max(0, cash − positive supplier payable − positive distribution payable) | **B. IMPLEMENTATION FACT** | S5 function/view |
 | Current S5 distribution approval and payment are separate journal facts | **B. IMPLEMENTATION FACT** | S5 functions and ADR 0008 |
@@ -144,7 +148,7 @@ Every row below has exactly one classification.
 | Bank cash less only supplier/distribution payables is the company's distributable cash | **G. UNSUPPORTED ASSUMPTION** | historical S5 formula; BD-008 OPEN |
 | A legal/SPV Portfolio necessarily destroys or replaces Project-separated accounting | **G. UNSUPPORTED ASSUMPTION** | legal/reporting entity and Project subledger can coexist; facts decide |
 | The permanent demo's 60/40 allocation is target-company policy | **G. UNSUPPORTED ASSUMPTION** | synthetic demo only |
-| “S5 is dormant” versus authenticated execute grants, real journal commands, and a permanently seeded S5 demo | **H. CONFLICT / INCONSISTENCY** | matrix/register versus runtime/database/demo |
+| “S5 is dormant” versus execute grants to `authenticated`, internal membership/selected OWNER/maker-checker gates that still permit the governed chain to post real journals without a policy-activation gate, and a permanently seeded S5 demo | **H. CONFLICT / INCONSISTENCY** | matrix/register versus runtime/database/demo |
 | “No investor entitlement number is active” versus pilot investor-statement total and controls partner-capital readiness | **H. CONFLICT / INCONSISTENCY** | investor page/test versus indirect live surfaces |
 | “R14 questionnaire issued/awaiting answers” versus this mandatory pre-owner audit and its NOT READY finding | **H. CONFLICT / INCONSISTENCY** | status docs versus current gate |
 | “Only owner facts remain” versus document/accountant/lawyer questions and current implementation defects | **H. CONFLICT / INCONSISTENCY** | R14 pack versus this evidence audit |
@@ -157,7 +161,7 @@ Every row below has exactly one classification.
 The pack asks the owner to determine legal status, accounting recognition, tax applicability, and historical contract facts. Those belong first to company records, counsel, and accountant. Its status says it was formally issued, but no repository evidence records the actual documents, professional reviews, named authorized respondent, or answers.
 
 **C-02 — S5 is not dormant at the database boundary.**  
-Authenticated users can call prepare commands and authenticated OWNER users can configure/approve/pay. Approval creates real `PARTNER_CAPITAL`, `DISTRIBUTION_PAYABLE`, and bank-cash journal entries. Nothing checks BD status or a policy activation record. UI de-surfacing does not make a PostgREST RPC dormant. The permanent demo executed a 60/40 allocation and EGP 3,000,000 distribution through production RPCs.
+The S5 RPCs have execute grants to `authenticated`, but their internal checks matter: prepare steps require active membership; configuration, approval, and payment steps use selected OWNER gates; allocation/distribution approvals have maker/checker constraints. Approved commands create real `PARTNER_CAPITAL`, `DISTRIBUTION_PAYABLE`, and bank-cash journal entries. The defect is that none checks BD status or a separate policy-activation record. UI de-surfacing therefore does not make the database chain policy-inert. The permanent demo executed a 60/40 allocation and EGP 3,000,000 distribution through the governed production RPC chain.
 
 **C-03 — Live intake presupposes the answers to BD-002/003/005.**  
 DS03, DS04, and DS05 are mandatory: at least one Project `INVESTOR`, an active Project agreement, and a positive commitment for every participant. The readiness verdict cannot progress without them. This excludes company-only funding, debt-only funding, Portfolio-level agreements, investors without commitments, direct contributions, and mixed mechanisms — all offered as unresolved R14 alternatives.
@@ -165,13 +169,13 @@ DS03, DS04, and DS05 are mandatory: at least one Project `INVESTOR`, an active P
 **C-04 — The live S5 allocable result is stale and can produce materially incomplete output.**  
 `s5_realized_result_as_of_snapshot` knows only Real Estate sale revenue/cost and selling expense. It ignores rental revenue added later and all Agriculture/Livestock revenue and operating-result models. On those Projects it returns zero or a partial amount, while S5 remains callable and journal-posting. This is an actual correctness defect, not merely a wording issue.
 
-**C-05 — “Distribution” has no economic type and can consume contributed capital.**  
-A positive allocation is only an entry ticket. The requested amount is limited by total partner capital (contributions plus allocations less prior distributions) and cash capacity, not by that allocation line. Example: contribution 100 + allocated profit 10 + cash 110 permits a 100 distribution against the positive run. The system records no split between return of capital, profit distribution, refund/excess capital, or recallable/reinvestable amount. R14 does not ask this decisively.
+**C-05 — S5 lacks typed distribution purpose and ordering, and its allocation-based ceiling semantics are incomplete.**
+Current S5 permits preparation only from a positive approved allocation; it does **not** implement return-of-capital, refund/excess-capital, in-kind, or recallable/reinvestable-capital flows. Within the existing allocation-based flow, the requested amount is checked against total partner capital and the historical cash-capacity bridge rather than explicitly against a typed purpose/order or the triggering allocation line. The proven defect is therefore missing purpose/ordering/ceiling semantics plus an incomplete capacity bridge — not proof that unsupported return-of-capital or refund flows are silently classified as the current distribution.
 
 ### HIGH
 
-**H-01 — S1 applies a live equity classification before BD-005/accounting review.**  
-The cash attachment always credits `CONTRIBUTED_CAPITAL`. A receipt that is legally a loan, shareholder current account, refundable advance, or company deployment would be misclassified if entered through this flow.
+**H-01 — The separate OWNER-gated S1/S2 cash-attachment command applies an equity classification before BD-005/accounting review.**
+Recording a Contribution does not automatically post cash or capital. When an OWNER explicitly invokes `attach_contribution_cash`, however, the command always credits `CONTRIBUTED_CAPITAL`. A receipt that is legally a loan, shareholder current account, refundable advance, or company deployment would be misclassified if the operator selected this attachment/posting flow.
 
 **H-02 — Material S1 authority is too broad for unresolved company policy.**  
 Any active organization MEMBER can create Project investors, draft/activate the one governing agreement, freeze participant membership, issue capital calls, and record contributions. S1 has no maker/checker or owner approval for activation/call issuance. Authorization proves technical access, not authority under the company's contract.
@@ -229,16 +233,16 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 
 | BD | Primary audit result | Secondary defects | Correct first authority | Owner-only residue | Existing architecture impact |
 |---|---|---|---|---|---|
-| BD-001 | **PARTIALLY NECESSARY** | MIS-SCOPED, presupposes 1:1 Portfolio/legal vehicle | company registry + lawyer + accountant | management mapping where documents leave choice | only some answers add entity reporting; Project subledgers need not disappear |
-| BD-002 | **DUPLICATED** with BD-005 | MISSING SUB-QUESTIONS | bank/GL/contracts + accountant | future source/instrument authorization | new source/instrument model; current S1 is insufficient |
-| BD-003 | **PARTIALLY NECESSARY** | MIS-SCOPED, presupposes pooled results | executed agreements + lawyer | desired management scope for new templates | Portfolio agreement scope may be additive; pooling is separate |
-| BD-004 | **NECESSARY** as evidence issue | MIS-SCOPED, misleading options | title/share/company/contract records + lawyer | confirm intended commercial description after legal schedule | requires typed interest model; no current generic ownership field |
-| BD-005 | **DUPLICATED** with BD-002 | MISSING SUB-QUESTIONS; current live leak | funding documents + accountant/lawyer | approve future allowed mechanisms/authorities | posting and cash-source redesign; current contribution posting may be wrong |
+| BD-001 | **PARTIALLY NECESSARY** | MIS-SCOPED, presupposes 1:1 Portfolio/legal vehicle; remains distinct from BD-003/004 | company registry + lawyer + accountant | legal-status confirmation and management mapping where documents leave choice | only some answers add entity reporting; Project subledgers need not disappear |
+| BD-002 | **NECESSARY** | OVERLAPS/DEPENDS ON BD-005; MISSING SUB-QUESTIONS | bank/GL/contracts + accountant | confirm actual/future funding-source classes | new source/counterparty model; current S1 is insufficient |
+| BD-003 | **PARTIALLY NECESSARY** | MIS-SCOPED, presupposes pooled results; remains distinct from BD-001/004 | executed agreements + lawyer | desired participation scope for new templates | Portfolio agreement scope may be additive; pooling is separate |
+| BD-004 | **NECESSARY** as evidence issue | MIS-SCOPED, misleading options; remains distinct from BD-001/003 | title/share/company/contract records + lawyer | confirm intended commercial description after legal schedule | requires typed interest model; no current generic ownership field |
+| BD-005 | **NECESSARY** | OVERLAPS/DEPENDS ON BD-002; MISSING SUB-QUESTIONS; current live leak | funding documents + accountant/lawyer | approve future allowed mechanisms/authorities | posting and cash-source redesign; current contribution posting may be wrong |
 | BD-006 | **NECESSARY** | alternatives incomplete; MISSING SUB-QUESTIONS | signed agreement + accountant/lawyer | approve only discretionary/new-agreement economics | major S5 redesign; current source is stale |
 | BD-007 | **MIS-SCOPED** | PARTIALLY NECESSARY | accountant first; contract/lawyer for rights | risk/distribution choice only where legally/accountingly permitted | valuation, close, reversal, capital and disclosure changes |
 | BD-008 | **NECESSARY** | MISSING SUB-QUESTIONS; formula live | accountant + contracts/lawyer | discretionary reserves, cadence, approvers | replace/gate S5 capacity and add typed distributions |
 | BD-009 | **PARTIALLY NECESSARY** | MIS-SCOPED; fees and carry conflated | contracts/invoices + accountant/lawyer | future commercial terms not already documented | fee accrual/payable/tax and/or waterfall design |
-| BD-010 | **REDUNDANT as owner question** | MIS-SCOPED implementation choice | tax accountant + current law + product owner | whether to fund an optional automation after scope/cost is known | tax registry/calculation/withholding/reporting adapter |
+| BD-010 | **PARTIALLY NECESSARY; SPLIT REQUIRED** | law/rates/treatment are professional; system role is Product/Business | tax accountant/current law first, then Product/Business owner | choose record/calculate/withhold/report/defer from prefilled schedule | tax registry/calculation/withholding/reporting adapter |
 | BD-011 | **NECESSARY** | MIS-SCOPED; MISSING SUB-QUESTIONS | bank/GL/contracts + accountant/lawyer | future permission, limits, approvers | additive due-to/from may preserve Project boundary; pooling/netting may not |
 | BD-012 | **NECESSARY but conditional** | MISSING SUB-QUESTIONS; too compound | contract + lawyer; accountant for valuation | discretion left open by documents | agreement versioning, transfer lots, notices, KYC, capital rollforward |
 
@@ -265,7 +269,7 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 17. **Dependencies:** BD-003/004/010/011; company organization chart.
 18. **Consequences:** management-only = current storage can remain; legal entity = add entity identity/reporting, not necessarily replace Projects; fund/regulated vehicle = legal/regulatory redesign; contractual pool = contract-specific scope and rights.
 19. **R1–R13 impact:** management-only no change; other answers may add architecture, but Project isolation changes only if actual cash/accounting rights require it.
-20. **Recommended owner wording (only after documents are pre-filled):** «أرفقنا جدولًا يربط السجلات والعقود بكل اسم محفظة في Terranex. هل تعتمدون استخدام كل محفظة كتجميع إداري كما هو موضح، أم تريدون تجميعًا إداريًا مختلفًا؟ لا نطلب منكم تحديد الصفة القانونية؛ سيعتمدها المستشار والمحـاسب من المستندات.»
+20. **Recommended owner wording (only after documents are pre-filled):** «أرفقنا جدولًا يربط السجلات والعقود بكل اسم محفظة في Terranex بعد اعتماده مهنيًا. هل تؤكدون أن الصفة المبينة لكل محفظة صحيحة، وما التجميع الإداري الذي تريدونه؟ لا تنشئ الإجابة صفة قانونية جديدة ولا تحسم نطاق المشاركة أو معنى الحق في BD-003/004.»
 
 ### BD-002 — Who provides funds
 
@@ -281,14 +285,14 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 10. **Owner/company-record evidence:** bank remitters, contracts, loan docs, shareholder-current-account statements, capital resolutions.
 11. **Accountant evidence:** instrument classification and opening/current balances.
 12. **Lawyer evidence:** counterparty capacity, enforceability, security, repayment/profit rights.
-13. **Classification:** **DUPLICATED** with BD-005; **MISSING SUB-QUESTIONS**.
+13. **Classification:** **NECESSARY**; overlaps with and depends on BD-005 but is not duplicated by it; **MISSING SUB-QUESTIONS**.
 14. **Alternatives complete?** No: in-kind contributions, grants/subsidies, customer advances, supplier finance, retained cash/reinvestment, and refunds/excess funds are absent.
 15. **Misleading option:** “company cash creates no external right” may be false when the company's cash itself is borrowed/held for others.
-16. **Presupposition:** treats source party and legal instrument as separable owner choices although evidence must identify both together.
+16. **Presupposition:** treats source party and legal instrument as independently answerable, although one shared evidence schedule must link each source (BD-002) to its mechanism (BD-005). The decisions remain separate.
 17. **Dependencies:** BD-001/003/004/005/010/011.
-18. **Consequences:** each source requires a typed instrument and posting; mixed sources require lot-level traceability; unsupported source must not be forced into S1.
-19. **R1–R13 impact:** new source/instrument records and postings; portfolio rollups remain projections.
-20. **Recommended owner wording:** merge into the BD-002/005 wording below: «راجعوا جدول التمويل المستخرج من العقود والبنوك والدفاتر، وحددوا فقط أي آليات تريدون السماح بها مستقبلًا ومن يعتمدها؛ لا تعيدوا تصنيف الحركات التاريخية شفهيًا.»
+18. **Consequences:** each source requires a linked but separately approved instrument/posting; mixed sources require lot-level traceability; unsupported source must not be forced into S1.
+19. **R1–R13 impact:** new source/counterparty records plus the separate BD-005 mechanism/posting records; Portfolio rollups remain projections.
+20. **Recommended owner wording:** «راجعوا عمود “مصدر التمويل/المموّل” في جدول التمويل المستخرج من العقود والبنوك والدفاتر. هل الجدول كامل وصحيح، وما فئات المصادر التي تسمحون بها مستقبلًا؟ لا تختاروا هنا الأداة أو القيد؛ ذلك قرار BD-005 مستقل في العمود التالي.»
 
 ### BD-003 — Participation scope
 
@@ -350,14 +354,14 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 10. **Owner/company-record evidence:** actual instruments, notices, resolutions, bank/GL trail.
 11. **Accountant evidence:** posting and cash-owner treatment.
 12. **Lawyer evidence:** enforceability, maturity, security, default, interest/profit rights.
-13. **Classification:** **DUPLICATED** with BD-002; **MISSING SUB-QUESTIONS**.
+13. **Classification:** **NECESSARY**; overlaps with and depends on BD-002 but is not duplicated by it; **MISSING SUB-QUESTIONS**.
 14. **Alternatives complete?** No: direct contribution without call, in-kind value, overfund/refund, unused/recallable capital, supplier/customer finance, grants, guarantees.
 15. **Misleading option:** direct company payment does not prove no external claim; current account is not always simply payable to partner.
-16. **Presupposition:** implies current S1 can become policy-ready merely by choosing “commitment/call.” It lacks approvals/notices/default/refund/amendments.
+16. **Presupposition:** implies current S1 can become policy-ready merely by choosing “commitment/call.” It lacks approvals/notices/default/refund/amendments. A shared evidence schedule with BD-002 does not merge the mechanism decision into the source decision.
 17. **Dependencies:** BD-002/003/004/010/011/012.
 18. **Consequences:** confirmed call model may reuse parts of S1 after controls; every other instrument needs new typed commands/postings; mixed funding needs source lots.
 19. **R1–R13 impact:** material Finance Core extension; exact money/Project dimensions remain.
-20. **Recommended merged wording:** «أرفقنا لكل مشروع/عقد جدولًا يبيّن المموّل، الأداة القانونية، مالك الحساب المستلم، المبلغ، هل هو واجب الرد/قابل للاستدعاء، والفائدة/الضمان إن وجد، ومعالجته المقترحة من المحاسب. (أ) أكدوا الأدوات المسموح بها مستقبلًا، (ب) حددوا سلطة اعتماد كل أداة وإصدار طلبات الدفع. التاريخ يُعتمد من المستندات لا من الذاكرة.»
+20. **Recommended owner wording:** «لكل مصدر تمويل مؤكد في BD-002، أرفقنا الأداة القانونية والمعالجة التي اقترحها المحاسب: مساهمة/رأس مال، حساب جارٍ، قرض، صرف شركة، أو غير ذلك، مع الرد/الفائدة/الضمان. ما الأدوات التي تسمحون بها مستقبلًا، ومن يعتمد كل أداة وإصدار طلب الدفع؟ لا تعيدوا تصنيف حركة تاريخية شفهيًا.»
 
 ### BD-006 — Profit/loss assignment
 
@@ -422,11 +426,11 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 13. **Classification:** **NECESSARY; MISSING SUB-QUESTIONS**.
 14. **Alternatives complete?** No: restricted/escrow cash, receivable uncertainty, customer advances/refunds, contingent liabilities, capex, legal capital, recallability, return-capital ordering, residual closeout, currency.
 15. **Misleading option:** the list implies owner may opt out of mandatory liabilities/taxes/covenants.
-16. **Presupposition:** treats all distributions alike and Project cash as legally owned by that Project.
+16. **Presupposition:** treats all desired distribution purposes alike and Project cash as legally owned by that Project. Current S5 actually supports only an allocation-based distribution; it does not implement the other purposes.
 17. **Dependencies:** BD-001/004/006/007/009/010/011/012.
-18. **Consequences:** each mandatory deduction is non-discretionary; owner reserve/cadence is versioned policy; cross-project source invokes BD-011; return capital changes commitment/capital.
-19. **R1–R13 impact:** replace/gate S5 capacity; add purpose/recallability/approval schedule and reconciliation.
-20. **Recommended owner wording:** «أرفق المحاسب جسر النقد المتاح بعد الالتزامات والقيود القانونية/التعاقدية. يرجى اعتماد البنود الإدارية فقط التي تركتها المستندات مفتوحة: احتياطي الإدارة/الحد الأدنى للسيولة، دورية الاقتراح، وحدود وسلطات الاعتماد. ويجب اختيار نوع كل صرف: رد رأس مال، ربح، رد فائض، أو مبلغ قابل لإعادة الاستدعاء.»
+18. **Consequences:** each mandatory deduction is non-discretionary; owner reserve/cadence is versioned policy; cross-Project source invokes BD-011; any future return-capital/refund/in-kind/recallable answer requires a new typed flow rather than reinterpretation of S5.
+19. **R1–R13 impact:** gate/replace S5 capacity; define the current allocation-based ceiling; add new typed purpose/ordering only for professionally approved future flows, plus reconciliation.
+20. **Recommended owner wording:** «أرفق المحاسب جسر النقد المتاح بعد الالتزامات والقيود القانونية/التعاقدية. يرجى اعتماد البنود الإدارية فقط التي تركتها المستندات مفتوحة: احتياطي الإدارة/الحد الأدنى للسيولة، دورية الاقتراح، وحدود وسلطات الاعتماد. حددوا كذلك الأغراض التي تريدون دعمها مستقبلًا؛ النظام الحالي يدعم توزيعًا مرتبطًا بتخصيص موجب فقط ولا يدعم رد رأس المال/رد الفائض/التوزيع العيني/القابل لإعادة الاستدعاء.»
 
 ### BD-009 — Operator/management economics
 
@@ -465,14 +469,14 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 10. **Owner/company-record evidence:** tax registration, taxpayer regime, residency, investor tax forms, historic filings.
 11. **Accountant evidence:** mandatory — applicable taxes, current law, calculation, filing/withholding party.
 12. **Lawyer evidence:** treaties/regulatory interpretation when needed.
-13. **Classification:** **REDUNDANT as owner question; MIS-SCOPED**.
+13. **Classification:** **PARTIALLY NECESSARY; MIS-SCOPED; SPLIT REQUIRED**. The professional determination and Product/Business scope decision are separate, but BD-010 remains a distinct canonical decision.
 14. **Alternatives complete?** No: gross-up, relief/treaty, exemption, tax paid on behalf, certificates, corrections, effective versions, external return IDs.
 15. **Misleading option:** “leave entirely external” does not remove required operational data or posting/reconciliation.
-16. **Presupposition:** assumes owner preference can define legal obligations; “calculate” lacks rule owner/version/liability.
+16. **Presupposition:** assumes owner preference can define legal obligations; “calculate” lacks rule owner/version/liability. Conversely, routing law to professionals does not answer what Terranex should do.
 17. **Dependencies:** all legal instrument/scope items, especially BD-004/007/008/009/012.
-18. **Consequences:** record-only still needs typed authority and posting; calculate/withhold needs professional specification and versioning; report/export needs adapter contract.
-19. **R1–R13 impact:** optional bounded tax slice after professional specification; no reason to ask owner now.
-20. **Recommended disposition:** **remove from owner questionnaire.** Accountant deliverable: «حدد لكل كيان/أداة/مستفيد الضريبة والاستقطاع والجهة الملزمة والحساب والنموذج وتاريخ السريان.» Product owner then selects record/calculate/withhold/report integration based on risk/cost.
+18. **Consequences:** record-only still needs typed authority and posting; calculate/withhold needs professional specification and versioning; report/export needs adapter contract; defer/external still needs an explicit system-boundary decision.
+19. **R1–R13 impact:** optional bounded tax slice after professional specification and explicit Product/Business scope approval.
+20. **Recommended split wording:** professional schedule first: «حدد لكل كيان/أداة/مستفيد الضريبة والاستقطاع والجهة الملزمة والحساب والنموذج وتاريخ السريان.» Then Product/Business decision: «استنادًا إلى الجدول المعتمد، ماذا يجب أن يفعل Terranex لكل بند: يسجل مبلغًا معتمدًا، يحسب بقاعدة مُصدَّرة، يستقطع ويرحّل، يجهز تقريرًا/تصديرًا، أم يؤجل بالكامل لنظام خارجي؟»
 
 ### BD-011 — Cross-project movement/netting
 
@@ -529,11 +533,11 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 | Commitment/call/contribution stored separately | **SAFE FACTUAL MECHANISM** | correct separation when those facts genuinely apply |
 | Mandatory Project investor/agreement/commitment intake | **LIVE POLICY-DEPENDENT BEHAVIOR** | presupposes BD-002/003/005 |
 | S1 agreement activation/call issuance by any active member | **LIVE POLICY-DEPENDENT BEHAVIOR** | freezes rights/workflow without owner-policy gate |
-| `attach_contribution_cash` always credits contributed capital | **LIVE POLICY-DEPENDENT BEHAVIOR** | equity classification before instrument confirmation |
-| S5 authenticated RPC grants and journal commands | **LIVE POLICY-DEPENDENT BEHAVIOR** | de-surfaced UI does not disable database API |
+| Explicit OWNER-gated `attach_contribution_cash` credits contributed capital | **LIVE POLICY-DEPENDENT BEHAVIOR** | selected posting flow imposes equity treatment before instrument confirmation; Contribution recording alone does not post it |
+| S5 RPC execute grants plus internal membership/selected OWNER/maker-checker gates | **LIVE POLICY-DEPENDENT BEHAVIOR** | authorization exists, but no BD/policy-activation gate makes the database chain policy-inert |
 | S5 RE-sale-only source after sector/rental expansion | **ACTUAL BUG** | incomplete/zero allocable result on supported runtime sectors/revenue |
 | S5 capacity formula enforced as “distributable cash” | **LIVE POLICY-DEPENDENT BEHAVIOR** | unapproved BD-008 formula; incomplete deductions |
-| S5 distribution not typed and may consume contributed capital | **ACTUAL BUG** | profit/return-capital/refund/recallability collapsed |
+| S5 lacks typed distribution purpose/ordering and explicit triggering-allocation ceiling semantics | **ACTUAL BUG** | current flow is allocation-based; return-capital/refund/in-kind/recallable flows are unsupported, not silently implemented |
 | S5 distribution payment without bank match path | **ACTUAL BUG** | payment cannot complete canonical bank reconciliation |
 | `/pilot` investor-statement total | **LIVE POLICY-DEPENDENT BEHAVIOR** | indirect S5 read exposed as technical readiness metric |
 | `/controls` partner-capital gate | **LIVE POLICY-DEPENDENT BEHAVIOR** | policy-dependent model affects financial-integrity output |
@@ -562,16 +566,16 @@ The fixture itself is not company-policy evidence. Its documentation is clear. T
 |---|---|---|
 | Portfolio capital deployment | **Not implemented as a fact/command** | canonical docs describe it, but no record exists; do not use contribution as proxy |
 | Project funding | **Partially implemented only as S1 investor flow** | company cash, debt, current account, intercompany, direct contribution absent |
-| Investor contribution | Separate S1 fact | safe until cash posting classifies it as contributed capital regardless instrument |
+| Investor contribution | Separate S1 fact | recording alone is non-posting; the later explicit OWNER-gated cash attachment imposes contributed-capital treatment regardless instrument |
 | Commitment | Separate positive S1 fact | mandatory intake assumption is unsafe |
 | Capital call | Separate from commitment/contribution | cannot cancel/account, overfund, direct-fund, or handle default; issuance authority broad |
-| Contribution | Separate append-only fact | requires a call; no overfund/refund/in-kind |
+| Contribution | Separate append-only non-posting fact | requires a call; no overfund/refund/in-kind; cash/equity effect occurs only through separate attachment |
 | Ownership | Not actively modeled | S5 weights must not be relabeled ownership |
 | Capital balance | S1 funding rollforward plus S5 partner-capital ledger | labels may imply equity before BD-004/005; two meanings need accountant |
 | Profit/loss allocation | Separate S5 run/lines | live, stale source, incomplete rule shape |
-| Distribution entitlement | No standalone complete entitlement model | positive allocation only unlocks a distribution; requested amount can consume total capital |
+| Distribution entitlement | No standalone complete entitlement-purpose model | positive approved allocation is required; requested amount is checked against total partner capital/capacity, but purpose/ordering and triggering-allocation ceiling semantics are not typed |
 | Distributable cash | Separate S5 calculation | formula is policy-dependent and incomplete |
-| Approved distribution | Separate payable journal | correct state separation, wrong policy activation/type |
+| Approved distribution | Separate payable journal | correct state separation, missing policy activation and typed purpose; unsupported return-capital/refund flows are not implemented |
 | Payment | Separate cash-settlement journal | correct state separation |
 | Bank reconciliation | Separate shared domain | **missing link for S5 distribution payment** |
 
@@ -602,7 +606,7 @@ Add these only as **prefilled document/professional schedules**, not as raw owne
 2. **Allocable-result taxonomy:** sale margin, rental income, Agriculture/Livestock operating result, overhead, finance cost, tax, valuation, fee, and prior-period correction; required by the three inconsistent “result” definitions.
 3. **Separate profit and loss mechanics:** loss caps, deficit capital, restoration, future-profit offset, additional call; required because S5 applies one schedule to both signs.
 4. **Funding exceptions:** partial call, direct contribution, overfunding, unused funds, refunds, in-kind funding, default, cure; required because S1 only supports positive commitment/call/contribution within ceilings.
-5. **Distribution type and ordering:** return of capital, income/profit, refund/excess capital, in-kind, recallable/reinvestable, final residual; required because S5 collapses them.
+5. **Distribution type and ordering:** distinguish the current allocation-based distribution from future return of capital, income/profit, refund/excess capital, in-kind, recallable/reinvestable, and final residual flows; required because S5 has no typed model for those unsupported purposes or their ordering.
 6. **Fee detail:** service fee versus profit share, reimbursements, offsets, waiver, VAT/tax, related party, carry/hurdle/catch-up/clawback; required by accounting and S5 gaps.
 7. **Cash and restrictions:** legal bank-account owner, restricted/escrow cash, debt covenants, customer/supplier obligations, contingencies, future capex, currency; required by BD-008 and S5 capacity.
 8. **Entry/exit valuation and cut-off:** effective date, accrued result, partial lots, rounding/residual, tax/fee, final closeout; required by S1 versioning and statements.
@@ -615,18 +619,21 @@ Add these only as **prefilled document/professional schedules**, not as raw owne
 
 ### REMOVE from owner contact
 
-- **BD-010** in its current form: tax applicability goes to tax accountant/current law; automation scope goes to product owner after specification.
-- The **accounting-recognition choice** inside BD-007.
-- Oral requests for legal status/ownership that company records and lawyer should answer (parts of BD-001/004).
+- The **law/rate/applicability/accounting-treatment subquestions** inside BD-010; preserve BD-010's later Product/Business system-scope decision.
+- The **accounting-recognition choice** inside BD-007; preserve its separate contractual/management decision after professional review.
+- Oral requests for legal status/ownership that company records and lawyer should answer (parts of BD-001/004); preserve both canonical decisions.
 - Any request to re-state historical funding, fees, distributions, or transfers from memory when bank/GL/contracts can answer.
 - Leading statements that fixed shares are clearest, no transfer is safest, or a legal Portfolio necessarily contradicts Projects.
+- **No BD ID is removed or merged.**
 
-### MERGE
+### MERGE — evidence collection only, never the decisions
 
-- **BD-002 + BD-005:** one source-and-instrument schedule, followed by future authorization/approver question.
-- **BD-001 + BD-003 + BD-004 evidence stage:** one legal-structure/contract/right matrix; retain separate owner confirmation only for management mapping.
-- **BD-006 + carry/profit-share portion of BD-009 + contractual valuation entitlement from BD-007:** one versioned economic waterfall schedule.
-- **BD-008 + reinvestment/return-capital aspects of BD-011/012:** one distribution-purpose, availability, reserve, and treasury-governance schedule.
+- **BD-002 and BD-005:** use one linked source-and-instrument evidence schedule, but record two separate decisions: who/source funds versus legal/accounting mechanism.
+- **BD-001, BD-003, and BD-004:** use one legal-structure/contract/right evidence matrix, but record three separate decisions: Portfolio legal status, participation scope, and meaning of the interest.
+- **BD-006, BD-007, and BD-009:** use one versioned economics schedule for consistency, while separately approving result allocation, valuation-linked treatment/rights, and operator compensation.
+- **BD-008, BD-011, and BD-012:** cross-reference one cash/lifecycle evidence pack, while separately approving distributable-cash policy, cross-Project movement, and investor lifecycle.
+
+Shared evidence intake removes duplicate evidence requests. It does not collapse independent business decisions.
 
 ### REWRITE
 
@@ -634,7 +641,7 @@ All retained items require the conditional Arabic wording in §6. No current R14
 
 ### ADD as missing professional schedules/questions
 
-Add the 12 items in §9. The genuinely owner-owned residue appears in §13 and is only six questions because the professional schedules pre-answer the rest.
+Add the 12 items in §9. Section 13 then preserves twelve separate, concise owner/Product-Business confirmation drafts — one per BD — because professional schedules pre-answer the law, accounting, tax, and historical-fact portions without merging the decisions.
 
 ## 11. Correct authority routing
 
@@ -663,6 +670,12 @@ Add the 12 items in §9. The genuinely owner-owned residue appears in §13 and i
 6. Extract entry, increase, withdrawal, exit, transfer/assignment, pre-emption, death/incapacity/succession, identity change, and statement/certificate rights.
 7. Determine whether proposed cash pooling, inter-Project/entity lending, due-to/from, set-off, or obligation settlement is permitted and by whom.
 8. Confirm KYC/beneficial ownership, data/access, dispute, governing-law, and regulatory notices applicable to the actual instruments.
+
+### Questions for Product / Business owner after professional schedules
+
+1. For BD-010, which approved tax/withholding facts should Terranex record, calculate from a versioned professional rule, withhold/post, report/export, or leave to an external system?
+2. What control level and implementation priority apply to that scope, without changing the professional determination of law, rate, taxpayer, accounting, or filing authority?
+3. For every BD, confirm only the commercial/operating discretion explicitly left open by the legal and accounting schedules; Product/Business approval cannot override mandatory treatment.
 
 ### Questions answerable from company documents before oral contact
 
@@ -709,29 +722,53 @@ External evidence validates constraints and professional routing. It does **not*
 
 ## 13. Final OWNER-ONLY question set — DRAFT ONLY, **NOT YET SENT**
 
-The six questions below are conditional. Bracketed schedules do not yet exist; therefore all six currently fail owner-only test condition 6 (known context pre-filled), and some fail conditions 5/7 until professional review.
+The twelve drafts below preserve BD-001…BD-012 as separate canonical decisions. Shared schedules are evidence-collection aids only. BD-010's final system-scope answer belongs to the authorized Product/Business decision-maker (which may or may not be the company owner); its professional tax determination is not owner-owned. Bracketed schedules do not yet exist; therefore all twelve currently fail owner-only test condition 6 (known context pre-filled), and some fail conditions 5/7 until professional review.
 
-### OQ-01 — Management Portfolio mapping
+### OQ-01 / BD-001 — Portfolio legal-status confirmation
 
-«أرفقنا [جدول الكيانات والعقود وربطها بأسماء Terranex] بعد مراجعته قانونيًا ومحاسبيًا. هل تعتمدون أن تكون المحفظة الإدارية لكل صف كما هو موضح، أم تريدون تغيير التجميع الإداري للمشاريع؟ هذه الإجابة لا تغيّر الصفة القانونية المسجلة.»
+«أرفقنا [جدول الكيانات والعقود وربطها بأسماء Terranex] بعد مراجعته قانونيًا ومحاسبيًا. هل تؤكدون أن ربط كل محفظة بالصفة القانونية/التعاقدية المبينة صحيح، وما التجميع الإداري الذي تريدونه؟ لا تنشئ الإجابة صفة قانونية جديدة ولا تحسم نطاق مشاركة المستثمر.»
 
-### OQ-02 — Future funding mechanisms and authority
+### OQ-02 / BD-002 — Funding sources
 
-«أرفقنا [جدول مصادر وأدوات التمويل الفعلية ومعالجتها]. أي الأدوات المدرجة تسمحون باستخدامها في العقود/المشاريع الجديدة، وما حدود وسلطة اعتماد الأداة وإصدار طلب الدفع؟ الحركات التاريخية مصنفة من المستندات ولا تُعاد تسميتها شفهيًا.»
+«راجعوا عمود “مصدر التمويل/المموّل” في [جدول التمويل المستخرج من العقود والبنوك والدفاتر]. هل الجدول كامل وصحيح، وما فئات المصادر التي تسمحون بها مستقبلًا؟ لا تختاروا هنا الأداة أو القيد؛ ذلك قرار BD-005 مستقل.»
 
-### OQ-03 — Commercial economics approval
+### OQ-03 / BD-003 — Participation scope
 
-«أرفقنا [جدول الاقتصاد التعاقدي] الذي أعده المحاسب والمستشار لكل نموذج: فئات الربح والخسارة، ترتيب رد رأس المال، العائد/الحصص، حصة المشغّل، الرسوم، العجز، الاسترداد، التدوير، تاريخ السريان والأولوية. هل تعتمدون الغرض التجاري كما هو، أم ما التعديل المطلوب للعقود الجديدة؟»
+«وفق [جدول العقود]، هل نطاق كل نموذج جديد مشروع محدد، أم كيان/مجموعة محددة، أم يسمح بالاثنين؟ وهل تسمحون بشروط مختلفة لنفس الطرف بين النطاقات؟ هذه الإجابة لا تحدد معنى الملكية في BD-004 ولا تسمح تلقائيًا بدمج النتائج.»
 
-### OQ-04 — Discretionary reserve and distribution governance
+### OQ-04 / BD-004 — Meaning of the legal/economic interest
 
-«بعد خصم الالتزامات والقيود القانونية/التعاقدية والمحاسبية في [جسر النقد المتاح]، ما الاحتياطي الإداري والحد الأدنى للسيولة الذي تعتمدونه، وما دورية الاقتراح وحدود وسلطات الاعتماد؟ لكل صرف اختاروا من الأنواع المعتمدة في الجدول: رد رأس مال، ربح، رد فائض، قابل لإعادة الاستدعاء/التدوير.»
+«استخرج المستشار في [جدول الحقوق] نوع الحق وصاحبه ونطاقه وتاريخ سريانه. هل يؤكد الجدول الغرض التجاري المقصود لكل نموذج جديد؟ لا يُعامل الحساب الرأسمالي أو الدفع أو نسبة التخصيص كملكية قانونية من تلقاء نفسه.»
 
-### OQ-05 — Permitted cross-project treasury actions
+### OQ-05 / BD-005 — Funding mechanism and authority
 
-«ضمن الآليات التي أجازها [رأي المحاسب والمستشار] فقط، أي حركة مستقبلية تسمحون بها بين النطاقات المحددة؟ حددوا الغرض والحد والمدة والموافقين. لا يسمح الرد بجمع الأرباح/الخسائر أو عرض الصافي إلا إذا نص الجدول المهني صراحة.»
+«لكل مصدر مؤكد في BD-002، أرفقنا الأداة القانونية والمعالجة التي اقترحها المحاسب في [جدول التمويل]: مساهمة/رأس مال، حساب جارٍ، قرض، صرف شركة، أو غير ذلك، مع الرد/الفائدة/الضمان. ما الأدوات التي تسمحون بها مستقبلًا، ومن يعتمد كل أداة وإصدار طلب الدفع؟»
 
-### OQ-06 — Lifecycle discretion left open by contracts
+### OQ-06 / BD-006 — Profit and loss assignment
+
+«بعد أن أعد المحاسب والمستشار [جدول توزيع النتيجة] لكل نموذج — فئات النتيجة، ترتيب رد رأس المال، نسب/مراحل الربح، الخسارة والعجز، تاريخ السريان والتقريب — هل تعتمدون الغرض التجاري المبين أم تطلبون تعديلًا للعقود الجديدة؟ لا تُختار نسبة عامة خارج العقد.»
+
+### OQ-07 / BD-007 — Valuation use after professional treatment
+
+«حدد المحاسب معالجة التقييم وحدد المستشار أي حق تعاقدي في [جدول التقييم]. ضمن الحدود المعتمدة فقط، هل تستخدمون التقييم في معلومات الإدارة أو قرارات الدخول/الخروج، وما الموافقات المطلوبة؟ الاعتراف المحاسبي والسيولة القابلة للتوزيع ليسا اختيارًا شفهيًا هنا.»
+
+### OQ-08 / BD-008 — Discretionary reserve and distribution governance
+
+«بعد خصم الالتزامات والقيود القانونية/التعاقدية والمحاسبية في [جسر النقد المتاح]، ما الاحتياطي الإداري والحد الأدنى للسيولة الذي تعتمدونه، وما دورية الاقتراح وحدود وسلطات الاعتماد؟ حددوا الأغراض التي تريدون دعمها مستقبلًا؛ النظام الحالي يدعم توزيعًا مرتبطًا بتخصيص موجب فقط ولا يدعم رد رأس المال/رد الفائض/التوزيع العيني/القابل لإعادة الاستدعاء.»
+
+### OQ-09 / BD-009 — Operator compensation
+
+«بعد استخراج [جدول أتعاب وحصة المشغّل] من العقود والفواتير، ما الشروط التجارية التي تعتمدونها للنماذج الجديدة: نوع المقابل، أساسه، توقيته، الإعفاءات/المقاصات، والنطاق؟ يحدد المحاسب القيد والضريبة ويعتمد المستشار الصياغة والتعارضات.»
+
+### OQ-10 / BD-010 — Terranex tax/withholding scope
+
+«حدد المختصون في [جدول الضرائب والاستقطاعات] القانون والنسبة والجهة الملزمة والمعالجة لكل حالة. استنادًا إلى الجدول فقط، ماذا يجب أن يفعل Terranex لكل بند: يسجل مبلغًا معتمدًا، يحسب بقاعدة مهنية مُصدَّرة، يستقطع ويرحّل، يجهز تقريرًا/تصديرًا، أم يؤجل لنظام خارجي؟»
+
+### OQ-11 / BD-011 — Permitted cross-Project treasury actions
+
+«ضمن الآليات التي أجازها [رأي المحاسب والمستشار] فقط، أي حركة مستقبلية تسمحون بها بين النطاقات المحددة؟ حددوا الغرض والحد والمدة والموافقين. لا يسمح الرد بدمج الأرباح/الخسائر أو عرض الصافي إلا إذا نص الجدول المهني صراحة.»
+
+### OQ-12 / BD-012 — Lifecycle discretion left open by contracts
 
 «يبين [جدول دورة الحياة القانوني] ما يحكمه القانون والعقد. للخانات المفتوحة فقط، هل تسمحون بالحدث، ومن يوافق، ومتى يسري، ومتى تجب الإحالة للمستشار؟ يشمل ذلك الدخول/الزيادة/الانسحاب/الخروج/النقل/التعثر/الوفاة أو تغير الهوية.»
 
@@ -741,7 +778,7 @@ The six questions below are conditional. Bracketed schedules do not yet exist; t
 |---|---|
 | repository cannot answer company choice | PASS for the narrow discretionary residue |
 | external authority cannot answer company-specific choice | PASS for the narrow residue |
-| not merely implementation detail | FAIL for old BD-010; PASS for six drafts |
+| not merely implementation detail | PASS only after BD-010 is split: professional tax determination first, Product/Business system-scope decision second; PASS for the twelve staged drafts |
 | materially changes behavior/rights/reporting | PASS |
 | owner/company record is correct authority | PARTIAL until lawyer/accountant separate mandatory facts |
 | technically known context pre-filled | **FAIL** |
@@ -755,9 +792,9 @@ A separate corrective engineering PR is required. It must not resolve any BD ite
 1. introduce an enforceable database/runtime policy-disable gate for all S5 write RPCs while relevant BDs are OPEN, or revoke client execution until explicit activation exists;
 2. remove S5 partner-capital/investor-statement dependencies and values from generic pilot/control readiness while policy is disabled;
 3. remove the mandatory investor/agreement/commitment presupposition from real-project intake; represent the funding-model section as policy/document blocked or conditionally applicable;
-4. prevent S1 activation/call/contribution-cash posting from being used as universal target-company funding; at minimum de-surface/gate it pending confirmed instrument and authority;
+4. prevent S1 activation/call and the separate OWNER-gated `attach_contribution_cash` posting from being used as universal target-company funding; at minimum de-surface/gate each pending confirmed source, instrument, and authority;
 5. correct misleading close/distribution and “realized result” labels before using those values as owner context;
-6. if S5 is ever re-enabled later, redesign/revalidate allocable-result sources for all sectors/revenue categories, distribution purpose/capital ordering, capacity formula, and bank reconciliation;
+6. if S5 is ever re-enabled later, redesign/revalidate allocable-result sources for all sectors/revenue categories, the current allocation-based distribution ceiling, typed purpose/ordering for any newly supported return-capital/refund/in-kind/recallable flows, capacity formula, and bank reconciliation;
 7. extend permanent policy tests across SQL grants/view dependencies, runtime labels, readiness, demo boundaries, and indirect reads — not direct TypeScript imports only.
 
 This corrective PR is a policy-safety and correctness prerequisite, **not R15**.
@@ -778,10 +815,10 @@ This corrective PR is a policy-safety and correctness prerequisite, **not R15**.
 ## 16. Questions count and disposition summary
 
 - **Before audit:** 12 numbered owner questions; at least 44 atomic prompts.
-- **After audit:** 6 conditional owner-only draft questions; 0 ready to send.
-- **Removed from owner:** BD-010; accounting-choice portion of BD-007; legal/accounting/document facts throughout all BDs.
-- **Merged:** BD-002+005; evidence stage of BD-001+003+004; BD-006+carry/profit-share+valuation-linked entitlement; BD-008+distribution/reinvestment/cross-project treasury portions.
-- **Rewritten:** all retained owner wording.
+- **After audit:** 12 separate conditional, pre-filled owner/Product-Business confirmation drafts aligned one-to-one with BD-001…BD-012; 0 ready to send.
+- **Removed from owner:** no BD ID. Removed only professional law/rate/accounting subquestions from BD-010, accounting recognition from BD-007, and legal/accounting/document facts throughout all BDs.
+- **Merged for evidence intake only:** one linked schedule may support BD-002/005; one legal matrix may support BD-001/003/004; shared economics/cash packs may support other related items. **The decisions and resolution records remain separate.**
+- **Rewritten:** all twelve owner/Product-Business decision prompts.
 - **Added:** 12 professional schedules/subquestions in §9, routed before owner contact.
 
 ## 17. Remaining uncertainty and final gate
