@@ -25,6 +25,8 @@ const f6 = readFileSync('supabase/migrations/20260816053000_f6_currency_tax_cont
 const f8 = readFileSync('supabase/migrations/20260816055000_f8_financial_integrity_center.sql', 'utf8');
 const f9 = readFileSync('supabase/migrations/20260816056000_f9_project_performance.sql', 'utf8');
 const f10 = readFileSync('supabase/migrations/20260816057000_f10_portfolio_rollup.sql', 'utf8');
+const fixes = readFileSync('supabase/migrations/20260816058000_f3_f10_review_correctness.sql', 'utf8');
+const scope = readFileSync('supabase/migrations/20260816058100_f4_fac_f10_scope.sql', 'utf8');
 
 describe('F3 contract finance schema contracts', () => {
   it('validates milestone input and rejects bad codes', () => {
@@ -41,7 +43,7 @@ describe('F3 contract finance schema contracts', () => {
   });
 
   it('validates payment terms by type (FIXED_DATE / NET_DAYS / MILESTONE_SCHEDULE)', () => {
-    const base = { organizationId: org, obligationId: id, retention: '0', idempotencyKey: 'terms-0000001' };
+    const base = { organizationId: org, obligationId: id, currency: 'EGP', retention: '0', idempotencyKey: 'terms-0000001' };
     expect(obligationTermsSchema.safeParse({ ...base, termsType: 'FIXED_DATE', dueDate: '2026-09-10' }).success).toBe(true);
     expect(obligationTermsSchema.safeParse({ ...base, termsType: 'NET_DAYS', netDays: '30' }).success).toBe(true);
     expect(obligationTermsSchema.safeParse({ ...base, termsType: 'MILESTONE_SCHEDULE' }).success).toBe(true);
@@ -54,7 +56,7 @@ describe('F3 contract finance schema contracts', () => {
       idempotencyKey: 'dispute-000001',
     }).success).toBe(true);
     expect(retentionReleaseSchema.safeParse({
-      organizationId: org, obligationId: id, amount: '100.00',
+      organizationId: org, obligationId: id, currency: 'EGP', amount: '100.00',
       releaseDate: '2026-09-01', reason: 'اكتمال فترة الضمان',
       milestoneId: '', idempotencyKey: 'release-000001',
     }).success).toBe(true);
@@ -100,17 +102,18 @@ describe('F5 approval & exception engine schema contracts', () => {
     expect(approvalPolicySchema.safeParse({
       organizationId: org, policyDomain: 'OBLIGATION_AUTHORIZATION',
       thresholdMinorUnits: '500000', currency: '', evidenceRequired: 'true',
-      active: 'true', idempotencyKey: 'policy-0000001',
+      active: 'true', minApprovers: '1', idempotencyKey: 'policy-0000001',
     }).success).toBe(true);
     expect(openExceptionSchema.safeParse({
       organizationId: org, projectId: project, exceptionDomain: 'BUDGET_CEILING',
       subjectType: 'project_budget_line', subjectId: id, amountMinorUnits: '100000',
-      currency: 'EGP', reason: 'اعتماد تجاوز السقف', idempotencyKey: 'exc-000000001',
+      currency: 'EGP', reason: 'اعتماد تجاوز السقف', severity: 'HIGH',
+      idempotencyKey: 'exc-000000001',
     }).success).toBe(true);
     expect(openExceptionSchema.safeParse({
       organizationId: org, projectId: project, exceptionDomain: 'BUDGET_CEILING',
       subjectType: 'project_budget_line', subjectId: '', reason: 'بدون موضوع',
-      idempotencyKey: 'exc-000000002',
+      severity: 'MEDIUM', idempotencyKey: 'exc-000000002',
     }).success).toBe(false);
   });
 
@@ -139,7 +142,7 @@ describe('F6 currency & tax contract schema contracts', () => {
     }).success).toBe(false);
     expect(fxConversionSchema.safeParse({
       organizationId: org, projectId: '', sourceAmountMinorUnits: '250000',
-      sourceCurrency: 'EGP', targetCurrency: 'USD', rateSnapshotId: id,
+      rateSnapshotId: id,
       conversionDate: '2026-08-10', purpose: 'REPORTING_ROLLUP',
       idempotencyKey: 'fx-conv-000001',
     }).success).toBe(true);
@@ -168,6 +171,21 @@ describe('F8/F9/F10 read model invariants', () => {
     expect(f10).toContain('organization_financial_consolidation_read');
     expect(f10).toContain('NO_RATE_SNAPSHOT');
     expect(f10).toContain('CONSOLIDATION_INCOMPLETE_NO_RATE_SNAPSHOT');
+    expect(scope).toContain('portfolio_financial_rollup_asof');
+    expect(scope).toContain('open_commitment_minor_units');
+    expect(scope).toContain('cash_concentration_ratio');
+    expect(scope).toContain('sector_exposure');
+  });
+
+  it('nets reversals to zero and separates FAC components', () => {
+    expect(fixes).toContain('jb.reversal_of_batch_id is null');
+    expect(fixes).toContain('OPEN_APPROVAL_EXCEPTIONS');
+    expect(fixes).toContain('approval_signoffs');
+    expect(fixes).toContain('min_approvers between 1 and 3');
+    expect(scope).toContain('project_budget_fac_read');
+    expect(scope).toContain('approved_forecast_remainder_minor_units');
+    expect(scope).toContain('actual_minor_units');
+    expect(fixes).not.toContain('RETENTION_DUE_FOR_RELEASE');
   });
 
   it('keeps the tax registry explicit-contract (no computation)', () => {
