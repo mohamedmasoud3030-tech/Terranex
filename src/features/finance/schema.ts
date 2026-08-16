@@ -4,7 +4,22 @@ import { isValidMajorMoney, isValidSignedMoney, parseSignedMajorUnitsToMinor } f
 const moneyAmount = z
   .string({ error: 'أدخل مبلغًا صحيحًا' })
   .trim()
-  .refine((value) => isValidMajorMoney(value, 'EGP'), 'أدخل مبلغًا موجبًا بحد أقصى خانتين عشريتين');
+  .min(1, 'أدخل مبلغًا صحيحًا');
+
+const currencyCode = z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة');
+
+function validateCurrencyAwarePositiveAmount(
+  data: { amount: string; currency: string },
+  ctx: z.RefinementCtx,
+) {
+  if (!isValidMajorMoney(data.amount, data.currency)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['amount'],
+      message: 'أدخل مبلغًا موجبًا صالحًا لعدد الخانات العشرية الخاصة بالعملة',
+    });
+  }
+}
 
 const idempotencyKey = z.string().trim().min(8, 'مفتاح إعادة المحاولة قصير جدًا').max(120);
 
@@ -12,7 +27,7 @@ export const cashAccountSchema = z.object({
   organizationId: z.string().uuid(),
   projectId: z.string().uuid(),
   name: z.string().trim().min(2, 'اسم الحساب مطلوب').max(120),
-  currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
+  currency: currencyCode,
 });
 
 export const contributionAttributionSchema = z.object({
@@ -29,11 +44,11 @@ export const obligationSchema = z.object({
   partyId: z.string().uuid(),
   description: z.string().trim().min(3, 'الوصف مطلوب (3 أحرف على الأقل)').max(500),
   amount: moneyAmount,
-  currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
+  currency: currencyCode,
   transactionDate: z.string().min(1, 'تاريخ المعاملة مطلوب'),
   costTreatment: z.enum(['EXPENSE', 'CAPITALIZABLE_WIP']),
   idempotencyKey,
-});
+}).superRefine(validateCurrencyAwarePositiveAmount);
 
 export const authorizeObligationSchema = z.object({
   organizationId: z.string().uuid(),
@@ -46,10 +61,10 @@ export const paymentSchema = z.object({
   obligationId: z.string().uuid(),
   cashAccountId: z.string().uuid(),
   amount: moneyAmount,
-  currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
+  currency: currencyCode,
   paymentDate: z.string().min(1, 'تاريخ الدفعة مطلوب'),
   idempotencyKey,
-});
+}).superRefine(validateCurrencyAwarePositiveAmount);
 
 export const approvePaymentSchema = z.object({
   organizationId: z.string().uuid(),
