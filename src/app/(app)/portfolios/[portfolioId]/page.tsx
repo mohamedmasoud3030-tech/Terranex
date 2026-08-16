@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SECTOR_LABEL, formatDate } from '@/features/agriculture/labels';
+import { formatMinorUnits } from '@/shared/money';
 import { getOrganizations } from '@/features/organizations/queries';
 import {
   getAssignableProjects,
@@ -10,6 +11,7 @@ import {
   getPortfolioStatusHistory,
   getPortfolios,
 } from '@/features/portfolios/queries';
+import { getPortfolioRollup } from '@/features/control/queries';
 import {
   PORTFOLIO_STATUS_BADGE_CLASS,
   PORTFOLIO_STATUS_LABEL,
@@ -48,13 +50,14 @@ export default async function PortfolioDetailPage({
   const orgs = await getOrganizations();
   const org = orgs.find((o) => o.id === portfolio.organization_id) ?? orgs[0];
 
-  const [members, memberships, assignableProjects, allPortfolios, statusHistory] =
+  const [members, memberships, assignableProjects, allPortfolios, statusHistory, rollup] =
     await Promise.all([
       getOrganizationMembers(portfolio.organization_id),
       getPortfolioMemberships(portfolioId),
       getAssignableProjects(portfolio.organization_id),
       getPortfolios(portfolio.organization_id),
       getPortfolioStatusHistory(portfolioId),
+      getPortfolioRollup(portfolioId),
     ]);
 
   const memberOptions = members.map((m, index) => ({
@@ -96,6 +99,81 @@ export default async function PortfolioDetailPage({
           <p>{portfolio.description}</p>
         </section>
       ) : null}
+
+      <section className="card stack">
+        <div className="section-heading">
+          <h2>التجميع المالي للمحفظة</h2>
+          <p className="muted">
+            مجموع حقائق المشاريع المستقلة فقط — المحفظة ليست دفتر أستاذ ثانٍ،
+            ولا تُجمع الأرقام أبدًا عبر عملات مختلفة.
+          </p>
+        </div>
+        {rollup.length === 0 ? (
+          <p className="muted">لا توجد مشاريع مرتبطة حاليًا بهذه المحفظة.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>العملة</th>
+                  <th>المشاريع</th>
+                  <th>النقدية</th>
+                  <th>مستحقات مفتوحة</th>
+                  <th>المدفوع</th>
+                  <th>حجز ضمان</th>
+                  <th>النتيجة المحققة</th>
+                  <th>التزامات PO مفتوحة</th>
+                  <th>FAC</th>
+                  <th>نزاعات / متأخرات</th>
+                  <th>استثناءات مفتوحة</th>
+                  <th>تركّز النقدية</th>
+                  <th>حالة التحويل</th>
+                  <th>النقدية بعملة التقارير</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rollup.map((row) => (
+                  <tr key={row.currency}>
+                    <td>{row.currency}</td>
+                    <td>{row.project_count}</td>
+                    <td>{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.payable_open_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.paid_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.retention_held_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.open_commitment_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.fac_minor_units, row.currency)}</td>
+                    <td>{row.disputed_obligations} / {row.overdue_obligations}</td>
+                    <td>{row.open_exception_count}</td>
+                    <td>{row.cash_concentration_ratio ?? '—'}</td>
+                    <td>{row.fx_status}</td>
+                    <td>
+                      {row.converted_cash_balance_minor_units && row.org_reporting_currency
+                        ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency)
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {rollup.some((row) => row.sector_exposure) ? (
+          <details className="stack">
+            <summary>التعرض القطاعي</summary>
+            <ul>
+              {rollup.flatMap((row) =>
+                Object.entries(row.sector_exposure ?? {}).map(([sector, stats]) => (
+                  <li key={`${row.currency}-${sector}`}>
+                    {sector}: {stats.project_count} مشروع ·
+                    نقدية {formatMinorUnits(stats.cash_balance_minor_units, row.currency)}
+                  </li>
+                )),
+              )}
+            </ul>
+          </details>
+        ) : null}
+      </section>
 
       <section className="card stack">
         <div className="section-heading">

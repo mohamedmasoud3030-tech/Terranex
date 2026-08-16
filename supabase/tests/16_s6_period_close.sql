@@ -106,7 +106,10 @@ select s6_run('00000000-0000-4000-8000-000000000001', format(
   :'s6_project', :'s6_period1'));
 select id as s6_run1 from public.close_runs where period_id = :'s6_period1' and version = 1 \gset
 select 1/case when (select status = 'PREPARED' from public.close_runs where id = :'s6_run1') then 1 else 0 end as s6_run_prepared;
-select 1/case when (select count(*) from public.close_run_gates where close_run_id = :'s6_run1') = 10 then 1 else 0 end as s6_ten_gates_present;
+-- The canonical gate vocabulary grew from 10 to 11 gates with
+-- OPEN_APPROVAL_EXCEPTIONS; older forward-upgrade fixtures replay this suite
+-- against a pre-F3 schema where 10 gates is the correct count.
+select 1/case when (select count(*) from public.close_run_gates where close_run_id = :'s6_run1') in (10, 11) then 1 else 0 end as s6_ten_gates_present;
 select 1/case when (select result = 'PASS' from public.close_run_gates
   where close_run_id = :'s6_run1' and gate_code = 'BANK_RECONCILIATION_COVERAGE')
   then 1 else 0 end as s6_run1_bank_gate_truthful_pass;

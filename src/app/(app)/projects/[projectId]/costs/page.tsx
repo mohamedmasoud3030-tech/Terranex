@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
+import { newCommandNonce } from '@/shared/idempotency';
 import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import {
@@ -11,14 +12,26 @@ import {
   getObligationPositions,
   getPaymentProposals,
 } from '@/features/finance/queries';
+import {
+  getObligationAging,
+  getObligationDue,
+  getProjectMilestones,
+} from '@/features/control/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import {
+  AchieveMilestoneButton,
+  ObligationScheduleForm,
   ApprovePaymentProposalButton,
   AuthorizeObligationButton,
   DeleteDraftButton,
+  MilestoneForm,
   ObligationForm,
+  ObligationTermsForm,
+  OpenDisputeForm,
   PaymentForm,
+  ResolveDisputeForm,
+  RetentionReleaseForm,
   ReverseBatchForm,
 } from './forms';
 
@@ -27,6 +40,18 @@ export const dynamic = 'force-dynamic';
 const TREATMENT_LABEL: Record<string, string> = {
   EXPENSE: 'مصروف',
   CAPITALIZABLE_WIP: 'أعمال تحت التطوير',
+};
+
+const AGING_LABEL: Record<string, string> = {
+  NO_TERMS: 'بدون شروط',
+  SETTLED: 'مسدد',
+  NO_DUE_DATE: 'بدون تاريخ استحقاق',
+  OVERDUE_1_30: 'متأخر 1–30 يومًا',
+  OVERDUE_31_60: 'متأخر 31–60 يومًا',
+  OVERDUE_61_90: 'متأخر 61–90 يومًا',
+  OVERDUE_90_PLUS: 'متأخر أكثر من 90 يومًا',
+  DUE_TODAY: 'مستحق اليوم',
+  NOT_DUE: 'غير مستحق',
 };
 
 function stateLabel(obligation: {
@@ -48,15 +73,29 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
   if (!project) notFound();
   const organizationId = project.organization_id;
 
-  const [membership, parties, obligations, cashAccounts, paymentProposals] = await Promise.all([
-    getCurrentMembership(organizationId),
-    getParties(organizationId),
-    getObligationPositions(projectId),
-    getCashAccountPositions(projectId),
-    getPaymentProposals(projectId),
-  ]);
+  const [membership, parties, obligations, cashAccounts, paymentProposals, dueRows, agingRows, milestones] =
+    await Promise.all([
+      getCurrentMembership(organizationId),
+      getParties(organizationId),
+      getObligationPositions(projectId),
+      getCashAccountPositions(projectId),
+      getPaymentProposals(projectId),
+      getObligationDue(projectId),
+      getObligationAging(projectId),
+      getProjectMilestones(projectId),
+    ]);
   const isOwner = membership?.role === 'OWNER';
   const partyName = new Map(parties.map((party) => [party.id, party.legal_name]));
+  const dueByObligation = new Map(dueRows.map((row) => [row.obligation_id, row]));
+
+  const overdueTotal = agingRows
+    .filter((row) => row.aging_bucket.startsWith('OVERDUE'))
+    .reduce((sum, row) => sum + BigInt(row.overdue_outstanding_minor_units), 0n);
+  const retentionHeld = agingRows.reduce(
+    (sum, row) => sum + BigInt(row.retention_held_minor_units),
+    0n,
+  );
+  const disputedCount = dueRows.filter((row) => row.is_disputed).length;
 
   const ledgerByObligation = new Map<string, Awaited<ReturnType<typeof getLedgerForObligation>>>();
   for (const obligation of obligations) {
@@ -103,6 +142,18 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           <p className="muted">المتبقي المستحق</p>
           <strong>{formatMinorUnits(outstanding, project.reporting_currency)}</strong>
         </div>
+        <div className="card">
+          <p className="muted">المتأخر عن الاستحقاق</p>
+          <strong>{formatMinorUnits(overdueTotal, project.reporting_currency)}</strong>
+        </div>
+        <div className="card">
+          <p className="muted">حجز ضمان قائم</p>
+          <strong>{formatMinorUnits(retentionHeld, project.reporting_currency)}</strong>
+        </div>
+        <div className="card">
+          <p className="muted">التزامات متنازع عليها</p>
+          <strong>{disputedCount}</strong>
+        </div>
       </section>
 
       <section className="card stack">
@@ -129,6 +180,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                   <th>المعالجة</th>
                   <th>المبلغ</th>
                   <th>المتبقي</th>
+                  <th>الاستحقاق</th>
                   <th>الحالة</th>
                   <th>الإجراءات</th>
                 </tr>
@@ -136,6 +188,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
               <tbody>
                 {obligations.map((obligation) => {
                   const state = stateLabel(obligation);
+                  const due = dueByObligation.get(obligation.obligation_id);
                   return (
                     <tr key={obligation.obligation_id} id={obligation.obligation_id}>
                       <td>{partyName.get(obligation.party_id) ?? '—'}</td>
@@ -143,6 +196,22 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                       <td>{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
                       <td>{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
                       <td>{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
+                      <td>
+                        <div className="stack" style={{ gap: 4 }}>
+                          {due ? (
+                            <>
+                              <span className="status">{AGING_LABEL[due.aging_bucket] ?? due.aging_bucket}</span>
+                              {due.due_date ? <small>{due.due_date}</small> : null}
+                              {due.is_disputed ? <small className="error">نزاع مفتوح — الدفع محظور</small> : null}
+                              {BigInt(due.retention_remaining_minor_units) > 0n ? (
+                                <small>حجز ضمان قائم: {formatMinorUnits(due.retention_remaining_minor_units, due.currency)}</small>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </div>
+                      </td>
                       <td><span className="status">{state.label}</span></td>
                       <td>
                         <div className="stack" style={{ gap: 8 }}>
@@ -159,6 +228,72 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                               projectId={projectId}
                               obligationId={obligation.obligation_id}
                             />
+                          )}
+                          {obligation.status === 'DRAFT' && (
+                            <details className="stack">
+                              <summary>شروط الدفع والجدولة</summary>
+                              <ObligationTermsForm
+                                organizationId={organizationId}
+                                projectId={projectId}
+                                obligationId={obligation.obligation_id}
+                                currency={obligation.currency}
+                                commandNonce={newCommandNonce()}
+                              />
+                              <ObligationScheduleForm
+                                organizationId={organizationId}
+                                projectId={projectId}
+                                obligationId={obligation.obligation_id}
+                                milestones={milestones.map((m) => ({
+                                  milestone_id: m.milestone_id,
+                                  code: m.code,
+                                  label_ar: m.label_ar,
+                                }))}
+                                commandNonce={newCommandNonce()}
+                              />
+                            </details>
+                          )}
+                          {obligation.status === 'AUTHORIZED' && !obligation.is_reversed && due && (
+                            <>
+                              {due.is_disputed ? (
+                                <details className="stack">
+                                  <summary>تسوية النزاع المفتوح</summary>
+                                  <ResolveDisputeForm
+                                    organizationId={organizationId}
+                                    projectId={projectId}
+                                    disputeId={due.open_dispute_id as string}
+                                    commandNonce={newCommandNonce()}
+                                  />
+                                </details>
+                              ) : (
+                                <details className="stack">
+                                  <summary>فتح نزاع</summary>
+                                  <OpenDisputeForm
+                                    organizationId={organizationId}
+                                    projectId={projectId}
+                                    obligationId={obligation.obligation_id}
+                                    commandNonce={newCommandNonce()}
+                                  />
+                                </details>
+                              )}
+                              {BigInt(due.retention_remaining_minor_units) > 0n && isOwner && (
+                                <details className="stack">
+                                  <summary>الإفراج عن حجز الضمان</summary>
+                                  <RetentionReleaseForm
+                                    organizationId={organizationId}
+                                    projectId={projectId}
+                                    obligationId={obligation.obligation_id}
+                                    currency={obligation.currency}
+                                    milestones={milestones.map((m) => ({
+                                      milestone_id: m.milestone_id,
+                                      code: m.code,
+                                      label_ar: m.label_ar,
+                                      status: m.status,
+                                    }))}
+                                    commandNonce={newCommandNonce()}
+                                  />
+                                </details>
+                              )}
+                            </>
                           )}
                           {obligation.status === 'AUTHORIZED' && !obligation.is_reversed
                             && obligation.outstanding_minor_units !== '0' && (
@@ -210,6 +345,56 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             </table>
           </div>
         )}
+      </section>
+
+      <section className="card stack">
+        <h2>إنجازات المشروع التعاقدية</h2>
+        {milestones.length === 0 ? (
+          <p className="muted">لا توجد إنجازات مسجلة. تُستخدم لجدولة الدفعات وربط الإفراج عن الحجز.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>الرمز</th>
+                  <th>الوصف</th>
+                  <th>التاريخ المخطط</th>
+                  <th>الحالة</th>
+                  <th>تاريخ الإنجاز</th>
+                  <th>بنود جدولة مرتبطة</th>
+                  <th>الإجراء</th>
+                </tr>
+              </thead>
+              <tbody>
+                {milestones.map((milestone) => (
+                  <tr key={milestone.milestone_id}>
+                    <td>{milestone.code}</td>
+                    <td>{milestone.label_ar}</td>
+                    <td>{milestone.planned_date ?? '—'}</td>
+                    <td><span className="status">{milestone.status === 'ACHIEVED' ? 'محقق' : 'قيد التنفيذ'}</span></td>
+                    <td>{milestone.achieved_date ?? '—'}</td>
+                    <td>{milestone.linked_schedule_lines}</td>
+                    <td>
+                      {milestone.status === 'PENDING' ? (
+                        <AchieveMilestoneButton
+                          organizationId={organizationId}
+                          projectId={projectId}
+                          milestoneId={milestone.milestone_id}
+                          commandNonce={newCommandNonce()}
+                        />
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <MilestoneForm
+          organizationId={organizationId}
+          projectId={projectId}
+          commandNonce={newCommandNonce()}
+        />
       </section>
 
       <section className="card stack">

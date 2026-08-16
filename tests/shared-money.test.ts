@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  currencyDecimals,
   formatMinorUnits,
   isValidMajorMoney,
   isValidSignedMoney,
@@ -55,5 +56,20 @@ describe('shared exact money', () => {
       expect(BigInt(minor)).toBeGreaterThan(0n);
       expect(BigInt(minor)).toBeLessThanOrEqual(INT64_MAX);
     }
+  });
+});
+
+describe('shared exact money — three-decimal currencies', () => {
+  it('treats OMR as a three-decimal currency, never two', () => {
+    expect(currencyDecimals('OMR')).toBe(3);
+    expect(parseMajorUnitsToMinor('1.234', 'OMR')).toBe('1234');
+    expect(() => parseMajorUnitsToMinor('1.2345', 'OMR')).toThrow();
+    expect(formatMinorUnits('1234', 'OMR')).toBe('١٫٢٣٤ ر.ع.');
+  });
+
+  it('keeps two-decimal behavior for EGP and unknown currencies default two', () => {
+    expect(currencyDecimals('EGP')).toBe(2);
+    expect(parseMajorUnitsToMinor('1.23', 'EGP')).toBe('123');
+    expect(currencyDecimals('XXX')).toBe(2);
   });
 });
