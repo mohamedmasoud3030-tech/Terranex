@@ -160,10 +160,16 @@ describe('post-R14 policy-safety hotfix: the intake policy leak is closed while 
 describe('pre-owner policy-safety boundary: policy-dependent writes fail closed', () => {
   it('gates every S5 write table behind an approved INVESTOR_ECONOMICS policy', () => {
     expect(preOwnerPolicyMigration).toContain('target-company investor policy is not activated');
-    expect(preOwnerPolicyMigration).toContain('s5_allocation_rule_sets_policy_gate');
-    expect(preOwnerPolicyMigration).toContain('s5_allocation_runs_policy_gate');
-    expect(preOwnerPolicyMigration).toContain('s5_distributions_policy_gate');
-    expect(preOwnerPolicyMigration).toContain('s5_distribution_payments_policy_gate');
+    for (const gate of [
+      's5_allocation_rule_sets_policy_gate',
+      's5_allocation_rules_policy_gate',
+      's5_allocation_runs_policy_gate',
+      's5_allocation_lines_policy_gate',
+      's5_distributions_policy_gate',
+      's5_distribution_payments_policy_gate',
+    ]) {
+      expect(preOwnerPolicyMigration, gate).toContain(gate);
+    }
     // The policy registry ships empty: no fake approved row exists.
     expect(preOwnerPolicyMigration).not.toMatch(/insert into public\.policy_authority/);
   });
@@ -174,6 +180,21 @@ describe('pre-owner policy-safety boundary: policy-dependent writes fail closed'
     const attach = preOwnerPolicyMigration.split('create or replace function public.attach_contribution_cash(')[1];
     expect(attach).toBeDefined();
     expect(attach).toContain("require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION')");
+    // Historical idempotent replay must succeed BEFORE the policy gate: the
+    // replay `return v_existing.id` must precede the policy activation check,
+    // so only NEW postings fail closed.
+    const gateIndex = attach.indexOf("require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION')");
+    const replayReturnIndex = attach.indexOf('return v_existing.id');
+    expect(gateIndex).toBeGreaterThan(-1);
+    expect(replayReturnIndex).toBeGreaterThan(-1);
+    expect(replayReturnIndex).toBeLessThan(gateIndex);
+  });
+
+  it('makes distribution-payment reconciliation idempotency NULL-safe', () => {
+    const reconcile = preOwnerPolicyMigration.split('create or replace function public.s5_reconcile_distribution_payment(')[1];
+    expect(reconcile).toBeDefined();
+    expect(reconcile).toContain('distribution payment and statement line are required');
+    expect(reconcile).toContain('is distinct from');
   });
 
   it('raises S1 agreement activation and capital-call issuance to OWNER authority', () => {

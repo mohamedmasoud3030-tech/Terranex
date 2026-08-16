@@ -79,8 +79,12 @@ revoke all on function public.require_policy_activated(uuid,text) from public, a
 
 -- ===========================================================================
 -- 3. S5 policy gate. Every NEW allocation/distribution write — through the RPCs
---    or any other path — requires an approved INVESTOR_ECONOMICS policy. The
---    four S5 write tables are the database boundary of the mechanism.
+--    or any other path — requires an approved INVESTOR_ECONOMICS policy. All
+--    six S5 write tables are the database boundary of the mechanism: the four
+--    parent facts (rule sets, runs, distributions, payments) AND the two child
+--    detail tables (allocation rules, allocation lines), which otherwise only
+--    carry append-only UPDATE/DELETE guards and could still receive a
+--    privileged/direct INSERT against an existing historical parent.
 -- ===========================================================================
 create or replace function public.s5_require_investor_policy_trigger() returns trigger
 language plpgsql security definer set search_path=pg_catalog,public as $$
@@ -93,8 +97,14 @@ revoke all on function public.s5_require_investor_policy_trigger() from public, 
 create trigger s5_allocation_rule_sets_policy_gate
 before insert or update on public.s5_allocation_rule_sets
 for each row execute function public.s5_require_investor_policy_trigger();
+create trigger s5_allocation_rules_policy_gate
+before insert or update on public.s5_allocation_rules
+for each row execute function public.s5_require_investor_policy_trigger();
 create trigger s5_allocation_runs_policy_gate
 before insert or update on public.s5_allocation_runs
+for each row execute function public.s5_require_investor_policy_trigger();
+create trigger s5_allocation_lines_policy_gate
+before insert or update on public.s5_allocation_lines
 for each row execute function public.s5_require_investor_policy_trigger();
 create trigger s5_distributions_policy_gate
 before insert or update on public.s5_distributions
@@ -126,7 +136,6 @@ begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
   perform public.s2_require_owner(p_organization_id);
-  perform public.require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION');
   if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
     raise exception 'idempotency key must be 8-120 characters';
   end if;
@@ -175,6 +184,12 @@ begin
         where rb.reversal_of_batch_id = jb.id
       )
   ) then raise exception 'contribution is already posted to project cash'; end if;
+
+  -- Policy gate is applied AFTER idempotent replay: a historical successful
+  -- posting replayed with the same idempotency key returns the same journal
+  -- batch, while only NEW postings fail closed without an approved
+  -- CAPITAL_CONTRIBUTION policy (BD-002/005 OPEN).
+  perform public.require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION');
 
   select id into v_bank_cash from public.semantic_accounts where role = 'BANK_CASH';
   select id into v_capital from public.semantic_accounts where role = 'CONTRIBUTED_CAPITAL';
@@ -507,6 +522,9 @@ begin
   if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then
     raise exception 'invalid idempotency key';
   end if;
+  if p_distribution_payment_id is null or p_statement_line_id is null then
+    raise exception 'distribution payment and statement line are required';
+  end if;
 
   v_hash:=encode(digest(p_distribution_payment_id::text||'|'||p_statement_line_id::text,'sha256'),'hex');
   perform pg_advisory_xact_lock(hashtextextended(
@@ -516,9 +534,9 @@ begin
   from public.s5_distribution_payment_reconciliations
   where organization_id=p_organization_id and idempotency_key=trim(p_idempotency_key);
   if found then
-    if v_existing.distribution_payment_id<>p_distribution_payment_id
-       or v_existing.statement_line_id<>p_statement_line_id
-       or v_existing.request_hash<>v_hash then
+    if v_existing.distribution_payment_id is distinct from p_distribution_payment_id
+       or v_existing.statement_line_id is distinct from p_statement_line_id
+       or v_existing.request_hash is distinct from v_hash then
       raise exception 'idempotency key payload mismatch';
     end if;
     return v_existing.id;
