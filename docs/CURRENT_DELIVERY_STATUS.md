@@ -105,4 +105,27 @@ Phase-level evidence: `docs/F3_F10_EXECUTION_REPORT.md`, `docs/F7_PERIOD_CLOSE_A
 
 ### Review round (2026-08-16, later the same day)
 
-An independent audit found P0/P1 defects in the first F3–F10 delivery (reversal netting, budget-ceiling concurrency, revision-gap ceiling loss, currency mixing in exceptions, unusable schedules, idempotency-key reuse, hardcoded EGP/OMR, broken FX form, VOID inconsistency, F7 counters, invented F8 signal, non-historical F10) plus scope gaps (FAC definition, tiered approvals, reject/resubmit, exception actionability, roll-up scope). All were fixed with regression coverage (`docs/F3_F10_EXECUTION_REPORT.md` § Review defects). **R13 remains NOT OPENED** — the independent build now satisfies the F3–F10 mission definitions, but the hard-stop gate opens only after the full-company simulation proves the chain.
+An independent audit found P0/P1 defects in the first F3–F10 delivery (reversal netting, budget-ceiling concurrency, revision-gap ceiling loss, currency mixing in exceptions, unusable schedules, idempotency-key reuse, hardcoded EGP/OMR, broken FX form, VOID inconsistency, F7 counters, invented F8 signal, non-historical F10) plus scope gaps (FAC definition, tiered approvals, reject/resubmit, exception actionability, roll-up scope). All were fixed with regression coverage (`docs/F3_F10_EXECUTION_REPORT.md` § Review defects).
+
+## 7. Final R1–R13 closeout addendum (2026-08-16, PR #149)
+
+This addendum supersedes stale phase labels in the dated snapshot above. It is based on the complete PR #149 app and PostgreSQL CI, including final gate `supabase/tests/95_r13_full_company_scenario.sql`.
+
+| Phase | Final status | Evidence boundary |
+|---|---|---|
+| R1 | **COMPLETE** | Production foundation, exact money, RLS, audit, periods, reversal and idempotency gates. |
+| R2 | **COMPLETE** | Portfolio/Project hierarchy plus canonical project RiskItem and immutable DecisionRecord command/read UI. Sector asset roots remain authoritative; a universal Asset table is intentionally not authorized. |
+| R3 | **COMPLETE** | Independent finance-control scope, budgets, commitments, approvals, reconciliation, F9/F10 roll-ups. Investor economics excluded. |
+| R4 | **COMPLETE** | Procurement, receiving, invoice/payment/evidence path complete; closeout correctly rejects a speculative generic inventory-value subsystem. |
+| R5 | **COMPLETE** | Real Estate lifecycle and rental recognition → receivable → collection → bank reconciliation operator workflow. |
+| R6 | **COMPLETE** | Livestock technical scope and same-Portfolio multi-project isolation proved. |
+| R7 | **COMPLETE** | Agriculture technical scope and integrated Portfolio attribution proved. |
+| R8 | **COMPLETE** | Cross-sector read projection without a universal asset base table; gross-result semantics remain explicit. |
+| R9 | **COMPLETE** | Tenant-safe, FX-honest Executive Home and shared Arabic/RTL project navigation. |
+| R10 | **COMPLETE (safe scope)** | Identity/provenance/funding facts only; policy-dependent investor economics remain blocked and characterized by permanent tests. |
+| R11 | **COMPLETE** | Exact Project → Portfolio → Organization reporting/reconciliation and traceability read models. |
+| R12 | **COMPLETE (independent technical scope)** | Full replay, RLS/ACL scanners, concurrency, idempotency, opening-import, backup/restore rehearsal, config/runtime and document controls. Claims requiring a live target deployment or customer evidence remain **REAL-WORLD EVIDENCE BLOCKED**. |
+| R13 | **COMPLETE** | Final executable company gate passed PostgreSQL CI; non-zero revenue/cash/receivable differences are exactly zero and hostile tenant visibility is zero. See `docs/R13_FULL_COMPANY_EXECUTION_REPORT.md`. |
+| R14 | **POLICY BLOCKED / NOT STARTED** | BD-001…BD-012 remain OPEN. |
+
+The hard stop is now active. No ownership percentage, investor entitlement, allocation policy, distributable cash, distribution, waterfall, carried/operator economics, cross-project netting or investor entry/exit economics may be activated until the relevant R14 decisions and evidence are resolved.

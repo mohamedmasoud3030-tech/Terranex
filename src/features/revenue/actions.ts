@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import type { ActionState } from '@/features/auth/actions';
 import { parseMajorUnitsToMinor } from '@/shared/money';
 import { createClient } from '@/shared/supabase/server';
+import { commandFailureState, commandSuccessState } from '@/shared/idempotency';
 import {
   collectionReconciliationSchema,
   controlTransferSchema,
@@ -119,9 +120,11 @@ export async function reconcileCollection(_: ActionState, form: FormData): Promi
   }, 'تعذر مطابقة التحصيل بسطر البنك.', value.projectId);
 }
 
-export async function recognizeRentalIncome(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(rentalRecognitionSchema.safeParse(Object.fromEntries(form))); if (isActionState(value)) return value;
-  return rpc('recognize_property_rental_income', {
+export async function recognizeRentalIncome(prev: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = rentalRecognitionSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return commandFailureState(prev, parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة');
+  const value = parsed.data;
+  const result = await rpc('recognize_property_rental_income', {
     p_organization_id:value.organizationId,
     p_project_id:value.projectId,
     p_property_asset_id:value.propertyAssetId,
@@ -135,11 +138,14 @@ export async function recognizeRentalIncome(_: ActionState, form: FormData): Pro
     p_evidence_reference:value.evidenceReference,
     p_idempotency_key:value.idempotencyKey,
   }, 'تعذر الاعتراف بإيراد الإيجار.', value.projectId);
+  return result.error ? commandFailureState(prev, result.error) : commandSuccessState(prev);
 }
 
-export async function collectRentalReceivable(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(rentalCollectionSchema.safeParse(Object.fromEntries(form))); if (isActionState(value)) return value;
-  return rpc('collect_property_rental_receivable', {
+export async function collectRentalReceivable(prev: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = rentalCollectionSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return commandFailureState(prev, parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة');
+  const value = parsed.data;
+  const result = await rpc('collect_property_rental_receivable', {
     p_organization_id:value.organizationId,
     p_recognition_id:value.recognitionId,
     p_cash_account_id:value.cashAccountId,
@@ -148,16 +154,20 @@ export async function collectRentalReceivable(_: ActionState, form: FormData): P
     p_evidence_reference:value.evidenceReference,
     p_idempotency_key:value.idempotencyKey,
   }, 'تعذر ترحيل تحصيل الإيجار.', value.projectId);
+  return result.error ? commandFailureState(prev, result.error) : commandSuccessState(prev);
 }
 
-export async function reconcileRentalCollection(_: ActionState, form: FormData): Promise<ActionState> {
-  const value = parse(rentalReconciliationSchema.safeParse(Object.fromEntries(form))); if (isActionState(value)) return value;
-  return rpc('reconcile_property_rental_collection', {
+export async function reconcileRentalCollection(prev: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = rentalReconciliationSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return commandFailureState(prev, parsed.error.issues[0]?.message ?? 'البيانات غير صحيحة');
+  const value = parsed.data;
+  const result = await rpc('reconcile_property_rental_collection', {
     p_organization_id:value.organizationId,
     p_collection_id:value.collectionId,
     p_statement_line_id:value.statementLineId,
     p_idempotency_key:value.idempotencyKey,
   }, 'تعذر مطابقة تحصيل الإيجار بسطر البنك.', value.projectId);
+  return result.error ? commandFailureState(prev, result.error) : commandSuccessState(prev);
 }
 
 export async function classifySellingCost(_: ActionState, form: FormData): Promise<ActionState> {

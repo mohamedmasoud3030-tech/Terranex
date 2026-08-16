@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getProjectDecisions, getProjectRisks } from '@/features/governance/queries';
+import { getCurrentMembership } from '@/features/finance/queries';
+import { getOrganizationMembers } from '@/features/portfolios/queries';
+import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { DecisionForm, ResolveRiskForm, RiskForm } from './forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +21,14 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
   const project = await getProject(projectId);
   if (!project) notFound();
 
-  const [risks, decisions] = await Promise.all([
+  const [risks, decisions, membership, organizationMembers] = await Promise.all([
     getProjectRisks(projectId),
     getProjectDecisions(projectId),
+    getCurrentMembership(project.organization_id),
+    getOrganizationMembers(project.organization_id),
   ]);
+  const isOwner = membership?.role === 'OWNER';
+  const members = organizationMembers.map((member) => ({ user_id: member.user_id, label: `${member.role} · ${member.user_id}` }));
   const openRisks = risks.filter((risk) => risk.status === 'OPEN');
   const resolvedRisks = risks.filter((risk) => risk.status === 'RESOLVED');
   const criticalOpen = openRisks.filter((risk) => risk.severity === 'CRITICAL').length;
@@ -58,6 +66,18 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
         هذه الصفحة تعرض حقائق حوكمة المشروع فقط. تسجيل خطر أو قرار لا ينشئ قيدًا ماليًا ولا يغيّر ملكية أصل أو استحقاق مستثمر.
       </div>
 
+      <details className="card" open={openRisks.length === 0}>
+        <summary>تسجيل خطر مشروع</summary>
+        <RiskForm organizationId={project.organization_id} projectId={projectId} commandNonce={newCommandNonce()} members={members} />
+      </details>
+
+      {isOwner ? (
+        <details className="card">
+          <summary>تسجيل قرار مادي غير قابل للتعديل</summary>
+          <DecisionForm organizationId={project.organization_id} projectId={projectId} commandNonce={newCommandNonce()} />
+        </details>
+      ) : <p className="muted">تسجيل القرارات المادية وحسم المخاطر مقصوران على مالك المنظمة وفق سلطة قاعدة البيانات.</p>}
+
       <section className="card stack" aria-labelledby="open-risks-heading">
         <div className="section-heading">
           <div>
@@ -88,7 +108,7 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
                     <td>{risk.description}</td>
                     <td><code>{risk.owner_user_id}</code></td>
                     <td>{risk.due_date ?? '—'}</td>
-                    <td>{risk.source_reference ?? '—'}</td>
+                    <td>{risk.source_reference ?? '—'}{isOwner ? <details><summary>حسم</summary><ResolveRiskForm organizationId={project.organization_id} projectId={projectId} riskItemId={risk.risk_item_id} commandNonce={newCommandNonce()} /></details> : null}</td>
                   </tr>
                 ))}
               </tbody>
