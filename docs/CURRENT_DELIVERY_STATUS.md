@@ -143,3 +143,25 @@ The mandatory post-R14 §4.2/§4.3 policy-safety hotfix (see `docs/R14_POLICY_IM
 Permanent regression coverage was added in `tests/r10-policy-block.test.ts` (seven policy-boundary proofs) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C). No database migration or schema change was required.
 
 No owner answer was recorded and no owner-specific policy was inferred. The exact next gate is **PRE-OWNER INDEPENDENT EVIDENCE AUDIT**: independent evidence and owner-decision validation only, not implementation. R15 has not started and remains blocked for every policy-dependent scope. This closeout does not begin that audit.
+
+## 9. Pre-owner policy-safety boundary — corrective engineering (2026-08-16)
+
+The independent pre-owner evidence audit (`docs/PRE_OWNER_POLICY_AUDIT.md`) found
+that several investor/funding/allocation/distribution mechanisms remained
+policy-reachable while BD-001…BD-012 are OPEN. The corrective engineering pass
+(ADR 0033, migration `20260816062000_pre_owner_policy_safety.sql`) delivered the
+policy-safety boundary:
+
+- S5 allocation/distribution writes and the `attach_contribution_cash` posting
+  fail closed with `target-company investor policy is not activated` until an
+  approved `policy_authority` exists (the registry ships **EMPTY**);
+- S1 agreement activation and capital-call issuance require OWNER;
+- intake readiness no longer mandates investor + agreement + commitment;
+- the stale S5 RE-sale-only source (`s5_realized_result_as_of_snapshot`) is
+  truthfully read-labeled (COMMENT + terminology matrix) and the capacity bridge
+  is relabeled `technical_capacity_bridge_minor_units`;
+- S5 distribution payments reconcile through the shared bank-line reservation;
+- pilot/control readiness no longer exposes partner-capital or investor-statement values.
+
+S5 is therefore **retained but policy-inert**, not "dormant". BD-001…BD-012 remain
+OPEN; R15 has not started; no target-company economics were invented.

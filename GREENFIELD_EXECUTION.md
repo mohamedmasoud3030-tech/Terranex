@@ -86,6 +86,12 @@ Proof: immutable allocation basis frozen to one activated governing agreement ve
 
 Canonical decision: `docs/decisions/0008_S5_ALLOCATION_AND_DISTRIBUTION.md`.
 
+> **Pre-owner policy-safety (2026-08-16):** the S5 mechanism is **retained but
+> policy-inert** — its allocation/distribution writes now fail closed until an
+> approved `policy_authority` exists (ADR 0033, migration
+> `20260816062000_pre_owner_policy_safety.sql`). The proof above describes the
+> mechanism's historical correctness, not a current target-company policy.
+
 ### GF-009 / S7 — Pilot Hardening
 
 Status: **COMPLETE — VERIFIED AND MERGED**. Delivered through PR #101 and subsequently integrated into `main`.

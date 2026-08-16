@@ -253,8 +253,6 @@ export default async function PilotPage({
               <article className="metric"><span className="muted">منها حرجة</span><strong>{report.unresolved_critical_exceptions}</strong></article>
               <article className="metric"><span className="muted">سطور بنكية غير مطابقة</span><strong>{report.unreconciled_bank_statement_lines}</strong></article>
               <article className="metric"><span className="muted">دفعات قيود غير متوازنة</span><strong>{report.unbalanced_journal_batches}</strong></article>
-              <article className="metric"><span className="muted">كسور تدوير رأس مال الشركاء</span><strong>{report.partner_capital_rollforward_breaks}</strong></article>
-              <article className="metric"><span className="muted">إجمالي كشف المستثمرين</span><strong>{money(report.investor_statement_total_minor_units)}</strong></article>
             </div>
             <div className="metric-grid">
               <article className="metric"><span className="muted">بروفة الدورة الكاملة</span><strong>{report.end_to_end_result ?? 'لم تُنفَّذ'}</strong></article>

@@ -257,56 +257,64 @@ function evaluate(snapshot: IntakeSnapshot): IntakeSection[] {
       'اتفق مع مالك العميل على تاريخ تجميد واحد قبل قبول أي رصيد.',
       [snapshot.projectName ? 'تاريخ التجميد غير مسجّل.' : 'أنشئ المشروع أولًا.']));
 
-  const canAddInvestors = Boolean(snapshot.projectName);
-  sections.push(snapshot.investorCount > 0
-    ? section('DS03_PARTIES', 'INVESTORS_AND_TERMS', 'MANDATORY', 'COMPLETE',
-      `${snapshot.investorCount} مستثمر. الطرف يُنشأ مرة واحدة ويُعاد استخدامه.`)
-    : section('DS03_PARTIES', 'INVESTORS_AND_TERMS', 'MANDATORY',
-      canAddInvestors ? 'MISSING' : 'BLOCKED',
-      'أضف المستثمرين كما وردوا في الاتفاقية الحاكمة.',
-      [canAddInvestors ? 'لا يوجد مستثمرون في المشروع.' : 'أنشئ المشروع أولًا.']));
+  // BD-002 (funding source) / BD-003 (participation scope) / BD-005 (funding
+  // mechanism) remain OPEN. Investor/agreement/commitment setup is therefore
+  // CONDITIONAL, not MANDATORY: the system must allow operational readiness
+  // WITHOUT fabricating investors, and must never instruct the operator to
+  // "add an investor first" unless an approved policy actually requires one.
+  const fundingPolicyNotEstablished =
+    'آلية التمويل والمشاركة لم تُحدد بسياسة معتمدة بعد — لا يُشترط مستثمر أو اتفاقية أو التزام قبل تأكيدها.';
 
-  const canDraftAgreement = snapshot.investorCount > 0;
+  sections.push(snapshot.investorCount > 0
+    ? section('DS03_PARTIES', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'COMPLETE',
+      `${snapshot.investorCount} مستثمر مسجّل. الطرف يُنشأ مرة واحدة ويُعاد استخدامه.`)
+    : section('DS03_PARTIES', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'NOT_APPLICABLE',
+      'لا مستثمرين مسجّلين بعد — مقبول ما دامت سياسة التمويل غير معتمدة.',
+      [],
+      [fundingPolicyNotEstablished]));
+
   // BD-004 (meaning of ownership) and BD-006 (profit/loss assignment) remain OPEN.
   // The agreement/funding facts (version, effective date, title/reference) are SAFE
-  // and still required; the unresolved ownership/allocation economics are explicitly
-  // policy-blocked and must NOT gate readiness.
+  // facts when they exist, but their ABSENCE must not gate readiness; the
+  // unresolved ownership/allocation economics are explicitly policy-blocked.
   const policyNotEstablished = 'سياسة الملكية والتخصيص وتوزيع الربح لم تُقرّ بعد من المالك المفوَّض — «غير محددة بسياسة معتمدة»، ولا تُطلب لإكمال الجاهزية.';
   if (!snapshot.activeAgreement) {
-    sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'MANDATORY',
-      canDraftAgreement ? 'MISSING' : 'BLOCKED',
-      'فعّل نسخة اتفاقية حاكمة بتاريخ سريان وعنوان/مرجع موثق.',
-      [canDraftAgreement ? 'لا توجد اتفاقية مفعّلة.' : 'أضف مستثمرًا واحدًا على الأقل.']));
+    sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'NOT_APPLICABLE',
+      'لا اتفاقية حاكمة مفعّلة — مقبول ما دامت آلية التمويل/المشاركة غير مؤكدة.',
+      [],
+      [policyNotEstablished, fundingPolicyNotEstablished]));
   } else if (!snapshot.agreementTitleOrReference) {
-    sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'MANDATORY', 'IN_PROGRESS',
+    sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'IN_PROGRESS',
       `نسخة حاكمة سارية من ${snapshot.agreementEffectiveDate ?? '—'}. أكمل عنوان/مرجع الاتفاقية.`,
       ['عنوان الاتفاقية أو مرجعها غير مسجّل.'],
       [policyNotEstablished]));
   } else {
-    sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'MANDATORY', 'COMPLETE',
+    sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'COMPLETE',
       `الاتفاقية «${snapshot.agreementTitleOrReference}» سارية من ${snapshot.agreementEffectiveDate}. حقائق الاتفاقية مثبتة.`,
       [],
       [policyNotEstablished]));
   }
 
   if (!snapshot.activeAgreement) {
-    sections.push(section('DS05_COMMITMENTS', 'INVESTORS_AND_TERMS', 'MANDATORY', 'BLOCKED',
-      'الالتزام مبلغ متفق عليه، وليس نقدًا مستلمًا.',
-      ['فعّل الاتفاقية أولًا.']));
+    sections.push(section('DS05_COMMITMENTS', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'NOT_APPLICABLE',
+      'الالتزام مبلغ متفق عليه، وليس نقدًا مستلمًا. لا التزامات قبل وجود اتفاقية.',
+      [],
+      [fundingPolicyNotEstablished]));
   } else if (snapshot.commitmentCount < snapshot.investorCount || snapshot.commitmentCount === 0) {
-    sections.push(section('DS05_COMMITMENTS', 'INVESTORS_AND_TERMS', 'MANDATORY', 'MISSING',
+    sections.push(section('DS05_COMMITMENTS', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'MISSING',
       'أدخل التزامًا موجبًا لكل مشارك بالوحدات الصغرى للجنيه.',
-      ['عدد الالتزامات لا يغطي كل المستثمرين.']));
+      ['عدد الالتزامات لا يغطي كل المشاركين المسجلين.']));
   } else {
-    sections.push(section('DS05_COMMITMENTS', 'INVESTORS_AND_TERMS', 'MANDATORY', 'COMPLETE',
+    sections.push(section('DS05_COMMITMENTS', 'INVESTORS_AND_TERMS', 'CONDITIONAL', 'COMPLETE',
       `${snapshot.commitmentCount} التزامًا. الالتزام ≠ المطلوب ≠ المساهمة.`));
   }
 
   const callsApplicable = applicabilityOf(snapshot, 'DS06_HISTORICAL_CALLS');
   if (!snapshot.activeAgreement) {
-    sections.push(section('DS06_HISTORICAL_CALLS', 'CAPITAL_HISTORY', 'CONDITIONAL', 'BLOCKED',
+    sections.push(section('DS06_HISTORICAL_CALLS', 'CAPITAL_HISTORY', 'CONDITIONAL', 'NOT_APPLICABLE',
       'الطلبات التاريخية تُدخل فقط إذا صدرت قبل تاريخ التجميد.',
-      ['فعّل الاتفاقية أولًا.']));
+      [],
+      [fundingPolicyNotEstablished]));
   } else if (callsApplicable === false) {
     sections.push(section('DS06_HISTORICAL_CALLS', 'CAPITAL_HISTORY', 'CONDITIONAL', 'NOT_APPLICABLE',
       'صرّح المشغّل بأنه لا توجد طلبات رأس مال تاريخية.'));
@@ -322,9 +330,10 @@ function evaluate(snapshot: IntakeSnapshot): IntakeSection[] {
   const doubleCount = snapshot.contributionCount > 0
     && snapshot.openingMappingCodes.includes('OPENING_CONTRIBUTED_CAPITAL');
   if (!snapshot.activeAgreement) {
-    sections.push(section('DS07_HISTORICAL_CONTRIBUTIONS', 'CAPITAL_HISTORY', 'CONDITIONAL', 'BLOCKED',
+    sections.push(section('DS07_HISTORICAL_CONTRIBUTIONS', 'CAPITAL_HISTORY', 'CONDITIONAL', 'NOT_APPLICABLE',
       'المساهمة أثر نقدي مستقل عن الالتزام وعن الطلب.',
-      ['فعّل الاتفاقية أولًا.']));
+      [],
+      [fundingPolicyNotEstablished]));
   } else if (contribApplicable === false) {
     sections.push(section('DS07_HISTORICAL_CONTRIBUTIONS', 'CAPITAL_HISTORY', 'CONDITIONAL', 'NOT_APPLICABLE',
       'صرّح المشغّل بأنه لا توجد مساهمات تاريخية عبر مسار التمويل.'));

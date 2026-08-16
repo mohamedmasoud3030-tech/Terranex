@@ -63,8 +63,7 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
   const zeroVarianceSigned = checkpoints.filter(
     (checkpoint) => checkpoint.status === 'SIGNED_OFF' && checkpoint.is_zero_variance,
   ).length;
-  const financialIntegrityOk = (report?.unbalanced_journal_batches ?? 0) === 0
-    && (report?.partner_capital_rollforward_breaks ?? 0) === 0;
+  const financialIntegrityOk = (report?.unbalanced_journal_batches ?? 0) === 0;
 
   return (
     <section className="stack">
@@ -85,7 +84,7 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         </p>
         <p className="muted">
           {isOwner
-            ? 'أنت مالك المنظمة: يمكنك تنفيذ الموافقات الحصرية للمالك حيث تسمح السياسة الرسمية (اعتماد الفترات، التخصيص، التوزيع، استيراد مفتوح، استثناءات مطابقة، إلغاء وصول).'
+            ? 'أنت مالك المنظمة: يمكنك تنفيذ الموافقات الحصرية للمالك (اعتماد الفترات، استيراد مفتوح، استثناءات مطابقة، إلغاء وصول). تبقى آليات التخصيص والتوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.'
             : 'أنت عضو: يمكنك تنفيذ الإجراءات التشغيلية العادية، لكن لا يمكنك تنفيذ الموافقات الحصرية للمالك. العزل بين المنظمات محفوظ عبر أذونات الصفوف.'}
         </p>
       </section>
@@ -99,7 +98,6 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
           <div className="panel">
             <h3>السلامة المالية</h3>
             <Gate label="قيود متوازنة" satisfied={financialIntegrityOk} note={`قيود غير متوازنة: ${report?.unbalanced_journal_batches ?? 0}`} />
-            <Gate label="تطابق رأس مال الشركاء" satisfied={(report?.partner_capital_rollforward_breaks ?? 0) === 0} note={`كسور: ${report?.partner_capital_rollforward_breaks ?? 0}`} />
             <Gate label="سطور بنكية مطابقة" satisfied={(report?.unreconciled_bank_statement_lines ?? 0) === 0} note={`غير مطابقة: ${report?.unreconciled_bank_statement_lines ?? 0}`} />
           </div>
           <div className="panel">

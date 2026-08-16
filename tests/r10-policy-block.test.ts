@@ -11,6 +11,10 @@ const intakeReadiness = readFileSync('src/features/intake/readiness.ts', 'utf8')
 const termsForms = readFileSync('src/app/(app)/projects/[projectId]/terms/forms.tsx', 'utf8');
 const investorsForms = readFileSync('src/app/(app)/projects/[projectId]/investors/forms.tsx', 'utf8');
 const decisions = readFileSync('docs/OPEN_BUSINESS_DECISIONS.md', 'utf8');
+const preOwnerPolicyMigration = readFileSync('supabase/migrations/20260816062000_pre_owner_policy_safety.sql', 'utf8');
+const pilotPage = readFileSync('src/app/(app)/projects/[projectId]/pilot/page.tsx', 'utf8');
+const controlsPage = readFileSync('src/app/(app)/projects/[projectId]/controls/page.tsx', 'utf8');
+const closePage = readFileSync('src/app/(app)/projects/[projectId]/close/page.tsx', 'utf8');
 
 const S5_FORM_NAMES = /ConfigureRulesForm|PrepareAllocationForm|ApproveAllocationForm|PrepareDistributionForm|ApproveDistributionForm|PayDistributionForm/;
 const S5_READ_NAMES = /getAllocationRuleSets|getAllocationRuns|getAllocationLines|getDistributions|getDistributionCapacity|getPartnerCapitalStatement/;
@@ -150,5 +154,87 @@ describe('post-R14 policy-safety hotfix: the intake policy leak is closed while 
       expect(content, `${file} must not read dormant S5 allocation/distribution state`)
         .not.toMatch(S5_READ_NAMES);
     }
+  });
+});
+
+describe('pre-owner policy-safety boundary: policy-dependent writes fail closed', () => {
+  it('gates every S5 write table behind an approved INVESTOR_ECONOMICS policy', () => {
+    expect(preOwnerPolicyMigration).toContain('target-company investor policy is not activated');
+    for (const gate of [
+      's5_allocation_rule_sets_policy_gate',
+      's5_allocation_rules_policy_gate',
+      's5_allocation_runs_policy_gate',
+      's5_allocation_lines_policy_gate',
+      's5_distributions_policy_gate',
+      's5_distribution_payments_policy_gate',
+    ]) {
+      expect(preOwnerPolicyMigration, gate).toContain(gate);
+    }
+    // The policy registry ships empty: no fake approved row exists.
+    expect(preOwnerPolicyMigration).not.toMatch(/insert into public\.policy_authority/);
+  });
+
+  it('stops the contributed-capital posting from being a universal funding command', () => {
+    // attach_contribution_cash requires an approved CAPITAL_CONTRIBUTION policy
+    // (BD-002/005 OPEN), so CASH RECEIPT is never CONTRIBUTED CAPITAL by implication.
+    const attach = preOwnerPolicyMigration.split('create or replace function public.attach_contribution_cash(')[1];
+    expect(attach).toBeDefined();
+    expect(attach).toContain("require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION')");
+    // Historical idempotent replay must succeed BEFORE the policy gate: the
+    // replay `return v_existing.id` must precede the policy activation check,
+    // so only NEW postings fail closed.
+    const gateIndex = attach.indexOf("require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION')");
+    const replayReturnIndex = attach.indexOf('return v_existing.id');
+    expect(gateIndex).toBeGreaterThan(-1);
+    expect(replayReturnIndex).toBeGreaterThan(-1);
+    expect(replayReturnIndex).toBeLessThan(gateIndex);
+  });
+
+  it('makes distribution-payment reconciliation idempotency NULL-safe', () => {
+    const reconcile = preOwnerPolicyMigration.split('create or replace function public.s5_reconcile_distribution_payment(')[1];
+    expect(reconcile).toBeDefined();
+    expect(reconcile).toContain('distribution payment and statement line are required');
+    expect(reconcile).toContain('is distinct from');
+  });
+
+  it('raises S1 agreement activation and capital-call issuance to OWNER authority', () => {
+    for (const rpc of ['activate_agreement_version', 'create_capital_call']) {
+      const fn = preOwnerPolicyMigration.split(`create or replace function public.${rpc}(`)[1];
+      expect(fn, rpc).toBeDefined();
+      expect(fn, rpc).toContain('perform public.s2_require_owner(p_organization_id)');
+    }
+  });
+
+  it('read-labels the stale S5 source as Real Estate sale only (never universal realized result)', () => {
+    expect(preOwnerPolicyMigration).toContain('comment on function public.s5_realized_result_as_of_snapshot');
+    expect(preOwnerPolicyMigration).toContain('NOT a universal Project realized result');
+    expect(preOwnerPolicyMigration).toContain('comment on column public.s5_allocation_runs.source_category');
+  });
+
+  it('stops the pilot/controls surfaces from exposing investor-statement and partner-capital values', () => {
+    expect(pilotPage).not.toMatch(/investor_statement_total|partner_capital_rollforward_breaks/);
+    expect(controlsPage).not.toMatch(/investor_statement_total|partner_capital_rollforward_breaks|تطابق رأس مال الشركاء/);
+    expect(controlsPage).toContain('تبقى آليات التخصيص والتوزيع محجوبة');
+  });
+
+  it('stops the close page from instructing operators to allocate/distribute', () => {
+    expect(closePage).not.toMatch(/لإصدار قرار التخصيص/);
+    expect(closePage).not.toContain('الإغلاق والتوزيع');
+  });
+
+  it('no longer requires an investor, agreement, or commitment for intake readiness', () => {
+    const result = evaluateIntakeReadiness({
+      ...emptyIntakeSnapshot(),
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 0,
+      activeAgreement: false,
+    });
+    expect(result.sections.find((s) => s.code === 'DS03_PARTIES')?.status).toBe('NOT_APPLICABLE');
+    expect(result.sections.find((s) => s.code === 'DS04_AGREEMENT')?.status).toBe('NOT_APPLICABLE');
+    expect(result.sections.find((s) => s.code === 'DS05_COMMITMENTS')?.status).toBe('NOT_APPLICABLE');
+    expect(result.mandatoryMissing).not.toContain('DS03_PARTIES');
+    expect(result.mandatoryMissing).not.toContain('DS04_AGREEMENT');
+    expect(result.mandatoryMissing).not.toContain('DS05_COMMITMENTS');
   });
 });

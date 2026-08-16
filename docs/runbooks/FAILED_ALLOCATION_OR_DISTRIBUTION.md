@@ -2,13 +2,20 @@
 
 **Scope:** an allocation run or a distribution cannot be prepared, approved or paid, or one of them was approved with wrong content.
 
+> **Pre-owner policy-safety (2026-08-16):** S5 allocation/distribution is
+> **policy-inert** until an approved `policy_authority` exists (ADR 0033). The
+> expected first refusal for an unactivated tenant is now
+> `target-company investor policy is not activated` — that is correct behavior,
+> not a defect. This runbook covers the mechanism once policy is (later) approved.
+
 ## 1. Symptom
 
 Preparation or approval is refused with one of:
 
+- "target-company investor policy is not activated" (policy not approved — expected)
 - "allocation requires an approved S6 close snapshot"
 - "allocation rules are not configured for the governing version"
-- "closed snapshot contains no allocable realized result"
+- "closed snapshot contains no allocable real-estate sale result"
 - "allocation weights must resolve exactly to 100 percent"
 - "S5 posting requires exactly one OPEN accounting period covering the posting date"
 - a maker/checker constraint violation (`s5_allocation_run_maker_checker_check` or `s5_distribution_maker_checker_check`)
@@ -81,7 +88,7 @@ select * from public.s5_partner_capital_statement_read where project_id = :proje
 | --- | --- | --- |
 | requires an approved S6 close snapshot | The period was never closed, or the close run is not APPROVED | Close the period properly first |
 | rules are not configured | No frozen rule set for that governing agreement version | Configure rules (OWNER) before preparing |
-| no allocable realized result | The closed period genuinely contains no recognized sale result | Nothing to allocate; this is correct |
+| no allocable real-estate sale result | The closed period genuinely contains no recognized sale result | Nothing to allocate; this is correct |
 | weights must resolve exactly | Numerators do not sum to the denominator | Fix the weights; they come from the governing schedule, not from commitments |
 | exactly one OPEN period | The posting date is in a closed period or no period covers it | Reopen or open the correct period; see [`CLOSED_PERIOD_CORRECTION.md`](CLOSED_PERIOD_CORRECTION.md) |
 | maker/checker constraint | The same person prepared and approved | A different authorised person approves. Never share credentials |

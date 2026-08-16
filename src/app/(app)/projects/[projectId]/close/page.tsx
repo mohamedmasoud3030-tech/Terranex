@@ -98,7 +98,7 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
       <WorkspaceChrome
         projectId={projectId}
         active="close"
-        title="الإغلاق والتوزيع"
+        title="الإغلاق المالي"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
       />
@@ -107,13 +107,12 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         <a href="#close">الإغلاق</a>
         <a href="#snapshots">اللقطات</a>
         <a href="#corrections">التصحيح</a>
-        <Link href={`/projects/${projectId}/investors`}>التخصيص والتوزيعات</Link>
+        <Link href={`/projects/${projectId}/investors`}>المستثمرون</Link>
       </nav>
 
       <div className="banner info" role="note">
-        بعد إغلاق فترة محاسبية، انتقل إلى{' '}
-        <Link href={`/projects/${projectId}/investors`}>التخصيص والتوزيعات</Link> لإصدار قرار التخصيص
-        وتوزيع النتيجة على الشركاء.
+        الإغلاق المالي للفترات مستقل تمامًا عن تخصيص النتيجة وتوزيعها على الشركاء.
+        تبقى آليات التخصيص والتوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.
       </div>
 
       <section id="periods" className="card stack scroll-target">

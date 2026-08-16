@@ -556,8 +556,6 @@ select s7e_assert((select end_to_end_result = 'PASS'
   and unresolved_critical_exceptions = 0
   and unbalanced_journal_batches = 0
   and unreconciled_bank_statement_lines = 0
-  and partner_capital_rollforward_breaks = 0
-  and investor_statement_total_minor_units = '3750000'
   from public.s7_pilot_acceptance_report_read where project_id = :'e2e_project'),
   'the acceptance report must reproduce the rehearsal state exactly from recorded facts');
 select s7e_assert((select human_uat_status = 'NOT_STARTED' and uat_accepted_tasks = 0

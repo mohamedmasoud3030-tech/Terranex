@@ -93,6 +93,18 @@ insert into auth.users values ('00000000-0000-4000-8000-000000000003');
 insert into public.memberships(organization_id,user_id,role) values
   ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000003','MEMBER');
 
+-- Synthetic policy activation: attach_contribution_cash now requires an
+-- approved CAPITAL_CONTRIBUTION policy. This is TEST DATA only — no target-
+-- company policy row exists in the migration schema (policy_authority empty).
+-- No-op when replaying a pre-policy subset of migrations (forward-upgrade tests).
+do $$ begin
+  if to_regclass('public.policy_authority') is not null then
+    insert into public.policy_authority(organization_id,scope,policy_version,evidence_reference,approved_by)
+    values ('10000000-0000-4000-8000-000000000001','CAPITAL_CONTRIBUTION','S2-CONTRIB-TEST-V1','S2-TEST-SYNTHETIC-POLICY','00000000-0000-4000-8000-000000000001')
+    on conflict (organization_id,scope) do nothing;
+  end if;
+end $$;
+
 select s2_run('00000000-0000-4000-8000-000000000001',
   $$select public.create_party('10000000-0000-4000-8000-000000000001','مورد أول','ORGANIZATION')$$);
 select id as s2_supplier_1 from public.parties where legal_name='مورد أول' \gset
