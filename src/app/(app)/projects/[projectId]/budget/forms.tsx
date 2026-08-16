@@ -1,7 +1,9 @@
 'use client';
 
-import { useActionState, useMemo } from 'react';
+import { useActionState } from 'react';
 import { formatMinorUnits } from '@/shared/money';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
+import type { ActionState } from '@/features/auth/actions';
 import type { BudgetRow } from '@/features/control/queries';
 import {
   approveBudget,
@@ -15,17 +17,21 @@ const TREATMENT_LABEL: Record<string, string> = {
   CAPITALIZABLE_WIP: 'أعمال تحت التطوير',
 };
 
+const initialState: ActionState = {};
+
 export function BudgetForm({
   organizationId,
   projectId,
   currency,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   currency: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(createBudget, { error: undefined });
-  const idempotencyKey = useMemo(() => `budget-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(createBudget, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('budget-create', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -63,6 +69,7 @@ export function BudgetForm({
       </label>
       <p className="muted">
         المبالغ بالوحدات الصغرى للعملة لتجنب أي تقريب؛ مثال: 100.00 من عملة المشروع = 10000 وحدة صغرى.
+        أي بند غير صالح يرفض الموازنة كاملة — لا يُسقط أي بند بصمت.
       </p>
       {state.error ? <p className="error">{state.error}</p> : null}
       <button disabled={pending} type="submit" className="button">
@@ -76,13 +83,15 @@ export function ApproveBudgetButton({
   organizationId,
   projectId,
   budget,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   budget: BudgetRow;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(approveBudget, { error: undefined });
-  const idempotencyKey = useMemo(() => `budget-approve-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(approveBudget, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('budget-approve', state, commandNonce);
   return (
     <form action={action} className="inline">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -101,13 +110,15 @@ export function SupersedeBudgetForm({
   organizationId,
   projectId,
   budget,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   budget: BudgetRow;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(supersedeBudget, { error: undefined });
-  const idempotencyKey = useMemo(() => `budget-supersede-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(supersedeBudget, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('budget-supersede', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -130,13 +141,15 @@ export function DeleteDraftBudgetButton({
   organizationId,
   projectId,
   budgetId,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   budgetId: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(deleteDraftBudget, { error: undefined });
-  const idempotencyKey = useMemo(() => `budget-delete-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(deleteDraftBudget, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('budget-delete', state, commandNonce);
   return (
     <form action={action} className="inline">
       <input type="hidden" name="organizationId" value={organizationId} />

@@ -1,19 +1,21 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useState } from 'react';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
+import type { ActionState } from '@/features/auth/actions';
+import type { ApprovalException, FxSnapshot } from '@/features/control/queries';
 import {
   decideApprovalException,
   openApprovalException,
   recordFxConversion,
   recordFxSnapshot,
   registerTaxTreatment,
+  resubmitApprovalException,
   setApprovalPolicy,
   setOrgReportingCurrency,
 } from '@/features/control/actions';
-import type {
-  ApprovalException,
-  FxSnapshot,
-} from '@/features/control/queries';
+
+const initialState: ActionState = {};
 
 const POLICY_DOMAIN_LABEL: Record<string, string> = {
   OBLIGATION_AUTHORIZATION: 'اعتماد الالتزامات',
@@ -31,6 +33,13 @@ const EXCEPTION_DOMAIN_LABEL: Record<string, string> = {
   CLOSE_GATE: 'بوابة إقفال',
   DISPUTE_HOLD: 'حجز نزاع',
   OTHER_DISCLOSED: 'إفصاح آخر',
+};
+
+const SEVERITY_LABEL: Record<string, string> = {
+  LOW: 'منخفضة',
+  MEDIUM: 'متوسطة',
+  HIGH: 'عالية',
+  CRITICAL: 'حرجة',
 };
 
 const TAX_DOMAIN_LABEL: Record<string, string> = {
@@ -56,9 +65,15 @@ const TREATMENT_LABEL: Record<string, string> = {
   DEFERRED_PENDING_TAX_ADVISORY: 'مؤجل بانتظار مستشار ضريبي',
 };
 
-export function ApprovalPolicyForm({ organizationId }: { organizationId: string }) {
-  const [state, action, pending] = useActionState(setApprovalPolicy, { error: undefined });
-  const idempotencyKey = useMemo(() => `policy-${crypto.randomUUID()}`, []);
+export function ApprovalPolicyForm({
+  organizationId,
+  commandNonce,
+}: {
+  organizationId: string;
+  commandNonce: string;
+}) {
+  const [state, action, pending] = useActionState(setApprovalPolicy, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('policy-set', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -80,10 +95,20 @@ export function ApprovalPolicyForm({ organizationId }: { organizationId: string 
           العملة (اختياري)
           <input name="currency" maxLength={3} placeholder="EGP" />
         </label>
+        <label>
+          عدد المعتمدين المستقلين (تدرج الاعتماد 1-3)
+          <select name="minApprovers" defaultValue="1">
+            <option value="1">معتمد واحد (حد المالك الأساسي)</option>
+            <option value="2">معتمدان مستقلان</option>
+            <option value="3">ثلاثة معتمدين مستقلين</option>
+          </select>
+        </label>
       </div>
+      <input type="hidden" name="evidenceRequired" value="false" />
       <label>
         <input type="checkbox" name="evidenceRequired" value="true" /> يتطلب مستندًا مرجعيًا عند تجاوز الحد
       </label>
+      <input type="hidden" name="active" value="false" />
       <label>
         <input type="checkbox" name="active" value="true" defaultChecked /> سياسة مفعّلة
       </label>
@@ -100,15 +125,19 @@ export function OpenExceptionForm({
   organizationId,
   projectId,
   subjects,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   subjects: { type: string; id: string; label: string }[];
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(openApprovalException, { error: undefined });
-  const idempotencyKey = useMemo(() => `exception-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(openApprovalException, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('exception-open', state, commandNonce);
+  // Subject selection is keyed by a unique `type::id` so picking the second
+  // budget line can never record the exception against the first one.
   const [subjectKey, setSubjectKey] = useState('');
-  const subject = subjects.find((s) => s.type === subjectKey) ?? null;
+  const subject = subjects.find((s) => `${s.type}::${s.id}` === subjectKey) ?? null;
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -134,9 +163,21 @@ export function OpenExceptionForm({
           >
             <option value="">بدون موضوع محدد</option>
             {subjects.map((s) => (
-              <option key={s.type} value={s.type}>{s.label}</option>
+              <option key={`${s.type}::${s.id}`} value={`${s.type}::${s.id}`}>{s.label}</option>
             ))}
           </select>
+        </label>
+        <label>
+          الخطورة
+          <select name="severity" defaultValue="MEDIUM" required>
+            {Object.entries(SEVERITY_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          تاريخ الاستحقاق (اختياري)
+          <input type="date" name="dueDate" />
         </label>
       </div>
       <div className="grid">
@@ -145,8 +186,12 @@ export function OpenExceptionForm({
           <input name="amountMinorUnits" inputMode="numeric" placeholder="100000" />
         </label>
         <label>
-          العملة (اختياري)
+          العملة (اختياري — تُشتق من الموازنة لاستثناءات السقف)
           <input name="currency" maxLength={3} placeholder="EGP" />
+        </label>
+        <label>
+          المالك المسؤول (اختياري — افتراضيًا فاتح الاستثناء)
+          <input name="ownerId" placeholder="00000000-0000-4000-8000-000000000000" />
         </label>
       </div>
       <label>
@@ -169,13 +214,15 @@ export function DecideExceptionForm({
   organizationId,
   projectId,
   exception,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   exception: ApprovalException;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(decideApprovalException, { error: undefined });
-  const idempotencyKey = useMemo(() => `exception-decide-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(decideApprovalException, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('exception-decide', state, commandNonce);
   if (exception.status !== 'OPEN') return null;
   return (
     <form action={action} className="stack">
@@ -188,7 +235,7 @@ export function DecideExceptionForm({
         <select name="decision" required>
           <option value="APPROVED">اعتماد</option>
           <option value="REJECTED">رفض</option>
-          <option value="VOID">سحب (باطل)</option>
+          <option value="VOID">إبطال</option>
         </select>
       </label>
       <label>
@@ -203,15 +250,53 @@ export function DecideExceptionForm({
   );
 }
 
-export function FxSnapshotForm({
+export function ResubmitExceptionForm({
   organizationId,
   projectId,
+  exception,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
+  exception: ApprovalException;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(recordFxSnapshot, { error: undefined });
-  const idempotencyKey = useMemo(() => `fx-snapshot-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(resubmitApprovalException, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('exception-resubmit', state, commandNonce);
+  if (exception.status !== 'REJECTED') return null;
+  return (
+    <form action={action} className="stack">
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="exceptionId" value={exception.exception_id} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+      <label>
+        سبب إعادة التقديم
+        <textarea name="reason" required minLength={3} maxLength={1000} />
+      </label>
+      <label>
+        مرجع المستند (اختياري)
+        <input name="evidenceReference" maxLength={500} />
+      </label>
+      <button disabled={pending} type="submit" className="button">
+        {pending ? 'جارٍ إعادة التقديم…' : 'إعادة التقديم (استثناء جديد مفتوح)'}
+      </button>
+      {state.error ? <p className="error">{state.error}</p> : null}
+    </form>
+  );
+}
+
+export function FxSnapshotForm({
+  organizationId,
+  projectId,
+  commandNonce,
+}: {
+  organizationId: string;
+  projectId: string;
+  commandNonce: string;
+}) {
+  const [state, action, pending] = useActionState(recordFxSnapshot, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('fx-snapshot', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -269,13 +354,15 @@ export function FxConversionForm({
   organizationId,
   projectId,
   snapshots,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   snapshots: FxSnapshot[];
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(recordFxConversion, { error: undefined });
-  const idempotencyKey = useMemo(() => `fx-conversion-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(recordFxConversion, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('fx-conversion', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -311,8 +398,7 @@ export function FxConversionForm({
         </label>
       </div>
       <p className="muted">
-        يُحسب الناتج حتميًا من كسر السعر المختار (تقريب نصف لأعلى بأعداد صحيحة)؛ مصدر العملة
-        وعملة الهدف مأخوذان من اللقطة نفسها.
+        تُشتق عملتا المصدر والهدف من اللقطة نفسها؛ يُحسب الناتج حتميًا من كسر السعر المختار.
       </p>
       {state.error ? <p className="error">{state.error}</p> : null}
       <button disabled={pending} type="submit" className="button">
@@ -325,12 +411,14 @@ export function FxConversionForm({
 export function OrgReportingCurrencyForm({
   organizationId,
   current,
+  commandNonce,
 }: {
   organizationId: string;
   current: string | null;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(setOrgReportingCurrency, { error: undefined });
-  const idempotencyKey = useMemo(() => `org-currency-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(setOrgReportingCurrency, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('org-currency', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -351,9 +439,15 @@ export function OrgReportingCurrencyForm({
   );
 }
 
-export function TaxTreatmentForm({ organizationId }: { organizationId: string }) {
-  const [state, action, pending] = useActionState(registerTaxTreatment, { error: undefined });
-  const idempotencyKey = useMemo(() => `tax-${crypto.randomUUID()}`, []);
+export function TaxTreatmentForm({
+  organizationId,
+  commandNonce,
+}: {
+  organizationId: string;
+  commandNonce: string;
+}) {
+  const [state, action, pending] = useActionState(registerTaxTreatment, initialState);
+  const idempotencyKey = useCommandIdempotencyKey('tax-register', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />

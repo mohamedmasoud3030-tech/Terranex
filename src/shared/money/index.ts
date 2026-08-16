@@ -18,6 +18,15 @@ export const MONEY_CURRENCIES: Record<string, number> = {
   EUR: 2,
   SAR: 2,
   AED: 2,
+  // ISO 4217 three-decimal currencies — an unknown currency must never be
+  // silently treated as two decimals when its real minor unit is three.
+  BHD: 3,
+  JOD: 3,
+  KWD: 3,
+  LYD: 3,
+  OMR: 3,
+  TND: 3,
+  IQD: 3,
 };
 
 export const INT64_MAX = 9_223_372_036_854_775_807n;

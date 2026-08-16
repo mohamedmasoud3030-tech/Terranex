@@ -3,7 +3,9 @@
 import { useActionState, useMemo, useState } from 'react';
 import type { Party } from '@/features/funding/queries';
 import type { CashAccountPosition } from '@/features/finance/queries';
+import type { ActionState } from '@/features/auth/actions';
 import { formatMinorUnits } from '@/shared/money';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
 import {
   approvePayment,
   authorizeObligation,
@@ -18,6 +20,7 @@ import {
   openDispute,
   releaseRetention,
   resolveDispute,
+  setObligationSchedule,
   setObligationTerms,
 } from '@/features/control/actions';
 
@@ -232,18 +235,25 @@ export function ReverseBatchForm({
 }
 
 // ---------------------------------------------------------------------------
-// F3 — Contract finance forms (milestones, payment terms, disputes, retention)
+// F3 — Contract finance forms (milestones, payment terms, schedules,
+// disputes, retention). Every form owns the canonical idempotency-key
+// lifecycle: the key survives failed retries and rotates only after a
+// confirmed server success.
 // ---------------------------------------------------------------------------
+
+const controlInitialState: ActionState = {};
 
 export function MilestoneForm({
   organizationId,
   projectId,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(createMilestone, { error: undefined });
-  const idempotencyKey = useMemo(() => `milestone-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(createMilestone, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('milestone-create', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -277,13 +287,15 @@ export function AchieveMilestoneButton({
   organizationId,
   projectId,
   milestoneId,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   milestoneId: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(achieveMilestone, { error: undefined });
-  const idempotencyKey = useMemo(() => `milestone-ach-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(achieveMilestone, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('milestone-achieve', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -311,20 +323,23 @@ export function ObligationTermsForm({
   projectId,
   obligationId,
   currency,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   obligationId: string;
   currency: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(setObligationTerms, { error: undefined });
-  const idempotencyKey = useMemo(() => `terms-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(setObligationTerms, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('terms-set', state, commandNonce);
   const [termsType, setTermsType] = useState('FIXED_DATE');
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="obligationId" value={obligationId} />
+      <input type="hidden" name="currency" value={currency} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <label>
         نوع شروط الدفع
@@ -366,17 +381,101 @@ export function ObligationTermsForm({
   );
 }
 
-export function OpenDisputeForm({
+export function ObligationScheduleForm({
   organizationId,
   projectId,
   obligationId,
+  milestones,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   obligationId: string;
+  milestones: { milestone_id: string; code: string; label_ar: string }[];
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(openDispute, { error: undefined });
-  const idempotencyKey = useMemo(() => `dispute-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(setObligationSchedule, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('schedule-set', state, commandNonce);
+  const [rows, setRows] = useState([{ lineNumber: 1, dueDate: '', amount: '', milestoneId: '', retention: false }]);
+  const linesJson = JSON.stringify(
+    rows.filter((row) => row.amount.trim() !== '').map((row) => ({
+      line_number: Number(row.lineNumber),
+      due_date: row.dueDate || null,
+      amount_minor_units: row.amount.trim(),
+      milestone_id: row.retention ? null : (row.milestoneId || null),
+      is_retention_line: row.retention,
+    })),
+  );
+  const addRow = () => setRows((prev) => [
+    ...prev,
+    { lineNumber: prev.length + 1, dueDate: '', amount: '', milestoneId: '', retention: false },
+  ]);
+  return (
+    <form action={action} className="stack">
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="obligationId" value={obligationId} />
+      <input type="hidden" name="linesJson" value={linesJson} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+      {rows.map((row, index) => (
+        <div className="grid" key={index}>
+          <label>
+            الرقم
+            <input type="number" value={row.lineNumber} readOnly />
+          </label>
+          <label>
+            تاريخ الاستحقاق
+            <input type="date" value={row.dueDate}
+              onChange={(event) => setRows((prev) => prev.map((r, i) => (i === index ? { ...r, dueDate: event.target.value } : r)))} />
+          </label>
+          <label>
+            المبلغ (بالوحدات الصغرى)
+            <input inputMode="numeric" value={row.amount}
+              onChange={(event) => setRows((prev) => prev.map((r, i) => (i === index ? { ...r, amount: event.target.value } : r)))} />
+          </label>
+          <label>
+            الإنجاز المرتبط
+            <select value={row.milestoneId} disabled={row.retention}
+              onChange={(event) => setRows((prev) => prev.map((r, i) => (i === index ? { ...r, milestoneId: event.target.value } : r)))}>
+              <option value="">بدون</option>
+              {milestones.map((m) => (
+                <option key={m.milestone_id} value={m.milestone_id}>{m.code} — {m.label_ar}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <input type="checkbox" checked={row.retention}
+              onChange={(event) => setRows((prev) => prev.map((r, i) => (i === index ? { ...r, retention: event.target.checked } : r)))} />
+            سطر حجز ضمان
+          </label>
+        </div>
+      ))}
+      <button type="button" className="secondary" onClick={addRow}>إضافة سطر</button>
+      <p className="muted">
+        استبدال كامل لبنود الجدولة (للالتزام المسود فقط). الإجمالي لا يتجاوز مبلغ الالتزام،
+        وبنود الحجز لا تتجاوز الحجز المعلن في الشروط.
+      </p>
+      {state.error && <p className="error" role="alert">{state.error}</p>}
+      <button className="secondary" disabled={pending || linesJson === '[]'}>
+        {pending ? 'جارٍ الحفظ…' : 'حفظ جدولة الدفع'}
+      </button>
+    </form>
+  );
+}
+
+export function OpenDisputeForm({
+  organizationId,
+  projectId,
+  obligationId,
+  commandNonce,
+}: {
+  organizationId: string;
+  projectId: string;
+  obligationId: string;
+  commandNonce: string;
+}) {
+  const [state, action, pending] = useActionState(openDispute, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('dispute-open', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -399,13 +498,15 @@ export function ResolveDisputeForm({
   organizationId,
   projectId,
   disputeId,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   disputeId: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(resolveDispute, { error: undefined });
-  const idempotencyKey = useMemo(() => `dispute-resolve-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(resolveDispute, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('dispute-resolve', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -415,6 +516,10 @@ export function ResolveDisputeForm({
       <label>
         ملاحظة التسوية
         <textarea name="resolutionNote" required minLength={3} maxLength={1000} placeholder="ما تم الاتفاق عليه" />
+      </label>
+      <label>
+        مرجع المستند (مطلوب إذا كانت سياسة الاعتماد تشترطه)
+        <input name="evidenceReference" maxLength={500} />
       </label>
       {state.error && <p className="error" role="alert">{state.error}</p>}
       <button className="secondary" disabled={pending}>
@@ -430,20 +535,23 @@ export function RetentionReleaseForm({
   obligationId,
   currency,
   milestones,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   obligationId: string;
   currency: string;
   milestones: { milestone_id: string; code: string; label_ar: string; status: string }[];
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(releaseRetention, { error: undefined });
-  const idempotencyKey = useMemo(() => `retention-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(releaseRetention, controlInitialState);
+  const idempotencyKey = useCommandIdempotencyKey('retention-release', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="obligationId" value={obligationId} />
+      <input type="hidden" name="currency" value={currency} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <label>
         مبلغ الإفراج ({currency})
@@ -458,7 +566,11 @@ export function RetentionReleaseForm({
         <input name="reason" required minLength={3} maxLength={1000} placeholder="اكتمال فترة الضمان" />
       </label>
       <label>
-        الإنجاز المرتبط (اختياري — يجب أن يكون معتمدًا)
+        مرجع المستند (مطلوب إذا كانت سياسة الاعتماد تشترطه)
+        <input name="evidenceReference" maxLength={500} />
+      </label>
+      <label>
+        الإنجاز المرتبط (اختياري — يجب أن يكون معتمدًا ومن نفس المشروع)
         <select name="milestoneId">
           <option value="">بدون إنجاز</option>
           {milestones.filter((m) => m.status === 'ACHIEVED').map((m) => (

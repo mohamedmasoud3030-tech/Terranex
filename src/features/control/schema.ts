@@ -10,17 +10,24 @@ const moneyAmount = z
   .trim()
   .refine((value) => isValidMajorMoney(value, 'EGP'), 'أدخل مبلغًا موجبًا بحد أقصى خانتين عشريتين');
 
-// Retention may legitimately be zero; negative values are rejected.
-const nonNegativeMoney = z
+// Retention may legitimately be zero; negative values are rejected. The
+// decimal scale follows the actual currency (OMR has 3 minor digits).
+const nonNegativeMoneyFor = (currency: string) => z
   .string({ error: 'أدخل مبلغًا صحيحًا' })
   .trim()
   .refine((value) => {
     try {
-      return BigInt(parseSignedMajorUnitsToMinor(value, 'EGP')) >= 0n;
+      return BigInt(parseSignedMajorUnitsToMinor(value, currency)) >= 0n;
     } catch {
       return false;
     }
-  }, 'أدخل مبلغًا غير سالب بحد أقصى خانتين عشريتين');
+  }, `أدخل مبلغًا غير سالب بعدد الخانات العشرية الصحيح لعملة ${currency}`);
+
+const positiveMoneyFor = (currency: string) => z
+  .string({ error: 'أدخل مبلغًا صحيحًا' })
+  .trim()
+  .refine((value) => isValidMajorMoney(value, currency),
+    `أدخل مبلغًا موجبًا بعدد الخانات العشرية الصحيح لعملة ${currency}`);
 
 const idempotencyKey = z.string().trim().min(8, 'مفتاح إعادة المحاولة قصير جدًا').max(120);
 const orgId = z.string().uuid();
@@ -50,14 +57,23 @@ export const achieveMilestoneSchema = z.object({
 export const obligationTermsSchema = z.object({
   organizationId: orgId,
   obligationId: uuid,
+  currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
   termsType: z.enum(['FIXED_DATE', 'NET_DAYS', 'MILESTONE_SCHEDULE']),
   dueDate: z.string().trim().optional().or(z.literal('')),
   netDays: z.string().trim().optional().or(z.literal('')),
-  retention: nonNegativeMoney,
+  retention: z.string({ error: 'أدخل مبلغًا صحيحًا' }).trim(),
   evidenceReference: z.string().trim().max(500).optional().or(z.literal('')),
   notes: z.string().trim().max(1000).optional().or(z.literal('')),
   idempotencyKey,
 }).superRefine((data, ctx) => {
+  const retentionCheck = nonNegativeMoneyFor(data.currency).safeParse(data.retention);
+  if (!retentionCheck.success) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['retention'],
+      message: retentionCheck.error.issues[0]?.message ?? 'أدخل مبلغًا صحيحًا',
+    });
+  }
   if (data.termsType === 'FIXED_DATE' && !data.dueDate) {
     ctx.addIssue({
       code: 'custom',
@@ -88,22 +104,34 @@ export const resolveDisputeSchema = z.object({
   organizationId: orgId,
   disputeId: uuid,
   resolutionNote: z.string().trim().min(3, 'ملاحظة التسوية مطلوبة').max(1000),
+  evidenceReference: z.string().trim().max(500).optional().or(z.literal('')),
   idempotencyKey,
 });
 
 export const retentionReleaseSchema = z.object({
   organizationId: orgId,
   obligationId: uuid,
-  amount: moneyAmount,
+  currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
+  amount: z.string({ error: 'أدخل مبلغًا صحيحًا' }).trim(),
   releaseDate: z.string().trim().min(1, 'تاريخ الإفراج مطلوب'),
   reason: z.string().trim().min(3, 'سبب الإفراج مطلوب').max(1000),
+  evidenceReference: z.string().trim().max(500).optional().or(z.literal('')),
   milestoneId: uuid.optional().or(z.literal('')),
   idempotencyKey,
+}).superRefine((data, ctx) => {
+  const amountCheck = positiveMoneyFor(data.currency).safeParse(data.amount);
+  if (!amountCheck.success) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['amount'],
+      message: amountCheck.error.issues[0]?.message ?? 'أدخل مبلغًا صحيحًا',
+    });
+  }
 });
 
 // ---- F4 — Budget control ----
 
-const budgetLine = z.object({
+export const budgetLine = z.object({
   cost_treatment: z.enum(['EXPENSE', 'CAPITALIZABLE_WIP']),
   amount_minor_units: z.string().trim().min(1).regex(/^[1-9][0-9]*$/, 'المبلغ بالوحدات الصغرى'),
   notes: z.string().trim().max(1000).optional().or(z.literal('')),
@@ -169,6 +197,7 @@ export const approvalPolicySchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة').optional().or(z.literal('')),
   evidenceRequired: z.enum(['true', 'false']),
   active: z.enum(['true', 'false']),
+  minApprovers: z.string().trim().regex(/^[1-3]$/, 'عدد المعتمدين بين 1 و 3'),
   idempotencyKey,
 });
 
@@ -197,6 +226,9 @@ export const openExceptionSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة').optional().or(z.literal('')),
   reason: z.string().trim().min(3, 'سبب الاستثناء مطلوب').max(1000),
   evidenceReference: z.string().trim().max(500).optional().or(z.literal('')),
+  severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  ownerId: uuid.optional().or(z.literal('')),
+  dueDate: z.string().trim().optional().or(z.literal('')),
   idempotencyKey,
 }).superRefine((data, ctx) => {
   if (data.subjectType !== 'none' && !data.subjectId) {
@@ -250,8 +282,6 @@ export const fxConversionSchema = z.object({
   organizationId: orgId,
   projectId: uuid.optional().or(z.literal('')),
   sourceAmountMinorUnits: z.string().trim().regex(/^[1-9][0-9]*$/, 'المبلغ بالوحدات الصغرى'),
-  sourceCurrency: z.string().regex(/^[A-Z]{3}$/, 'عملة المصدر غير صحيحة'),
-  targetCurrency: z.string().regex(/^[A-Z]{3}$/, 'عملة الهدف غير صحيحة'),
   rateSnapshotId: uuid,
   conversionDate: z.string().trim().min(1, 'تاريخ التحويل مطلوب'),
   purpose: z.enum(['REPORTING_ROLLUP', 'DISCLOSURE', 'RECONCILIATION']),
@@ -294,3 +324,18 @@ export type ApprovalPolicyInput = z.infer<typeof approvalPolicySchema>;
 export type OpenExceptionInput = z.infer<typeof openExceptionSchema>;
 export type FxSnapshotInput = z.infer<typeof fxSnapshotSchema>;
 export type TaxTreatmentInput = z.infer<typeof taxTreatmentSchema>;
+
+export const obligationScheduleSchema = z.object({
+  organizationId: orgId,
+  obligationId: uuid,
+  linesJson: z.string().trim().min(1, 'أدخل بند جدولة واحدًا على الأقل'),
+  idempotencyKey,
+});
+
+export const resubmitExceptionSchema = z.object({
+  organizationId: orgId,
+  exceptionId: uuid,
+  reason: z.string().trim().min(3, 'سبب إعادة التقديم مطلوب').max(1000),
+  evidenceReference: z.string().trim().max(500).optional().or(z.literal('')),
+  idempotencyKey,
+});

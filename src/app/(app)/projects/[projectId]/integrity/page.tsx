@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
+import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import { formatMinorUnits } from '@/shared/money';
 import { getCurrentMembership } from '@/features/finance/queries';
@@ -18,6 +19,7 @@ import {
 import {
   ApprovalPolicyForm,
   DecideExceptionForm,
+  ResubmitExceptionForm,
   FxConversionForm,
   FxSnapshotForm,
   OpenExceptionForm,
@@ -245,7 +247,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             </table>
           </div>
         )}
-        {isOwner ? <ApprovalPolicyForm organizationId={organizationId} /> : null}
+        {isOwner ? <ApprovalPolicyForm organizationId={organizationId} commandNonce={newCommandNonce()} /> : null}
       </section>
 
       <section className="card stack">
@@ -256,13 +258,15 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>المجال</th><th>النوع</th><th>الحالة</th><th>المبلغ</th><th>السبب</th><th>القرار</th></tr>
+                <tr><th>المجال</th><th>النوع</th><th>الخطورة</th><th>الاستحقاق</th><th>الحالة</th><th>المبلغ</th><th>السبب</th><th>القرار</th></tr>
               </thead>
               <tbody>
                 {exceptions.map((exception) => (
                   <tr key={exception.exception_id}>
                     <td>{exception.domain}</td>
                     <td>{exception.exception_kind}</td>
+                    <td>{exception.severity}</td>
+                    <td>{exception.due_date ?? '—'}</td>
                     <td><span className="status">{exception.status}</span></td>
                     <td>
                       {exception.amount_minor_units
@@ -276,6 +280,15 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                           organizationId={organizationId}
                           projectId={projectId}
                           exception={exception}
+                          commandNonce={newCommandNonce()}
+                        />
+                      ) : null}
+                      {exception.status === 'REJECTED' && isOwner ? (
+                        <ResubmitExceptionForm
+                          organizationId={organizationId}
+                          projectId={projectId}
+                          exception={exception}
+                          commandNonce={newCommandNonce()}
                         />
                       ) : null}
                     </td>
@@ -290,6 +303,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             organizationId={organizationId}
             projectId={projectId}
             subjects={exceptionSubjects}
+            commandNonce={newCommandNonce()}
           />
         ) : null}
       </section>
@@ -338,9 +352,18 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : null}
         {isOwner ? (
           <>
-            <FxSnapshotForm organizationId={organizationId} projectId={projectId} />
+            <FxSnapshotForm
+              organizationId={organizationId}
+              projectId={projectId}
+              commandNonce={newCommandNonce()}
+            />
             {snapshots.length > 0 ? (
-              <FxConversionForm organizationId={organizationId} projectId={projectId} snapshots={snapshots} />
+              <FxConversionForm
+                organizationId={organizationId}
+                projectId={projectId}
+                snapshots={snapshots}
+                commandNonce={newCommandNonce()}
+              />
             ) : null}
           </>
         ) : null}
@@ -349,7 +372,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
       <section className="card stack">
         <h2>التوحيد على مستوى المنظمة</h2>
         {isOwner ? (
-          <OrgReportingCurrencyForm organizationId={organizationId} current={orgReportingCurrency} />
+          <OrgReportingCurrencyForm
+            organizationId={organizationId}
+            current={orgReportingCurrency}
+            commandNonce={newCommandNonce()}
+          />
         ) : null}
         {consolidation.length === 0 ? (
           <p className="muted">لا توجد أرقام توحيد بعد.</p>
@@ -415,7 +442,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             </table>
           </div>
         )}
-        {isOwner ? <TaxTreatmentForm organizationId={organizationId} /> : null}
+        {isOwner ? <TaxTreatmentForm organizationId={organizationId} commandNonce={newCommandNonce()} /> : null}
       </section>
     </section>
   );

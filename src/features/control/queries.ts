@@ -94,6 +94,27 @@ export type BudgetConsumption = {
   authorization_remaining_minor_units: string;
   effective_remaining_minor_units: string;
   forecast_final_minor_units: string;
+  actual_minor_units: string;
+  approved_forecast_remainder_minor_units: string;
+  fac_minor_units: string;
+};
+
+export type BudgetFac = {
+  budget_id: string;
+  organization_id: string;
+  project_id: string;
+  period_start: string;
+  period_end: string;
+  budget_type: string;
+  version: number;
+  currency: string;
+  description: string;
+  budget_total_minor_units: string;
+  approved_exception_total_minor_units: string;
+  actual_total_minor_units: string;
+  open_commitment_minor_units: string;
+  approved_forecast_remainder_minor_units: string;
+  fac_minor_units: string;
 };
 
 export type ApprovalException = {
@@ -112,6 +133,10 @@ export type ApprovalException = {
   decided_by: string | null;
   decided_at: string | null;
   reason: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  owner_id: string | null;
+  due_date: string | null;
+  replaces_exception_id: string | null;
 };
 
 export type ApprovalPolicy = {
@@ -181,6 +206,12 @@ export type PortfolioRollup = {
   converted_cash_balance_minor_units: string | null;
   converted_payable_open_minor_units: string | null;
   converted_paid_minor_units: string | null;
+  open_commitment_minor_units: string;
+  realized_result_minor_units: string;
+  fac_minor_units: string;
+  open_exception_count: number;
+  sector_exposure: Record<string, { project_count: number; cash_balance_minor_units: string }> | null;
+  cash_concentration_ratio: string | null;
 };
 
 export async function getObligationDue(projectId: string): Promise<ObligationDue[]> {
@@ -226,6 +257,17 @@ export async function getProjectBudgets(projectId: string): Promise<BudgetRow[]>
     .order('version', { ascending: true });
   if (error) throwOperatorQuery(error);
   return (data ?? []) as BudgetRow[];
+}
+
+export async function getProjectBudgetFac(projectId: string): Promise<BudgetFac[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('project_budget_fac_read')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('period_start', { ascending: true });
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as BudgetFac[];
 }
 
 export async function getBudgetConsumption(projectId: string): Promise<BudgetConsumption[]> {

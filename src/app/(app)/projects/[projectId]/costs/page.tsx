@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
+import { newCommandNonce } from '@/shared/idempotency';
 import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import {
@@ -20,6 +21,7 @@ import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import {
   AchieveMilestoneButton,
+  ObligationScheduleForm,
   ApprovePaymentProposalButton,
   AuthorizeObligationButton,
   DeleteDraftButton,
@@ -235,6 +237,18 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                 projectId={projectId}
                                 obligationId={obligation.obligation_id}
                                 currency={obligation.currency}
+                                commandNonce={newCommandNonce()}
+                              />
+                              <ObligationScheduleForm
+                                organizationId={organizationId}
+                                projectId={projectId}
+                                obligationId={obligation.obligation_id}
+                                milestones={milestones.map((m) => ({
+                                  milestone_id: m.milestone_id,
+                                  code: m.code,
+                                  label_ar: m.label_ar,
+                                }))}
+                                commandNonce={newCommandNonce()}
                               />
                             </details>
                           )}
@@ -247,6 +261,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                     organizationId={organizationId}
                                     projectId={projectId}
                                     disputeId={due.open_dispute_id as string}
+                                    commandNonce={newCommandNonce()}
                                   />
                                 </details>
                               ) : (
@@ -256,6 +271,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                     organizationId={organizationId}
                                     projectId={projectId}
                                     obligationId={obligation.obligation_id}
+                                    commandNonce={newCommandNonce()}
                                   />
                                 </details>
                               )}
@@ -273,6 +289,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                       label_ar: m.label_ar,
                                       status: m.status,
                                     }))}
+                                    commandNonce={newCommandNonce()}
                                   />
                                 </details>
                               )}
@@ -363,6 +380,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                           organizationId={organizationId}
                           projectId={projectId}
                           milestoneId={milestone.milestone_id}
+                          commandNonce={newCommandNonce()}
                         />
                       ) : null}
                     </td>
@@ -372,7 +390,11 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             </table>
           </div>
         )}
-        <MilestoneForm organizationId={organizationId} projectId={projectId} />
+        <MilestoneForm
+          organizationId={organizationId}
+          projectId={projectId}
+          commandNonce={newCommandNonce()}
+        />
       </section>
 
       <section className="card stack">

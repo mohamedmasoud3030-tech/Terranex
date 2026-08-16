@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
+import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import { formatMinorUnits } from '@/shared/money';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
   getBudgetConsumption,
+  getProjectBudgetFac,
   getProjectBudgets,
 } from '@/features/control/queries';
 import type { BudgetConsumption } from '@/features/control/queries';
@@ -41,12 +43,14 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
   if (!project) notFound();
   const organizationId = project.organization_id;
 
-  const [membership, budgets, consumption] = await Promise.all([
+  const [membership, budgets, consumption, facRows] = await Promise.all([
     getCurrentMembership(organizationId),
     getProjectBudgets(projectId),
     getBudgetConsumption(projectId),
+    getProjectBudgetFac(projectId),
   ]);
   const isOwner = membership?.role === 'OWNER';
+  const budgetFormNonce = newCommandNonce();
   const currency = project.reporting_currency;
 
   const approved = budgets.filter((b) => b.status === 'APPROVED');
@@ -145,11 +149,13 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                               organizationId={organizationId}
                               projectId={projectId}
                               budget={budget}
+                              commandNonce={newCommandNonce()}
                             />
                             <DeleteDraftBudgetButton
                               organizationId={organizationId}
                               projectId={projectId}
                               budgetId={budget.budget_id}
+                              commandNonce={newCommandNonce()}
                             />
                           </>
                         )}
@@ -158,6 +164,7 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                             organizationId={organizationId}
                             projectId={projectId}
                             budget={budget}
+                            commandNonce={newCommandNonce()}
                           />
                         )}
                       </div>
@@ -182,9 +189,10 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                   <th>السقف</th>
                   <th>الالتزامات</th>
                   <th>المدفوع</th>
+                  <th>الفعلية المرحّلة</th>
                   <th>استثناءات معتمدة</th>
                   <th>المتبقي الفعلي</th>
-                  <th>التوقع النهائي (الأعلى صراحة)</th>
+                  <th>FAC للبند</th>
                 </tr>
               </thead>
               <tbody>
@@ -199,9 +207,10 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                       <td>{formatMoney(line.budget_minor_units, currency)}</td>
                       <td>{formatMoney(line.committed_obligations_minor_units, currency)}</td>
                       <td>{formatMoney(line.paid_minor_units, currency)}</td>
+                      <td>{formatMoney(line.actual_minor_units, currency)}</td>
                       <td>{formatMoney(line.approved_exception_minor_units, currency)}</td>
                       <td>{formatMoney(line.effective_remaining_minor_units, currency)}</td>
-                      <td>{formatMoney(line.forecast_final_minor_units, currency)}</td>
+                      <td>{formatMoney(line.fac_minor_units, currency)}</td>
                     </tr>
                   ));
                 })}
@@ -209,15 +218,58 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             </table>
           </div>
           <p className="muted">
-            التوقع النهائي = الأعلى صراحةً بين (السقف + الاستثناءات المعتمدة) والالتزامات الفعلية
-            المسجلة — لا يُخترع أي رقم توقعي آخر.
+            FAC للبند = الفعلية المرحّلة + المتبقي المعتمد للتنبؤ. تُفصل الفعلية والالتزامات
+            والمتبقي كحقائق مستقلة؛ ولا يُخترع أي رقم توقعي آخر.
+          </p>
+        </section>
+      )}
+
+      {facRows.length > 0 && (
+        <section className="card stack">
+          <h2>التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>الإصدار</th>
+                  <th>إجمالي الموازنة</th>
+                  <th>استثناءات معتمدة</th>
+                  <th>الفعلية (Actual)</th>
+                  <th>الالتزامات المفتوحة (PO)</th>
+                  <th>المتبقي المعتمد للتنبؤ</th>
+                  <th>FAC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {facRows.map((fac) => (
+                  <tr key={fac.budget_id}>
+                    <td>{fac.version}</td>
+                    <td>{formatMoney(fac.budget_total_minor_units, currency)}</td>
+                    <td>{formatMoney(fac.approved_exception_total_minor_units, currency)}</td>
+                    <td>{formatMoney(fac.actual_total_minor_units, currency)}</td>
+                    <td>{formatMoney(fac.open_commitment_minor_units, currency)}</td>
+                    <td>{formatMoney(fac.approved_forecast_remainder_minor_units, currency)}</td>
+                    <td>{formatMoney(fac.fac_minor_units, currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="muted">
+            FAC = الفعلية + الالتزامات المفتوحة + المتبقي المعتمد للتنبؤ — التعريف المالي
+            المرجعي بفصل مكوناته الثلاثة، لا صيغة max مختزلة.
           </p>
         </section>
       )}
 
       <section className="card stack">
         <h2>إنشاء مسودة موازنة</h2>
-        <BudgetForm organizationId={organizationId} projectId={projectId} currency={currency} />
+        <BudgetForm
+          organizationId={organizationId}
+          projectId={projectId}
+          currency={currency}
+          commandNonce={budgetFormNonce}
+        />
       </section>
     </section>
   );

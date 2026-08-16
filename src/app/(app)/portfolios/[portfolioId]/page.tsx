@@ -118,12 +118,15 @@ export default async function PortfolioDetailPage({
                   <th>العملة</th>
                   <th>المشاريع</th>
                   <th>النقدية</th>
-                  <th>ذمم مفتوحة</th>
                   <th>مستحقات مفتوحة</th>
                   <th>المدفوع</th>
                   <th>حجز ضمان</th>
-                  <th>نزاعات</th>
-                  <th>متأخرات</th>
+                  <th>النتيجة المحققة</th>
+                  <th>التزامات PO مفتوحة</th>
+                  <th>FAC</th>
+                  <th>نزاعات / متأخرات</th>
+                  <th>استثناءات مفتوحة</th>
+                  <th>تركّز النقدية</th>
                   <th>حالة التحويل</th>
                   <th>النقدية بعملة التقارير</th>
                 </tr>
@@ -134,12 +137,15 @@ export default async function PortfolioDetailPage({
                     <td>{row.currency}</td>
                     <td>{row.project_count}</td>
                     <td>{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.receivable_open_minor_units, row.currency)}</td>
                     <td>{formatMinorUnits(row.payable_open_minor_units, row.currency)}</td>
                     <td>{formatMinorUnits(row.paid_minor_units, row.currency)}</td>
                     <td>{formatMinorUnits(row.retention_held_minor_units, row.currency)}</td>
-                    <td>{row.disputed_obligations}</td>
-                    <td>{row.overdue_obligations}</td>
+                    <td>{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.open_commitment_minor_units, row.currency)}</td>
+                    <td>{formatMinorUnits(row.fac_minor_units, row.currency)}</td>
+                    <td>{row.disputed_obligations} / {row.overdue_obligations}</td>
+                    <td>{row.open_exception_count}</td>
+                    <td>{row.cash_concentration_ratio ?? '—'}</td>
                     <td>{row.fx_status}</td>
                     <td>
                       {row.converted_cash_balance_minor_units && row.org_reporting_currency
@@ -152,6 +158,21 @@ export default async function PortfolioDetailPage({
             </table>
           </div>
         )}
+        {rollup.some((row) => row.sector_exposure) ? (
+          <details className="stack">
+            <summary>التعرض القطاعي</summary>
+            <ul>
+              {rollup.flatMap((row) =>
+                Object.entries(row.sector_exposure ?? {}).map(([sector, stats]) => (
+                  <li key={`${row.currency}-${sector}`}>
+                    {sector}: {stats.project_count} مشروع ·
+                    نقدية {formatMinorUnits(stats.cash_balance_minor_units, row.currency)}
+                  </li>
+                )),
+              )}
+            </ul>
+          </details>
+        ) : null}
       </section>
 
       <section className="card stack">
