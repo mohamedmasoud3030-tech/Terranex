@@ -40,11 +40,15 @@ function makeRegister({
   placeholderDecisionDate = false,
   duplicateStatusFor,
   duplicateRecordFor,
+  duplicateFieldFor,
+  leakLastRecordFieldFromTail = false,
 }: {
   status?: "OPEN" | "RESOLVED";
   placeholderDecisionDate?: boolean;
   duplicateStatusFor?: string;
   duplicateRecordFor?: string;
+  duplicateFieldFor?: string;
+  leakLastRecordFieldFromTail?: boolean;
 } = {}) {
   const rows = Array.from({ length: 12 }, (_, offset) => {
     const id = decisionId(offset + 1);
@@ -66,6 +70,12 @@ function makeRegister({
               "Decision date: <YYYY-MM-DD>",
             );
           }
+          if (duplicateFieldFor === id) {
+            record += "\nBusiness decision: conflicting duplicate rule";
+          }
+          if (leakLastRecordFieldFromTail && id === "BD-012") {
+            record = record.replace("Decision date: 2026-08-17\n", "");
+          }
           return record;
         })
       : [];
@@ -74,7 +84,12 @@ function makeRegister({
     records.push(completeRecord(duplicateRecordFor));
   }
 
-  return ["# Test decision register", ...rows, "", ...records].join("\n\n");
+  const sections = ["# Test decision register", ...rows, "", ...records];
+  if (leakLastRecordFieldFromTail) {
+    sections.push("# Unrelated appendix\nDecision date: 2026-08-18");
+  }
+
+  return sections.join("\n\n");
 }
 
 function runGate(register: string) {
@@ -138,5 +153,23 @@ describe("R15 admission gate", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("BD-012: resolution record is duplicated");
+  });
+
+  it("does not satisfy a missing BD-012 field from unrelated trailing content", () => {
+    const result = runGate(makeRegister({ leakLastRecordFieldFromTail: true }));
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "BD-012: resolution record field 'Decision date' is missing or empty",
+    );
+  });
+
+  it("rejects duplicate fields inside one resolution record", () => {
+    const result = runGate(makeRegister({ duplicateFieldFor: "BD-004" }));
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "BD-004: resolution record field 'Business decision' is duplicated",
+    );
   });
 });
