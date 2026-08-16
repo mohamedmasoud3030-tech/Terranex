@@ -1,32 +1,37 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useState } from 'react';
 import type { Contribution, PaymentStatus, BankStatementLineStatus } from '@/features/finance/queries';
 import { formatMinorUnits } from '@/shared/money';
 import {
-  attachContributionCash,
-  createCashAccount,
-  importBankStatement,
-  reconcilePayment,
-  reverseJournalBatch,
-  voidReconciliation,
-} from '@/features/finance/actions';
+  attachContributionCashCommand,
+  createCashAccountCommand,
+  importBankStatementCommand,
+  reconcilePaymentCommand,
+  reverseJournalBatchCommand,
+  voidReconciliationCommand,
+} from '@/features/finance/command-actions';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
 
 export function CashAccountForm({
   organizationId,
   projectId,
   currency,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   currency: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(createCashAccount, { error: undefined });
+  const [state, action, pending] = useActionState(createCashAccountCommand, { error: undefined, successCount: 0 });
+  const idempotencyKey = useCommandIdempotencyKey('cash-account', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="currency" value={currency} />
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <label>
         اسم الحساب
         <input name="name" required minLength={2} maxLength={120} placeholder="مثال: البنك الأهلي — حساب المشروع" />
@@ -43,15 +48,17 @@ export function ContributionAttributionForm({
   projectId,
   contributions,
   cashAccountId,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   contributions: Contribution[];
   cashAccountId: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(attachContributionCash, { error: undefined });
+  const [state, action, pending] = useActionState(attachContributionCashCommand, { error: undefined, successCount: 0 });
   const [selected, setSelected] = useState('');
-  const idempotencyKey = useMemo(() => `attach-${crypto.randomUUID()}`, []);
+  const idempotencyKey = useCommandIdempotencyKey('attach', state, commandNonce);
   if (contributions.length === 0) {
     return <p className="muted">لا توجد مساهمات غير مُسنَدة للحساب النقدي.</p>;
   }
@@ -83,13 +90,15 @@ export function BankImportForm({
   organizationId,
   projectId,
   cashAccounts,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   cashAccounts: { cash_account_id: string; name: string }[];
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(importBankStatement, { error: undefined });
-  const idempotencyKey = useMemo(() => `import-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(importBankStatementCommand, { error: undefined, successCount: 0 });
+  const idempotencyKey = useCommandIdempotencyKey('import', state, commandNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -129,16 +138,18 @@ export function ReconcileForm({
   line,
   payments,
   accountName,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   line: BankStatementLineStatus;
   payments: PaymentStatus[];
   accountName: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(reconcilePayment, { error: undefined });
+  const [state, action, pending] = useActionState(reconcilePaymentCommand, { error: undefined, successCount: 0 });
   const [selected, setSelected] = useState('');
-  const idempotencyKey = useMemo(() => `recon-${crypto.randomUUID()}`, []);
+  const idempotencyKey = useCommandIdempotencyKey('recon', state, commandNonce);
   const candidates = payments.filter(
     (payment) =>
       !payment.is_reversed &&
@@ -181,14 +192,16 @@ export function VoidMatchForm({
   organizationId,
   projectId,
   matchId,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   matchId: string;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(voidReconciliation, { error: undefined });
+  const [state, action, pending] = useActionState(voidReconciliationCommand, { error: undefined, successCount: 0 });
   const [reason, setReason] = useState('');
-  const idempotencyKey = useMemo(() => `void-${crypto.randomUUID()}`, []);
+  const idempotencyKey = useCommandIdempotencyKey('void', state, commandNonce);
   return (
     <details className="stack">
       <summary>إلغاء المطابقة</summary>
@@ -215,14 +228,16 @@ export function ReversePaymentForm({
   organizationId,
   projectId,
   payment,
+  commandNonce,
 }: {
   organizationId: string;
   projectId: string;
   payment: PaymentStatus;
+  commandNonce: string;
 }) {
-  const [state, action, pending] = useActionState(reverseJournalBatch, { error: undefined });
+  const [state, action, pending] = useActionState(reverseJournalBatchCommand, { error: undefined, successCount: 0 });
   const [reason, setReason] = useState('');
-  const idempotencyKey = useMemo(() => `revpay-${crypto.randomUUID()}`, []);
+  const idempotencyKey = useCommandIdempotencyKey('revpay', state, commandNonce);
   return (
     <details className="stack">
       <summary>عكس الدفعة</summary>
