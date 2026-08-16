@@ -20,6 +20,23 @@ export type SaleCollection = {
   is_reconciled:boolean; reconciliation_id:string|null; statement_line_id:string|null; matched_at:string|null;
 };
 
+export type RentalIncome = {
+  recognition_id:string; organization_id:string; project_id:string; property_asset_id:string; tenant_party_id:string;
+  contract_reference:string; rental_period_start:string; rental_period_end:string;
+  recognized_amount_minor_units:string; currency:string; recognition_date:string; evidence_reference:string;
+  journal_batch_id:string; revision_no:number; replaces_recognition_id:string|null;
+  recognized_by:string; recognized_at:string; is_reversed:boolean;
+  collected_minor_units:string; outstanding_receivable_minor_units:string; as_of_date:string;
+};
+
+export type RentalCollection = {
+  collection_id:string; organization_id:string; project_id:string; recognition_id:string;
+  cash_account_id:string; amount_minor_units:string; currency:string; collection_date:string;
+  evidence_reference:string; journal_batch_id:string; collected_by:string; collected_at:string;
+  is_reversed:boolean; is_reconciled:boolean; reconciliation_id:string|null;
+  statement_line_id:string|null; matched_at:string|null;
+};
+
 export type RealizedResult = {
   organization_id:string; project_id:string; property_asset_id:string; disposition_id:string; recognition_id:string;
   buyer_party_id:string; currency:string; recognition_date:string; recognition_batch_id:string;
@@ -63,6 +80,18 @@ export const getPropertyDispositions=(projectId:string)=>many<PropertyDispositio
 export const getSaleCollections=(projectId:string)=>many<SaleCollection>(
   'property_sale_collections_read',
   'collection_id,organization_id,project_id,recognition_id,disposition_id,cash_account_id,amount_minor_units,currency,collection_date,evidence_reference,journal_batch_id,collected_by,collected_at,is_reconciled,reconciliation_id,statement_line_id,matched_at',
+  projectId,'collected_at',
+);
+
+export const getRentalIncome=(projectId:string)=>many<RentalIncome>(
+  'property_rental_income_read',
+  'recognition_id,organization_id,project_id,property_asset_id,tenant_party_id,contract_reference,rental_period_start,rental_period_end,recognized_amount_minor_units,currency,recognition_date,evidence_reference,journal_batch_id,revision_no,replaces_recognition_id,recognized_by,recognized_at,is_reversed,collected_minor_units,outstanding_receivable_minor_units,as_of_date',
+  projectId,'recognition_date',
+);
+
+export const getRentalCollections=(projectId:string)=>many<RentalCollection>(
+  'property_rental_collections_read',
+  'collection_id,organization_id,project_id,recognition_id,cash_account_id,amount_minor_units,currency,collection_date,evidence_reference,journal_batch_id,collected_by,collected_at,is_reversed,is_reconciled,reconciliation_id,statement_line_id,matched_at',
   projectId,'collected_at',
 );
 

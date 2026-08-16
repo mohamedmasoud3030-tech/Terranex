@@ -2,22 +2,9 @@ import Link from 'next/link';
 
 /**
  * The coherent business-facing project workspace navigation.
- *
- * Real Estate projects keep their nine business sections exactly as GF-010
- * shipped them. Agriculture projects use a single, truthful entry that
- * leads to the Agriculture sector workspace at /projects/[id]/agriculture.
- * Internal implementation labels are never exposed here; each section
- * links to the canonical operator page for that business concern.
- *
- * The Agriculture entries are intentional and grow only with delivered
- * workflow: ADR 0012 / GF-013 shipped Farm → Field → CropCycle, GF-014
- * added Field Activity, GF-015 added Input Item / Input Lot /
- * Input Application, and GF-016 added Harvest Event / Harvest Lot /
- * Storage Location / Inventory Movement. Navigation stays shallow —
- * every Agriculture entry targets a section of the single sector
- * workspace rather than a new page-within-page. Scaffolding a section
- * before its commands exist would fabricate KPIs and would not be
- * honest with the operator.
+ * Sector operations keep their own authoritative roots. Shared project
+ * concerns are linked once for every sector. Investor-economics controls are
+ * intentionally not navigation targets while BD-003/004/006/008 remain OPEN.
  */
 
 export type WorkspaceSector = 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK';
@@ -34,6 +21,7 @@ export type WorkspaceSection =
   | 'controls'
   | 'budget'
   | 'integrity'
+  | 'governance'
   | 'agriculture'
   | 'land-assets'
   | 'field-activities'
@@ -53,12 +41,12 @@ type SectionDef = {
 
 const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'overview', label: 'نظرة عامة', description: 'الوضع المالي والتشغيلي للمشروع من المصادر الرسمية', href: (p) => `/projects/${p}/overview` },
-  { id: 'capital', label: 'رأس المال', description: 'الالتزامات، طلبات رأس المال، المساهمات والموقف الرأسمالي', href: (p) => `/projects/${p}/funding` },
+  { id: 'capital', label: 'رأس المال', description: 'وقائع الالتزامات والمساهمات المسجلة دون استنتاج ملكية أو حصة ربح', href: (p) => `/projects/${p}/funding` },
   { id: 'property', label: 'الأصول العقارية', description: 'الأصول، السيطرة، التطوير، دورة حياة العقار', href: (p) => `/projects/${p}/operations` },
   { id: 'costs-cash', label: 'التكاليف والنقدية', description: 'الالتزامات، المدفوعات، النقدية ومطابقة البنك', href: (p) => `/projects/${p}/costs` },
   { id: 'revenue', label: 'الإيراد والبيع', description: 'التصرف، اعتراف البيع، التحصيل والنتيجة المحققة', href: (p) => `/projects/${p}/revenue` },
-  { id: 'close', label: 'الإغلاق والتوزيع', description: 'الفترات، بوابات الإغلاق، التخصيص والتوزيعات', href: (p) => `/projects/${p}/close` },
-  { id: 'statements', label: 'كشوف الشركاء', description: 'رأس المال الافتتاحي، المساهمات، التخصيصات، التوزيعات', href: (p) => `/projects/${p}/statements` },
+  { id: 'close', label: 'الإغلاق المالي', description: 'الفترات، بوابات الإغلاق، اللقطات والتصحيحات', href: (p) => `/projects/${p}/close` },
+  { id: 'statements', label: 'شفافية المشاركين', description: 'هوية المشاركين والنسخة الاتفاقية؛ الاستحقاقات محجوبة حتى R14', href: (p) => `/projects/${p}/investors` },
   { id: 'opening', label: 'الاستيراد والمطابقة', description: 'الأرصدة الافتتاحية، مجاميع الرقابة، مطابقة المصدر', href: (p) => `/projects/${p}/pilot` },
   { id: 'controls', label: 'الرقابة والجاهزية', description: 'الرقابة الداخلية، الوصول، والجاهزية للبيانات الحقيقية', href: (p) => `/projects/${p}/controls` },
 ];
@@ -67,8 +55,6 @@ const LIVESTOCK_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'livestock', label: 'المواقع والقطعان', description: 'مواقع التشغيل، القطعان الإدارية، والدفعات القابلة للعد', href: (p) => `/projects/${p}/livestock` },
 ];
 
-// Procurement and the F3-F10 finance-control surfaces are sector-
-// independent and shared across every project.
 const PROCUREMENT_SECTION: SectionDef = {
   id: 'procurement',
   label: 'المشتريات',
@@ -81,6 +67,13 @@ const FINANCE_CONTROL_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'integrity', label: 'مركز النزاهة', description: 'إشارات الرقابة المالية، الاستثناءات وسياسات الاعتماد', href: (p) => `/projects/${p}/integrity` },
 ];
 
+const GOVERNANCE_SECTION: SectionDef = {
+  id: 'governance',
+  label: 'المخاطر والقرارات',
+  description: 'مخاطر المشروع وسجل القرارات الموثق دون تغيير الحقائق المالية',
+  href: (p) => `/projects/${p}/governance`,
+};
+
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
   { id: 'land-assets', label: 'الأراضي والأصول', description: 'أصل الأرض، أساس السيطرة، العقد، والطرف المقابل وربط المزرعة', href: (p) => `/projects/${p}/agriculture#land-assets` },
@@ -89,29 +82,32 @@ const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'harvest-inventory', label: 'الحصاد والمخزون', description: 'أحداث الحصاد، تشغيلات المحصول، مواقع التخزين، وحركات المخزون', href: (p) => `/projects/${p}/agriculture#harvest` },
   { id: 'agriculture-sales', label: 'المبيعات والتحصيل', description: 'المشتري، صرف البيع، الإيراد، الذمم والتحصيلات', href: (p) => `/projects/${p}/agriculture#sales` },
   { id: 'agriculture-results', label: 'النتائج والإغلاق', description: 'نتيجة الدورة، تكلفة التشغيل، المراكز المفتوحة والإغلاق الآمن', href: (p) => `/projects/${p}/agriculture#results-closeout` },
-  PROCUREMENT_SECTION,
 ];
 
 export const REAL_ESTATE_SECTION_IDS = [
   ...REAL_ESTATE_SECTIONS.map((s) => s.id),
   PROCUREMENT_SECTION.id,
   ...FINANCE_CONTROL_SECTIONS.map((s) => s.id),
+  GOVERNANCE_SECTION.id,
 ];
 export const AGRICULTURE_SECTION_IDS = [
   ...AGRICULTURE_SECTIONS.map((s) => s.id),
   PROCUREMENT_SECTION.id,
   ...FINANCE_CONTROL_SECTIONS.map((s) => s.id),
+  GOVERNANCE_SECTION.id,
 ];
 export const LIVESTOCK_SECTION_IDS = [
   ...LIVESTOCK_SECTIONS.map((s) => s.id),
   PROCUREMENT_SECTION.id,
   ...FINANCE_CONTROL_SECTIONS.map((s) => s.id),
+  GOVERNANCE_SECTION.id,
 ];
 
 export function sectionsFor(sector: WorkspaceSector): ReadonlyArray<SectionDef> {
-  if (sector === 'AGRICULTURE') return [...AGRICULTURE_SECTIONS, PROCUREMENT_SECTION, ...FINANCE_CONTROL_SECTIONS];
-  if (sector === 'LIVESTOCK') return [...LIVESTOCK_SECTIONS, PROCUREMENT_SECTION, ...FINANCE_CONTROL_SECTIONS];
-  return [...REAL_ESTATE_SECTIONS, PROCUREMENT_SECTION, ...FINANCE_CONTROL_SECTIONS];
+  const shared = [PROCUREMENT_SECTION, ...FINANCE_CONTROL_SECTIONS, GOVERNANCE_SECTION];
+  if (sector === 'AGRICULTURE') return [...AGRICULTURE_SECTIONS, ...shared];
+  if (sector === 'LIVESTOCK') return [...LIVESTOCK_SECTIONS, ...shared];
+  return [...REAL_ESTATE_SECTIONS, ...shared];
 }
 
 export function sectionHref(section: WorkspaceSection, projectId: string): string {
@@ -121,6 +117,7 @@ export function sectionHref(section: WorkspaceSection, projectId: string): strin
     ...LIVESTOCK_SECTIONS,
     PROCUREMENT_SECTION,
     ...FINANCE_CONTROL_SECTIONS,
+    GOVERNANCE_SECTION,
   ].find((s) => s.id === section);
   return def ? def.href(projectId) : `/projects/${projectId}`;
 }
