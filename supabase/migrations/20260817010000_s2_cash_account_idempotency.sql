@@ -159,7 +159,10 @@ grant execute on function public.create_project_cash_account(uuid, uuid, text, t
 -- Hosted Supabase may keep pgcrypto in extensions while local replay may keep
 -- it in public. Keep SECURITY DEFINER search_path locked and qualify digest in
 -- the function definition using the extension's actual schema, matching the
--- repository's established pgcrypto compatibility strategy.
+-- repository's established pgcrypto compatibility strategy. The same block
+-- also binds unique pre-migration rows to their deterministic legacy key so a
+-- response-loss retry that crosses the deployment boundary cannot duplicate
+-- an already-created account.
 do $cash_account_pgcrypto_compat$
 declare
   v_pgcrypto_schema text;
@@ -203,32 +206,85 @@ begin
   end if;
 
   execute v_rewritten;
+
+  execute format($backfill$
+    with candidates as (
+      select
+        id,
+        count(*) over (
+          partition by organization_id, project_id, trim(name), currency
+        ) as payload_count
+      from public.project_cash_accounts
+      where idempotency_key is null
+        and request_hash is null
+    )
+    update public.project_cash_accounts a
+       set idempotency_key = 'legacy-' || pg_catalog.md5(
+             a.project_id::text || chr(31) || trim(a.name) || chr(31) || a.currency
+           ),
+           request_hash = encode(
+             %I.digest(
+               jsonb_build_object(
+                 'project_id', a.project_id,
+                 'name', trim(a.name),
+                 'currency', a.currency
+               )::text,
+               'sha256'
+             ),
+             'hex'
+           )
+      from candidates c
+     where c.id = a.id
+       and c.payload_count = 1
+  $backfill$, v_pgcrypto_schema);
 end
 $cash_account_pgcrypto_compat$;
 
 -- Backward-compatible overload for cached/older clients. It is no longer a
 -- plain INSERT: the payload deterministically maps to a bounded legacy key and
--- delegates to the authoritative five-argument command. A hash collision can
--- only produce an explicit payload-mismatch failure, never the wrong replay.
+-- delegates to the authoritative five-argument command. If an ambiguous
+-- pre-migration duplicate payload exists, fail closed rather than invent which
+-- historical account identity the stale retry should receive.
 create function public.create_project_cash_account(
   p_organization_id uuid,
   p_project_id uuid,
   p_name text,
   p_currency text
 ) returns uuid
-language sql
+language plpgsql
 security invoker
 set search_path=pg_catalog,public
 as $$
-  select public.create_project_cash_account(
+declare
+  v_legacy_key text := 'legacy-' || pg_catalog.md5(
+    p_project_id::text || chr(31) || trim(p_name) || chr(31) || p_currency
+  );
+begin
+  if not exists (
+    select 1
+    from public.project_cash_accounts
+    where organization_id = p_organization_id
+      and idempotency_key = v_legacy_key
+  ) and exists (
+    select 1
+    from public.project_cash_accounts
+    where organization_id = p_organization_id
+      and project_id = p_project_id
+      and trim(name) = trim(p_name)
+      and currency = p_currency
+      and idempotency_key is null
+  ) then
+    raise exception 'legacy cash account payload is ambiguous; refresh client';
+  end if;
+
+  return public.create_project_cash_account(
     p_organization_id,
     p_project_id,
     p_name,
     p_currency,
-    'legacy-' || pg_catalog.md5(
-      p_project_id::text || chr(31) || trim(p_name) || chr(31) || p_currency
-    )
-  )
+    v_legacy_key
+  );
+end
 $$;
 
 revoke all on function public.create_project_cash_account(uuid, uuid, text, text)
