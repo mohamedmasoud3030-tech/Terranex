@@ -42,13 +42,13 @@ select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
   's83-receipt-file') as s83_receipt_evidence;
 
 -- Approved commercial PO establishes an unposted, server-derived commitment.
-select case when exists (
+select 1/case when exists (
   select 1 from public.project_procurement_commitments_read
   where purchase_order_id=:'s83_po'
     and committed_minor_units=(
       select sum(line_amount_minor_units)::text from public.purchase_order_lines where purchase_order_id=:'s83_po')
     and accounting_effect='UNPOSTED_PURCHASE_COMMITMENT'
-) then true else false end as s83_po_total_server_derived_commitment;
+) then 1 else 0 end as s83_po_total_server_derived_commitment;
 
 -- Record one received-basis supplier invoice: 10 units x 100 minor units.
 select s83_run('00000000-0000-4000-8000-000000000003', format(
@@ -59,47 +59,47 @@ select s83_run('00000000-0000-4000-8000-000000000003', format(
     's83-invoice-create-001')$$,
   :'s83_project', :'s83_po', :'s83_receipt_line')) as s83_invoice \gset
 
-select case when (select invoice_total_minor_units='1000' and status='SUBMITTED'
-  from public.supplier_invoices_read where id=:'s83_invoice') then true else false end
+select 1/case when (select invoice_total_minor_units='1000' and status='SUBMITTED'
+  from public.supplier_invoices_read where id=:'s83_invoice') then 1 else 0 end
   as s83_invoice_total_server_derived;
 
 -- Response-loss replay returns one invoice; changed payload with same key fails.
-select case when s83_run('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.record_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,%L,'INV-R4-001',current_date,'EGP','EXPENSE',
     'فاتورة مورد موثقة',null,
     '[{"purchase_receipt_line_id":"%s","quantity_invoiced":10,"unit_price_minor_units":100}]',
     's83-invoice-create-001')$$,
   :'s83_project', :'s83_po', :'s83_receipt_line'))=:'s83_invoice'
-  then true else false end as s83_invoice_idempotent_replay;
+  then 1 else 0 end as s83_invoice_idempotent_replay;
 
-select case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.record_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,%L,'INV-R4-CHANGED',current_date,'EGP','EXPENSE',
     'فاتورة مورد موثقة',null,
     '[{"purchase_receipt_line_id":"%s","quantity_invoiced":10,"unit_price_minor_units":100}]',
     's83-invoice-create-001')$$,
   :'s83_project', :'s83_po', :'s83_receipt_line')) like '%idempotency key payload mismatch%'
-  then true else false end as s83_invoice_changed_replay_rejected;
+  then 1 else 0 end as s83_invoice_changed_replay_rejected;
 
 -- Cross-project and cross-tenant linkage fail at the command/database boundary.
-select case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.record_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,%L,'INV-R4-XPROJECT',current_date,'EGP','EXPENSE',
     'فاتورة مورد موثقة',null,
     '[{"purchase_receipt_line_id":"%s","quantity_invoiced":1,"unit_price_minor_units":100}]',
     's83-invoice-xproject')$$,
   :'s83_other_project', :'s83_po', :'s83_receipt_line')) like '%purchase order not found%'
-  then true else false end as s83_cross_project_invoice_rejected;
+  then 1 else 0 end as s83_cross_project_invoice_rejected;
 
-select case when s83_catch('00000000-0000-4000-8000-000000000002', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000002', format(
   $$select public.record_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,%L,'INV-R4-XTENANT',current_date,'EGP','EXPENSE',
     'فاتورة مورد موثقة',null,
     '[{"purchase_receipt_line_id":"%s","quantity_invoiced":1,"unit_price_minor_units":100}]',
     's83-invoice-xtenant')$$,
   :'s83_project', :'s83_po', :'s83_receipt_line')) like '%forbidden%'
-  then true else false end as s83_cross_tenant_invoice_rejected;
+  then 1 else 0 end as s83_cross_tenant_invoice_rejected;
 
 -- Owner/checker approval creates the existing authoritative cost_obligation and
 -- its normal Finance Core posting; no Procurement payable table exists.
@@ -111,7 +111,7 @@ select s83_run('00000000-0000-4000-8000-000000000001', format(
     '10000000-0000-4000-8000-000000000001',%L,'s83-invoice-approve-001')$$,
   :'s83_invoice')) as s83_obligation \gset
 
-select case when exists (
+select 1/case when exists (
   select 1 from public.cost_obligations o
   join public.supplier_invoices i on i.cost_obligation_id=o.id
   where i.id=:'s83_invoice' and i.status='APPROVED'
@@ -121,12 +121,12 @@ select case when exists (
 ) and exists (
   select 1 from public.journal_batches
   where source_type='COST_OBLIGATION' and source_id=:'s83_obligation'
-) then true else false end as s83_invoice_reuses_finance_core_payable;
+) then 1 else 0 end as s83_invoice_reuses_finance_core_payable;
 
-select case when s83_run('00000000-0000-4000-8000-000000000001', format(
+select 1/case when s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,'s83-invoice-approve-001')$$,
-  :'s83_invoice'))=:'s83_obligation' then true else false end as s83_approval_replay_safe;
+  :'s83_invoice'))=:'s83_obligation' then 1 else 0 end as s83_approval_replay_safe;
 
 -- A competing invoice may be submitted, but exact matching is rechecked under
 -- the PO lock at approval. It cannot consume more than remaining receipt truth.
@@ -140,11 +140,11 @@ select s83_run('00000000-0000-4000-8000-000000000003', format(
 select s25a_attach_evidence('00000000-0000-4000-8000-000000000003',
   '10000000-0000-4000-8000-000000000001', :'s83_project', 'SUPPLIER_INVOICE', null, null, :'s83_over_invoice',
   's83-over-invoice-file') as s83_over_invoice_evidence;
-select case when s83_catch('00000000-0000-4000-8000-000000000001', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_supplier_invoice(
     '10000000-0000-4000-8000-000000000001',%L,'s83-invoice-over-approve')$$,
   :'s83_over_invoice')) like '%exceeds remaining received quantity%'
-  then true else false end as s83_invoice_receipt_ceiling_enforced;
+  then 1 else 0 end as s83_invoice_receipt_ceiling_enforced;
 
 -- Shared Finance payment is proposal -> independent approval -> posting.
 -- A new zero-balance account must fail before any proposal can be recorded.
@@ -152,14 +152,14 @@ select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.create_project_cash_account(
     '10000000-0000-4000-8000-000000000001',%L,'حساب R4','EGP')$$,
   :'s83_project')) as s83_cash \gset
-select case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,1,current_date,'s83-zero-cash-proposal')$$,
   :'s83_obligation', :'s83_cash')) like '%payment exceeds available cash%'
-  then true else false end as s83_zero_cash_payment_rejected;
-select case when not has_function_privilege(
+  then 1 else 0 end as s83_zero_cash_payment_rejected;
+select 1/case when not has_function_privilege(
   'authenticated', 'public.pay_cost_obligation(uuid,uuid,uuid,bigint,date,text)', 'EXECUTE')
-  then true else false end as s83_direct_payment_rpc_revoked;
+  then 1 else 0 end as s83_direct_payment_rpc_revoked;
 
 -- Explicit balanced test funding (not an application shortcut) gives exactly
 -- 1,000 minor units of available book cash for the two partial payments.
@@ -185,11 +185,11 @@ select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,1,current_date,'s83-self-payment-proposal')$$,
   :'s83_obligation', :'s83_cash')) as s83_self_proposal \gset
-select case when s83_catch('00000000-0000-4000-8000-000000000001', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,'s83-self-payment-approval')$$,
   :'s83_self_proposal')) like '%maker/checker%'
-  then true else false end as s83_payment_self_approval_rejected;
+  then 1 else 0 end as s83_payment_self_approval_rejected;
 
 -- MEMBER 0009 (kept non-owner by suite 78) prepares; a different OWNER
 -- revalidates cash/payable and posts. Earlier suites intentionally promote
@@ -198,40 +198,40 @@ select s83_run('00000000-0000-4000-8000-000000000009', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
   :'s83_obligation', :'s83_cash')) as s83_proposal1 \gset
-select case when s83_catch('00000000-0000-4000-8000-000000000009', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000009', format(
   $$select public.approve_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,'s83-member-payment-approval')$$,
   :'s83_proposal1')) like '%organization owner required%'
-  then true else false end as s83_payment_member_cannot_approve;
-select case when s83_run('00000000-0000-4000-8000-000000000009', format(
+  then 1 else 0 end as s83_payment_member_cannot_approve;
+select 1/case when s83_run('00000000-0000-4000-8000-000000000009', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,400,current_date,'s83-payment-proposal-001')$$,
-  :'s83_obligation', :'s83_cash'))=:'s83_proposal1' then true else false end as s83_payment_proposal_replay_safe;
+  :'s83_obligation', :'s83_cash'))=:'s83_proposal1' then 1 else 0 end as s83_payment_proposal_replay_safe;
 select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,'s83-payment-001')$$,
   :'s83_proposal1')) as s83_payment1 \gset
-select case when s83_run('00000000-0000-4000-8000-000000000001', format(
+select 1/case when s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,'s83-payment-001')$$,
-  :'s83_proposal1'))=:'s83_payment1' then true else false end as s83_payment_approval_replay_safe;
-select case when exists (
+  :'s83_proposal1'))=:'s83_payment1' then 1 else 0 end as s83_payment_approval_replay_safe;
+select 1/case when exists (
   select 1 from public.cost_payment_proposals p join public.project_payments pay
     on pay.payment_proposal_id=p.id
   where p.id=:'s83_proposal1' and p.status='POSTED'
     and p.prepared_by='00000000-0000-4000-8000-000000000009'
     and p.approved_by='00000000-0000-4000-8000-000000000001'
     and p.prepared_by<>p.approved_by and pay.id=:'s83_payment1'
-) then true else false end as s83_payment_maker_checker_persisted;
+) then 1 else 0 end as s83_payment_maker_checker_persisted;
 
-select case when (select payment_state='PARTIALLY_PAID' and paid_minor_units='400' and outstanding_minor_units='600'
-  from public.supplier_invoices_read where id=:'s83_invoice') then true else false end as s83_partial_payment_derived;
+select 1/case when (select payment_state='PARTIALLY_PAID' and paid_minor_units='400' and outstanding_minor_units='600'
+  from public.supplier_invoices_read where id=:'s83_invoice') then 1 else 0 end as s83_partial_payment_derived;
 
-select case when s83_catch('00000000-0000-4000-8000-000000000003', format(
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003', format(
   $$select public.prepare_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,%L,601,current_date,'s83-payment-over')$$,
   :'s83_obligation', :'s83_cash')) like '%exceeds remaining payable%'
-  then true else false end as s83_overpayment_rejected;
+  then 1 else 0 end as s83_overpayment_rejected;
 
 select s83_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.prepare_cost_payment(
@@ -241,10 +241,10 @@ select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.approve_cost_payment(
     '10000000-0000-4000-8000-000000000001',%L,'s83-payment-002')$$,
   :'s83_proposal2')) as s83_payment2 \gset
-select case when (select payment_state='FULLY_PAID' and paid_minor_units='1000' and outstanding_minor_units='0'
-  from public.supplier_invoices_read where id=:'s83_invoice') then true else false end as s83_fully_paid_derived;
-select case when (select balance_minor_units='0' from public.project_cash_position_read
-  where cash_account_id=:'s83_cash') then true else false end as s83_cash_never_negative;
+select 1/case when (select payment_state='FULLY_PAID' and paid_minor_units='1000' and outstanding_minor_units='0'
+  from public.supplier_invoices_read where id=:'s83_invoice') then 1 else 0 end as s83_fully_paid_derived;
+select 1/case when (select balance_minor_units='0' from public.project_cash_position_read
+  where cash_account_id=:'s83_cash') then 1 else 0 end as s83_cash_never_negative;
 
 -- Existing bank import and exact reconciliation link the same shared payments.
 select s83_run('00000000-0000-4000-8000-000000000001', format(
@@ -262,8 +262,8 @@ select s83_run('00000000-0000-4000-8000-000000000001', format(
 select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.reconcile_payment('10000000-0000-4000-8000-000000000001',%L,%L,'s83-reconcile-2')$$,
   :'s83_payment2', :'s83_line2')) as s83_match2;
-select case when (select reconciliation_state='RECONCILED' and reconciled_minor_units='1000'
-  from public.supplier_invoices_read where id=:'s83_invoice') then true else false end as s83_shared_bank_reconciliation_visible;
+select 1/case when (select reconciliation_state='RECONCILED' and reconciled_minor_units='1000'
+  from public.supplier_invoices_read where id=:'s83_invoice') then 1 else 0 end as s83_shared_bank_reconciliation_visible;
 
 -- Portfolio reassignment is management-only and cannot rewrite Project-owned
 -- Procurement/Finance facts.
@@ -295,22 +295,22 @@ select s83_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.move_project_to_portfolio(
     '10000000-0000-4000-8000-000000000001',%L,%L,'إعادة تجميع إداري','s83-portfolio-move')$$,
   :'s83_project', :'s83_portfolio2')) as s83_moved;
-select case when exists (
+select 1/case when exists (
   select 1 from s83_financial_snapshot s
   where s.invoice_row=(select to_jsonb(i)::text from public.supplier_invoices i where i.id=:'s83_invoice')
     and s.obligation_row=(select to_jsonb(o)::text from public.cost_obligations o where o.id=:'s83_obligation')
     and s.payment_rows=(select jsonb_agg(to_jsonb(p) order by p.id)::text from public.project_payments p where p.obligation_id=:'s83_obligation')
-) then true else false end as s83_portfolio_assignment_does_not_mutate_financial_truth;
+) then 1 else 0 end as s83_portfolio_assignment_does_not_mutate_financial_truth;
 
 -- Structural and RLS proof: no browser writes and all financial provenance is
 -- project/tenant composite-keyed.
-select case when s83_catch('00000000-0000-4000-8000-000000000003',
-  $$insert into public.supplier_invoices(organization_id,project_id,purchase_order_id,supplier_id,party_id,invoice_reference,invoice_date,currency,cost_treatment,evidence_reference,recorded_by,id,recorded_at,status,approve_idempotency_key,request_hash)
-    select organization_id,project_id,purchase_order_id,supplier_id,party_id,'DIRECT',current_date,currency,'EXPENSE','direct denied','00000000-0000-4000-8000-000000000003','s83-direct-denied',current_date,'SUBMITTED','s83-direct-key',repeat('d',64)
+select 1/case when s83_catch('00000000-0000-4000-8000-000000000003',
+  $$insert into public.supplier_invoices(organization_id,project_id,purchase_order_id,supplier_id,party_id,invoice_reference,invoice_date,currency,cost_treatment,evidence_reference,recorded_by,idempotency_key,request_hash)
+    select organization_id,project_id,purchase_order_id,supplier_id,party_id,'DIRECT',current_date,currency,'EXPENSE','direct denied','00000000-0000-4000-8000-000000000003','s83-direct-denied',repeat('a',64)
     from public.supplier_invoices limit 1$$) <> 'NO_EXCEPTION'
-  then true else false end as s83_direct_invoice_write_denied;
+  then 1 else 0 end as s83_direct_invoice_write_denied;
 
-select case when not exists (
+select 1/case when not exists (
   select 1 from information_schema.tables
   where table_schema='public' and table_name in ('procurement_payables_v2','procurement_payments','procurement_ledger','supplier_finance_ledger')
-) then true else false end as s83_no_parallel_finance_tables;
+) then 1 else 0 end as s83_no_parallel_finance_tables;
