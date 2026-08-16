@@ -130,9 +130,9 @@ This addendum supersedes stale phase labels in the dated snapshot above. It is b
 
 The hard stop is now active. No ownership percentage, investor entitlement, allocation policy, distributable cash, distribution, waterfall, carried/operator economics, cross-project netting or investor entry/exit economics may be activated until the relevant R14 decisions and evidence are resolved.
 
-## 8. Post-R14 policy-safety hotfix (2026-08-16)
+## 8. Post-R14 policy-safety hotfix — MERGED / CLOSED (2026-08-16)
 
-The mandatory post-R14 §4.2/§4.3 policy-safety hotfix (see `docs/R14_POLICY_IMPACT_MATRIX.md`) has been delivered as a dedicated runtime PR. It closes the three-leg intake policy leak while BD-004 and BD-006 remain OPEN:
+The mandatory post-R14 §4.2/§4.3 policy-safety hotfix (see `docs/R14_POLICY_IMPACT_MATRIX.md`) is **MERGED / CLOSED** via PR #151 (final head `215a3c0e4de31600d6d9ad8931758a50690d988f`, merged on `main` as `b5854e5f80a1fdc152400d8839319c6ecadd4bbd`). R14 documentation work and its mandatory policy-safety closeout are complete. The hotfix closes the three-leg intake policy leak while BD-004 and BD-006 remain OPEN:
 
 - `/projects/[projectId]/intake` no longer imports or renders `ConfigureRulesForm`, no longer queries allocation rules for readiness, and no longer passes an `allocationRulesConfigured` flag into the readiness model.
 - `DS04_AGREEMENT` readiness no longer requires or implies ownership/allocation weights or a 100% total; unresolved investor economics are shown as policy-blocked («غير محددة بسياسة معتمدة») without degrading readiness.
@@ -141,3 +141,5 @@ The mandatory post-R14 §4.2/§4.3 policy-safety hotfix (see `docs/R14_POLICY_IM
 - BD-001…BD-012 remain OPEN; no business policy was inferred. R15 has not started.
 
 Permanent regression coverage was added in `tests/r10-policy-block.test.ts` (seven policy-boundary proofs) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C). No database migration or schema change was required.
+
+No owner answer was recorded and no owner-specific policy was inferred. The exact next gate is **PRE-OWNER INDEPENDENT EVIDENCE AUDIT**: independent evidence and owner-decision validation only, not implementation. R15 has not started and remains blocked for every policy-dependent scope. This closeout does not begin that audit.

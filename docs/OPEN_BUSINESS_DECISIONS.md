@@ -35,7 +35,7 @@ Until resolved:
 
 **R14 status (2026-08-16):** the owner-facing questionnaire for all twelve items has been issued to the target company المجموعة العربية المتحدة as `docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md`, with the technical mapping and dormant-code audit in `docs/R14_POLICY_IMPACT_MATRIX.md`. Issuing the questionnaire resolves nothing: every item below remains OPEN until the authorized owner's explicit decision is recorded per §5.
 
-**Post-R14 policy-safety hotfix (2026-08-16):** the R14-discovered live intake policy leak (ownership/allocation configuration surfacing and the readiness dependency on allocation rules) was corrected in a dedicated runtime PR. This is a policy-safety correction, not a business-policy implementation: it resolves no decision, invents no target-company investor policy, keeps dormant S5 machinery dormant, and leaves all twelve items OPEN.
+**Post-R14 policy-safety hotfix — MERGED / CLOSED (2026-08-16):** PR #151 corrected the R14-discovered live intake policy leak (ownership/allocation configuration surfacing and the readiness dependency on allocation rules). This is a policy-safety correction, not a business-policy implementation: it resolves no decision, invents no target-company investor policy, keeps dormant S5 machinery dormant, and leaves all twelve items OPEN. The next gate is **PRE-OWNER INDEPENDENT EVIDENCE AUDIT**; R15 has not started and remains blocked for policy-dependent scope.
 
 | ID | Status | Decision required from owner | Blocks |
 |---|---|---|---|
