@@ -46,7 +46,7 @@ end $$;
 -- Security/shape contract
 -- ---------------------------------------------------------------------------
 do $$
-declare p record;
+declare proc_row record;
 begin
   if not exists(select 1 from public.semantic_accounts where role='REAL_ESTATE_RENTAL_REVENUE') then
     raise exception 'R5 ASSERTION FAILED: rental revenue semantic account missing';
@@ -64,17 +64,17 @@ begin
     raise exception 'R5 ASSERTION FAILED: authenticated can bypass rental command RPCs';
   end if;
 
-  for p in
-    select n.nspname,p.proname,p.oid
-    from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.prosecdef
-      and p.proname in ('recognize_property_rental_income','collect_property_rental_receivable','reconcile_property_rental_collection')
+  for proc_row in
+    select n.nspname,proc.proname,proc.oid
+    from pg_proc proc join pg_namespace n on n.oid=proc.pronamespace
+    where n.nspname='public' and proc.prosecdef
+      and proc.proname in ('recognize_property_rental_income','collect_property_rental_receivable','reconcile_property_rental_collection')
   loop
-    if has_function_privilege('public',p.oid,'execute') or has_function_privilege('anon',p.oid,'execute') then
-      raise exception 'R5 ASSERTION FAILED: %.% is executable by PUBLIC/anon',p.nspname,p.proname;
+    if has_function_privilege('public',proc_row.oid,'execute') or has_function_privilege('anon',proc_row.oid,'execute') then
+      raise exception 'R5 ASSERTION FAILED: %.% is executable by PUBLIC/anon',proc_row.nspname,proc_row.proname;
     end if;
-    if not has_function_privilege('authenticated',p.oid,'execute') then
-      raise exception 'R5 ASSERTION FAILED: %.% is not executable by authenticated',p.nspname,p.proname;
+    if not has_function_privilege('authenticated',proc_row.oid,'execute') then
+      raise exception 'R5 ASSERTION FAILED: %.% is not executable by authenticated',proc_row.nspname,proc_row.proname;
     end if;
   end loop;
 end $$;
@@ -175,7 +175,7 @@ select 1/case when r5_expect_raise('e5000000-0000-4000-8000-0000000000a1',format
   $$select public.recognize_property_rental_income('e5000000-0000-4000-8000-000000000001',%L,%L,%L,'R5-LEASE-001',current_date-5,current_date,120000,'EGP',current_date,'R5-LEASE-EVIDENCE','r5-rent-recognize-02')$$,
   :'r5_project',:'r5_asset',:'r5_tenant')) then 1 else 0 end as r5_duplicate_active_period_rejected;
 
--- F9 and the R8 sector roll-up see rent as recognized revenue while cash stays
+-- F9 and the R8 sector roll-up see rent as recognized Project revenue while cash stays
 -- zero before collection. This prevents a disconnected rental sub-ledger.
 select 1/case when (
   select revenue_recognized_minor_units='120000' and receivable_open_minor_units='120000'
