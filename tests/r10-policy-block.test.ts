@@ -11,6 +11,10 @@ const intakeReadiness = readFileSync('src/features/intake/readiness.ts', 'utf8')
 const termsForms = readFileSync('src/app/(app)/projects/[projectId]/terms/forms.tsx', 'utf8');
 const investorsForms = readFileSync('src/app/(app)/projects/[projectId]/investors/forms.tsx', 'utf8');
 const decisions = readFileSync('docs/OPEN_BUSINESS_DECISIONS.md', 'utf8');
+const preOwnerPolicyMigration = readFileSync('supabase/migrations/20260816062000_pre_owner_policy_safety.sql', 'utf8');
+const pilotPage = readFileSync('src/app/(app)/projects/[projectId]/pilot/page.tsx', 'utf8');
+const controlsPage = readFileSync('src/app/(app)/projects/[projectId]/controls/page.tsx', 'utf8');
+const closePage = readFileSync('src/app/(app)/projects/[projectId]/close/page.tsx', 'utf8');
 
 const S5_FORM_NAMES = /ConfigureRulesForm|PrepareAllocationForm|ApproveAllocationForm|PrepareDistributionForm|ApproveDistributionForm|PayDistributionForm/;
 const S5_READ_NAMES = /getAllocationRuleSets|getAllocationRuns|getAllocationLines|getDistributions|getDistributionCapacity|getPartnerCapitalStatement/;
@@ -150,5 +154,66 @@ describe('post-R14 policy-safety hotfix: the intake policy leak is closed while 
       expect(content, `${file} must not read dormant S5 allocation/distribution state`)
         .not.toMatch(S5_READ_NAMES);
     }
+  });
+});
+
+describe('pre-owner policy-safety boundary: policy-dependent writes fail closed', () => {
+  it('gates every S5 write table behind an approved INVESTOR_ECONOMICS policy', () => {
+    expect(preOwnerPolicyMigration).toContain('target-company investor policy is not activated');
+    expect(preOwnerPolicyMigration).toContain('s5_allocation_rule_sets_policy_gate');
+    expect(preOwnerPolicyMigration).toContain('s5_allocation_runs_policy_gate');
+    expect(preOwnerPolicyMigration).toContain('s5_distributions_policy_gate');
+    expect(preOwnerPolicyMigration).toContain('s5_distribution_payments_policy_gate');
+    // The policy registry ships empty: no fake approved row exists.
+    expect(preOwnerPolicyMigration).not.toMatch(/insert into public\.policy_authority/);
+  });
+
+  it('stops the contributed-capital posting from being a universal funding command', () => {
+    // attach_contribution_cash requires an approved CAPITAL_CONTRIBUTION policy
+    // (BD-002/005 OPEN), so CASH RECEIPT is never CONTRIBUTED CAPITAL by implication.
+    const attach = preOwnerPolicyMigration.split('create or replace function public.attach_contribution_cash(')[1];
+    expect(attach).toBeDefined();
+    expect(attach).toContain("require_policy_activated(p_organization_id, 'CAPITAL_CONTRIBUTION')");
+  });
+
+  it('raises S1 agreement activation and capital-call issuance to OWNER authority', () => {
+    for (const rpc of ['activate_agreement_version', 'create_capital_call']) {
+      const fn = preOwnerPolicyMigration.split(`create or replace function public.${rpc}(`)[1];
+      expect(fn, rpc).toBeDefined();
+      expect(fn, rpc).toContain('perform public.s2_require_owner(p_organization_id)');
+    }
+  });
+
+  it('renames the stale S5 source away from a universal REALIZED_RESULT', () => {
+    expect(preOwnerPolicyMigration).toContain('s5_real_estate_sale_result_as_of_snapshot');
+    expect(preOwnerPolicyMigration).toContain("drop function if exists public.s5_realized_result_as_of_snapshot");
+    expect(preOwnerPolicyMigration).toContain("source_category in ('REAL_ESTATE_SALE_RESULT')");
+  });
+
+  it('stops the pilot/controls surfaces from exposing investor-statement and partner-capital values', () => {
+    expect(pilotPage).not.toMatch(/investor_statement_total|partner_capital_rollforward_breaks/);
+    expect(controlsPage).not.toMatch(/investor_statement_total|partner_capital_rollforward_breaks|تطابق رأس مال الشركاء/);
+    expect(controlsPage).toContain('تبقى آليات التخصيص والتوزيع محجوبة');
+  });
+
+  it('stops the close page from instructing operators to allocate/distribute', () => {
+    expect(closePage).not.toMatch(/لإصدار قرار التخصيص/);
+    expect(closePage).not.toContain('الإغلاق والتوزيع');
+  });
+
+  it('no longer requires an investor, agreement, or commitment for intake readiness', () => {
+    const result = evaluateIntakeReadiness({
+      ...emptyIntakeSnapshot(),
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 0,
+      activeAgreement: false,
+    });
+    expect(result.sections.find((s) => s.code === 'DS03_PARTIES')?.status).toBe('NOT_APPLICABLE');
+    expect(result.sections.find((s) => s.code === 'DS04_AGREEMENT')?.status).toBe('NOT_APPLICABLE');
+    expect(result.sections.find((s) => s.code === 'DS05_COMMITMENTS')?.status).toBe('NOT_APPLICABLE');
+    expect(result.mandatoryMissing).not.toContain('DS03_PARTIES');
+    expect(result.mandatoryMissing).not.toContain('DS04_AGREEMENT');
+    expect(result.mandatoryMissing).not.toContain('DS05_COMMITMENTS');
   });
 });

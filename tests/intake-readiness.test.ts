@@ -91,13 +91,61 @@ describe('intake readiness derivation', () => {
     expect(result.sections.find((section) => section.code === 'FREEZE_DATE')?.status).toBe('COMPLETE');
   });
 
-  it('blocks the agreement until at least one investor exists', () => {
+  it('does not require an investor, agreement, or commitment while the funding mechanism is unresolved', () => {
+    // BD-002/003/005 are OPEN: investor/agreement/commitment setup is CONDITIONAL,
+    // not MANDATORY. With no investors and no agreement the sections are
+    // policy-blocked (NOT_APPLICABLE), never a readiness gate, and never instruct
+    // the operator to "add an investor first".
     const result = evaluateIntakeReadiness(snapshot({
       organizationName: 'أ',
       projectName: 'ب',
       investorCount: 0,
+      activeAgreement: false,
     }));
-    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('BLOCKED');
+    const parties = result.sections.find((section) => section.code === 'DS03_PARTIES')!;
+    expect(parties.kind).toBe('CONDITIONAL');
+    expect(parties.status).toBe('NOT_APPLICABLE');
+    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('NOT_APPLICABLE');
+    expect(result.sections.find((section) => section.code === 'DS05_COMMITMENTS')?.status).toBe('NOT_APPLICABLE');
+    expect(result.mandatoryMissing).not.toContain('DS03_PARTIES');
+    expect(result.mandatoryMissing).not.toContain('DS04_AGREEMENT');
+    expect(result.mandatoryMissing).not.toContain('DS05_COMMITMENTS');
+    expect(parties.blockingReasons.join(' ')).not.toMatch(/أضف مستثمر|مستثمرين/);
+  });
+
+  it('reaches operational readiness without fabricating investors', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      reportingCurrency: 'EGP',
+      freezeDate: '2026-03-31',
+      freezeEvidenceReference: 'F',
+      organizationEvidenceReference: 'CR-1',
+      projectEvidenceReference: 'SCOPE-1',
+      declaredDebitTotal: '1000',
+      declaredCreditTotal: '1000',
+      cashAccountCount: 1,
+      openPeriodExists: true,
+      openPeriodCoversFreeze: true,
+      realEstateProfile: true,
+      realEstateStrategy: 'ACQUIRE_HOLD',
+      assetCount: 1,
+      parcelCount: 1,
+      acquisitionCount: 1,
+      evidenceItemCount: 1,
+      applicability: {
+        HISTORICAL_CALLS: false,
+        HISTORICAL_CONTRIBUTIONS: false,
+        DEVELOPMENT_BASELINE: false,
+        UNPAID_SUPPLIERS: false,
+        SALES_DISPOSITIONS: false,
+        HISTORICAL_DISTRIBUTIONS: false,
+        BANK_STATEMENTS: false,
+      },
+    }));
+    expect(result.sections.find((section) => section.code === 'DS09_OPENING_BALANCES')?.status).toBe('MISSING');
+    expect(result.verdict).toBe('OPENING_READY_TO_STAGE');
+    expect(result.phase2Passed).toBe(false);
   });
 
   it('does not require ownership or allocation weights after activation (Scenario A)', () => {
