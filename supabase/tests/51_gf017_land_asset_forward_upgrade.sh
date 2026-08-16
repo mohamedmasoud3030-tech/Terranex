@@ -31,10 +31,13 @@ for migration in "$ROOT"/supabase/migrations/*.sql; do
 done
 
 # Build a genuine pre-GF-017 database using every cumulative SQL regression
-# fixture available at the GF-016 boundary.
+# fixture available at the GF-016 boundary. Tests added after that boundary
+# must not be replayed against this historical schema simply because their
+# numeric test prefix sorts below 50_.
 for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"
   [[ "$base" == "00_supabase_shim.sql" ]] && continue
+  [[ "$base" == "33_p2_p3_integration.sql" ]] && continue
   [[ "$base" < "50_" ]] || continue
   echo "==> GF-017 cumulative SQL fixture: $base"
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null
