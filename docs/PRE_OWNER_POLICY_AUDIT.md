@@ -108,7 +108,7 @@ This is diagnostic evidence, not exoneration:
 
 No diagnostic fixture was added. No database replay was necessary to prove the static reachability and formula contradictions.
 
-**Current PR evidence:** Greenfield CI completed on `078aece77693bc0ec3b8cc3eb79d11d26cb5a87c` after the initial delivery. The `app`, `database`, and SonarCloud checks are all **SUCCESS/GREEN** on that audited documentation head. The later precision-cleanup commit described by this revision must receive its own checks; no earlier green result is projected onto a new head.
+**PR verification rule:** Greenfield CI completed successfully on the original audit head `078aece77693bc0ec3b8cc3eb79d11d26cb5a87c`. CI evidence is head-specific: every precision revision must be accepted only when the live PR checks are GREEN on that exact head. GitHub's PR check state, not a static status sentence in this document, is the authority; no earlier green result is projected onto a later commit.
 
 ## 3. Source-of-truth classification
 
