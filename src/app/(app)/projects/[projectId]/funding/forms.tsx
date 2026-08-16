@@ -9,6 +9,7 @@ import type {
 } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { createCapitalCall, recordContribution } from '@/features/funding/actions';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
 
 export function CapitalCallForm({
   organizationId,
@@ -17,6 +18,7 @@ export function CapitalCallForm({
   currency,
   participants,
   commitments,
+  serverNonce,
 }: {
   organizationId: string;
   projectId: string;
@@ -24,9 +26,10 @@ export function CapitalCallForm({
   currency: string;
   participants: Participant[];
   commitments: CommitmentTerm[];
+  serverNonce: string;
 }) {
-  const [state, action, pending] = useActionState(createCapitalCall, { error: undefined });
-  const idempotencyKey = useMemo(() => `call-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(createCapitalCall, { error: undefined, successCount: 0 });
+  const idempotencyKey = useCommandIdempotencyKey('call', state, serverNonce);
   const commitmentByParticipant = useMemo(
     () => new Map(commitments.map((commitment) => [commitment.participant_id, commitment])),
     [commitments],
@@ -90,6 +93,7 @@ export function ContributionForm({
   calls,
   lines,
   participants,
+  serverNonce,
 }: {
   organizationId: string;
   projectId: string;
@@ -98,10 +102,11 @@ export function ContributionForm({
   calls: CapitalCall[];
   lines: CapitalCallLine[];
   participants: Participant[];
+  serverNonce: string;
 }) {
-  const [state, action, pending] = useActionState(recordContribution, { error: undefined });
+  const [state, action, pending] = useActionState(recordContribution, { error: undefined, successCount: 0 });
   const [selectedCallId, setSelectedCallId] = useState('');
-  const idempotencyKey = useMemo(() => `contrib-${crypto.randomUUID()}`, []);
+  const idempotencyKey = useCommandIdempotencyKey('contrib', state, serverNonce);
   const issuedCalls = calls.filter((call) => call.status === 'ISSUED');
   const eligibleLines = lines.filter((line) => line.capital_call_id === selectedCallId);
   const participantName = new Map(participants.map((participant) => [participant.id, participant.parties.legal_name]));
