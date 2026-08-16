@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo } from 'react';
+import { useActionState } from 'react';
 import type { Party, Participant } from '@/features/funding/queries';
 import {
   activateAgreementVersion,
@@ -8,6 +8,7 @@ import {
   createAgreementDraft,
   createParty,
 } from '@/features/funding/actions';
+import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
 
 export function CreatePartyForm({ organizationId, projectId }: { organizationId: string; projectId: string }) {
   const [state, action, pending] = useActionState(createParty, { error: undefined });
@@ -67,14 +68,16 @@ export function AgreementDraftForm({
   projectId,
   participants,
   currency,
+  serverNonce,
 }: {
   organizationId: string;
   projectId: string;
   participants: Participant[];
   currency: string;
+  serverNonce: string;
 }) {
-  const [state, action, pending] = useActionState(createAgreementDraft, { error: undefined });
-  const idempotencyKey = useMemo(() => `agreement-${crypto.randomUUID()}`, []);
+  const [state, action, pending] = useActionState(createAgreementDraft, { error: undefined, successCount: 0 });
+  const idempotencyKey = useCommandIdempotencyKey('agreement', state, serverNonce);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
