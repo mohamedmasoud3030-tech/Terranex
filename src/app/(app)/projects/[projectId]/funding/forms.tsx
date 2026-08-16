@@ -10,6 +10,7 @@ import type {
 import { formatMinorUnits } from '@/shared/money';
 import { createCapitalCall, recordContribution } from '@/features/funding/actions';
 import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
+import { useResolvedCommandNonce } from '@/shared/idempotency/use-resolved-command-nonce';
 
 export function CapitalCallForm({
   organizationId,
@@ -26,14 +27,19 @@ export function CapitalCallForm({
   currency: string;
   participants: Participant[];
   commitments: CommitmentTerm[];
-  serverNonce: string;
+  serverNonce?: string;
 }) {
   const [state, action, pending] = useActionState(createCapitalCall, { error: undefined, successCount: 0 });
-  const idempotencyKey = useCommandIdempotencyKey('call', state, serverNonce);
+  const resolvedNonce = useResolvedCommandNonce(serverNonce);
+  const idempotencyKey = useCommandIdempotencyKey('call', state, resolvedNonce ?? 'pending');
   const commitmentByParticipant = useMemo(
     () => new Map(commitments.map((commitment) => [commitment.participant_id, commitment])),
     [commitments],
   );
+
+  if (!resolvedNonce) {
+    return <p className="muted">جارٍ تجهيز نموذج طلب رأس المال الآمن…</p>;
+  }
 
   return (
     <form action={action} className="stack">
@@ -102,14 +108,19 @@ export function ContributionForm({
   calls: CapitalCall[];
   lines: CapitalCallLine[];
   participants: Participant[];
-  serverNonce: string;
+  serverNonce?: string;
 }) {
   const [state, action, pending] = useActionState(recordContribution, { error: undefined, successCount: 0 });
   const [selectedCallId, setSelectedCallId] = useState('');
-  const idempotencyKey = useCommandIdempotencyKey('contrib', state, serverNonce);
+  const resolvedNonce = useResolvedCommandNonce(serverNonce);
+  const idempotencyKey = useCommandIdempotencyKey('contrib', state, resolvedNonce ?? 'pending');
   const issuedCalls = calls.filter((call) => call.status === 'ISSUED');
   const eligibleLines = lines.filter((line) => line.capital_call_id === selectedCallId);
   const participantName = new Map(participants.map((participant) => [participant.id, participant.parties.legal_name]));
+
+  if (!resolvedNonce) {
+    return <p className="muted">جارٍ تجهيز نموذج المساهمة الآمن…</p>;
+  }
 
   return (
     <form action={action} className="stack">
