@@ -38,6 +38,29 @@ function isMeaningful(value) {
   return !/^(tbd|todo|pending|unknown|unset)$/i.test(normalized);
 }
 
+function extractRecord(startIndex) {
+  const lines = register.slice(startIndex).split(/\r?\n/);
+  const recordLines = [lines[0]];
+
+  for (let index = 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+
+    if (
+      trimmed === "" ||
+      trimmed === "```" ||
+      /^#{1,6}\s+/.test(line) ||
+      /^Decision ID:\s*BD-\d{3}\s*$/.test(line)
+    ) {
+      break;
+    }
+
+    recordLines.push(line);
+  }
+
+  return recordLines.join("\n");
+}
+
 for (const id of decisionIds) {
   const rowPattern = new RegExp(
     `^\\|\\s*${escapeRegExp(id)}\\s*\\|\\s*(OPEN|RESOLVED)\\s*\\|`,
@@ -76,26 +99,28 @@ for (const id of decisionIds) {
     continue;
   }
 
-  const recordStartMatch = recordStartMatches[0];
-  const recordStart = recordStartMatch.index;
-  const remainder = register.slice(recordStart + recordStartMatch[0].length);
-  const nextRecord = /^Decision ID:\s*BD-\d{3}\s*$/m.exec(remainder);
-  const record = nextRecord
-    ? register.slice(recordStart, recordStart + recordStartMatch[0].length + nextRecord.index)
-    : register.slice(recordStart);
+  const record = extractRecord(recordStartMatches[0].index);
+  const statusMatches = [...record.matchAll(/^Status:\s*RESOLVED\s*$/gm)];
 
-  if (!/^Status:\s*RESOLVED\s*$/m.test(record)) {
-    errors.push(`${id}: resolution record must contain 'Status: RESOLVED'.`);
+  if (statusMatches.length !== 1) {
+    errors.push(
+      statusMatches.length === 0
+        ? `${id}: resolution record must contain 'Status: RESOLVED'.`
+        : `${id}: resolution record contains duplicate 'Status: RESOLVED' fields.`,
+    );
   }
 
   for (const field of requiredFields) {
     const fieldPattern = new RegExp(
       `^${escapeRegExp(field)}:\\s*(.+)$`,
-      "m",
+      "gm",
     );
-    const fieldMatch = record.match(fieldPattern);
-    if (!fieldMatch || !isMeaningful(fieldMatch[1])) {
+    const fieldMatches = [...record.matchAll(fieldPattern)];
+
+    if (fieldMatches.length === 0 || !isMeaningful(fieldMatches[0][1])) {
       errors.push(`${id}: resolution record field '${field}' is missing or empty.`);
+    } else if (fieldMatches.length > 1) {
+      errors.push(`${id}: resolution record field '${field}' is duplicated.`);
     }
   }
 }
