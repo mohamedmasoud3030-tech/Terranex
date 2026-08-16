@@ -1,5 +1,6 @@
 -- Regression gate for the final F3–F10 audit hardening.
--- Proves internal approval helpers cannot be invoked as RPCs, the historical
+-- Proves the entire SECURITY DEFINER surface is closed to PUBLIC/anon,
+-- internal approval helpers cannot be invoked as RPCs, the historical
 -- portfolio roll-up authorizes tenant scope before its definer implementation,
 -- signed FX conversion is exact/symmetric, and approved corrections remain
 -- visible as in-flight controls.
@@ -9,9 +10,27 @@ declare
   v_offender text;
   v_viewdef text;
 begin
-  -- Internal F5 helpers and the F10 implementation must have no execute grant
-  -- for PUBLIC, anon, or authenticated. The owning database role can still
-  -- call them from the material SECURITY DEFINER command wrappers.
+  -- Global invariant (same class of control as PR #146): no SECURITY DEFINER
+  -- function in the exposed public schema may be executable by PUBLIC or anon.
+  select string_agg(sig, ', ' order by sig)
+    into v_offender
+  from (
+    select distinct p.oid::regprocedure::text as sig
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace,
+    lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+    where n.nspname = 'public'
+      and p.prosecdef
+      and (a.grantee = 0 or pg_get_userbyid(a.grantee) = 'anon')
+  ) offenders;
+
+  if v_offender is not null then
+    raise exception 'SECURITY DEFINER function(s) executable by PUBLIC or anon: %', v_offender;
+  end if;
+
+  -- Internal F5 helpers and the F10 implementation must also have no execute
+  -- grant for authenticated. The owning database role can still call them
+  -- from material SECURITY DEFINER command wrappers.
   select string_agg(p.oid::regprocedure::text, ', ' order by p.oid::regprocedure::text)
     into v_offender
   from pg_proc p
