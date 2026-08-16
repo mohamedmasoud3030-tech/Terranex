@@ -22,18 +22,20 @@ import { WorkspaceChrome } from '@/features/workspace/chrome';
 import {
   AchieveMilestoneButton,
   ObligationScheduleForm,
-  ApprovePaymentProposalButton,
-  AuthorizeObligationButton,
   DeleteDraftButton,
   MilestoneForm,
-  ObligationForm,
   ObligationTermsForm,
   OpenDisputeForm,
-  PaymentForm,
   ResolveDisputeForm,
   RetentionReleaseForm,
-  ReverseBatchForm,
 } from './forms';
+import {
+  ApprovePaymentProposalButton,
+  AuthorizeObligationButton,
+  ObligationForm,
+  PaymentForm,
+  ReverseBatchForm,
+} from './finance-command-forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,6 +165,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           projectId={projectId}
           currency={project.reporting_currency}
           parties={parties}
+          commandNonce={newCommandNonce()}
         />
       </section>
 
@@ -220,6 +223,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                               organizationId={organizationId}
                               projectId={projectId}
                               obligationId={obligation.obligation_id}
+                              commandNonce={newCommandNonce()}
                             />
                           )}
                           {obligation.status === 'DRAFT' && (
@@ -306,6 +310,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                 currency={obligation.currency}
                                 outstandingMinorUnits={obligation.outstanding_minor_units}
                                 cashAccounts={cashAccounts}
+                                commandNonce={newCommandNonce()}
                               />
                             </details>
                           )}
@@ -319,6 +324,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                   organizationId={organizationId}
                                   projectId={projectId}
                                   paymentProposalId={proposal.payment_proposal_id}
+                                  commandNonce={newCommandNonce()}
                                 />
                               ) : (
                                 <small className="muted">لا يجوز للمُعدّ اعتماد مقترحه؛ يلزم مالك مختلف.</small>
@@ -332,6 +338,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                                 organizationId={organizationId}
                                 projectId={projectId}
                                 batchId={obligation.authorization_batch_id}
+                                commandNonce={newCommandNonce()}
                                 label="عكس اعتماد الالتزام"
                               />
                             </details>
