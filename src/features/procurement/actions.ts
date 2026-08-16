@@ -62,11 +62,12 @@ function domainError(prev: ActionState, message: string | undefined, fallback: s
   if (text.includes('purchase order is not submitted')) return fail(prev, 'أمر الشراء ليس قيد الاعتماد حاليًا.');
   if (text.includes('supplier invoice is not submitted')) return fail(prev, 'فاتورة المورد ليست قيد الاعتماد.');
   if (text.includes('supplier invoice reference') || text.includes('supplier_invoices_supplier_reference_key')) return fail(prev, 'رقم فاتورة المورد مستخدم سابقًا لهذا المورد.');
+  if (text.includes('supplier stated total')) return fail(prev, 'إجمالي الفاتورة كما هو مكتوب من المورد مطلوب ويجب أن يطابق الإجمالي المحسوب، أو يلزم استثناء معتمد.');
   if (text.includes('supplier invoice unit price')) return fail(prev, 'سعر الفاتورة يجب أن يطابق سعر أمر الشراء تمامًا.');
   if (text.includes('supplier invoice quantity exceeds')) return fail(prev, 'كمية الفاتورة تتجاوز الكمية المستلمة المتاحة للفوترة.');
   if (text.includes('receipt line not found')) return fail(prev, 'سطر الاستلام لا ينتمي إلى أمر الشراء المحدد.');
   if (text.includes('supplier invoice requires an approved')) return fail(prev, 'لا تُسجَّل الفاتورة إلا على أمر شراء معتمد.');
-  if (text.includes('payment exceeds remaining payable')) return fail(prev, 'الدفعة تتجاوز المتبقي المستحق للفاتورة.');
+  if (text.includes('payment exceeds remaining payable') || text.includes('current outstanding payable')) return fail(prev, 'الدفعة أو التسوية تتجاوز المتبقي المستحق للفاتورة.');
   if (text.includes('payment exceeds available cash')) return fail(prev, 'الرصيد المتاح في الحساب النقدي لا يكفي لهذه الدفعة.');
   if (text.includes('cash account must belong') || text.includes('payment currency')) return fail(prev, 'حساب النقدية يجب أن ينتمي إلى نفس المشروع والعملة.');
   if (text.includes('already exists') || text.includes('duplicate key')) return fail(prev, 'يوجد سجل بنفس المرجع في هذا النطاق.');
@@ -216,6 +217,7 @@ export async function recordSupplierInvoice(prev: ActionState, form: FormData): 
     p_cost_treatment: value.costTreatment,
     p_evidence_reference: value.evidenceReference,
     p_notes: value.notes,
+    p_supplier_stated_total_minor_units: parseMajorUnitsToMinor(value.supplierStatedTotal, value.currency),
     p_lines: value.linesJson.map((line) => ({
       purchase_receipt_line_id: line.purchaseReceiptLineId,
       quantity_invoiced: line.quantityInvoiced,
@@ -235,7 +237,6 @@ export async function approveSupplierInvoice(prev: ActionState, form: FormData):
   }, 'تعذر اعتماد فاتورة المورد وإنشاء المستحق.', value.projectId, prev);
 }
 
-// Reuses the shared Finance Core proposal/approval workflow; no Procurement cash engine.
 export async function prepareSupplierPayment(prev: ActionState, form: FormData): Promise<ActionState> {
   const value = parse(prev, supplierPaymentSchema.safeParse(Object.fromEntries(form)));
   if (isActionState(value)) return value;
@@ -271,8 +272,6 @@ export async function uploadProcurementEvidence(prev: ActionState, form: FormDat
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const checksum = createHash('sha256').update(bytes).digest('hex');
-  // Stable for response-loss retries of the same payload, but changes when a
-  // caller incorrectly reuses the command key with a different file.
   const objectDigest = createHash('sha256')
     .update(`${value.organizationId}|${value.projectId}|${value.idempotencyKey}|${checksum}`)
     .digest('hex');
@@ -303,8 +302,6 @@ export async function uploadProcurementEvidence(prev: ActionState, form: FormDat
     p_idempotency_key: value.idempotencyKey,
   });
   if (error) {
-    // Registered objects are protected by Storage RLS; only an upload which
-    // failed before metadata registration can be removed by this caller.
     if (!alreadyUploaded) await supabase.storage.from('procurement-evidence').remove([objectName]);
     return domainError(prev, error.message, 'تعذر تسجيل وربط ملف الدليل.');
   }

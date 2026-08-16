@@ -25,6 +25,7 @@ applied=0
 for migration in "$ROOT"/supabase/migrations/*.sql; do
   base="$(basename "$migration")"
   [[ "$base" < "20260814001400" ]] || continue
+  echo "==> GF-017 prerequisite migration: $base"
   psql_db "$UPGRADE_DB" < "$migration" >/dev/null
   applied=$((applied+1))
 done

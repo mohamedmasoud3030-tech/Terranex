@@ -1,6 +1,6 @@
 // R4 Procurement contracts. Quantity remains numeric operational truth; every
 // monetary value is parsed to integer minor units before crossing the RPC
-// boundary and every authoritative total is derived by PostgreSQL.
+// boundary and every authoritative calculated total is derived by PostgreSQL.
 
 import { z } from 'zod';
 import { isValidMajorMoney } from '@/shared/money';
@@ -17,7 +17,7 @@ const optionalText = (max: number) => z.preprocess(
 const idempotencyKey = z.string().trim().min(8).max(120, 'مفتاح العملية يجب أن يكون بين 8 و 120 حرفًا');
 const currency = z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة');
 const date = z.string().trim().min(1, 'التاريخ مطلوب');
-const moneyText = z.string().trim().min(1, 'سعر الوحدة مطلوب');
+const moneyText = z.string().trim().min(1, 'المبلغ مطلوب');
 
 const optionalDate = z.preprocess(
   (value) => {
@@ -43,7 +43,6 @@ function jsonArray<T extends z.ZodType>(schema: T, emptyMessage: string) {
   }).pipe(z.array(schema).min(1, emptyMessage).max(50));
 }
 
-// Supplier is an operational profile mapped to the existing authoritative Party.
 export const supplierSchema = z.object({
   organizationId: uuid,
   partyId: uuid,
@@ -125,7 +124,6 @@ export const submitPurchaseOrderSchema = z.object({
 });
 export const approvePurchaseOrderSchema = submitPurchaseOrderSchema;
 
-// Receiving remains quantity-only; unit is derived from the order line.
 const receiptLineInputSchema = z.object({
   purchaseOrderLineId: uuid,
   quantityReceived: positiveDecimal,
@@ -140,7 +138,6 @@ export const purchaseReceiptSchema = z.object({
   idempotencyKey,
 });
 
-// A supplier invoice line explicitly identifies the receipt quantity it bills.
 const invoiceLineInputSchema = z.object({
   purchaseReceiptLineId: uuid,
   quantityInvoiced: positiveDecimal,
@@ -155,10 +152,14 @@ export const supplierInvoiceSchema = z.object({
   currency,
   costTreatment: z.enum(['EXPENSE', 'CAPITALIZABLE_WIP']),
   evidenceReference: z.string().trim().min(3, 'مرجع دليل الفاتورة مطلوب').max(200),
+  supplierStatedTotal: moneyText,
   notes: optionalText(2000),
   linesJson: jsonArray(invoiceLineInputSchema, 'أضف سطر فاتورة واحدًا على الأقل'),
   idempotencyKey,
 }).superRefine((data, ctx) => {
+  if (!isValidMajorMoney(data.supplierStatedTotal, data.currency)) {
+    ctx.addIssue({ code: 'custom', path: ['supplierStatedTotal'], message: 'إجمالي الفاتورة المكتوب من المورد غير صالح لهذه العملة' });
+  }
   data.linesJson.forEach((line, index) => {
     if (!isValidMajorMoney(line.unitPrice, data.currency)) {
       ctx.addIssue({ code: 'custom', path: ['linesJson', index, 'unitPrice'], message: 'سعر الفاتورة غير صالح لهذه العملة' });
