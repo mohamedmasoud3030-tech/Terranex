@@ -33,6 +33,7 @@ function escapeRegExp(value) {
 function isMeaningful(value) {
   const normalized = value.trim();
   if (!normalized) return false;
+  if (/^<[^>]+>$/.test(normalized)) return false;
   if (/^[_\-–—.]+$/.test(normalized)) return false;
   return !/^(tbd|todo|pending|unknown|unset)$/i.test(normalized);
 }
@@ -40,31 +41,42 @@ function isMeaningful(value) {
 for (const id of decisionIds) {
   const rowPattern = new RegExp(
     `^\\|\\s*${escapeRegExp(id)}\\s*\\|\\s*(OPEN|RESOLVED)\\s*\\|`,
-    "m",
+    "gm",
   );
-  const rowMatch = register.match(rowPattern);
+  const rowMatches = [...register.matchAll(rowPattern)];
 
-  if (!rowMatch) {
+  if (rowMatches.length === 0) {
     errors.push(`${id}: canonical status row is missing or malformed.`);
     continue;
   }
 
-  if (rowMatch[1] !== "RESOLVED") {
-    errors.push(`${id}: status is ${rowMatch[1]}, not RESOLVED.`);
+  if (rowMatches.length > 1) {
+    errors.push(`${id}: canonical status row is duplicated.`);
+    continue;
+  }
+
+  if (rowMatches[0][1] !== "RESOLVED") {
+    errors.push(`${id}: status is ${rowMatches[0][1]}, not RESOLVED.`);
     continue;
   }
 
   const recordStartPattern = new RegExp(
     `^Decision ID:\\s*${escapeRegExp(id)}\\s*$`,
-    "m",
+    "gm",
   );
-  const recordStartMatch = recordStartPattern.exec(register);
+  const recordStartMatches = [...register.matchAll(recordStartPattern)];
 
-  if (!recordStartMatch) {
+  if (recordStartMatches.length === 0) {
     errors.push(`${id}: RESOLVED row has no matching resolution record.`);
     continue;
   }
 
+  if (recordStartMatches.length > 1) {
+    errors.push(`${id}: resolution record is duplicated.`);
+    continue;
+  }
+
+  const recordStartMatch = recordStartMatches[0];
   const recordStart = recordStartMatch.index;
   const remainder = register.slice(recordStart + recordStartMatch[0].length);
   const nextRecord = /^Decision ID:\s*BD-\d{3}\s*$/m.exec(remainder);
@@ -98,5 +110,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  "R15 admission: PASS — BD-001…BD-012 are RESOLVED and each has a complete canonical resolution record.",
+  "R15 admission: PASS — BD-001…BD-012 are RESOLVED and each has one complete canonical resolution record.",
 );
