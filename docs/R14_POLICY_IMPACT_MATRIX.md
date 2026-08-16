@@ -240,7 +240,7 @@ This supersedes the "S5 dormant" characterization: the S5 mechanism is
 **retained but policy-inert**. Policy-dependent writes fail closed until an
 approved `policy_authority` exists (which none does, so the current state is
 inert). It also de-couples intake from mandatory investor/agreement/commitment,
-raises S1 activation/call to OWNER, renames the stale S5 result source, relabels
+raises S1 activation/call to OWNER, read-labels the stale S5 result source, relabels
 the capacity bridge, and reconciles S5 distribution payments through the shared
 bank-line reservation. No BD is resolved; R15 is not started.
 
