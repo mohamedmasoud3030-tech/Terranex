@@ -9,6 +9,24 @@
 
 > **STOP / NOT READY:** do not send, re-send, or collect answers against `R14_TARGET_COMPANY_DECISION_PACK_AR.md`. The repository does not yet prove that the current twelve-item pack is owner-only, complete, neutral, or technically safe.
 
+## 0. Corrective engineering addendum (2026-08-16)
+
+This audit is canonical for the *findings* it records. The corrective engineering
+it mandated (§14) has been delivered in a follow-up policy-safety PR (ADR 0033,
+migration `20260816062000_pre_owner_policy_safety.sql`), which:
+
+- gates all S5 allocation/distribution writes and the `attach_contribution_cash`
+  posting behind an approved `policy_authority` (EMPTY by default → policy-inert);
+- raises S1 agreement activation and capital-call issuance to OWNER authority;
+- de-couples intake readiness from mandatory investor + agreement + commitment;
+- renames the stale RE-sale-only S5 source (`s5_real_estate_sale_result_as_of_snapshot`,
+  source category `REAL_ESTATE_SALE_RESULT`) and relabels the capacity bridge;
+- reconciles S5 distribution payments through the shared bank-line reservation;
+- removes partner-capital / investor-statement values from pilot/control readiness.
+
+The audit body below remains historical evidence of the findings. No BD item is
+resolved; R15 has not started.
+
 ## 1. Executive conclusion
 
 # ARE WE REALLY OWNER-BLOCKED? **PARTIAL**

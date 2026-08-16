@@ -233,6 +233,17 @@ The hotfix must extend `tests/r10-policy-block.test.ts` (or equivalent permanent
 - Permanent regression coverage was extended: `tests/r10-policy-block.test.ts` (seven policy-boundary proofs, including a repository-wide runtime-source scan with an explicit dormant allowlist that catches indirect live exposure) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C).
 - No BD item was resolved: BD-001…BD-012 remain OPEN. No migration or schema change was introduced. R15 was not started.
 
+### 4.5 Pre-owner policy-safety boundary (corrective engineering)
+
+**Status:** delivered via ADR 0033 and migration `20260816062000_pre_owner_policy_safety.sql`.
+This supersedes the "S5 dormant" characterization: the S5 mechanism is
+**retained but policy-inert**. Policy-dependent writes fail closed until an
+approved `policy_authority` exists (which none does, so the current state is
+inert). It also de-couples intake from mandatory investor/agreement/commitment,
+raises S1 activation/call to OWNER, renames the stale S5 result source, relabels
+the capacity bridge, and reconciles S5 distribution payments through the shared
+bank-line reservation. No BD is resolved; R15 is not started.
+
 ## 5. Professional consistency review — flags
 
 Cross-checked against the Terranex accounting model, Project financial isolation, exact-money model, close/reversal/correction architecture, Portfolio reporting architecture, RE/Agriculture/Livestock operations, current funding facts, and the R10 policy block:

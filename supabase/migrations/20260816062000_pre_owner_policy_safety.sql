@@ -575,7 +575,8 @@ grant execute on function public.s5_prepare_allocation(uuid,uuid,uuid,uuid,text,
 --    cash policy (BD-008 OPEN). The column is renamed so no consumer can read
 --    it as legally/accountingly distributable cash.
 -- ===========================================================================
-create or replace view public.s5_distribution_capacity_read with (security_invoker=on) as
+drop view if exists public.s5_distribution_capacity_read;
+create view public.s5_distribution_capacity_read with (security_invoker=on) as
 with project_role_balances as (
   select jl.organization_id,jl.project_id,jl.currency,
     coalesce(sum(case when sa.role='BANK_CASH' then jl.debit_minor_units::numeric-jl.credit_minor_units::numeric else 0 end),0) cash,
@@ -589,6 +590,7 @@ select organization_id,project_id,currency,cash::text as cash_minor_units,
   greatest(distribution_payable,0)::text as distribution_payable_minor_units,
   greatest(cash-greatest(supplier_payable,0)-greatest(distribution_payable,0),0)::text as technical_capacity_bridge_minor_units
 from project_role_balances;
+grant select on public.s5_distribution_capacity_read to authenticated;
 
 -- ===========================================================================
 -- 8. Bank reconciliation of S5 distribution payments through the SAME shared
@@ -743,7 +745,8 @@ grant execute on function public.s5_reconcile_distribution_payment(uuid,uuid,uui
 --    the machine-verifiable acceptance report. They are investor economics,
 --    not technical readiness; the report no longer derives or exposes them.
 -- ===========================================================================
-create or replace view public.s7_pilot_acceptance_report_read with (security_invoker=on) as
+drop view if exists public.s7_pilot_acceptance_report_read;
+create view public.s7_pilot_acceptance_report_read with (security_invoker=on) as
 select
   p.id as project_id,
   p.organization_id,
@@ -823,3 +826,4 @@ left join lateral (
   from public.s7_uat_tasks t
   where t.organization_id = p.organization_id and t.project_id = p.id
 ) uat on true;
+grant select on public.s7_pilot_acceptance_report_read to authenticated;
