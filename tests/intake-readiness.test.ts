@@ -100,7 +100,9 @@ describe('intake readiness derivation', () => {
     expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('BLOCKED');
   });
 
-  it('requires ownership weights and an agreement title after activation', () => {
+  it('does not require ownership or allocation weights after activation (Scenario A)', () => {
+    // Active governing agreement with an agreement title, but NO allocation rule set
+    // and no ownership/allocation weights anywhere in the snapshot.
     const result = evaluateIntakeReadiness(snapshot({
       organizationName: 'أ',
       projectName: 'ب',
@@ -108,11 +110,79 @@ describe('intake readiness derivation', () => {
       activeAgreement: true,
       agreementEffectiveDate: '2025-01-01',
       commitmentCount: 2,
-      allocationRulesConfigured: false,
+      agreementTitleOrReference: 'اتفاقية الشركاء',
+    }));
+    const agreement = result.sections.find((section) => section.code === 'DS04_AGREEMENT')!;
+    expect(agreement.status).toBe('COMPLETE');
+    expect(agreement.blockingReasons).toHaveLength(0);
+    expect(result.sections.find((section) => section.code === 'DS05_COMMITMENTS')?.status).toBe('COMPLETE');
+  });
+
+  it('treats a missing agreement title as the only remaining DS04 gap, never ownership weights', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 2,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 2,
       agreementTitleOrReference: null,
     }));
-    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('IN_PROGRESS');
-    expect(result.sections.find((section) => section.code === 'DS05_COMMITMENTS')?.status).toBe('COMPLETE');
+    const agreement = result.sections.find((section) => section.code === 'DS04_AGREEMENT')!;
+    expect(agreement.status).toBe('IN_PROGRESS');
+    expect(agreement.blockingReasons).toEqual(['عنوان الاتفاقية أو مرجعها غير مسجّل.']);
+  });
+
+  it('keeps ownership/allocation economics policy-blocked without degrading DS04 readiness', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 1,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 1,
+      agreementTitleOrReference: 'اتفاقية',
+    }));
+    const agreement = result.sections.find((section) => section.code === 'DS04_AGREEMENT')!;
+    // Requirements (blocking reasons) must never mention ownership/allocation weights or a 100% total.
+    expect(agreement.blockingReasons.join(' ')).not.toMatch(/100|أوزان|وزن|ملكية|تخصيص/);
+    expect(agreement.summaryAr).not.toMatch(/100|أوزان/);
+    // The blocked policy is stated explicitly as unresolved, not silently passed.
+    expect(agreement.warnings.join(' ')).toContain('غير محددة بسياسة معتمدة');
+    expect(agreement.status).toBe('COMPLETE');
+  });
+
+  it('keeps commitments distinct from ownership/entitlement and never derives ownership from them (Scenario B)', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 2,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 2,
+      agreementTitleOrReference: 'اتفاقية الشركاء',
+    }));
+    const commitments = result.sections.find((section) => section.code === 'DS05_COMMITMENTS')!;
+    expect(commitments.status).toBe('COMPLETE');
+    expect(commitments.summaryAr).toContain('الالتزام ≠ المطلوب ≠ المساهمة');
+    expect(commitments.summaryAr).not.toMatch(/ملكية|حصة|استحقاق/);
+    // Commitment ratios never contribute ownership; DS04 completes on agreement facts alone.
+    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('COMPLETE');
+  });
+
+  it('does not consult dormant S5 allocation rule data for readiness (Scenario C)', () => {
+    // There is no allocation-rule input on the snapshot anymore: historically recorded
+    // S5 rule data cannot reach the readiness model, so it stays dormant.
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 1,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 1,
+      agreementTitleOrReference: 'اتفاقية',
+    }));
+    expect(result.sections.find((section) => section.code === 'DS04_AGREEMENT')?.status).toBe('COMPLETE');
   });
 
   it('honours an explicit not-applicable declaration for historical calls', () => {
@@ -173,7 +243,6 @@ describe('intake readiness derivation', () => {
       activeAgreement: true,
       agreementEffectiveDate: '2025-01-01',
       commitmentCount: 1,
-      allocationRulesConfigured: true,
       cashAccountCount: 1,
       openPeriodExists: true,
       openPeriodCoversFreeze: true,
@@ -208,7 +277,6 @@ describe('intake readiness derivation', () => {
       investorCount: 1,
       activeAgreement: true,
       commitmentCount: 1,
-      allocationRulesConfigured: true,
       agreementTitleOrReference: 'اتفاقية',
       cashAccountCount: 1,
       openPeriodExists: true,

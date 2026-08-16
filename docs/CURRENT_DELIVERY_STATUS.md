@@ -129,3 +129,15 @@ This addendum supersedes stale phase labels in the dated snapshot above. It is b
 | R14 | **DECISION PACK ISSUED — AWAITING OWNER ANSWERS** | BD-001…BD-012 remain OPEN. The Arabic owner questionnaire (`docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md`) and the impact matrix/legacy investor-economics audit (`docs/R14_POLICY_IMPACT_MATRIX.md`) are documentation-only deliverables; no runtime or migration behavior changed. The audit records one verified runtime policy-boundary defect: the intake route surfaces S5 allocation-rule configuration and makes mandatory readiness depend on ownership/allocation weights while BD-004/BD-006 are OPEN (three connected legs — see impact matrix §4.1). A separate **policy-safety-only** runtime hotfix (impact matrix §4.2/§4.3) is required after the R14 documentation PR merges; it must not resolve any BD decision. |
 
 The hard stop is now active. No ownership percentage, investor entitlement, allocation policy, distributable cash, distribution, waterfall, carried/operator economics, cross-project netting or investor entry/exit economics may be activated until the relevant R14 decisions and evidence are resolved.
+
+## 8. Post-R14 policy-safety hotfix (2026-08-16)
+
+The mandatory post-R14 §4.2/§4.3 policy-safety hotfix (see `docs/R14_POLICY_IMPACT_MATRIX.md`) has been delivered as a dedicated runtime PR. It closes the three-leg intake policy leak while BD-004 and BD-006 remain OPEN:
+
+- `/projects/[projectId]/intake` no longer imports or renders `ConfigureRulesForm`, no longer queries allocation rules for readiness, and no longer passes an `allocationRulesConfigured` flag into the readiness model.
+- `DS04_AGREEMENT` readiness no longer requires or implies ownership/allocation weights or a 100% total; unresolved investor economics are shown as policy-blocked («غير محددة بسياسة معتمدة») without degrading readiness.
+- SAFE agreement/funding facts (participant identity, agreement/version provenance, `AgreementDraftForm` commitment amounts, capital-call/contribution facts, the DS05 separation) are preserved.
+- Dormant S5 allocation/distribution machinery is untouched and remains dormant.
+- BD-001…BD-012 remain OPEN; no business policy was inferred. R15 has not started.
+
+Permanent regression coverage was added in `tests/r10-policy-block.test.ts` (seven policy-boundary proofs) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C). No database migration or schema change was required.
