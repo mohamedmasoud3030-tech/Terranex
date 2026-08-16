@@ -62,7 +62,7 @@ export function BudgetForm({
         />
       </label>
       <p className="muted">
-        المبالغ بالوحدات الصغرى للعملة (مليمات/هللات) لتجنب أي تقريب؛ مثال: 100.00 {currency} = {currency === 'EGP' ? '10000' : '10000'}.
+        المبالغ بالوحدات الصغرى للعملة لتجنب أي تقريب؛ مثال: 100.00 من عملة المشروع = 10000 وحدة صغرى.
       </p>
       {state.error ? <p className="error">{state.error}</p> : null}
       <button disabled={pending} type="submit" className="button">
