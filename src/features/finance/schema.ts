@@ -28,6 +28,7 @@ export const cashAccountSchema = z.object({
   projectId: z.string().uuid(),
   name: z.string().trim().min(2, 'اسم الحساب مطلوب').max(120),
   currency: currencyCode,
+  idempotencyKey,
 });
 
 export const contributionAttributionSchema = z.object({
