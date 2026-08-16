@@ -93,7 +93,7 @@ function LinesEditor({ name, commercial = false, currency = 'EGP' }: { name: str
         <td><button type="button" onClick={() => setLines((prev) => prev.length === 1 ? prev : prev.filter((_, i) => i !== index))} aria-label="حذف السطر">×</button></td>
       </tr>)}</tbody></table></div>
     <button type="button" onClick={() => setLines((prev) => [...prev, empty()])}>إضافة سطر</button>
-    {commercial && <p className="muted">الإجماليات تُشتق في قاعدة البيانات من الكمية × سعر الوحدة. لا تُرسل قيمة إجمالية من المتصفح.</p>}
+    {commercial && <p className="muted">الإجماليات تُشتق في قاعدة البيانات من الكمية × سعر الوحدة. لا تُرسل قيمة إجمالية محسوبة من المتصفح.</p>}
   </div>;
 }
 
@@ -179,7 +179,9 @@ export function SupplierInvoiceForm({ organizationId, projectId, order, basis, s
     <CommandKey prefix="r4-invoice" state={state} serverNonce={serverNonce} />
     <label>رقم/مرجع فاتورة المورد<input name="invoiceReference" required maxLength={120} /></label><label>تاريخ الفاتورة<input type="date" name="invoiceDate" required /></label>
     <label>المعالجة المالية<select name="costTreatment"><option value="EXPENSE">مصروف مشروع</option><option value="CAPITALIZABLE_WIP">أعمال تحت التطوير</option></select></label>
+    <label>إجمالي الفاتورة كما هو مكتوب من المورد ({order.currency})<input name="supplierStatedTotal" inputMode="decimal" required /></label>
     <label>مرجع دليل الفاتورة<input name="evidenceReference" required minLength={3} maxLength={200} /></label><label className="full">ملاحظات <span className="muted">(اختياري)</span><textarea name="notes" maxLength={2000} /></label>
+    <p className="muted full">أدخل إجمالي المستند كما طبعه المورد. Terranex يحسب إجمالي السطور مستقلًا ويقارن القيمتين عند الاعتماد؛ لا يتم اشتقاق هذا الحقل من السطور.</p>
     <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table><thead><tr><th>الصنف / دليل الاستلام</th><th>متاح للفوترة</th><th>كمية الفاتورة</th><th>سعر أمر الشراء</th><th>سعر الفاتورة ({order.currency})</th></tr></thead><tbody>{available.map((line) => <tr key={line.purchase_receipt_line_id}>
       <td>{line.item_description}<br /><span className="muted">{line.receipt_evidence_reference}</span></td><td>{line.available_to_invoice_quantity} {line.unit}</td>
       <td><input inputMode="decimal" value={values[line.purchase_receipt_line_id]?.quantityInvoiced ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [line.purchase_receipt_line_id]: { quantityInvoiced: e.target.value, unitPrice: prev[line.purchase_receipt_line_id]?.unitPrice ?? '' } }))} /></td>
