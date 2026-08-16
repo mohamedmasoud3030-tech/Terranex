@@ -62,32 +62,41 @@ create index procurement_acceptances_po_idx
 create index procurement_acceptances_project_idx
   on public.procurement_acceptances(project_id, acceptance_date desc);
 
+-- Add a composite unique key on purchase_order_lines so acceptance-line and
+-- invoice-line FKs can reference the same PO line, PO, project and org in
+-- one composite without requiring unit_price_minor_units (which is not known
+-- at acceptance time).
+alter table public.purchase_order_lines
+  add constraint purchase_order_lines_id_po_project_org_key
+    unique (id, purchase_order_id, project_id, organization_id);
+
+-- The acceptance line carries a denormalized purchase_order_id so a composite
+-- FK can prove that the referenced PO line belongs to the same PO/project/org.
+-- It is kept coherent with the PO line by the composite FK below.
 create table public.procurement_acceptance_lines (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete restrict,
   project_id uuid not null references public.investment_projects(id) on delete restrict,
   acceptance_id uuid not null,
+  purchase_order_id uuid not null,
   purchase_order_line_id uuid not null,
   accepted_quantity numeric(20,6) not null check (accepted_quantity > 0),
   unit text not null check (char_length(trim(unit)) between 1 and 20),
   notes text check (notes is null or char_length(trim(notes)) between 1 and 2000),
   created_at timestamptz not null default now(),
   unique (id, organization_id, project_id),
+  unique (id, purchase_order_line_id, purchase_order_id, project_id, organization_id),
   unique (acceptance_id, purchase_order_line_id),
   foreign key (acceptance_id, organization_id, project_id)
     references public.procurement_acceptances(id, organization_id, project_id) on delete restrict,
-  foreign key (purchase_order_line_id, organization_id)
-    references public.purchase_order_lines(id, organization_id) on delete restrict
+  foreign key (purchase_order_line_id, purchase_order_id, project_id, organization_id)
+    references public.purchase_order_lines(id, purchase_order_id, project_id, organization_id)
+    on delete restrict
 );
 create index procurement_acceptance_lines_acceptance_idx
   on public.procurement_acceptance_lines(acceptance_id);
 create index procurement_acceptance_lines_po_line_idx
   on public.procurement_acceptance_lines(purchase_order_line_id);
-
--- Composite key for invoice line referencing (similar to purchase_receipt_lines_invoice_basis_key)
-alter table public.procurement_acceptance_lines
-  add constraint procurement_acceptance_lines_invoice_basis_key
-    unique (id, purchase_order_line_id, acceptance_id, project_id, organization_id);
 
 -- ===========================================================================
 -- 3. Extend supplier_invoice_lines to reference acceptance as an alternative
@@ -98,15 +107,22 @@ alter table public.supplier_invoice_lines
   add column procurement_acceptance_line_id uuid,
   add column procurement_type text not null default 'GOODS'
     check (procurement_type in ('GOODS','SERVICE','CONSTRUCTION','MILESTONE')),
-  drop constraint if exists supplier_invoice_lines_purchase_receipt_line_id_fkey,
+  -- Re-establish the R4 goods-receipt coherence FK (the same composite the
+  -- original table declared) after the column became nullable.
+  add constraint supplier_invoice_lines_purchase_receipt_line_fkey
+    foreign key (purchase_receipt_line_id, purchase_order_line_id, purchase_order_id, project_id, organization_id)
+    references public.purchase_receipt_lines(id, purchase_order_line_id, purchase_order_id, project_id, organization_id)
+    on delete restrict,
   add constraint supplier_invoice_lines_receipt_or_acceptance check (
     (procurement_type = 'GOODS' and purchase_receipt_line_id is not null and procurement_acceptance_line_id is null)
     or (procurement_type in ('SERVICE','CONSTRUCTION','MILESTONE')
         and procurement_acceptance_line_id is not null and purchase_receipt_line_id is null)
   ),
+  -- Acceptance coherence in one key: the referenced acceptance line must
+  -- belong to the same PO line, project and organization as the invoice line.
   add constraint supplier_invoice_lines_acceptance_line_fkey
     foreign key (procurement_acceptance_line_id, purchase_order_line_id, purchase_order_id, project_id, organization_id)
-    references public.procurement_acceptance_lines(id, purchase_order_line_id, acceptance_id, project_id, organization_id)
+    references public.procurement_acceptance_lines(id, purchase_order_line_id, purchase_order_id, project_id, organization_id)
     on delete restrict;
 
 create index supplier_invoice_lines_acceptance_idx
@@ -171,11 +187,17 @@ create index procurement_invoice_exceptions_status_idx
 
 -- ===========================================================================
 -- 5. Append-only / immutable guards
+--
+-- Acceptances and acceptance lines are fully append-only. Invoice exceptions
+-- are append-only for DELETE and for economics, but the controlled
+-- OPEN -> APPROVED / OPEN -> REJECTED transition must remain possible, so
+-- the exception table gets a dedicated state-transition guard instead of the
+-- blanket immutable trigger.
 -- ===========================================================================
 create or replace function public.p2_guard_acceptance_immutable() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
 begin
-  raise exception 'procurement acceptance and exception records are append-only';
+  raise exception 'procurement acceptance and acceptance-line records are append-only';
 end $$;
 
 create trigger procurement_acceptances_immutable
@@ -184,14 +206,22 @@ create trigger procurement_acceptances_immutable
 create trigger procurement_acceptance_lines_immutable
   before update or delete on public.procurement_acceptance_lines
   for each row execute function public.p2_guard_acceptance_immutable();
-create trigger procurement_invoice_exceptions_immutable
-  before update or delete on public.procurement_invoice_exceptions
-  for each row execute function public.p2_guard_acceptance_immutable();
 
--- Only the OPEN→APPROVED or OPEN→REJECTED transition is allowed for exceptions.
+-- Exceptions: DELETE is forbidden, economics are immutable, but the controlled
+-- OPEN -> APPROVED/REJECTED resolution transition is allowed.
+create or replace function public.p2_guard_exception_delete() returns trigger
+language plpgsql set search_path=pg_catalog,public as $$
+begin
+  raise exception 'procurement invoice exceptions cannot be deleted';
+end $$;
+create trigger procurement_invoice_exceptions_no_delete
+  before delete on public.procurement_invoice_exceptions
+  for each row execute function public.p2_guard_exception_delete();
+
 create or replace function public.p2_guard_exception_transition() returns trigger
 language plpgsql set search_path=pg_catalog,public as $$
 begin
+  -- All economic/identity fields are immutable for the life of the record.
   if new.organization_id is distinct from old.organization_id
      or new.project_id is distinct from old.project_id
      or new.supplier_invoice_id is distinct from old.supplier_invoice_id
@@ -206,11 +236,15 @@ begin
      or new.request_hash is distinct from old.request_hash then
     raise exception 'procurement exception economics are immutable';
   end if;
-  if old.status <> 'OPEN' then raise exception 'only open exceptions can be resolved'; end if;
-  if new.status = 'OPEN' then raise exception 'exception status cannot change back to open'; end if;
-  if new.approved_by is null or new.approved_at is null
-     or new.approved_by = new.created_by then
-    raise exception 'exception requires a different approving authority';
+  -- Only the controlled resolution transition is permitted.
+  if not (
+    old.status = 'OPEN'
+    and new.status in ('APPROVED','REJECTED')
+    and new.approved_by is not null
+    and new.approved_at is not null
+    and new.approved_by <> new.created_by
+  ) then
+    raise exception 'only OPEN exceptions can be resolved by a different approving authority';
   end if;
   return new;
 end $$;
@@ -220,7 +254,7 @@ create trigger procurement_invoice_exceptions_transition_guard
 
 -- ===========================================================================
 -- 6. Update approve_supplier_invoice to enforce supplier-stated-total match
---    and create exception on mismatch.
+--    and require an approved exception to proceed on mismatch.
 -- ===========================================================================
 create or replace function public.approve_supplier_invoice(
   p_organization_id uuid,
@@ -280,7 +314,6 @@ begin
     where sil.supplier_invoice_id = p_supplier_invoice_id
   loop
     if v_line.procurement_type = 'GOODS' then
-      -- Existing receipt ceiling check
       if exists (
         with current_invoice as (
           select purchase_receipt_line_id, sum(quantity_invoiced) as quantity
@@ -305,10 +338,10 @@ begin
         where ci.quantity + coalesce(aa.quantity, 0) > rl.quantity_received
       ) then raise exception 'supplier invoice quantity exceeds remaining received quantity'; end if;
     else
-      -- Acceptance ceiling check for SERVICE/CONSTRUCTION/MILESTONE
       select accepted_quantity into v_accepted_quantity
       from public.procurement_acceptance_lines
       where id = v_line.procurement_acceptance_line_id;
+      if v_accepted_quantity is null then raise exception 'acceptance line not found'; end if;
       if exists (
         with current_invoice as (
           select procurement_acceptance_line_id, sum(quantity_invoiced) as quantity
@@ -338,10 +371,10 @@ begin
     from public.supplier_invoice_lines where supplier_invoice_id = p_supplier_invoice_id;
   if v_total is null or v_total <= 0 then raise exception 'supplier invoice total must be positive'; end if;
 
-  -- Supplier-Stated Total check
+  -- Supplier-Stated Total check: the calculated total must equal the total
+  -- printed by the supplier, unless an approved exception records the reason.
   v_supplier_total := v_invoice.supplier_stated_total_minor_units;
   if v_supplier_total is not null and v_supplier_total <> v_total then
-    -- Check if an approved exception exists for this supplier-total mismatch
     select exists (
       select 1 from public.procurement_invoice_exceptions e
       where e.supplier_invoice_id = p_supplier_invoice_id
@@ -422,7 +455,7 @@ declare
   v_order record;
   v_line jsonb;
   v_quantity numeric;
-  v_project_currency text;
+  v_po_line_id uuid;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
@@ -454,6 +487,27 @@ begin
   if not found then raise exception 'purchase order not found'; end if;
   if v_order.status <> 'APPROVED' then raise exception 'acceptance requires an approved purchase order'; end if;
 
+  -- Validate every line before any insert, so the aggregate is atomic.
+  for v_line in select * from jsonb_array_elements(p_lines) loop
+    begin
+      v_quantity := (v_line->>'accepted_quantity')::numeric;
+      v_po_line_id := (v_line->>'purchase_order_line_id')::uuid;
+    exception when others then
+      raise exception 'invalid acceptance line payload';
+    end;
+    if v_quantity is null or v_quantity <= 0 then raise exception 'acceptance quantity must be positive'; end if;
+    if (v_line->>'unit') is null or char_length(trim(v_line->>'unit')) not between 1 and 20 then
+      raise exception 'invalid acceptance line unit';
+    end if;
+    if not exists (
+      select 1 from public.purchase_order_lines l
+      where l.id = v_po_line_id
+        and l.purchase_order_id = p_purchase_order_id
+        and l.project_id = p_project_id
+        and l.organization_id = p_organization_id
+    ) then raise exception 'purchase order line not found for acceptance line'; end if;
+  end loop;
+
   v_hash := encode(digest(jsonb_build_object(
     'project_id', p_project_id, 'purchase_order_id', p_purchase_order_id,
     'acceptance_type', p_acceptance_type, 'acceptance_reference', trim(p_acceptance_reference),
@@ -470,25 +524,6 @@ begin
     return v_existing.id;
   end if;
 
-  for v_line in select * from jsonb_array_elements(p_lines) loop
-    begin
-      v_quantity := (v_line->>'accepted_quantity')::numeric;
-    exception when others then
-      raise exception 'invalid acceptance line quantity' at set schema 'p2';
-    end;
-    if v_quantity is null or v_quantity <= 0 then raise exception 'acceptance quantity must be positive'; end if;
-    if (v_line->>'purchase_order_line_id') is null then raise exception 'purchase order line required for acceptance line'; end if;
-    if (v_line->>'unit') is null or char_length(trim(v_line->>'unit')) not between 1 and 20 then
-      raise exception 'invalid acceptance line unit';
-    end if;
-    if not exists (
-      select 1 from public.purchase_order_lines l
-      where l.id = (v_line->>'purchase_order_line_id')::uuid
-        and l.purchase_order_id = p_purchase_order_id
-        and l.organization_id = p_organization_id
-    ) then raise exception 'purchase order line not found for acceptance line'; end if;
-  end loop;
-
   insert into public.procurement_acceptances(
     organization_id, project_id, purchase_order_id, acceptance_type,
     acceptance_reference, acceptance_date, evidence_reference, description,
@@ -501,10 +536,10 @@ begin
 
   for v_line in select * from jsonb_array_elements(p_lines) loop
     insert into public.procurement_acceptance_lines(
-      organization_id, project_id, acceptance_id, purchase_order_line_id,
+      organization_id, project_id, acceptance_id, purchase_order_id, purchase_order_line_id,
       accepted_quantity, unit, notes
     ) values (
-      p_organization_id, p_project_id, v_id,
+      p_organization_id, p_project_id, v_id, p_purchase_order_id,
       (v_line->>'purchase_order_line_id')::uuid,
       (v_line->>'accepted_quantity')::numeric, trim(v_line->>'unit'),
       nullif(trim(coalesce(v_line->>'notes', '')), '')
@@ -638,6 +673,7 @@ begin
   where id = p_exception_id and organization_id = p_organization_id for update;
   if not found then raise exception 'exception not found'; end if;
   if v_exception.status <> 'OPEN' then raise exception 'exception is already resolved'; end if;
+  if v_exception.created_by = v_actor then raise exception 'maker/checker: exception creator cannot resolve'; end if;
 
   update public.procurement_invoice_exceptions
      set status = p_decision, approved_by = v_actor, approved_at = now(),
@@ -655,7 +691,7 @@ begin
 end $$;
 
 -- ===========================================================================
--- 10. Record command update for supplier-stated total
+-- 10. Record command update for supplier-stated total and procurement type
 -- ===========================================================================
 create or replace function public.record_supplier_invoice(
   p_organization_id uuid,
@@ -684,6 +720,7 @@ declare
   v_total numeric := 0;
   v_procurement_type text;
   v_acceptance_line_id uuid;
+  v_po_line_id uuid;
 begin
   if v_actor is null then raise exception 'authentication required'; end if;
   if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
@@ -762,18 +799,22 @@ begin
       if v_quantity > v_receipt.quantity_received then raise exception 'supplier invoice quantity exceeds received quantity'; end if;
     elsif v_procurement_type in ('SERVICE','CONSTRUCTION','MILESTONE') then
       v_acceptance_line_id := (v_line->>'procurement_acceptance_line_id')::uuid;
+      v_po_line_id := (v_line->>'purchase_order_line_id')::uuid;
       if v_acceptance_line_id is null then raise exception 'acceptance line required for non-goods procurement'; end if;
-      select al.id, al.accepted_quantity, ol.unit_price_minor_units
+      select al.id, al.purchase_order_line_id, al.accepted_quantity, ol.unit_price_minor_units
         into v_receipt
         from public.procurement_acceptance_lines al
         join public.purchase_order_lines ol
           on ol.id = al.purchase_order_line_id and ol.organization_id = al.organization_id
        where al.id = v_acceptance_line_id
-         and ol.purchase_order_id = p_purchase_order_id
+         and al.purchase_order_id = p_purchase_order_id
          and al.project_id = p_project_id
          and al.organization_id = p_organization_id
        for update of al;
       if not found then raise exception 'acceptance line not found for this purchase order'; end if;
+      if v_po_line_id is not null and v_po_line_id <> v_receipt.purchase_order_line_id then
+        raise exception 'invoice line purchase order line does not match acceptance line';
+      end if;
       if v_receipt.unit_price_minor_units is null or v_unit_price <> v_receipt.unit_price_minor_units then
         raise exception 'supplier invoice unit price must exactly match purchase order';
       end if;
@@ -879,7 +920,7 @@ select i.id, i.organization_id, i.project_id, i.purchase_order_id,
        totals.invoice_total_minor_units::text as invoice_total_minor_units,
        coalesce(pay.paid_minor_units, 0)::text as paid_minor_units,
        case when coalesce(op.is_reversed, false) then '0'
-            else (totals.invoice_total_minor_units - coalesce(pay.paid_minor_units, 0))::text
+            else greatest(totals.invoice_total_minor_units - coalesce(pay.paid_minor_units, 0), 0)::text
        end as outstanding_minor_units,
        coalesce(pay.reconciled_minor_units, 0)::text as reconciled_minor_units,
        coalesce(op.is_reversed, false) as payable_is_reversed,
@@ -980,10 +1021,10 @@ begin
        and p.proname = any(v_commands::text[])
   loop
     v_definition := pg_get_functiondef(v_record.oid);
-    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\\(' then
+    if v_definition ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\(' then
       v_rewritten := regexp_replace(v_definition,
-        '(^|[^[:alnum:]_.])digest[[:space:]]*\\(',
-        E'\\\\1' || quote_ident(v_pgcrypto_schema) || '.digest(', 'g');
+        '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
+        E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(', 'g');
       if v_rewritten = v_definition then raise exception 'failed to qualify pgcrypto digest in %', v_record.proname; end if;
       execute v_rewritten;
     end if;
