@@ -19,8 +19,8 @@ migration `20260816062000_pre_owner_policy_safety.sql`), which:
   posting behind an approved `policy_authority` (EMPTY by default → policy-inert);
 - raises S1 agreement activation and capital-call issuance to OWNER authority;
 - de-couples intake readiness from mandatory investor + agreement + commitment;
-- renames the stale RE-sale-only S5 source (`s5_real_estate_sale_result_as_of_snapshot`,
-  source category `REAL_ESTATE_SALE_RESULT`) and relabels the capacity bridge;
+- read-labels the stale RE-sale-only S5 source (`s5_realized_result_as_of_snapshot`)
+  via COMMENT + terminology matrix and relabels the capacity bridge;
 - reconciles S5 distribution payments through the shared bank-line reservation;
 - removes partner-capital / investor-statement values from pilot/control readiness.
 

@@ -61,9 +61,10 @@ Concrete runtime changes (migration `20260816062000_pre_owner_policy_safety.sql`
   `INVESTOR_ECONOMICS`.
 - `attach_contribution_cash` requires `CAPITAL_CONTRIBUTION`.
 - `activate_agreement_version` and `create_capital_call` require OWNER.
-- `s5_realized_result_as_of_snapshot` renamed to
-  `s5_real_estate_sale_result_as_of_snapshot`; source category
-  `REALIZED_RESULT` → `REAL_ESTATE_SALE_RESULT`.
+- `s5_realized_result_as_of_snapshot` (source category `REALIZED_RESULT`) is
+  truthfully read-labeled via `COMMENT ON FUNCTION` / `COMMENT ON COLUMN` and
+  the terminology matrix — Real Estate sale result only, never a universal
+  Project realized result.
 - `s5_distribution_capacity_read.distributable_cash_minor_units` →
   `technical_capacity_bridge_minor_units`.
 - S5 distribution payments reconcile through the shared

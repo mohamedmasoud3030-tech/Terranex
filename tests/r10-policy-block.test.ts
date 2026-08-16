@@ -184,10 +184,10 @@ describe('pre-owner policy-safety boundary: policy-dependent writes fail closed'
     }
   });
 
-  it('renames the stale S5 source away from a universal REALIZED_RESULT', () => {
-    expect(preOwnerPolicyMigration).toContain('s5_real_estate_sale_result_as_of_snapshot');
-    expect(preOwnerPolicyMigration).toContain("drop function if exists public.s5_realized_result_as_of_snapshot");
-    expect(preOwnerPolicyMigration).toContain("source_category in ('REAL_ESTATE_SALE_RESULT')");
+  it('read-labels the stale S5 source as Real Estate sale only (never universal realized result)', () => {
+    expect(preOwnerPolicyMigration).toContain('comment on function public.s5_realized_result_as_of_snapshot');
+    expect(preOwnerPolicyMigration).toContain('NOT a universal Project realized result');
+    expect(preOwnerPolicyMigration).toContain('comment on column public.s5_allocation_runs.source_category');
   });
 
   it('stops the pilot/controls surfaces from exposing investor-statement and partner-capital values', () => {

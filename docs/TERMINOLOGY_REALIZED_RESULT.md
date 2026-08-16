@@ -16,7 +16,7 @@ accounting concepts into one number. None of these measures is an
 | **Project posted expense** | المصروف المرحَّل | `project_financial_position_read.expense_posted_minor_units` | Posted `PROJECT_EXPENSE` (debits − credits). | policy-independent |
 | **Project work-in-progress** | أعمال تحت التنفيذ | `project_financial_position_read.wip_posted_minor_units` | Posted `DEVELOPMENT_WIP`. | policy-independent |
 | **Real Estate sale realized result** | نتيجة البيع العقاري المحققة | `property_realized_result_read.realized_result_minor_units` (S4) | Real Estate sale revenue − carrying cost derecognized − selling costs. | policy-independent (per-property management fact) |
-| **S5 allocable source (historical)** | مصدر التخصيص التاريخي (بيع عقاري فقط) | `s5_real_estate_sale_result_as_of_snapshot` (formerly `s5_realized_result_as_of_snapshot`) | Real Estate sale revenue − cost of sale − SELLING expense, as-of a closed S6 snapshot. | policy-inert (BD-006 OPEN); RE-sale only, NOT a universal project result |
+| **S5 allocable source (historical)** | مصدر التخصيص التاريخي (بيع عقاري فقط) | `s5_realized_result_as_of_snapshot` (read-labeled Real Estate sale only) | Real Estate sale revenue − cost of sale − SELLING expense, as-of a closed S6 snapshot. | policy-inert (BD-006 OPEN); RE-sale only, NOT a universal project result |
 | **S5 technical capacity bridge (historical)** | جسر القدرة الفنية التاريخي | `s5_distribution_capacity_read.technical_capacity_bridge_minor_units` (formerly `distributable_cash_minor_units`) | max(0, BANK_CASH − positive SUPPLIER_PAYABLE − positive DISTRIBUTION_PAYABLE). | policy-inert (BD-008 OPEN); NOT company distributable cash |
 | **S7 reconciliation checkpoint "REALIZED_RESULT"** | نقطة مطابقة النتيجة المحققة | `s7_reconciliation_checkpoints` checkpoint_code `REALIZED_RESULT` | External signed value vs Terranex-derived value, management reconciliation only. | policy-independent (reconciliation fact) |
 | **Approved management valuation** | التقييم الإداري المعتمد | `property_valuations` / sector reads | Approved fair-value facts; management information only. | management info; never allocable/distributable (BD-007 OPEN) |
@@ -29,5 +29,6 @@ accounting concepts into one number. None of these measures is an
   number, and none is automatically allocable.
 - The R8 cross-sector performance read exposes a per-asset/per-project realized
   result for management reporting; it is **not** an investor-allocation basis.
-- The S5 source was renamed because it derived only Real Estate sale facts; it
-  must never again be read as a universal Project realized result.
+- The S5 source is read-labeled (COMMENT ON FUNCTION/COLUMN) because it derives
+  only Real Estate sale facts; it must never be read as a universal Project
+  realized result.

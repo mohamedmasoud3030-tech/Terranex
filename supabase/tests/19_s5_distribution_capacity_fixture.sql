@@ -20,9 +20,14 @@ set role='OWNER',status='ACTIVE';
 -- Synthetic policy activation: S5 allocation/distribution writes now require an
 -- approved INVESTOR_ECONOMICS policy. TEST DATA only; the migration schema ships
 -- with an EMPTY policy_authority (policy-inert) and no target-company row.
-insert into public.policy_authority(organization_id,scope,policy_version,evidence_reference,approved_by)
-values ('10000000-0000-4000-8000-000000000001','INVESTOR_ECONOMICS','S5-MECHANISM-TEST-V1','S5-TEST-SYNTHETIC-POLICY','00000000-0000-4000-8000-000000000001')
-on conflict (organization_id,scope) do nothing;
+-- No-op when replaying a pre-policy subset of migrations (forward-upgrade tests).
+do $$ begin
+  if to_regclass('public.policy_authority') is not null then
+    insert into public.policy_authority(organization_id,scope,policy_version,evidence_reference,approved_by)
+    values ('10000000-0000-4000-8000-000000000001','INVESTOR_ECONOMICS','S5-MECHANISM-TEST-V1','S5-TEST-SYNTHETIC-POLICY','00000000-0000-4000-8000-000000000001')
+    on conflict (organization_id,scope) do nothing;
+  end if;
+end $$;
 
 do $$
 declare

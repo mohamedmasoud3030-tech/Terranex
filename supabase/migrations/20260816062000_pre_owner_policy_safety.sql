@@ -18,9 +18,9 @@
 --   * S1 governing-agreement activation and capital-call issuance are raised
 --     to the strongest already-approved authority (OWNER), closing the
 --     active-MEMBER governance gap (BD-002/003/005 remain OPEN);
---   * the stale S5 allocable-result source is renamed to its exact historical
---     basis (Real Estate sale result only), no longer labeled the universal
---     `REALIZED_RESULT`;
+--   * the stale S5 allocable-result source (Real Estate sale result only) is
+--     truthfully read-labeled (COMMENT + terminology matrix) so it is no longer
+--     read as the universal `REALIZED_RESULT`;
 --   * the S5 capacity bridge is relabeled a historical/conservative technical
 --     capacity bridge, not a company distributable-cash policy (BD-008 OPEN);
 --   * S5 distribution payments can now participate in the SAME shared
@@ -394,180 +394,18 @@ revoke all on function public.create_capital_call(uuid,uuid,uuid,date,text,uuid[
 grant execute on function public.create_capital_call(uuid,uuid,uuid,date,text,uuid[],bigint[],text) to authenticated;
 
 -- ===========================================================================
--- 6. Truthful labeling of the stale S5 allocable-result source.
---    The legacy function derives ONLY Real Estate sale revenue / cost of sale /
---    selling expense. It is renamed to its exact historical basis and the
---    source_category enum value is relabeled so no reader mistakes it for a
---    universal Project realized result. (BD-006 remains OPEN; the mechanism is
---    policy-inert via section 3 regardless.)
+-- 6. Truthful read-labels for the historical S5 allocable-result source.
+--    The legacy s5_realized_result_as_of_snapshot derives ONLY Real Estate sale
+--    revenue / cost of sale / SELLING expense and predates rental, Agriculture
+--    and Livestock revenue. It is policy-inert (section 3) and must never be
+--    read as a universal Project realized result (see
+--    docs/TERMINOLOGY_REALIZED_RESULT.md for the full terminology matrix).
 -- ===========================================================================
-create or replace function public.s5_real_estate_sale_result_as_of_snapshot(
-  p_organization_id uuid,p_project_id uuid,p_close_snapshot_id uuid
-) returns bigint language plpgsql security definer set search_path=pg_catalog,public as $$
-declare v_snapshot record; v_result numeric;
-begin
-  select s.id,s.captured_at,s.period_id,s.project_id,s.close_run_id,c.status,
-         p.start_date,p.end_date,p.reporting_currency
-    into v_snapshot
-  from public.close_run_snapshots s
-  join public.close_runs c on c.id=s.close_run_id and c.organization_id=s.organization_id
-  join public.accounting_periods p on p.id=s.period_id and p.organization_id=s.organization_id
-  where s.id=p_close_snapshot_id and s.organization_id=p_organization_id
-    and s.project_id=p_project_id;
-  if not found or v_snapshot.status<>'APPROVED' then raise exception 'allocation requires an approved S6 close snapshot'; end if;
+comment on function public.s5_realized_result_as_of_snapshot(uuid,uuid,uuid) is
+  'Historical Real Estate sale result only (sale revenue - cost of sale - SELLING expense) as-of an approved S6 close snapshot. NOT a universal Project realized result; policy-inert (BD-006 OPEN).';
+comment on column public.s5_allocation_runs.source_category is
+  'Historical source category. The current value REALIZED_RESULT means Real Estate sale result only; it is NOT a universal Project realized result (BD-006 OPEN).';
 
-  select coalesce(sum(
-    case
-      when sa.role='REAL_ESTATE_SALE_REVENUE' then jl.credit_minor_units::numeric-jl.debit_minor_units::numeric
-      when sa.role='REAL_ESTATE_COST_OF_SALE' then -(jl.debit_minor_units::numeric-jl.credit_minor_units::numeric)
-      when sa.role='PROJECT_EXPENSE' and pci.cost_category='SELLING' then -(jl.debit_minor_units::numeric-jl.credit_minor_units::numeric)
-      else 0
-    end
-  ),0) into v_result
-  from public.journal_lines jl
-  join public.journal_batches jb on jb.id=jl.batch_id and jb.organization_id=jl.organization_id
-  join public.semantic_accounts sa on sa.id=jl.account_id
-  left join public.property_cost_items pci
-    on pci.cost_obligation_id=jl.obligation_id and pci.organization_id=jl.organization_id
-  where jl.organization_id=p_organization_id and jl.project_id=p_project_id
-    and jl.currency=v_snapshot.reporting_currency
-    and jl.transaction_date between v_snapshot.start_date and v_snapshot.end_date
-    and jb.posted_at<=v_snapshot.captured_at
-    and (
-      sa.role in ('REAL_ESTATE_SALE_REVENUE','REAL_ESTATE_COST_OF_SALE')
-      or (sa.role='PROJECT_EXPENSE' and pci.cost_category='SELLING')
-    );
-  return v_result::bigint;
-end $$;
-revoke all on function public.s5_real_estate_sale_result_as_of_snapshot(uuid,uuid,uuid) from public,anon,authenticated;
-
--- Remove the misleading legacy name; the mechanism is preserved under its
--- truthful name above (internal helper only, no browser grant).
-drop function if exists public.s5_realized_result_as_of_snapshot(uuid,uuid,uuid);
-
--- Drop the legacy source-category check by discovering its generated name, so
--- the relabel is robust against any auto-generated constraint naming.
-do $$
-declare c text;
-begin
-  select conname into c
-  from pg_constraint
-  where conrelid = 'public.s5_allocation_runs'::regclass
-    and contype = 'c'
-    and pg_get_constraintdef(oid) like '%source_category%';
-  if c is not null then
-    execute format('alter table public.s5_allocation_runs drop constraint %I', c);
-  end if;
-end $$;
-alter table public.s5_allocation_runs add constraint s5_allocation_runs_source_category_check
-  check (source_category in ('REAL_ESTATE_SALE_RESULT'));
-
-create or replace function public.s5_prepare_allocation(
-  p_organization_id uuid,p_project_id uuid,p_close_snapshot_id uuid,
-  p_governing_version_id uuid,p_source_category text,p_idempotency_key text
-) returns uuid language plpgsql security definer set search_path=pg_catalog,public as $$
-declare
-  v_actor uuid:=auth.uid(); v_id uuid; v_hash text; v_request_hash text; v_existing record;
-  v_snapshot record; v_rule_set record; v_source bigint; v_prior uuid; v_sign bigint; v_abs numeric;
-begin
-  if v_actor is null then raise exception 'authentication required'; end if;
-  if not public.is_active_member(p_organization_id) then raise exception 'forbidden'; end if;
-  if p_source_category<>'REAL_ESTATE_SALE_RESULT' then raise exception 'S5 v1 allocates REAL_ESTATE_SALE_RESULT only'; end if;
-  if p_idempotency_key is null or char_length(trim(p_idempotency_key)) not between 8 and 120 then raise exception 'invalid idempotency key'; end if;
-
-  select s.*,c.status as close_status,p.reporting_currency,p.start_date,p.end_date
-    into v_snapshot
-  from public.close_run_snapshots s
-  join public.close_runs c on c.id=s.close_run_id and c.organization_id=s.organization_id
-  join public.accounting_periods p on p.id=s.period_id and p.organization_id=s.organization_id
-  where s.id=p_close_snapshot_id and s.organization_id=p_organization_id and s.project_id=p_project_id
-  for share of s,c,p;
-  if not found or v_snapshot.close_status<>'APPROVED' then raise exception 'allocation requires an approved S6 close snapshot'; end if;
-
-  select * into v_rule_set from public.s5_allocation_rule_sets
-  where organization_id=p_organization_id and project_id=p_project_id
-    and governing_version_id=p_governing_version_id;
-  if not found then raise exception 'allocation rules are not configured for the governing version'; end if;
-  if not exists(select 1 from public.agreement_versions where id=p_governing_version_id and organization_id=p_organization_id and project_id=p_project_id) then
-    raise exception 'governing agreement version not found';
-  end if;
-
-  v_source:=public.s5_real_estate_sale_result_as_of_snapshot(p_organization_id,p_project_id,p_close_snapshot_id);
-  if v_source=0 then raise exception 'closed snapshot contains no allocable real-estate sale result'; end if;
-
-  v_request_hash:=encode(digest(jsonb_build_object(
-    'project_id',p_project_id,'close_snapshot_id',p_close_snapshot_id,
-    'governing_version_id',p_governing_version_id,'source_category',p_source_category
-  )::text,'sha256'),'hex');
-  v_hash:=encode(digest(jsonb_build_object(
-    'snapshot_content_hash',v_snapshot.content_hash,'snapshot_captured_at',v_snapshot.captured_at,
-    'source_period_id',v_snapshot.period_id,'rule_set_hash',v_rule_set.content_hash,
-    'source_category',p_source_category,'source_amount_minor_units',v_source,
-    'algorithm_version','S5-LARGEST-REMAINDER-V1'
-  )::text,'sha256'),'hex');
-
-  perform pg_advisory_xact_lock(hashtextextended(p_organization_id::text||':s5-prepare:'||trim(p_idempotency_key),0));
-  select * into v_existing from public.s5_allocation_runs
-  where organization_id=p_organization_id and idempotency_key=trim(p_idempotency_key);
-  if found then
-    if v_existing.request_hash<>v_request_hash then raise exception 'idempotency key payload mismatch'; end if;
-    return v_existing.id;
-  end if;
-  select id into v_prior from public.s5_allocation_runs
-  where organization_id=p_organization_id and project_id=p_project_id
-    and source_category=p_source_category
-  order by prepared_at desc,id desc limit 1;
-
-  insert into public.s5_allocation_runs(
-    organization_id,project_id,source_period_id,close_run_id,close_snapshot_id,
-    snapshot_content_hash,snapshot_captured_at,governing_version_id,rule_set_id,policy,
-    reporting_currency,source_category,source_amount_minor_units,content_hash,
-    prepared_by,idempotency_key,request_hash,prior_run_id
-  ) values(
-    p_organization_id,p_project_id,v_snapshot.period_id,v_snapshot.close_run_id,v_snapshot.id,
-    v_snapshot.content_hash,v_snapshot.captured_at,p_governing_version_id,v_rule_set.id,v_rule_set.policy,
-    v_snapshot.reporting_currency,p_source_category,v_source,v_hash,v_actor,trim(p_idempotency_key),
-    v_request_hash,v_prior
-  ) returning id into v_id;
-
-  v_sign:=case when v_source<0 then -1 else 1 end;
-  v_abs:=abs(v_source::numeric);
-  with raw as (
-    select r.participant_party_id,r.weight_numerator,r.weight_denominator,
-      trunc(v_abs*r.weight_numerator::numeric/r.weight_denominator::numeric)::bigint as floor_units,
-      mod(v_abs*r.weight_numerator::numeric,r.weight_denominator::numeric) as remainder_num
-    from public.s5_allocation_rules r where r.rule_set_id=v_rule_set.id
-  ), ranked as (
-    select raw.*,
-      row_number() over(order by remainder_num desc,participant_party_id::text asc) as remainder_rank,
-      (v_abs-sum(floor_units::numeric) over())::bigint as residual_units
-    from raw
-  )
-  insert into public.s5_allocation_lines(
-    organization_id,project_id,run_id,participant_party_id,weight_numerator,weight_denominator,
-    exact_floor_minor_units,remainder_numerator,rounding_award_minor_units,allocated_minor_units,currency
-  )
-  select p_organization_id,p_project_id,v_id,participant_party_id,weight_numerator,weight_denominator,
-    v_sign*floor_units,remainder_num,
-    case when remainder_rank<=residual_units then 1 else 0 end::smallint,
-    v_sign*(floor_units+case when remainder_rank<=residual_units then 1 else 0 end),
-    v_snapshot.reporting_currency
-  from ranked;
-
-  if (select coalesce(sum(allocated_minor_units),0) from public.s5_allocation_lines where run_id=v_id)<>v_source then
-    raise exception 'allocation rounding invariant failed';
-  end if;
-
-  insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,payload)
-  values(p_organization_id,v_actor,'S5_ALLOCATION_PREPARED','s5_allocation_run',v_id,
-    jsonb_build_object('project_id',p_project_id,'source_period_id',v_snapshot.period_id,
-      'close_snapshot_id',v_snapshot.id,'snapshot_content_hash',v_snapshot.content_hash,
-      'governing_version_id',p_governing_version_id,'source_amount_minor_units',v_source,
-      'currency',v_snapshot.reporting_currency,'content_hash',v_hash));
-  return v_id;
-end $$;
-revoke all on function public.s5_prepare_allocation(uuid,uuid,uuid,uuid,text,text) from public,anon;
-grant execute on function public.s5_prepare_allocation(uuid,uuid,uuid,uuid,text,text) to authenticated;
 
 -- ===========================================================================
 -- 7. Truthful relabel of the S5 capacity bridge. This is a historical,
@@ -832,8 +670,8 @@ grant select on public.s7_pilot_acceptance_report_read to authenticated;
 -- 10. pgcrypto hosted-schema compatibility pass.
 --     This migration redefines/adds SECURITY DEFINER functions that call
 --     digest(...) unqualified (attach_contribution_cash, create_capital_call,
---     s5_prepare_allocation, s5_reconcile_distribution_payment). They are
---     created AFTER the earlier qualification passes, so re-run the same
+--     s5_reconcile_distribution_payment). They are created AFTER the earlier
+--     qualification passes, so re-run the same
 --     bounded pass: keep the locked search_path, qualify only the pgcrypto
 --     dependency. CREATE OR REPLACE preserves function identity/grants.
 -- ===========================================================================

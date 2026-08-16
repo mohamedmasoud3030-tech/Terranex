@@ -193,9 +193,14 @@ insert into public.memberships(organization_id,user_id,role,status) values
 on conflict (organization_id,user_id) do update set role=excluded.role, status=excluded.status;
 
 -- Synthetic policy activation (S5 mechanism verification only; TEST DATA).
-insert into public.policy_authority(organization_id,scope,policy_version,evidence_reference,approved_by)
-values (:'p2c_org_lit','INVESTOR_ECONOMICS','P2C-MECHANISM-TEST-V1','P2C-TEST-SYNTHETIC-POLICY',:'p2c_owner1')
-on conflict (organization_id,scope) do nothing;
+-- No-op when replaying a pre-policy subset of migrations (forward-upgrade tests).
+do $$ begin
+  if to_regclass('public.policy_authority') is not null then
+    insert into public.policy_authority(organization_id,scope,policy_version,evidence_reference,approved_by)
+    values (:'p2c_org_lit','INVESTOR_ECONOMICS','P2C-MECHANISM-TEST-V1','P2C-TEST-SYNTHETIC-POLICY',:'p2c_owner1')
+    on conflict (organization_id,scope) do nothing;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Project, parties, cash account, governing agreement with three investors.
@@ -307,7 +312,7 @@ select p2c_assert((select status='CLOSED' from public.accounting_periods where i
   'period v1 must be CLOSED after approval');
 select id as p2c_snapshot from public.close_run_snapshots where close_run_id=:'p2c_close_run1' \gset
 select p2c_assert(
-  (select public.s5_real_estate_sale_result_as_of_snapshot(p2c_org(), :'p2c_project', :'p2c_snapshot')) = 600001,
+  (select public.s5_realized_result_as_of_snapshot(p2c_org(), :'p2c_project', :'p2c_snapshot')) = 600001,
   'closed snapshot realized result must be exactly 600001 minor units');
 
 select p2c_owner1_run(format(
@@ -410,7 +415,7 @@ select p2c_assert(p2c_expect_raise_admin(
 select p2c_assert((select count(*)=0 from public.journal_batches where idempotency_key='p2c-foreign-party-batch-01'),
   'rejected foreign-party batch must leave no residue');
 select p2c_assert(p2c_outsider_raises(format(
-  $$select public.s5_prepare_allocation('20000000-0000-4000-8000-000000000002',%L,%L,%L,'REAL_ESTATE_SALE_RESULT','p2c-foreign-snapshot-001')$$,
+  $$select public.s5_prepare_allocation('20000000-0000-4000-8000-000000000002',%L,%L,%L,'REALIZED_RESULT','p2c-foreign-snapshot-001')$$,
   :'p2c_project', :'p2c_snapshot', :'p2c_version'), 'P0001'),
   'another organization must not be able to allocate from this close snapshot');
 
@@ -502,7 +507,7 @@ select p2c_owner1_run(format(
   $$select public.s5_configure_allocation_rules(public.p2c_org(),%L,%L,'FIXED_SHARES',array[%L::uuid,%L::uuid,%L::uuid],array[334,333,333]::bigint[],1000,'P2C-RULE-BASIS-EVIDENCE','p2c-rules-0001')$$,
   :'p2c_project', :'p2c_version', :'p2c_inv1', :'p2c_inv2', :'p2c_inv3'));
 select p2c_owner2_run(format(
-  $$select public.s5_prepare_allocation(public.p2c_org(),%L,%L,%L,'REAL_ESTATE_SALE_RESULT','p2c-alloc-prepare-01')$$,
+  $$select public.s5_prepare_allocation(public.p2c_org(),%L,%L,%L,'REALIZED_RESULT','p2c-alloc-prepare-01')$$,
   :'p2c_project', :'p2c_snapshot', :'p2c_version'));
 select id as p2c_alloc_run from public.s5_allocation_runs where idempotency_key='p2c-alloc-prepare-01' \gset
 

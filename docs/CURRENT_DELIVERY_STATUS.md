@@ -157,9 +157,9 @@ policy-safety boundary:
   approved `policy_authority` exists (the registry ships **EMPTY**);
 - S1 agreement activation and capital-call issuance require OWNER;
 - intake readiness no longer mandates investor + agreement + commitment;
-- the stale S5 RE-sale-only source is renamed `s5_real_estate_sale_result_as_of_snapshot`
-  (source category `REAL_ESTATE_SALE_RESULT`) and the capacity bridge is relabeled
-  `technical_capacity_bridge_minor_units`;
+- the stale S5 RE-sale-only source (`s5_realized_result_as_of_snapshot`) is
+  truthfully read-labeled (COMMENT + terminology matrix) and the capacity bridge
+  is relabeled `technical_capacity_bridge_minor_units`;
 - S5 distribution payments reconcile through the shared bank-line reservation;
 - pilot/control readiness no longer exposes partner-capital or investor-statement values.
 

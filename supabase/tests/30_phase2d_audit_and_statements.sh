@@ -138,7 +138,7 @@ assert_eq "$(value "select coalesce(sum(debit_minor_units-credit_minor_units),0)
 
 SNAPSHOT="$(value "select close_snapshot_id from public.s5_allocation_runs where id='$ALLOC_RUN'")"
 [[ -n "$SNAPSHOT" ]] || fail 'allocation run has no close snapshot provenance'
-assert_eq "$(value "select public.s5_real_estate_sale_result_as_of_snapshot('$ORG','$PROJECT','$SNAPSHOT')")" '600001' 'closed snapshot does not reproduce the exact realized result'
+assert_eq "$(value "select public.s5_realized_result_as_of_snapshot('$ORG','$PROJECT','$SNAPSHOT')")" '600001' 'closed snapshot does not reproduce the exact realized result'
 assert_eq "$(value "select count(*) from public.close_run_snapshots where id='$SNAPSHOT' and char_length(content_hash)=64")" '1' 'close snapshot hash/provenance missing'
 echo 'Reversal and close-snapshot reproduction PASS'
 

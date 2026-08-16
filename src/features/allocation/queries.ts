@@ -31,7 +31,7 @@ export type AllocationRun = {
   policy: 'PRO_RATA' | 'FIXED_SHARES';
   algorithm_version: string;
   reporting_currency: string;
-  source_category: 'REAL_ESTATE_SALE_RESULT';
+  source_category: 'REALIZED_RESULT';
   source_amount_minor_units: string;
   status: 'PREPARED' | 'APPROVED';
   content_hash: string;

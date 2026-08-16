@@ -90,7 +90,7 @@ export async function prepareAllocationAction(_: ActionState, form: FormData): P
     p_project_id: input.projectId,
     p_close_snapshot_id: input.closeSnapshotId,
     p_governing_version_id: input.governingVersionId,
-    p_source_category: 'REAL_ESTATE_SALE_RESULT',
+    p_source_category: 'REALIZED_RESULT',
     p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذر تحضير تخصيص النتيجة.');
