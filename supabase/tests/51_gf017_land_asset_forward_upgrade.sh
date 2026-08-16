@@ -25,6 +25,7 @@ applied=0
 for migration in "$ROOT"/supabase/migrations/*.sql; do
   base="$(basename "$migration")"
   [[ "$base" < "20260814001400" ]] || continue
+  echo "==> GF-017 prerequisite migration: $base"
   psql_db "$UPGRADE_DB" < "$migration" >/dev/null
   applied=$((applied+1))
 done
@@ -35,6 +36,7 @@ for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"
   [[ "$base" == "00_supabase_shim.sql" ]] && continue
   [[ "$base" < "50_" ]] || continue
+  echo "==> GF-017 cumulative SQL fixture: $base"
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null
 done
 
