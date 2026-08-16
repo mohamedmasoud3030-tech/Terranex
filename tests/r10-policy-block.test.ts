@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const investorPage = readFileSync('src/app/(app)/projects/[projectId]/investors/page.tsx', 'utf8');
 const statementsPage = readFileSync('src/app/(app)/projects/[projectId]/statements/page.tsx', 'utf8');
+const overviewPage = readFileSync('src/app/(app)/projects/[projectId]/overview/page.tsx', 'utf8');
 const decisions = readFileSync('docs/OPEN_BUSINESS_DECISIONS.md', 'utf8');
 
 describe('R10 keeps unresolved investor economics inert until R14', () => {
@@ -12,7 +13,7 @@ describe('R10 keeps unresolved investor economics inert until R14', () => {
     }
   });
 
-  it('does not import allocation or distribution runtime from the investor surface', () => {
+  it('does not import entitlement runtime from the investor surface', () => {
     expect(investorPage).not.toMatch(/features\/allocation/);
     expect(investorPage).not.toMatch(/ConfigureRulesForm|PrepareAllocationForm|ApproveAllocationForm/);
     expect(investorPage).not.toMatch(/PrepareDistributionForm|ApproveDistributionForm|PayDistributionForm/);
@@ -33,6 +34,12 @@ describe('R10 keeps unresolved investor economics inert until R14', () => {
 
   it('redirects the legacy partner statement surface to the safe R10 page', () => {
     expect(statementsPage).toMatch(/redirect\(`\/projects\/\$\{projectId\}\/investors`\)/);
-    expect(statementsPage).not.toMatch(/getPartnerCapitalStatement|formatMinorUnits|allocation/);
+    expect(statementsPage).not.toMatch(/getPartnerCapitalStatement|formatMinorUnits|features\/allocation/);
+  });
+
+  it('keeps distribution economics out of the project overview', () => {
+    expect(overviewPage).not.toMatch(/getDistributions|approvedDistributions|paidDistributions/);
+    expect(overviewPage).toContain('BD-006 وBD-008');
+    expect(overviewPage).toContain('ليست حصة مستثمر');
   });
 });
