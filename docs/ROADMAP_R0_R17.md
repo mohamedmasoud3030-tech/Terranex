@@ -43,6 +43,8 @@ After R13 is delivered, do not start portfolio/investor-economics expansion that
 
 Only after R13, ask the owner the questions only they/their contracts can answer (details in `docs/greenfield/08` and `docs/OPEN_BUSINESS_DECISIONS.md`). Several require reading the real contract and legal/accounting documents, not just oral replies. Resolving the matching `BD-00x` IDs is the definition of done for R14.
 
+**R14 progress (2026-08-16):** the owner-facing Arabic questionnaire is issued as `docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md` and the technical mapping/dormant-code audit as `docs/R14_POLICY_IMPACT_MATRIX.md`. BD-001…BD-012 all remain OPEN until the authorized owner's answers are recorded.
+
 ## 6. R15–R17 — small rule-dependent tail
 
 - **R15 — Agreements & Participation:** reflect the real contract; capital commitments, contributions, economic participation, profit/loss allocation, operator economics, reserves, reinvestment.
