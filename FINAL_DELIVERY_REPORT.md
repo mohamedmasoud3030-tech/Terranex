@@ -26,10 +26,10 @@
 
 | Phase | Status | Evidence |
 |-------|--------|----------|
-| P0 — R4 Closeout | **COMPLETE** | `docs/R4_CLOSEOUT_AUDIT.md`, `supabase/migrations/20260816000000_r4_closeout_audit.sql` |
+| P0 — R4 Closeout | **COMPLETE** | `docs/R4_CLOSEOUT_AUDIT.md`, `supabase/migrations/20260815040000_r4_closeout_audit.sql` |
 | P1 — Finance Core Audit | **COMPLETE** | `docs/P1_FINANCE_CORE_AUDIT.md` — all 15 areas KEEP |
-| P2 — Vendor Finance Hardening | **COMPLETE** | `supabase/migrations/20260816000100_p2_vendor_finance_hardening.sql` |
-| P3 — Credits/Payment/Advances | **COMPLETE** | `supabase/migrations/20260816000200_p3_credits_payment_allocation_advances.sql` |
+| P2 — Vendor Finance Hardening | **COMPLETE** | `supabase/migrations/20260815040100_p2_vendor_finance_hardening.sql` |
+| P3 — Credits/Payment/Advances | **COMPLETE** | `supabase/migrations/20260815040200_p3_credits_payment_allocation_advances.sql` |
 | P4 — Contract Finance/Obligations | PARTIAL | Obligation backbone sufficient; payment terms/retention deferred |
 | P5 — Budget/Forecast | NOT STARTED | Deferred — needs business policy |
 | P6 — Approval/SoD/Exceptions | KEEP | Existing patterns correct and sufficient |
@@ -55,9 +55,9 @@
 
 ## Migrations Added (3 forward-only)
 
-1. `20260816000000_r4_closeout_audit.sql` — R4 closeout marker, invariant verification, audit trail
-2. `20260816000100_p2_vendor_finance_hardening.sql` — Supplier-stated total, acceptances, tolerance framework
-3. `20260816000200_p3_credits_payment_allocation_advances.sql` — Credit notes, unapplied payments, allocations, advances
+1. `20260815040000_r4_closeout_audit.sql` — R4 closeout marker, invariant verification, audit trail
+2. `20260815040100_p2_vendor_finance_hardening.sql` — Supplier-stated total, acceptances, tolerance framework
+3. `20260815040200_p3_credits_payment_allocation_advances.sql` — Credit notes, unapplied payments, allocations, advances
 
 ## Financial Invariants Proven (Section 12 of Mission)
 
