@@ -23,9 +23,15 @@ not merge project assets, cash, liabilities, agreements or investor
 economics. §9 lists "one 'transaction' table mixing draft, cash, revenue,
 cost, journal and bank statement concepts" and "polymorphic strings without
 referential integrity for financial dimensions" among the prohibited
-shortcuts — a universal asset table is the same anti-pattern applied to the
-asset dimension. §3 permits creating an aggregate or table only when an
-approved vertical slice uses it.
+shortcuts. §3 permits creating an aggregate or table only when an approved
+vertical slice uses it.
+
+That constraint is sufficient to reject a universal sector asset activity
+table. It is **not** sufficient, by itself, to prove that every possible narrow
+shared Asset identity or Project↔Asset association required elsewhere in the
+canonical model is unnecessary. R2 and R8 therefore remain separate questions:
+R8 may unify reporting without pre-judging the remaining R2 identity/association
+scope.
 
 ## Decision
 
@@ -126,7 +132,7 @@ by mutation: reverting each of the four decisions above (emitting a zero cost
 for farms, dropping `security_invoker`, inner-joining the finance spine,
 weakening the status/amount pairing) makes the gate fail with a specific
 message. The first mutation initially survived, which exposed that asserting
-the status text alone was insufficient; the gate now asserts that an absence
+status text alone was insufficient; the gate now asserts that an absence
 status carries no amount *and* no currency, plus the converse — that any
 reported amount is explained by a matching status.
 
@@ -134,9 +140,10 @@ reported amount is explained by a matching status.
 
 - The owner gets the R8 cross-sector view without any sector losing ownership
   of its own assets.
-- R2's remaining "Asset core" and R8's "cross-sector asset layer" are
-  satisfied as reporting, leaving the sector roots free to evolve
-  independently.
+- R8's cross-sector reporting layer is satisfied by this projection; **R2's
+  separate Asset identity/association requirement remains PARTIAL until the
+  full canonical authorities either authorize a narrow model or explicitly
+  establish that the sector roots plus Project attribution are sufficient.**
 - No part of this slice depends on an OPEN item in
   `docs/OPEN_BUSINESS_DECISIONS.md`; it introduces no ownership, entitlement,
   allocation or distribution semantics, and so does not approach the R13 hard
