@@ -81,10 +81,14 @@ smallest rule-dependent portion, and never invent a default or a guessed number.
 
 ## Verification
 
-- Real PostgreSQL replay (PGlite, actual PG engine): **all 81 migrations apply in order**; the 38 historical suites that are plain SQL replay under the same harness; the new suite passes.
+- Real PostgreSQL replay (PGlite, actual PG engine): **all 82 migrations apply in order**.
 - New behavioral gate `supabase/tests/88_f3_f10_finance_control.sql` exercises, with real actors and assertions: milestone immutability, terms/retention guards, schedule ceilings, budget overlap/maker-checker/ceiling/exception-relief/supersede, dispute blocking payment, retention narrowing payment, policy evidence gates, FX exact conversion + immutability, tax registry, integrity signals, project position reconciliation to posted facts, portfolio roll-up + org consolidation conversion, cross-tenant isolation. **PASS**.
+- New forward-upgrade gate `supabase/tests/89_f3_f10_forward_upgrade.sh`: pre-F3 boundary replay (73 migrations) + F3–F10 upgrade phase with full surface verification and the pgcrypto qualification check. **PASS**.
+- The F3–F10 family is excluded from the older stage fixtures' replay allowlists (S3/S4/S5/S6/S7 and agriculture stages), matching the established stage-boundary pattern.
+- pgcrypto hosted-schema compatibility: migration `20260816057500` re-runs the bounded qualification pass so suite 33 sees zero unqualified `digest(` calls (caught by CI; fixed).
 - Unit tests: `tests/f3-f10-control.test.ts` — schema contracts + migration invariants. `npm test`: **615/615 PASS**.
 - `npm run typecheck`: PASS. `npm run lint`: PASS. `npm run build`: PASS.
+- GitHub CI (PR #147): **app PASS · database PASS · SonarCloud quality gate PASS** (the database job replays every migration, SQL suite, forward-upgrade fixture and concurrency suite on real PostgreSQL 16).
 
 ## Still deferred (rule-dependent only — unchanged from the register)
 
