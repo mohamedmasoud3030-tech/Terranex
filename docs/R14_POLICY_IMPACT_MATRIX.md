@@ -173,15 +173,54 @@ Classification legend: **SAFE-INFRA** = safe historical infrastructure; **REUSAB
 | Distribution capacity (`s5_project_distributable_cash_internal`, `s5_distribution_capacity_read`) | `20260812000100`, `20260812000115` | Conservative capacity computation mechanism | **REUSABLE-AFTER-POLICY** — its inputs are *not* the company formula; must be re-derived from the BD-008 answer, not presented as a default | BD-008 |
 | Partner capital statement (`s5_partner_capital_balance_internal`, `s5_partner_capital_statement_read`) | `20260812000100` | Reproducible partner-capital statement projection | **REUSABLE-AFTER-POLICY** | BD-004, BD-006, BD-012 |
 | S5 segregation of duties | `20260812000140` | Preparer≠approver enforcement | **SAFE-INFRA** | — |
-| Allocation/distribution app layer (`src/features/allocation/{actions,queries,schema}.ts`) | app code | Thin RPC wrappers/read types over S5 | **REUSABLE-AFTER-POLICY**; not linked from the investor surface (enforced by `tests/r10-policy-block.test.ts`) | BD-006, BD-008 |
+| Allocation/distribution app layer (`src/features/allocation/{actions,queries,schema}.ts`) | app code | Thin RPC wrappers/read types over S5 | **REUSABLE-AFTER-POLICY**; not linked from the investor surface (enforced by `tests/r10-policy-block.test.ts`) — but see the intake boundary defect below: `queries.ts` is imported by the live intake route | BD-006, BD-008 |
 | `/projects/[id]/statements` page | app code | Redirects to the safe R10 investors surface; renders no economics | **SAFE-INFRA** (policy-block conformant) | — |
 | `/projects/[id]/investors` page | app code | Identity/agreement transparency with explicit Policy-Blocked wording; no entitlement runtime | **SAFE-INFRA** (R10-conformant) | — |
-| `ConfigureRulesForm` exposure on `/projects/[id]/intake` | `src/app/(app)/projects/[projectId]/intake/page.tsx` (imports `../investors/forms` + `features/allocation`) and `src/features/intake/readiness.ts` (`allocationRulesConfigured`) | S7-era pilot-intake readiness treats allocation-rule configuration as an intake step and keeps the S5 rule-configuration form reachable | **CONTRADICTS-BOUNDARY (as surfaced)** — the underlying mechanism is REUSABLE-AFTER-POLICY, but a reachable configuration surface for the target company predates BD-006 resolution and invites transcribing unapproved percentages. Flagged only; **no runtime change made in R14** — disposition (gate, relocate behind resolved BD-006, or retire from intake readiness) belongs to a later approved slice | BD-006 |
+| **Connected intake boundary defect (three legs — see §4.1)**: (A) `ConfigureRulesForm` exposure, (B) allocation-rule query/readiness data dependency, (C) mandatory ownership/allocation-weight readiness semantics | `src/app/(app)/projects/[projectId]/intake/page.tsx`, `src/features/intake/readiness.ts` | S7-era pilot intake keeps live S5 rule configuration reachable and makes canonical project readiness depend on — and mandate — policy-blocked ownership/allocation weights | **CONTRADICTS-BOUNDARY AS SURFACED** — the underlying S5 mechanism remains REUSABLE-AFTER-POLICY, but the current runtime surfacing is a live policy leak, broader than one form. Flagged only; **no runtime change made in PR #150** — corrected by the required post-R14 policy-safety hotfix (§4.2) | BD-004, BD-006 |
+| `AgreementDraftForm` and commitment recording (`terms/forms.tsx`, DS05 readiness) | app code | Records participant identity, agreement/version provenance, and explicit contractual **commitment amounts** (`commitmentAmount`); DS05 wording keeps «الالتزام ≠ المطلوب ≠ المساهمة» | **SAFE-INFRA** — a recorded commitment is a historical/business fact and is not represented as ownership, entitlement, allocation weight, profit share, or distributable percentage; must stay that way | BD-002, BD-005 (facts only) |
+| `DS15_DISTRIBUTIONS` opening-balance section (`readiness.ts`) | app code | Records pre-existing approved-but-unpaid distributions as opening payable facts | **SAFE-INFRA** — records historical facts; creates no new entitlement | — |
 | `tests/s5-allocation-distribution.test.ts`, gate SQL for S5 | tests | Characterize the dormant mechanism's correctness | **SAFE-INFRA** — keeps the mechanism honest without authorizing it | — |
 | `docs/runbooks/FAILED_ALLOCATION_OR_DISTRIBUTION.md` | runbook | Operational recovery procedure for the dormant chain | **SAFE-INFRA** | — |
 | ADR 0008 (S5) historical authorization | `docs/decisions/0008_S5_ALLOCATION_AND_DISTRIBUTION.md` | Authorized the *mechanism* in the historical slice sequence | **SAFE-INFRA** as history; it is not target-company policy evidence | BD-006, BD-008 |
 
-**Nothing classified DEPRECATED requires action in R14; no artifact was found that must be deleted now.** The single CONTRADICTS-BOUNDARY flag is a surfacing/reachability concern, not a data-corruption risk: the S5 command chain still requires an activated governing agreement version and documented evidence references, and R10 permanent tests keep entitlement output off the investor surface.
+**Nothing classified DEPRECATED requires action in R14; no artifact was found that must be deleted now.** The CONTRADICTS-BOUNDARY finding is a **connected three-leg live policy leak** (detailed in §4.1), not a single surfaced form and not a data-corruption risk: the S5 command chain still requires an activated governing agreement version and documented evidence references, and R10 permanent tests keep entitlement output off the investor surface. However, the intake route currently exposes rule configuration and mandates policy-blocked semantics, so a policy-safety runtime hotfix (§4.2) is required after PR #150 merges.
+
+### 4.1 Corrected finding — the connected intake boundary defect (verified against `main@0ce489bb` runtime)
+
+The R14 audit initially recorded only the `ConfigureRulesForm` exposure. Independent verification shows the leak is broader: **three connected legs in the live intake surface**, all violating the R10/R14 boundary while BD-004 (meaning of ownership) and BD-006 (profit/loss assignment) remain OPEN.
+
+**Leg A — live configuration surface.** `/projects/[projectId]/intake` imports `ConfigureRulesForm` (from `../investors/forms`) and renders it whenever an active governing agreement version exists and no allocation rule set exists (`{!activeRuleSet && <ConfigureRulesForm …/>}`, gated only by `disabled={!isOwner}`). This exposes live S5 allocation-rule configuration — the transcription of ownership/allocation weights — on a reachable operator route before any owner decision exists for the target company.
+
+**Leg B — readiness data dependency.** The same page calls `getAllocationRuleSets(projectId)` (`src/features/allocation/queries.ts`), derives `activeRuleSet` for the active governing version, and passes `allocationRulesConfigured: Boolean(activeRuleSet)` into `buildIntakeSnapshot`. Policy-dependent allocation configuration therefore feeds the canonical intake-readiness model: project readiness *state* depends on whether policy-blocked weights have been configured.
+
+**Leg C — readiness semantics.** `src/features/intake/readiness.ts` treats the policy-dependent semantics as **MANDATORY** in section `DS04_AGREEMENT`: it instructs «فعّل نسخة اتفاقية حاكمة … وأوزان ملكية مجموعها 100٪» (activate a governing version with *ownership weights totaling 100%*), reports «أوزان الملكية/التخصيص غير مثبتة على 100٪» while unconfigured, holds the agreement `IN_PROGRESS` until weights exist, and marks it `COMPLETE` only with «أوزان الملكية مثبتة». Because DS04 is MANDATORY, unconfigured weights flow into `mandatoryMissing` and degrade the phase-2 readiness verdict — the software effectively *requires* an ownership/allocation basis that BD-004/BD-006 say cannot yet exist.
+
+**Classification:** the current runtime behavior of these three legs together is **CONTRADICTS-BOUNDARY AS SURFACED**, mapped to **BD-004 and BD-006**. BD-003 is *not* implicated: the exposure is strictly Project-scoped (rule sets bind to one project's governing version); no Portfolio-level participation semantics are involved, and the mapping is not broadened without evidence.
+
+**Safe distinction (verified, must be preserved):** the agreement/funding flow itself is *not* unsafe. `AgreementDraftForm` records participant identity, agreement/version provenance, and explicit contractual **commitment amounts** — historical/business facts. DS05 readiness wording preserves the separation («الالتزام ≠ المطلوب ≠ المساهمة»). SAFE: participant identity; agreement/version provenance; explicit commitment amounts; funding facts. POLICY BLOCKED: ownership weights; allocation weights; profit/loss assignment; distribution percentages; distributable-cash economics.
+
+### 4.2 Required post-R14 corrective action (policy-safety hotfix — NOT part of PR #150)
+
+After PR #150 merges, a separate **policy-safety-only** runtime PR is required. It must **not** resolve any BD decision, must not add or drop S5 database machinery, and must not touch allocation mechanics beyond de-surfacing. Expected safe direction:
+
+1. remove `ConfigureRulesForm` from every live R10/R14-blocked route (including `/projects/[id]/intake`);
+2. remove the intake page's `getAllocationRuleSets` dependency so project readiness no longer reads allocation-rule configuration;
+3. rework `DS04_AGREEMENT` readiness semantics and wording so no ownership/allocation percentage is required, implied mandatory, or shown as a 100% completion condition while BD-004/BD-006 are OPEN — replacing it with an explicit policy-blocked status, not a silent pass;
+4. preserve participant identity, agreement/version provenance, and commitment-fact recording exactly as they are (SAFE list above);
+5. preserve the dormant S5 database machinery untouched as historical mechanism, without presenting it as authorized current policy;
+6. add permanent characterization tests (see §4.3) so the leak cannot regress.
+
+### 4.3 Strengthened permanent policy-test plan (binding on the hotfix)
+
+The hotfix must extend `tests/r10-policy-block.test.ts` (or equivalent permanent tests) beyond the `/investors` route. While BD-004 and BD-006 remain OPEN the tests must prove:
+
+- the intake route does not import or render `ConfigureRulesForm`;
+- the intake route does not query allocation rules (`getAllocationRuleSets`/`features/allocation`) for readiness;
+- readiness does not require ownership weights;
+- readiness does not require allocation weights;
+- no "ownership/allocation must total 100%" requirement is shown anywhere;
+- commitments remain distinguishable from ownership/entitlement (DS05-style wording preserved);
+- dormant S5 mechanics are not accidentally exposed on any other live route.
 
 ## 5. Professional consistency review — flags
 
@@ -189,7 +228,7 @@ Cross-checked against the Terranex accounting model, Project financial isolation
 
 1. **Portfolio-pooled accounting (BD-001/BD-003/BD-011):** any owner answer implying Portfolio-level pooled accounting, investor pooling, or profit/loss netting **changes the current independent-Project accounting model** and requires a later approved migration/design plus accounting sign-off. The Arabic pack states this to the owner in plain language; it is not implementable by reinterpretation.
 2. **Distribution capacity mechanism vs company formula (BD-008):** the dormant `s5_distribution_capacity_read` embeds mechanism-level conservatism from the historical slice. When BD-008 is answered, the formula must be rebuilt from the owner's confirmed elements — the existing view must not be presented as the company rule.
-3. **Intake readiness references allocation rules (BD-006):** see the CONTRADICTS-BOUNDARY row above. Documented here; runtime disposition deferred to a later approved slice.
+3. **Connected intake boundary defect (BD-004/BD-006):** see §4.1 — a three-leg live policy leak (ConfigureRulesForm exposure, allocation-rule readiness dependency, mandatory ownership/allocation-weight readiness semantics), classified CONTRADICTS-BOUNDARY AS SURFACED. Documented here with the required post-merge policy-safety hotfix defined in §4.2 and the permanent test plan in §4.3; runtime correction is deliberately **not** included in the R14 documentation PR.
 4. **"13 questions" vs 12 BD IDs:** `AGENTS.md` and `docs/greenfield/08` speak of "13 business-policy questions" while the canonical register holds BD-001…BD-012. The 13 narrative questions map onto the 12 register IDs (the asset-legal-owner question folds into BD-004, reinvestment into BD-008/BD-012 scope). The register is canonical; no renumbering was done in R14.
 5. **S5 source scope (BD-006/BD-007):** dormant S5 allocates `REALIZED_RESULT` only, which is consistent with the valuation boundary (BD-007). If the owner ever authorizes valuation-linked entitlement, that is a new design decision — not an extension of the existing run category by implication.
 6. **No contradiction found** between R13-proven behavior and the decision pack: every question keeps Project isolation, exact money, close/correction and roll-up-as-projection invariants intact until an explicit answer says otherwise.
@@ -199,4 +238,5 @@ Cross-checked against the Terranex accounting model, Project financial isolation
 - R1–R13 behavior untouched; no runtime, migration, schema, RPC, UI, or test behavior changed.
 - Deliverables are documentation only: this matrix, the Arabic owner decision pack, and status-register cross-references.
 - BD-001…BD-012: **all OPEN — awaiting the authorized owner of المجموعة العربية المتحدة.**
+- One verified runtime policy-boundary defect is on record (§4.1) with a mandatory follow-up **policy-safety hotfix** (§4.2/§4.3) to be delivered in a separate runtime PR after this documentation PR merges. The hotfix removes surfacing only; it resolves no BD decision.
 - R15 is not started and must not start for any scope whose correctness depends on an OPEN item.
