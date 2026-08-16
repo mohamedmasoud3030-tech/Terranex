@@ -62,13 +62,17 @@ describe('S2 obligation validation', () => {
     }).success).toBe(false);
   });
 
-  it('validates cash accounts and contribution attribution', () => {
-    expect(cashAccountSchema.safeParse({
-      organizationId: orgId, projectId, name: 'حساب البنك', currency: 'EGP',
-    }).success).toBe(true);
-    expect(cashAccountSchema.safeParse({
-      organizationId: orgId, projectId, name: 'حساب البنك', currency: 'egp',
-    }).success).toBe(false);
+  it('validates cash accounts and requires their retry key', () => {
+    const valid = {
+      organizationId: orgId,
+      projectId,
+      name: 'حساب البنك',
+      currency: 'EGP',
+      idempotencyKey: 'cash-000001',
+    };
+    expect(cashAccountSchema.safeParse(valid).success).toBe(true);
+    expect(cashAccountSchema.safeParse({ ...valid, currency: 'egp' }).success).toBe(false);
+    expect(cashAccountSchema.safeParse({ ...valid, idempotencyKey: undefined }).success).toBe(false);
   });
 });
 
