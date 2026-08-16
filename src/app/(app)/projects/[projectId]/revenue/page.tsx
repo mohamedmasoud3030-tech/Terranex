@@ -6,6 +6,8 @@ import { getParties } from '@/features/funding/queries';
 import {
   getPropertyDispositions,
   getRealizedResults,
+  getRentalCollections,
+  getRentalIncome,
   getSaleCollections,
   getUnreconciledPositiveStatementLines,
 } from '@/features/revenue/queries';
@@ -13,6 +15,8 @@ import { formatMinorUnits } from '@/shared/money';
 import { getCashAccountPositions } from '@/features/finance/queries';
 import { getPropertyWorkspaces } from '@/features/real-estate/queries';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
+import { newCommandNonce } from '@/shared/idempotency';
+import { RentalCollectionForm, RentalRecognitionForm, RentalReconciliationForm } from './rental-forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +38,7 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
   const currency = project.reporting_currency;
   const money = (value: string | number | bigint | null | undefined) => formatMinorUnits(value ?? '0', currency);
 
-  const [membership, dispositions, results, collections, parties, unreconciledLines, assets, cashAccounts] = await Promise.all([
+  const [membership, dispositions, results, collections, parties, unreconciledLines, assets, cashAccounts, rentals, rentalCollections] = await Promise.all([
     getCurrentMembership(organizationId),
     getPropertyDispositions(projectId),
     getRealizedResults(projectId),
@@ -43,6 +47,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
     getUnreconciledPositiveStatementLines(projectId),
     getPropertyWorkspaces(projectId),
     getCashAccountPositions(projectId),
+    getRentalIncome(projectId),
+    getRentalCollections(projectId),
   ]);
 
   if (!membership) {
@@ -99,6 +105,15 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
           </article>
         </div>
       </section>
+
+      {project.sector === 'REAL_ESTATE' ? <section id="rentals" className="stack scroll-target">
+        <div className="section-heading"><div><h2>إيراد الإيجار</h2><p className="muted">اعتراف ← ذمة مدينة ← تحصيل ← مطابقة بنكية، مع بقاء كل مرحلة واقعة مستقلة.</p></div></div>
+        {membership.role === 'OWNER' ? <details className="card" open={rentals.length === 0}><summary>الاعتراف بإيراد إيجار</summary><RentalRecognitionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} currency={currency} assets={assets} parties={parties}/></details> : <p className="muted">أوامر الإيجار المالية متاحة لمالك المنظمة وفق سلطة قاعدة البيانات.</p>}
+        <section className="card stack">
+          {rentals.length === 0 ? <p className="empty">لا توجد اعترافات إيجار مرحلة.</p> : <div className="table-wrap"><table><thead><tr><th>العقد / الفترة</th><th>الأصل / المستأجر</th><th>المعترف</th><th>المحصل</th><th>الذمة المتبقية</th><th>الحالة / الإجراء</th></tr></thead><tbody>{rentals.map(r=><tr key={r.recognition_id}><td>{r.contract_reference}<br/><small>{d(r.rental_period_start)} — {d(r.rental_period_end)}</small></td><td>{assetName.get(r.property_asset_id)??r.property_asset_id}<br/><small>{partyName.get(r.tenant_party_id)??r.tenant_party_id}</small></td><td>{formatMinorUnits(r.recognized_amount_minor_units,r.currency)}</td><td>{formatMinorUnits(r.collected_minor_units,r.currency)}</td><td>{formatMinorUnits(r.outstanding_receivable_minor_units,r.currency)}</td><td>{r.is_reversed?<span className="status">معكوس</span>:BigInt(r.outstanding_receivable_minor_units)===0n?<span className="status">محصل بالكامل</span>:membership.role==='OWNER'?<details><summary>تحصيل</summary><RentalCollectionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} recognition={r} cashAccounts={cashAccounts}/></details>:<span className="muted">مستحق</span>}</td></tr>)}</tbody></table></div>}
+        </section>
+        <section className="card stack"><h3>تحصيلات الإيجار والمطابقة</h3>{rentalCollections.length===0?<p className="muted">لا توجد تحصيلات إيجار.</p>:<div className="table-wrap"><table><thead><tr><th>التاريخ</th><th>المبلغ</th><th>الحساب</th><th>الدليل</th><th>المطابقة</th></tr></thead><tbody>{rentalCollections.map(c=><tr key={c.collection_id}><td>{d(c.collection_date)}</td><td>{formatMinorUnits(c.amount_minor_units,c.currency)}</td><td>{cashName.get(c.cash_account_id)??c.cash_account_id}</td><td>{c.evidence_reference}</td><td>{c.is_reversed?<span className="status">معكوس</span>:membership.role==='OWNER'?<RentalReconciliationForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} collection={c} statementLines={unreconciledLines}/>:c.is_reconciled?<span className="status">مطابق بنكيًا</span>:<span className="muted">غير مطابق</span>}</td></tr>)}</tbody></table></div>}</section>
+      </section> : null}
 
       <section id="dispositions" className="card stack scroll-target">
         <h2>التصرفات</h2>
