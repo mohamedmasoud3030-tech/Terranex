@@ -230,7 +230,7 @@ The hotfix must extend `tests/r10-policy-block.test.ts` (or equivalent permanent
 - `DS04_AGREEMENT` no longer requires or implies ownership/allocation weights, a 100% total, or profit/loss assignment. It completes on safe agreement facts (active governing version, effective date, title/reference) and states the unresolved ownership/allocation/distribution policy explicitly as «غير محددة بسياسة معتمدة» — policy-blocked, not silently passed, and not a readiness gate.
 - SAFE agreement/funding facts are preserved: participant identity, agreement/version provenance, `AgreementDraftForm` and its explicit `commitmentAmount`, capital-call/contribution facts, and the DS05 separation «الالتزام ≠ المطلوب ≠ المساهمة».
 - Dormant S5 machinery (migrations, RPCs, read views, `src/features/allocation/*`, the dormant S5 forms) is untouched and remains dormant; it is not presented as target-company policy.
-- Permanent regression coverage was extended: `tests/r10-policy-block.test.ts` (seven policy-boundary proofs, including a repository-wide live-route scan) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C).
+- Permanent regression coverage was extended: `tests/r10-policy-block.test.ts` (seven policy-boundary proofs, including a repository-wide runtime-source scan with an explicit dormant allowlist that catches indirect live exposure) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C).
 - No BD item was resolved: BD-001…BD-012 remain OPEN. No migration or schema change was introduced. R15 was not started.
 
 ## 5. Professional consistency review — flags

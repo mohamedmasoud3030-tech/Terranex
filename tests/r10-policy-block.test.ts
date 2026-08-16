@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { emptyIntakeSnapshot, evaluateIntakeReadiness } from '@/features/intake/readiness';
 
@@ -14,6 +14,18 @@ const decisions = readFileSync('docs/OPEN_BUSINESS_DECISIONS.md', 'utf8');
 
 const S5_FORM_NAMES = /ConfigureRulesForm|PrepareAllocationForm|ApproveAllocationForm|PrepareDistributionForm|ApproveDistributionForm|PayDistributionForm/;
 const S5_READ_NAMES = /getAllocationRuleSets|getAllocationRuns|getAllocationLines|getDistributions|getDistributionCapacity|getPartnerCapitalStatement/;
+const S5_IMPORT_PATHS = /features\/allocation|investors\/forms/;
+
+// Explicit allowlist: the dormant S5 allocation/distribution implementation itself.
+// Only these exact runtime files may reference the policy-dependent S5 surface;
+// every other runtime source under src/ must stay free of it, so a newly created
+// live component that transitively imports the dormant machinery fails the guard.
+const DORMANT_S5_ALLOWLIST: ReadonlySet<string> = new Set([
+  'src/features/allocation/actions.ts',
+  'src/features/allocation/queries.ts',
+  'src/features/allocation/schema.ts',
+  'src/app/(app)/projects/[projectId]/investors/forms.tsx',
+]);
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -22,12 +34,11 @@ function walk(dir: string): string[] {
   });
 }
 
-// Live application routes: every Next.js route entry point under src/app.
-function liveRouteFiles(): string[] {
-  return walk('src/app').filter((file) => {
-    const name = basename(file);
-    return name === 'page.tsx' || name === 'layout.tsx' || name === 'route.ts';
-  });
+// Every runtime TypeScript source under src/, normalised to forward slashes.
+function runtimeSourceFiles(): string[] {
+  return walk('src')
+    .map((file) => file.replaceAll('\\', '/'))
+    .filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'));
 }
 
 describe('R10 keeps unresolved investor economics inert until R14', () => {
@@ -126,16 +137,17 @@ describe('post-R14 policy-safety hotfix: the intake policy leak is closed while 
     expect(investorsForms).toContain('مبالغ الالتزام أو المساهمات لا تحدد الملكية ولا حصة الربح');
   });
 
-  it('Proof 7 — dormant S5 allocation mechanics are not exposed by any live application route', () => {
-    const routes = liveRouteFiles();
-    expect(routes.length).toBeGreaterThan(0);
-    for (const file of routes) {
+  it('Proof 7 — dormant S5 allocation mechanics are unreachable from live runtime outside the dormant allowlist', () => {
+    const sources = runtimeSourceFiles();
+    expect(sources.length).toBeGreaterThan(0);
+    for (const file of sources) {
+      if (DORMANT_S5_ALLOWLIST.has(file)) continue;
       const content = readFileSync(file, 'utf8');
       expect(content, `${file} must not import the dormant S5 allocation/distribution surface`)
-        .not.toMatch(/features\/allocation|investors\/forms/);
-      expect(content, `${file} must not render S5 allocation/distribution forms`)
+        .not.toMatch(S5_IMPORT_PATHS);
+      expect(content, `${file} must not render dormant S5 allocation/distribution forms`)
         .not.toMatch(S5_FORM_NAMES);
-      expect(content, `${file} must not read S5 allocation/distribution state`)
+      expect(content, `${file} must not read dormant S5 allocation/distribution state`)
         .not.toMatch(S5_READ_NAMES);
     }
   });
