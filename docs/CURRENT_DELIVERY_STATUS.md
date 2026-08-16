@@ -101,4 +101,8 @@ This addendum updates the delivery map above without rewriting the dated snapsho
 | R11 | Exception reporting and traceability are now delivered: unified `approval_exception_registry_read` (F5), `financial_integrity_signals_read` (F8), `organization_financial_consolidation_read` (F10). Remaining: consolidated owner reports polish. |
 | R13 | The two blockers named by the previous status ("needs budget completion and portfolio roll-up") are now delivered. The full-company simulation is the next logical increment and the hard-stop gate. |
 
-Phase-level evidence: `docs/F3_F10_EXECUTION_REPORT.md`, `docs/F7_PERIOD_CLOSE_AUDIT.md`, migrations `20260816050000_f3_contract_finance.sql` … `20260816057000_f10_portfolio_rollup.sql`, behavioral gate `supabase/tests/88_f3_f10_finance_control.sql`, unit tests `tests/f3-f10-control.test.ts`.
+Phase-level evidence: `docs/F3_F10_EXECUTION_REPORT.md`, `docs/F7_PERIOD_CLOSE_AUDIT.md`, migrations `20260816050000_f3_contract_finance.sql` … `20260816058200_f3_f10_pgcrypto_compat_final.sql`, behavioral gate `supabase/tests/88_f3_f10_finance_control.sql`, concurrency gate `supabase/tests/90_f3_f10_budget_concurrency.sh`, unit tests `tests/f3-f10-control.test.ts`.
+
+### Review round (2026-08-16, later the same day)
+
+An independent audit found P0/P1 defects in the first F3–F10 delivery (reversal netting, budget-ceiling concurrency, revision-gap ceiling loss, currency mixing in exceptions, unusable schedules, idempotency-key reuse, hardcoded EGP/OMR, broken FX form, VOID inconsistency, F7 counters, invented F8 signal, non-historical F10) plus scope gaps (FAC definition, tiered approvals, reject/resubmit, exception actionability, roll-up scope). All were fixed with regression coverage (`docs/F3_F10_EXECUTION_REPORT.md` § Review defects). **R13 remains NOT OPENED** — the independent build now satisfies the F3–F10 mission definitions, but the hard-stop gate opens only after the full-company simulation proves the chain.
