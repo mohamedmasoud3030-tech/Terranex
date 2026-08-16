@@ -9,6 +9,7 @@ import {
   createParty,
 } from '@/features/funding/actions';
 import { useCommandIdempotencyKey } from '@/shared/idempotency/use-command-idempotency-key';
+import { useResolvedCommandNonce } from '@/shared/idempotency/use-resolved-command-nonce';
 
 export function CreatePartyForm({ organizationId, projectId }: { organizationId: string; projectId: string }) {
   const [state, action, pending] = useActionState(createParty, { error: undefined });
@@ -74,10 +75,16 @@ export function AgreementDraftForm({
   projectId: string;
   participants: Participant[];
   currency: string;
-  serverNonce: string;
+  serverNonce?: string;
 }) {
   const [state, action, pending] = useActionState(createAgreementDraft, { error: undefined, successCount: 0 });
-  const idempotencyKey = useCommandIdempotencyKey('agreement', state, serverNonce);
+  const resolvedNonce = useResolvedCommandNonce(serverNonce);
+  const idempotencyKey = useCommandIdempotencyKey('agreement', state, resolvedNonce ?? 'pending');
+
+  if (!resolvedNonce) {
+    return <p className="muted">جارٍ تجهيز نموذج الاتفاقية الآمن…</p>;
+  }
+
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
