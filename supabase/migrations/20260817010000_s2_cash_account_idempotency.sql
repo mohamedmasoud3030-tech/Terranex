@@ -26,8 +26,8 @@ create unique index if not exists project_cash_accounts_idempotency_uidx
   on public.project_cash_accounts(organization_id, idempotency_key)
   where idempotency_key is not null;
 
--- Remove the legacy non-idempotent callable signature so authenticated callers
--- cannot bypass the retry contract after this migration.
+-- Replace the legacy non-idempotent implementation. A compatibility overload
+-- is recreated below after the authoritative five-argument command exists.
 revoke execute on function public.create_project_cash_account(uuid, uuid, text, text)
   from authenticated;
 drop function public.create_project_cash_account(uuid, uuid, text, text);
@@ -205,3 +205,33 @@ begin
   execute v_rewritten;
 end
 $cash_account_pgcrypto_compat$;
+
+-- Backward-compatible overload for cached/older clients. It is no longer a
+-- plain INSERT: the payload deterministically maps to a bounded legacy key and
+-- delegates to the authoritative five-argument command. A hash collision can
+-- only produce an explicit payload-mismatch failure, never the wrong replay.
+create function public.create_project_cash_account(
+  p_organization_id uuid,
+  p_project_id uuid,
+  p_name text,
+  p_currency text
+) returns uuid
+language sql
+security invoker
+set search_path=pg_catalog,public
+as $$
+  select public.create_project_cash_account(
+    p_organization_id,
+    p_project_id,
+    p_name,
+    p_currency,
+    'legacy-' || pg_catalog.md5(
+      p_project_id::text || chr(31) || trim(p_name) || chr(31) || p_currency
+    )
+  )
+$$;
+
+revoke all on function public.create_project_cash_account(uuid, uuid, text, text)
+  from public, anon;
+grant execute on function public.create_project_cash_account(uuid, uuid, text, text)
+  to authenticated;
