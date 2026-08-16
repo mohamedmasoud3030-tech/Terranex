@@ -4,6 +4,7 @@ import path from 'node:path';
 import { supplierInvoiceSchema, supplierPaymentSchema } from '@/features/procurement/schema';
 
 const migration = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260815034000_r4_procurement_financial_integration.sql'), 'utf8');
+const p2Migration = fs.readFileSync(path.join(process.cwd(), 'supabase/migrations/20260816000100_p2_vendor_finance_hardening.sql'), 'utf8');
 const historicalS2Suite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/04_s2_cost_and_cash.sql'), 'utf8');
 const historicalPhase2CSuite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/28_phase2c_financial_integrity.sql'), 'utf8');
 const r4Suite = fs.readFileSync(path.join(process.cwd(), 'supabase/tests/83_r4_procurement_financial_integration.sql'), 'utf8');
@@ -12,14 +13,21 @@ const project = '20000000-0000-4000-8000-000000000002';
 const id = '30000000-0000-4000-8000-000000000003';
 
 describe('R4 procurement financial integration contract', () => {
-  it('validates received-basis invoice lines and exact-money payment input', () => {
+  it('validates received-basis invoice lines, independent supplier total, and exact-money payment input', () => {
     expect(supplierInvoiceSchema.safeParse({
       organizationId: org, projectId: project, purchaseOrderId: id,
       invoiceReference: 'INV-1', invoiceDate: '2026-08-15', currency: 'EGP',
-      costTreatment: 'EXPENSE', evidenceReference: 'فاتورة موثقة',
+      costTreatment: 'EXPENSE', evidenceReference: 'فاتورة موثقة', supplierStatedTotal: '250.00',
       linesJson: JSON.stringify([{ purchaseReceiptLineId: id, quantityInvoiced: '2.5', unitPrice: '100.00' }]),
       idempotencyKey: 'r4-invoice-key-1',
     }).success).toBe(true);
+    expect(supplierInvoiceSchema.safeParse({
+      organizationId: org, projectId: project, purchaseOrderId: id,
+      invoiceReference: 'INV-2', invoiceDate: '2026-08-15', currency: 'EGP',
+      costTreatment: 'EXPENSE', evidenceReference: 'فاتورة موثقة',
+      linesJson: JSON.stringify([{ purchaseReceiptLineId: id, quantityInvoiced: '2.5', unitPrice: '100.00' }]),
+      idempotencyKey: 'r4-invoice-key-2',
+    }).success).toBe(false);
     expect(supplierPaymentSchema.safeParse({
       organizationId: org, projectId: project, obligationId: id, cashAccountId: id,
       amount: '100.25', currency: 'EGP', paymentDate: '2026-08-15', idempotencyKey: 'r4-payment-key-1',
@@ -30,10 +38,13 @@ describe('R4 procurement financial integration contract', () => {
     }).success).toBe(false);
   });
 
-  it('derives commercial totals in PostgreSQL and never accepts browser totals', () => {
+  it('keeps calculated totals server-derived while separately capturing the supplier document total', () => {
     expect(migration).toContain('line_amount_minor_units bigint generated always as');
     expect(migration).toContain('purchase order commercial total must be positive');
     expect(migration).not.toMatch(/p_(?:line_)?total_minor_units/);
+    expect(p2Migration).toContain('supplier_stated_total_minor_units');
+    expect(p2Migration).toContain('supplier stated total is required for every supplier invoice');
+    expect(p2Migration).toContain('does not match calculated total');
   });
 
   it('keeps order commitment unposted and creates payables only from approved invoices', () => {
