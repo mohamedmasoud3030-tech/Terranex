@@ -9,6 +9,7 @@ import {
   getVersions,
 } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { newCommandNonce } from '@/shared/idempotency';
 import {
   ActivateVersionButton,
   AgreementDraftForm,
@@ -35,6 +36,7 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
   const participantPartyIds = new Set(participants.map((participant) => participant.party_id));
   const eligibleParties = parties.filter((party) => !participantPartyIds.has(party.id));
   const draftVersions = versions.filter((version) => version.status === 'DRAFT');
+  const agreementCommandNonce = newCommandNonce();
 
   return (
     <section className="stack">
@@ -111,6 +113,7 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
               projectId={projectId}
               participants={participants}
               currency={project.reporting_currency}
+              serverNonce={agreementCommandNonce}
             />
           )}
           {draftVersions.length > 0 && (
