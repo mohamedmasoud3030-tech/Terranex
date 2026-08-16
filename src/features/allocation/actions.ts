@@ -29,6 +29,7 @@ function domainError(message: string | undefined, fallback: string): ActionState
   const text = message ?? '';
   if (text.includes('idempotency key payload mismatch')) return fail('مفتاح إعادة المحاولة استُخدم لبيانات مختلفة. حدّث الصفحة وحاول مجددًا.');
   if (text.includes('organization owner required') || text.includes('owner approval required')) return fail('هذا الإجراء يتطلب صلاحية مالك المنظمة.');
+  if (text.includes('target-company investor policy is not activated')) return fail('آلية التخصيص/التوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.');
   if (text.includes('approved S6 close snapshot')) return fail('يجب اختيار لقطة إغلاق S6 معتمدة.');
   if (text.includes('allocation rules are not configured')) return fail('ثبّت قواعد التخصيص للنسخة الحاكمة أولًا.');
   if (text.includes('already frozen')) return fail('قواعد هذه النسخة الحاكمة مثبتة بالفعل ولا يمكن تعديلها.');
@@ -89,7 +90,7 @@ export async function prepareAllocationAction(_: ActionState, form: FormData): P
     p_project_id: input.projectId,
     p_close_snapshot_id: input.closeSnapshotId,
     p_governing_version_id: input.governingVersionId,
-    p_source_category: 'REALIZED_RESULT',
+    p_source_category: 'REAL_ESTATE_SALE_RESULT',
     p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذر تحضير تخصيص النتيجة.');

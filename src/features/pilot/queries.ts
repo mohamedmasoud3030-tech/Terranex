@@ -160,8 +160,6 @@ export type PilotAcceptanceReport = {
   unresolved_critical_exceptions: number;
   unreconciled_bank_statement_lines: number;
   unbalanced_journal_batches: number;
-  partner_capital_rollforward_breaks: number;
-  investor_statement_total_minor_units: string;
   end_to_end_result: 'PASS' | 'FAIL' | null;
   backup_restore_result: 'PASS' | 'FAIL' | null;
   access_revocation_result: 'PASS' | 'FAIL' | null;
@@ -248,7 +246,7 @@ export const getPilotRehearsals = (projectId: string) => many<PilotRehearsal>(
 export async function getPilotAcceptanceReport(projectId: string): Promise<PilotAcceptanceReport | null> {
   const s = await createClient();
   const { data, error } = await s.from('s7_pilot_acceptance_report_read')
-    .select('project_id,organization_id,reporting_currency,posted_opening_imports,opening_import_rejected_rows,opening_control_totals_match,reconciliation_checkpoints,reconciliation_non_zero_variances,reconciliation_max_abs_variance_minor_units,unresolved_exceptions,unresolved_critical_exceptions,unreconciled_bank_statement_lines,unbalanced_journal_batches,partner_capital_rollforward_breaks,investor_statement_total_minor_units,end_to_end_result,backup_restore_result,access_revocation_result,uat_total_tasks,uat_accepted_tasks,uat_rejected_tasks,human_uat_status')
+    .select('project_id,organization_id,reporting_currency,posted_opening_imports,opening_import_rejected_rows,opening_control_totals_match,reconciliation_checkpoints,reconciliation_non_zero_variances,reconciliation_max_abs_variance_minor_units,unresolved_exceptions,unresolved_critical_exceptions,unreconciled_bank_statement_lines,unbalanced_journal_batches,end_to_end_result,backup_restore_result,access_revocation_result,uat_total_tasks,uat_accepted_tasks,uat_rejected_tasks,human_uat_status')
     .eq('project_id', projectId)
     .maybeSingle();
   if (error) throwOperatorQuery(error);

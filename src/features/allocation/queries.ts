@@ -31,7 +31,7 @@ export type AllocationRun = {
   policy: 'PRO_RATA' | 'FIXED_SHARES';
   algorithm_version: string;
   reporting_currency: string;
-  source_category: 'REALIZED_RESULT';
+  source_category: 'REAL_ESTATE_SALE_RESULT';
   source_amount_minor_units: string;
   status: 'PREPARED' | 'APPROVED';
   content_hash: string;
@@ -94,7 +94,7 @@ export type DistributionCapacity = {
   cash_minor_units: string;
   supplier_payable_minor_units: string;
   distribution_payable_minor_units: string;
-  distributable_cash_minor_units: string;
+  technical_capacity_bridge_minor_units: string;
 };
 
 export type PartnerCapitalStatement = {
@@ -156,7 +156,7 @@ export const getDistributions = (projectId: string) => many<Distribution>(
 export async function getDistributionCapacity(projectId: string): Promise<DistributionCapacity | null> {
   const s = await createClient();
   const { data, error } = await s.from('s5_distribution_capacity_read')
-    .select('organization_id,project_id,currency,cash_minor_units,supplier_payable_minor_units,distribution_payable_minor_units,distributable_cash_minor_units')
+    .select('organization_id,project_id,currency,cash_minor_units,supplier_payable_minor_units,distribution_payable_minor_units,technical_capacity_bridge_minor_units')
     .eq('project_id', projectId)
     .maybeSingle();
   if (error) throwOperatorQuery(error);
