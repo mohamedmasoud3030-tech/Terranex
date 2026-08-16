@@ -14,21 +14,28 @@ const cashForms = readFileSync(
   'utf8',
 );
 
+const correctedComponents = [
+  'ObligationForm',
+  'AuthorizeObligationButton',
+  'PaymentForm',
+  'ApprovePaymentProposalButton',
+  'ReverseBatchForm',
+];
+
 describe('finance command form lifecycle guards', () => {
-  it('routes active legacy finance commands through the retry-safe forms module', () => {
+  it('routes active legacy finance commands through the retry-safe forms module only', () => {
     expect(costsPage).toContain("from './finance-command-forms';");
     expect(safeForms).toContain('useCommandIdempotencyKey');
     expect(safeForms).not.toContain('crypto.randomUUID()');
+
+    const legacyFormsImport = costsPage.match(/import \{([\s\S]*?)\} from '\.\/forms';/)?.[1] ?? '';
+    for (const component of correctedComponents) {
+      expect(legacyFormsImport).not.toContain(component);
+    }
   });
 
   it('seeds every active costs command form with a server nonce', () => {
-    for (const component of [
-      'ObligationForm',
-      'AuthorizeObligationButton',
-      'PaymentForm',
-      'ApprovePaymentProposalButton',
-      'ReverseBatchForm',
-    ]) {
+    for (const component of correctedComponents) {
       const usage = new RegExp(`<${component}[\\s\\S]*?commandNonce=\\{newCommandNonce\\(\\)\\}[\\s\\S]*?/>`);
       expect(costsPage).toMatch(usage);
     }
