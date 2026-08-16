@@ -21,10 +21,10 @@
 -- 1. Supplier-Stated Total
 -- ===========================================================================
 alter table public.supplier_invoices
-  add column supplier_stated_total_minor_units bigint
-    check (supplier_stated_total_minor_units is null or supplier_stated_total_minor_units > 0),
-  add column supplier_stated_total_currency text
-    check (supplier_stated_total_currency is null or supplier_stated_total_currency ~ '^[A-Z]{3}$');
+  add column supplier_stated_total_minor_units bigint not null
+    check (supplier_stated_total_minor_units > 0),
+  add column supplier_stated_total_currency text not null
+    check (supplier_stated_total_currency ~ '^[A-Z]{3}$');
 
 comment on column public.supplier_invoices.supplier_stated_total_minor_units is
   'The actual total printed on the supplier invoice document, in minor units. NULL before document entry.';
@@ -168,6 +168,10 @@ create table public.procurement_invoice_exceptions (
   created_at timestamptz not null default now(),
   idempotency_key text not null check (char_length(idempotency_key) between 8 and 120),
   request_hash text not null check (char_length(request_hash) = 64),
+  resolve_idempotency_key text
+    check (resolve_idempotency_key is null or char_length(resolve_idempotency_key) between 8 and 120),
+  resolve_request_hash text
+    check (resolve_request_hash is null or char_length(resolve_request_hash) = 64),
   check (approved_by is null or approved_by <> created_by),
   check (
     (status = 'OPEN' and approved_by is null and approved_at is null and approval_notes is null)
@@ -184,6 +188,9 @@ create index procurement_invoice_exceptions_invoice_idx
   on public.procurement_invoice_exceptions(supplier_invoice_id);
 create index procurement_invoice_exceptions_status_idx
   on public.procurement_invoice_exceptions(status, created_at);
+create unique index procurement_invoice_exceptions_resolve_key
+  on public.procurement_invoice_exceptions(organization_id, resolve_idempotency_key)
+  where resolve_idempotency_key is not null;
 
 -- ===========================================================================
 -- 5. Append-only / immutable guards
@@ -659,11 +666,14 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':p2-exception-resolve:' || trim(p_idempotency_key), 0));
 
+  -- Replay using dedicated resolve_idempotency_key (not the creation key)
   select * into v_existing from public.procurement_invoice_exceptions
-  where organization_id = p_organization_id and idempotency_key = trim(p_idempotency_key);
+  where organization_id = p_organization_id
+    and resolve_idempotency_key = trim(p_idempotency_key);
   if found then
     if v_existing.id is distinct from p_exception_id
-       or v_existing.status <> p_decision then
+       or v_existing.status <> p_decision
+       or v_existing.resolve_request_hash IS DISTINCT FROM v_hash then
       raise exception 'idempotency key payload mismatch';
     end if;
     return v_existing.id;
@@ -674,10 +684,15 @@ begin
   if not found then raise exception 'exception not found'; end if;
   if v_exception.status <> 'OPEN' then raise exception 'exception is already resolved'; end if;
   if v_exception.created_by = v_actor then raise exception 'maker/checker: exception creator cannot resolve'; end if;
+  if v_exception.resolve_idempotency_key is not null then
+    raise exception 'exception already has a resolution key; cannot re-resolve';
+  end if;
 
   update public.procurement_invoice_exceptions
      set status = p_decision, approved_by = v_actor, approved_at = now(),
-         approval_notes = nullif(trim(p_approval_notes), '')
+         approval_notes = nullif(trim(p_approval_notes), ''),
+         resolve_idempotency_key = trim(p_idempotency_key),
+         resolve_request_hash = v_hash
    where id = p_exception_id;
 
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
@@ -748,7 +763,10 @@ begin
   if p_cost_treatment not in ('EXPENSE','CAPITALIZABLE_WIP') then raise exception 'cost treatment must be EXPENSE or CAPITALIZABLE_WIP'; end if;
   if p_evidence_reference is null or char_length(trim(p_evidence_reference)) not between 3 and 200 then raise exception 'supplier invoice evidence is required'; end if;
   if p_notes is not null and char_length(trim(p_notes)) > 2000 then raise exception 'invalid notes'; end if;
-  if p_supplier_stated_total_minor_units is not null and p_supplier_stated_total_minor_units <= 0 then
+  if p_supplier_stated_total_minor_units is null then
+    raise exception 'supplier stated total is required for every supplier invoice';
+  end if;
+  if p_supplier_stated_total_minor_units <= 0 then
     raise exception 'supplier stated total must be positive';
   end if;
   if jsonb_typeof(p_lines) <> 'array' or jsonb_array_length(p_lines) = 0 then raise exception 'at least one supplier invoice line is required'; end if;
@@ -916,7 +934,6 @@ select i.id, i.organization_id, i.project_id, i.purchase_order_id,
        i.invoice_reference, i.invoice_date, i.currency, i.cost_treatment,
        i.evidence_reference, i.notes, i.status, i.recorded_by, i.recorded_at,
        i.approved_by, i.approved_at, i.cost_obligation_id, i.authorization_batch_id,
-       i.supplier_stated_total_minor_units::text as supplier_stated_total_minor_units,
        totals.invoice_total_minor_units::text as invoice_total_minor_units,
        coalesce(pay.paid_minor_units, 0)::text as paid_minor_units,
        case when coalesce(op.is_reversed, false) then '0'
@@ -937,6 +954,7 @@ select i.id, i.organization_id, i.project_id, i.purchase_order_id,
          else 'RECONCILED'
        end as reconciliation_state,
        coalesce(pay.payment_count, 0)::integer as payment_count,
+       i.supplier_stated_total_minor_units::text as supplier_stated_total_minor_units,
        (select count(*) from public.procurement_invoice_exceptions e
         where e.supplier_invoice_id = i.id and e.status = 'OPEN') as open_exception_count
 from public.supplier_invoices i

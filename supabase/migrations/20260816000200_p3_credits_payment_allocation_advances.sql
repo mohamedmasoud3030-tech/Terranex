@@ -41,7 +41,48 @@ alter table public.semantic_accounts add constraint semantic_accounts_role_check
   'PREPAID_ASSET'
 ));
 insert into public.semantic_accounts(role, label_ar)
-values ('PREPAID_ASSET','أصل مدفوع مقدم / سلف موردين')
+values 
+
+-- ===========================================================================
+-- Authoritative obligation settlement function.
+-- Every command that reduces the payable must lock the obligation row with
+-- FOR UPDATE and use this function to verify the ceiling.
+-- ===========================================================================
+create or replace function public.obligation_active_outstanding_minor_units(
+  p_organization_id uuid,
+  p_obligation_id uuid
+) returns bigint
+language sql stable set search_path=pg_catalog,public as $$
+  select coalesce(o.amount_minor_units, 0)
+    - coalesce((
+        select sum(pp.amount_minor_units) from public.project_payments pp
+        join public.journal_batches jb on jb.source_type = 'PAYMENT' and jb.source_id = pp.id
+        where pp.obligation_id = p_obligation_id and pp.organization_id = p_organization_id
+          and not exists (select 1 from public.journal_batches rb where rb.reversal_of_batch_id = jb.id)
+    ), 0)
+    - coalesce((
+        select sum(cn.amount_minor_units) from public.supplier_credit_notes cn
+        join public.supplier_invoices si on si.id = cn.supplier_invoice_id
+        where si.cost_obligation_id = p_obligation_id
+          and cn.organization_id = p_organization_id and cn.status = 'APPROVED'
+    ), 0)
+    - coalesce((
+        select sum(aa.applied_amount_minor_units) from public.supplier_advance_applications aa
+        join public.supplier_invoices si on si.id = aa.supplier_invoice_id
+        where si.cost_obligation_id = p_obligation_id
+          and aa.organization_id = p_organization_id
+    ), 0)
+    - coalesce((
+        select sum(pa.allocated_minor_units) from public.payment_allocations pa
+        where pa.obligation_id = p_obligation_id and pa.organization_id = p_organization_id
+    ), 0)
+  from public.cost_obligations o
+  where o.id = p_obligation_id and o.organization_id = p_organization_id
+$$;
+comment on function public.obligation_active_outstanding_minor_units is
+  'Authoritative settlement calculation: original obligation minus all active payments, credit notes, advance applications, and allocations.';
+
+('PREPAID_ASSET','أصل مدفوع مقدم / سلف موردين')
 on conflict (role) do nothing;
 create trigger semantic_accounts_locked
 before insert or update or delete on public.semantic_accounts
@@ -424,18 +465,15 @@ begin
 
   insert into public.journal_lines(
     batch_id, organization_id, project_id, account_id,
-    debit_minor_units, credit_minor_units, currency, transaction_date
+    debit_minor_units, credit_minor_units, currency,
+    cash_account_id, transaction_date
   ) values
     (v_batch_id, p_organization_id, p_project_id, v_prepaid,
-     p_amount_minor_units, 0, p_currency, p_payment_date),
+     p_amount_minor_units, 0, p_currency,
+     null, p_payment_date),
     (v_batch_id, p_organization_id, p_project_id, v_cash,
-     0, p_amount_minor_units, p_currency, p_payment_date);
-
-  -- The credit line needs the cash-account dimension so cash balances derive
-  -- correctly from the journal. Update it after the balanced-batch trigger.
-  update public.journal_lines
-     set cash_account_id = p_cash_account_id
-   where batch_id = v_batch_id and account_id = v_cash;
+     0, p_amount_minor_units, p_currency,
+     p_cash_account_id, p_payment_date);
 
   insert into public.audit_events(organization_id, actor_id, event_type, entity_type, entity_id, payload)
   values (p_organization_id, v_actor, 'UNAPPLIED_PAYMENT_RECORDED', 'unapplied_payment', v_payment_id,
@@ -461,6 +499,7 @@ declare
   v_payment record;
   v_obligation record;
   v_allocated_numeric numeric;
+  v_outstanding bigint;
   v_paid_numeric numeric;
   v_batch_id uuid;
   v_payable uuid;
@@ -506,20 +545,6 @@ begin
   from public.payment_allocations where unapplied_payment_id = p_unapplied_payment_id;
   if v_allocated_numeric + p_amount_minor_units > v_payment.amount_minor_units then
     raise exception 'allocation exceeds unapplied payment amount';
-  end if;
-
-  -- Ceiling 2: the obligation cannot be over-satisfied (existing allocations +
-  -- posted payments + this allocation).
-  select coalesce(sum(pa.allocated_minor_units::numeric), 0) into v_paid_numeric
-  from public.payment_allocations pa
-  where pa.obligation_id = p_obligation_id;
-  select v_paid_numeric + coalesce(sum(pp.amount_minor_units::numeric), 0) into v_paid_numeric
-  from public.project_payments pp
-  join public.journal_batches jb on jb.source_type = 'PAYMENT' and jb.source_id = pp.id
-  where pp.obligation_id = p_obligation_id and pp.organization_id = p_organization_id
-    and not exists (select 1 from public.journal_batches rb where rb.reversal_of_batch_id = jb.id);
-  if v_paid_numeric + p_amount_minor_units > v_obligation.amount_minor_units then
-    raise exception 'allocation exceeds obligation amount';
   end if;
 
   select id into v_payable from public.semantic_accounts where role = 'SUPPLIER_PAYABLE';
@@ -606,7 +631,8 @@ begin
     'project_id', p_project_id, 'supplier_party_id', p_supplier_party_id,
     'advance_reference', trim(p_advance_reference), 'advance_date', p_advance_date,
     'currency', p_currency, 'amount_minor_units', p_amount_minor_units,
-    'description', p_description, 'evidence_reference', p_evidence_reference
+    'cash_account_id', p_cash_account_id, 'description', p_description,
+    'evidence_reference', p_evidence_reference
   )::text, 'sha256'), 'hex');
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':p3-advance:' || trim(p_idempotency_key), 0));
@@ -623,20 +649,11 @@ begin
     raise exception 'supplier party not found';
   end if;
 
-  -- Cash leg: the advance must be funded from a real cash account.
-  -- The command derives the cash account by finding the project's first
-  -- BANK_CASH account in the same currency. If none exists, the caller must
-  -- create one first — no silent fabrication.
-  select ca.id into v_account.id from public.project_cash_accounts ca
-  where ca.organization_id = p_organization_id
-    and ca.project_id = p_project_id
-    and ca.currency = p_currency
-  order by ca.created_at limit 1;
-  if v_account.id is null then
-    raise exception 'no cash account exists in % for this project; create one before recording an advance', p_currency;
-  end if;
   select * into v_account from public.project_cash_accounts
-  where id = v_account.id for update;
+  where id = p_cash_account_id and organization_id = p_organization_id for update;
+  if not found then raise exception 'cash account not found'; end if;
+  if v_account.project_id <> p_project_id then raise exception 'cash account does not belong to project'; end if;
+  if v_account.currency <> p_currency then raise exception 'cash account currency mismatch'; end if;
 
   v_available := public.s5_cash_account_balance_internal(
     p_organization_id, v_account.project_id, v_account.id, v_account.currency);
@@ -653,7 +670,7 @@ begin
     currency, payment_date, description, evidence_reference,
     recorded_by, idempotency_key, request_hash
   ) values (
-    v_payment_id, p_organization_id, p_project_id, v_account.id,
+    v_payment_id, p_organization_id, p_project_id, p_cash_account_id,
     p_amount_minor_units, p_currency, p_advance_date,
     nullif(trim(p_description), ''), nullif(trim(p_evidence_reference), ''),
     v_actor, 'p3-advance-payment:' || v_payment_id::text, v_payment_hash
@@ -669,15 +686,15 @@ begin
 
   insert into public.journal_lines(
     batch_id, organization_id, project_id, account_id,
-    debit_minor_units, credit_minor_units, currency, transaction_date
+    debit_minor_units, credit_minor_units, currency,
+    cash_account_id, transaction_date
   ) values
     (v_batch_id, p_organization_id, p_project_id, v_prepaid,
-     p_amount_minor_units, 0, p_currency, p_advance_date),
+     p_amount_minor_units, 0, p_currency,
+     null, p_advance_date),
     (v_batch_id, p_organization_id, p_project_id, v_cash,
-     0, p_amount_minor_units, p_currency, p_advance_date);
-  update public.journal_lines
-     set cash_account_id = v_account.id
-   where batch_id = v_batch_id and account_id = v_cash;
+     0, p_amount_minor_units, p_currency,
+     p_cash_account_id, p_advance_date);
 
   insert into public.supplier_advances(
     organization_id, project_id, supplier_party_id, advance_reference, advance_date,
@@ -694,8 +711,8 @@ begin
   values (p_organization_id, v_actor, 'SUPPLIER_ADVANCE_RECORDED', 'supplier_advance', v_id,
     jsonb_build_object('project_id', p_project_id, 'supplier_party_id', p_supplier_party_id,
       'amount_minor_units', p_amount_minor_units, 'currency', p_currency,
-      'unapplied_payment_id', v_payment_id, 'journal_batch_id', v_batch_id,
-      'advance_date', p_advance_date));
+      'cash_account_id', p_cash_account_id, 'unapplied_payment_id', v_payment_id,
+      'journal_batch_id', v_batch_id, 'advance_date', p_advance_date));
   return v_id;
 end $$;
 
@@ -715,6 +732,8 @@ declare
   v_existing record;
   v_advance record;
   v_invoice record;
+  v_obligation record;
+  v_outstanding bigint;
   v_applied_numeric numeric;
   v_remaining_advance numeric;
   v_batch_id uuid;
@@ -755,14 +774,31 @@ begin
   if v_invoice.cost_obligation_id is null then raise exception 'invoice has no payable obligation'; end if;
   if v_invoice.currency <> v_advance.currency then raise exception 'advance and invoice currency must match'; end if;
 
+  -- Supplier coherence: the advance supplier must match the invoice party.
+  if v_advance.supplier_party_id <> v_invoice.party_id then
+    raise exception 'advance supplier % does not match invoice supplier %; cannot apply one supplier advance to another supplier invoice',
+      v_advance.supplier_party_id, v_invoice.party_id;
+  end if;
+
+  -- Lock the obligation and check the authoritative settlement ceiling.
+  select * into v_obligation from public.cost_obligations
+  where id = v_invoice.cost_obligation_id and organization_id = p_organization_id
+  for update;
+  v_outstanding := public.obligation_active_outstanding_minor_units(
+    p_organization_id, v_invoice.cost_obligation_id);
+  if p_applied_amount_minor_units > v_outstanding then
+    raise exception 'advance application of % exceeds current outstanding payable % on obligation',
+      p_applied_amount_minor_units, v_outstanding;
+  end if;
+
   -- Ceiling: applications cannot exceed the advance.
   select coalesce(sum(applied_amount_minor_units::numeric), 0) into v_applied_numeric
   from public.supplier_advance_applications where advance_id = p_advance_id;
   if v_applied_numeric + p_applied_amount_minor_units > v_advance.amount_minor_units then
     raise exception 'application exceeds advance amount';
   end if;
-  v_remaining_advance := v_advance.amount_minor_units - v_applied_numeric - p_applied_amount_minor_units;
-  v_new_status := case when v_remaining_advance <= 0 then 'FULLY_APPLIED' else 'PARTIALLY_APPLIED' end;
+  v_new_status := case when v_advance.amount_minor_units - v_applied_numeric - p_applied_amount_minor_units <= 0
+    then 'FULLY_APPLIED' else 'PARTIALLY_APPLIED' end;
 
   select id into v_payable from public.semantic_accounts where role = 'SUPPLIER_PAYABLE';
   select id into v_prepaid from public.semantic_accounts where role = 'PREPAID_ASSET';
@@ -772,8 +808,8 @@ begin
     idempotency_key, request_hash, posted_by
   ) values (
     p_organization_id, v_advance.project_id, 'SUPPLIER_ADVANCE_APPLICATION',
-    gen_random_uuid(), v_invoice.invoice_date,
-    'p3-apply-advance-batch:' || p_advance_id::text || ':' || p_supplier_invoice_id::text,
+    v_application_id, v_invoice.invoice_date,
+    'p3-apply-advance-batch:' || v_application_id::text,
     v_hash, v_actor
   ) returning id into v_batch_id;
 
