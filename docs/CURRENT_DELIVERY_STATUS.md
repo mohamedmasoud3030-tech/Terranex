@@ -88,3 +88,17 @@ See `docs/TARGET_COMPANY_REFERENCE.md` for the exact evidence boundary and what 
 No target-company ownership, entitlement, operator-share, cross-project netting/recycling, reserve, tax, investor exit/transfer or distribution formula may be invented before R14.
 
 The system should be as complete as possible before that conversation. The only work that waits is work whose correctness genuinely depends on the owner's verified policy/legal/accounting facts.
+
+## 6. Addendum — F3–F10 execution session (2026-08-16, branch `arena/01a00890-terranex`)
+
+This addendum updates the delivery map above without rewriting the dated snapshot.
+
+| Phase | Update |
+|---|---|
+| R2 | Portfolio roll-up read models are now delivered (`portfolio_financial_rollup_read`, F10). Remaining: shared Asset core/associations and portfolio documents/decisions/risks. |
+| R3 | Shared budget/forecast/commitment control is now delivered as an additive layer (F4 budgets with ceiling enforcement at obligation authorization, consumption/forecast read models). Remaining: any missing AP/operational-finance links. Investor entitlement remains excluded until R14+. |
+| R8 | Cross-sector performance now has the authoritative `project_financial_position_read` + `project_performance_read` (F9), the Financial Integrity Center signal surface (F8) and org/portfolio consolidation (F10). Remaining: owner-facing asset-position/valuation surface. |
+| R11 | Exception reporting and traceability are now delivered: unified `approval_exception_registry_read` (F5), `financial_integrity_signals_read` (F8), `organization_financial_consolidation_read` (F10). Remaining: consolidated owner reports polish. |
+| R13 | The two blockers named by the previous status ("needs budget completion and portfolio roll-up") are now delivered. The full-company simulation is the next logical increment and the hard-stop gate. |
+
+Phase-level evidence: `docs/F3_F10_EXECUTION_REPORT.md`, `docs/F7_PERIOD_CLOSE_AUDIT.md`, migrations `20260816050000_f3_contract_finance.sql` … `20260816057000_f10_portfolio_rollup.sql`, behavioral gate `supabase/tests/88_f3_f10_finance_control.sql`, unit tests `tests/f3-f10-control.test.ts`.
