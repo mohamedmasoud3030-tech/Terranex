@@ -827,3 +827,56 @@ left join lateral (
   where t.organization_id = p.organization_id and t.project_id = p.id
 ) uat on true;
 grant select on public.s7_pilot_acceptance_report_read to authenticated;
+
+-- ===========================================================================
+-- 10. pgcrypto hosted-schema compatibility pass.
+--     This migration redefines/adds SECURITY DEFINER functions that call
+--     digest(...) unqualified (attach_contribution_cash, create_capital_call,
+--     s5_prepare_allocation, s5_reconcile_distribution_payment). They are
+--     created AFTER the earlier qualification passes, so re-run the same
+--     bounded pass: keep the locked search_path, qualify only the pgcrypto
+--     dependency. CREATE OR REPLACE preserves function identity/grants.
+-- ===========================================================================
+do $pre_owner_pgcrypto_compat$
+declare
+  v_pgcrypto_schema text;
+  v_definition text;
+  v_rewritten text;
+  r record;
+begin
+  select n.nspname
+    into v_pgcrypto_schema
+  from pg_extension e
+  join pg_namespace n on n.oid = e.extnamespace
+  where e.extname = 'pgcrypto';
+
+  if v_pgcrypto_schema is null then
+    raise exception 'pgcrypto extension is required';
+  end if;
+
+  for r in
+    select p.oid, p.oid::regprocedure::text as signature
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prokind = 'f'
+      and pg_get_functiondef(p.oid)
+        ~ '(^|[^[:alnum:]_.])digest[[:space:]]*\('
+    order by p.oid::regprocedure::text
+  loop
+    v_definition := pg_get_functiondef(r.oid);
+    v_rewritten := regexp_replace(
+      v_definition,
+      '(^|[^[:alnum:]_.])digest[[:space:]]*\(',
+      E'\\1' || quote_ident(v_pgcrypto_schema) || '.digest(',
+      'g'
+    );
+
+    if v_rewritten = v_definition then
+      raise exception 'failed to qualify pgcrypto digest in %', r.signature;
+    end if;
+
+    execute v_rewritten;
+  end loop;
+end
+$pre_owner_pgcrypto_compat$;
