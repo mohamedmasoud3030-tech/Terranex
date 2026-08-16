@@ -222,6 +222,17 @@ The hotfix must extend `tests/r10-policy-block.test.ts` (or equivalent permanent
 - commitments remain distinguishable from ownership/entitlement (DS05-style wording preserved);
 - dormant S5 mechanics are not accidentally exposed on any other live route.
 
+### 4.4 Delivered — post-R14 policy-safety hotfix
+
+**Status:** delivered in a dedicated post-R14 runtime PR (policy-safety correction + permanent tests + truthful status-doc updates). This subsection is an addendum; the audit body above remains historical evidence of the finding.
+
+- The three-leg intake leak (§4.1) is corrected. `/projects/[projectId]/intake` no longer imports or renders `ConfigureRulesForm`, no longer queries allocation rules (`getAllocationRuleSets` / `features/allocation`), no longer derives an `activeRuleSet`, and no longer passes `allocationRulesConfigured` into the readiness snapshot. Project readiness no longer reads S5 allocation configuration.
+- `DS04_AGREEMENT` no longer requires or implies ownership/allocation weights, a 100% total, or profit/loss assignment. It completes on safe agreement facts (active governing version, effective date, title/reference) and states the unresolved ownership/allocation/distribution policy explicitly as «غير محددة بسياسة معتمدة» — policy-blocked, not silently passed, and not a readiness gate.
+- SAFE agreement/funding facts are preserved: participant identity, agreement/version provenance, `AgreementDraftForm` and its explicit `commitmentAmount`, capital-call/contribution facts, and the DS05 separation «الالتزام ≠ المطلوب ≠ المساهمة».
+- Dormant S5 machinery (migrations, RPCs, read views, `src/features/allocation/*`, the dormant S5 forms) is untouched and remains dormant; it is not presented as target-company policy.
+- Permanent regression coverage was extended: `tests/r10-policy-block.test.ts` (seven policy-boundary proofs, including a repository-wide live-route scan) and `tests/intake-readiness.test.ts` (behavioral scenarios A/B/C).
+- No BD item was resolved: BD-001…BD-012 remain OPEN. No migration or schema change was introduced. R15 was not started.
+
 ## 5. Professional consistency review — flags
 
 Cross-checked against the Terranex accounting model, Project financial isolation, exact-money model, close/reversal/correction architecture, Portfolio reporting architecture, RE/Agriculture/Livestock operations, current funding facts, and the R10 policy block:
@@ -238,5 +249,5 @@ Cross-checked against the Terranex accounting model, Project financial isolation
 - R1–R13 behavior untouched; no runtime, migration, schema, RPC, UI, or test behavior changed.
 - Deliverables are documentation only: this matrix, the Arabic owner decision pack, and status-register cross-references.
 - BD-001…BD-012: **all OPEN — awaiting the authorized owner of المجموعة العربية المتحدة.**
-- One verified runtime policy-boundary defect is on record (§4.1) with a mandatory follow-up **policy-safety hotfix** (§4.2/§4.3) to be delivered in a separate runtime PR after this documentation PR merges. The hotfix removes surfacing only; it resolves no BD decision.
+- One verified runtime policy-boundary defect is on record (§4.1) with a mandatory follow-up **policy-safety hotfix** (§4.2/§4.3). That hotfix is now delivered in a separate runtime PR (§4.4): it removes the surfacing and the readiness dependency only and resolves no BD decision.
 - R15 is not started and must not start for any scope whose correctness depends on an OPEN item.

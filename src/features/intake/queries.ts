@@ -130,7 +130,6 @@ export function buildIntakeSnapshot(input: {
   activeAgreement: boolean;
   agreementEffectiveDate: string | null;
   commitmentCount: number;
-  allocationRulesConfigured: boolean;
   issuedCallCount: number;
   contributionCount: number;
   contributionCashAttributedCount: number;
@@ -171,7 +170,6 @@ export function buildIntakeSnapshot(input: {
     activeAgreement: input.activeAgreement,
     agreementEffectiveDate: input.agreementEffectiveDate,
     commitmentCount: input.commitmentCount,
-    allocationRulesConfigured: input.allocationRulesConfigured,
     issuedCallCount: input.issuedCallCount,
     contributionCount: input.contributionCount,
     contributionCashAttributedCount: input.contributionCashAttributedCount,

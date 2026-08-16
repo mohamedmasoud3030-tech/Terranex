@@ -86,7 +86,6 @@ export type IntakeSnapshot = {
   activeAgreement: boolean;
   agreementEffectiveDate: string | null;
   commitmentCount: number;
-  allocationRulesConfigured: boolean;
   issuedCallCount: number;
   contributionCount: number;
   contributionCashAttributedCount: number;
@@ -268,21 +267,26 @@ function evaluate(snapshot: IntakeSnapshot): IntakeSection[] {
       [canAddInvestors ? 'لا يوجد مستثمرون في المشروع.' : 'أنشئ المشروع أولًا.']));
 
   const canDraftAgreement = snapshot.investorCount > 0;
+  // BD-004 (meaning of ownership) and BD-006 (profit/loss assignment) remain OPEN.
+  // The agreement/funding facts (version, effective date, title/reference) are SAFE
+  // and still required; the unresolved ownership/allocation economics are explicitly
+  // policy-blocked and must NOT gate readiness.
+  const policyNotEstablished = 'سياسة الملكية والتخصيص وتوزيع الربح لم تُقرّ بعد من المالك المفوَّض — «غير محددة بسياسة معتمدة»، ولا تُطلب لإكمال الجاهزية.';
   if (!snapshot.activeAgreement) {
     sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'MANDATORY',
       canDraftAgreement ? 'MISSING' : 'BLOCKED',
-      'فعّل نسخة اتفاقية حاكمة بتاريخ سريان، وعنوان/مرجع، وأوزان ملكية مجموعها 100٪.',
+      'فعّل نسخة اتفاقية حاكمة بتاريخ سريان وعنوان/مرجع موثق.',
       [canDraftAgreement ? 'لا توجد اتفاقية مفعّلة.' : 'أضف مستثمرًا واحدًا على الأقل.']));
-  } else if (!snapshot.agreementTitleOrReference || !snapshot.allocationRulesConfigured) {
-    const reasons: string[] = [];
-    if (!snapshot.agreementTitleOrReference) reasons.push('عنوان الاتفاقية أو مرجعها غير مسجّل.');
-    if (!snapshot.allocationRulesConfigured) reasons.push('أوزان الملكية/التخصيص غير مثبتة على 100٪.');
+  } else if (!snapshot.agreementTitleOrReference) {
     sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'MANDATORY', 'IN_PROGRESS',
-      `نسخة حاكمة سارية من ${snapshot.agreementEffectiveDate ?? '—'}. أكمل العنوان وأوزان الملكية.`,
-      reasons));
+      `نسخة حاكمة سارية من ${snapshot.agreementEffectiveDate ?? '—'}. أكمل عنوان/مرجع الاتفاقية.`,
+      ['عنوان الاتفاقية أو مرجعها غير مسجّل.'],
+      [policyNotEstablished]));
   } else {
     sections.push(section('DS04_AGREEMENT', 'INVESTORS_AND_TERMS', 'MANDATORY', 'COMPLETE',
-      `الاتفاقية «${snapshot.agreementTitleOrReference}» سارية من ${snapshot.agreementEffectiveDate}. أوزان الملكية مثبتة.`));
+      `الاتفاقية «${snapshot.agreementTitleOrReference}» سارية من ${snapshot.agreementEffectiveDate}. حقائق الاتفاقية مثبتة.`,
+      [],
+      [policyNotEstablished]));
   }
 
   if (!snapshot.activeAgreement) {
@@ -734,7 +738,6 @@ export function emptyIntakeSnapshot(): IntakeSnapshot {
     activeAgreement: false,
     agreementEffectiveDate: null,
     commitmentCount: 0,
-    allocationRulesConfigured: false,
     issuedCallCount: 0,
     contributionCount: 0,
     contributionCashAttributedCount: 0,

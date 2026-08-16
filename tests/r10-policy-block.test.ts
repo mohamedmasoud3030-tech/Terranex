@@ -1,10 +1,34 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { emptyIntakeSnapshot, evaluateIntakeReadiness } from '@/features/intake/readiness';
 
 const investorPage = readFileSync('src/app/(app)/projects/[projectId]/investors/page.tsx', 'utf8');
 const statementsPage = readFileSync('src/app/(app)/projects/[projectId]/statements/page.tsx', 'utf8');
 const overviewPage = readFileSync('src/app/(app)/projects/[projectId]/overview/page.tsx', 'utf8');
+const intakePage = readFileSync('src/app/(app)/projects/[projectId]/intake/page.tsx', 'utf8');
+const intakeReadiness = readFileSync('src/features/intake/readiness.ts', 'utf8');
+const termsForms = readFileSync('src/app/(app)/projects/[projectId]/terms/forms.tsx', 'utf8');
+const investorsForms = readFileSync('src/app/(app)/projects/[projectId]/investors/forms.tsx', 'utf8');
 const decisions = readFileSync('docs/OPEN_BUSINESS_DECISIONS.md', 'utf8');
+
+const S5_FORM_NAMES = /ConfigureRulesForm|PrepareAllocationForm|ApproveAllocationForm|PrepareDistributionForm|ApproveDistributionForm|PayDistributionForm/;
+const S5_READ_NAMES = /getAllocationRuleSets|getAllocationRuns|getAllocationLines|getDistributions|getDistributionCapacity|getPartnerCapitalStatement/;
+
+function walk(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    return statSync(full).isDirectory() ? walk(full) : [full];
+  });
+}
+
+// Live application routes: every Next.js route entry point under src/app.
+function liveRouteFiles(): string[] {
+  return walk('src/app').filter((file) => {
+    const name = basename(file);
+    return name === 'page.tsx' || name === 'layout.tsx' || name === 'route.ts';
+  });
+}
 
 describe('R10 keeps unresolved investor economics inert until R14', () => {
   it('keeps the canonical business decisions open', () => {
@@ -41,5 +65,78 @@ describe('R10 keeps unresolved investor economics inert until R14', () => {
     expect(overviewPage).not.toMatch(/getDistributions|approvedDistributions|paidDistributions/);
     expect(overviewPage).toContain('BD-006 وBD-008');
     expect(overviewPage).toContain('ليست حصة مستثمر');
+  });
+});
+
+describe('post-R14 policy-safety hotfix: the intake policy leak is closed while BD-004/BD-006 remain OPEN', () => {
+  it('Proof 1 — the intake route does not import or render ConfigureRulesForm', () => {
+    expect(intakePage).not.toMatch(/ConfigureRulesForm/);
+    expect(intakePage).not.toMatch(/investors\/forms/);
+  });
+
+  it('Proof 2 — the intake route does not query allocation rules for readiness', () => {
+    expect(intakePage).not.toMatch(/getAllocationRuleSets|features\/allocation/);
+    expect(intakePage).not.toMatch(/allocationRulesConfigured|activeRuleSet/);
+  });
+
+  it('Proof 3 — readiness does not require ownership weights', () => {
+    const result = evaluateIntakeReadiness({
+      ...emptyIntakeSnapshot(),
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 1,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 1,
+      agreementTitleOrReference: 'اتفاقية',
+    });
+    const agreement = result.sections.find((section) => section.code === 'DS04_AGREEMENT')!;
+    expect(agreement.status).toBe('COMPLETE');
+    expect(agreement.blockingReasons).toHaveLength(0);
+  });
+
+  it('Proof 4 — readiness does not require allocation weights', () => {
+    expect(intakeReadiness).not.toMatch(/allocationRulesConfigured/);
+    expect(intakeReadiness).not.toMatch(/أوزان الملكية\/التخصيص|أوزان ملكية|أوزان التخصيص/);
+    expect(Object.hasOwn(emptyIntakeSnapshot(), 'allocationRulesConfigured')).toBe(false);
+  });
+
+  it('Proof 5 — no live readiness/intake requirement states or implies ownership/allocation must total 100%', () => {
+    expect(intakeReadiness).not.toMatch(/100٪|مجموعها 100|100%/);
+    expect(intakePage).not.toMatch(/100٪/);
+    const result = evaluateIntakeReadiness({
+      ...emptyIntakeSnapshot(),
+      organizationName: 'أ',
+      projectName: 'ب',
+      investorCount: 1,
+      activeAgreement: true,
+      agreementEffectiveDate: '2025-01-01',
+      commitmentCount: 1,
+    });
+    const agreement = result.sections.find((section) => section.code === 'DS04_AGREEMENT')!;
+    expect(agreement.blockingReasons.join(' ')).not.toMatch(/100|أوزان/);
+  });
+
+  it('Proof 6 — commitments remain distinguishable from ownership/entitlement (DS05 separation preserved)', () => {
+    // AgreementDraftForm still records the explicit commitmentAmount fact.
+    expect(termsForms).toContain('commitmentAmount');
+    // DS05 wording keeps the load-bearing concept separation.
+    expect(intakeReadiness).toContain('الالتزام ≠ المطلوب ≠ المساهمة');
+    // The dormant S5 rules form keeps the "commitment does not define ownership" guard.
+    expect(investorsForms).toContain('مبالغ الالتزام أو المساهمات لا تحدد الملكية ولا حصة الربح');
+  });
+
+  it('Proof 7 — dormant S5 allocation mechanics are not exposed by any live application route', () => {
+    const routes = liveRouteFiles();
+    expect(routes.length).toBeGreaterThan(0);
+    for (const file of routes) {
+      const content = readFileSync(file, 'utf8');
+      expect(content, `${file} must not import the dormant S5 allocation/distribution surface`)
+        .not.toMatch(/features\/allocation|investors\/forms/);
+      expect(content, `${file} must not render S5 allocation/distribution forms`)
+        .not.toMatch(S5_FORM_NAMES);
+      expect(content, `${file} must not read S5 allocation/distribution state`)
+        .not.toMatch(S5_READ_NAMES);
+    }
   });
 });

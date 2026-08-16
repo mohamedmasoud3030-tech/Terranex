@@ -14,7 +14,6 @@ import {
   getParties,
   getVersions,
 } from '@/features/funding/queries';
-import { getAllocationRuleSets } from '@/features/allocation/queries';
 import { getAccountingPeriods } from '@/features/close/queries';
 import {
   getBudgets,
@@ -46,7 +45,6 @@ import { CreatePartyForm, AddParticipantForm, AgreementDraftForm, ActivateVersio
 import { CapitalCallForm, ContributionForm } from '../funding/forms';
 import { CashAccountForm, BankImportForm } from '../cash/forms';
 import { ProfileForm, AssetForm, ParcelForm, AcquisitionForm, BudgetForm, ApprovalButton } from '../operations/forms';
-import { ConfigureRulesForm } from '../investors/forms';
 import {
   ApproveOpeningImportForm,
   RejectOpeningImportForm,
@@ -143,7 +141,6 @@ export default async function IntakePage({
     assets,
     parcels,
     budgets,
-    ruleSets,
     imports,
     mappingCodes,
     checkpoints,
@@ -170,7 +167,6 @@ export default async function IntakePage({
     getPropertyWorkspaces(projectId),
     getParcels(projectId),
     getBudgets(projectId),
-    getAllocationRuleSets(projectId),
     getOpeningImports(projectId),
     getOpeningMappingCodes(),
     getReconciliationCheckpoints(projectId),
@@ -196,9 +192,6 @@ export default async function IntakePage({
   const commitments = activeVersion ? await getCommitments(activeVersion.id) : [];
   const callLines = await getCapitalCallLines(calls.map((call) => call.id));
   const draftVersions = versions.filter((version) => version.status === 'DRAFT');
-  const activeRuleSet = activeVersion
-    ? ruleSets.find((row) => row.governing_version_id === activeVersion.id) ?? null
-    : null;
   const issuedCalls = calls.filter((call) => call.status === 'ISSUED');
   const openPeriod = periods.find((period) => period.status === 'OPEN') ?? null;
   const freezeDate = declaration?.freeze_date ?? null;
@@ -212,10 +205,6 @@ export default async function IntakePage({
   const approvedBudgets = budgets.filter((budget) => budget.status === 'APPROVED');
   const acquiredAssets = assets.filter((asset) => Boolean(asset.acquisition_id));
   const eligibleParties = parties.filter((party) => !participants.some((participant) => participant.party_id === party.id));
-  const ruleParticipants = participants.map((participant) => ({
-    partyId: participant.party_id,
-    legalName: participant.parties.legal_name,
-  }));
   const money = (value: string | null | undefined) => formatMinorUnits(value ?? '0', project.reporting_currency);
 
   const snapshot = buildIntakeSnapshot({
@@ -230,7 +219,6 @@ export default async function IntakePage({
     activeAgreement: Boolean(activeVersion),
     agreementEffectiveDate: activeVersion?.effective_date ?? null,
     commitmentCount: commitments.length,
-    allocationRulesConfigured: Boolean(activeRuleSet),
     issuedCallCount: issuedCalls.length,
     contributionCount: contributions.length,
     contributionCashAttributedCount: contributions.length - unpostedContributions.length,
@@ -386,18 +374,9 @@ export default async function IntakePage({
               {!declaration?.agreement_title_or_reference && (
                 <p className="muted">أضف عنوان الاتفاقية من قسم الإعداد أعلاه.</p>
               )}
-              {!activeRuleSet && (
-                <ConfigureRulesForm
-                  organizationId={organizationId}
-                  projectId={projectId}
-                  governingVersionId={activeVersion.id}
-                  participants={ruleParticipants}
-                  disabled={!isOwner}
-                />
-              )}
-              {activeRuleSet && (
-                <p>أساس التخصيص مثبت · مرجع {activeRuleSet.basis_evidence_reference} · المقام {activeRuleSet.common_denominator}.</p>
-              )}
+              <p className="muted">
+                حقائق الاتفاقية مثبتة. سياسة الملكية والتخصيص وتوزيع الربح لم تُقرّ بعد من المالك المفوَّض — «غير محددة بسياسة معتمدة»، ولا تُطلب لإكمال الجاهزية.
+              </p>
             </>
           ) : participants.length === 0 ? (
             <p className="muted">أضف مستثمرًا قبل مسودة الاتفاقية.</p>
