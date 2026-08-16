@@ -197,7 +197,7 @@ on conflict (organization_id,user_id) do update set role=excluded.role, status=e
 do $$ begin
   if to_regclass('public.policy_authority') is not null then
     insert into public.policy_authority(organization_id,scope,policy_version,evidence_reference,approved_by)
-    values (:'p2c_org_lit','INVESTOR_ECONOMICS','P2C-MECHANISM-TEST-V1','P2C-TEST-SYNTHETIC-POLICY',:'p2c_owner1')
+    values ('30000000-0000-4000-8000-000000000001','INVESTOR_ECONOMICS','P2C-MECHANISM-TEST-V1','P2C-TEST-SYNTHETIC-POLICY','00000000-0000-4000-8000-000000000011')
     on conflict (organization_id,scope) do nothing;
   end if;
 end $$;
