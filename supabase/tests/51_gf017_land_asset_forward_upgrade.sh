@@ -30,11 +30,16 @@ for migration in "$ROOT"/supabase/migrations/*.sql; do
 done
 
 # Build a genuine pre-GF-017 database using every cumulative SQL regression
-# fixture available at the GF-016 boundary.
+# fixture available at the GF-016 boundary. Exclude post-GF-016 test fixtures.
 for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"
   [[ "$base" == "00_supabase_shim.sql" ]] && continue
+  # Only include test fixtures below the GF-017 boundary (prefix < 50)
+  # and explicitly exclude any R4/procurement tests which reference
+  # supplier_invoices that only exist after GF-017.
   [[ "$base" < "50_" ]] || continue
+  [[ "$base" == "83_"* ]] && continue  # Skip R4 procurement integration (83_r4_*.sql)
+  [[ "$base" == "85_"* ]] && continue  # Skip R4 evidence tests (85_r4_*.sql)
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null
 done
 
