@@ -33,9 +33,10 @@ async function submitAndSettle(container: HTMLElement) {
   const form = container.querySelector('form');
   if (!form) throw new Error('form not found');
   fireEvent.submit(form);
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'إنشاء حساب نقدي' })).not.toBeDisabled(),
-  );
+  await waitFor(() => {
+    const button = screen.getByRole('button', { name: 'إنشاء حساب نقدي' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+  });
 }
 
 describe('S2 cash-account idempotency correction', () => {
@@ -62,7 +63,7 @@ describe('S2 cash-account idempotency correction', () => {
     expect(currentKey(container)).toBe(`cash-account-${context.commandNonce}-1`);
   });
 
-  it('locks the forward migration to a retry-safe five-argument RPC contract', () => {
+  it('locks the forward migration to a retry-safe RPC contract with a safe legacy overload', () => {
     const sql = readFileSync(
       'supabase/migrations/20260817010000_s2_cash_account_idempotency.sql',
       'utf8',
@@ -74,8 +75,13 @@ describe('S2 cash-account idempotency correction', () => {
     expect(sql).toContain('idempotency key payload mismatch');
     expect(sql).toContain('return v_existing.id');
     expect(sql).toContain('drop function public.create_project_cash_account(uuid, uuid, text, text)');
+    expect(sql).toContain("'legacy-' || pg_catalog.md5(");
+    expect(sql).toContain('security invoker');
     expect(sql).toContain(
       'grant execute on function public.create_project_cash_account(uuid, uuid, text, text, text)',
+    );
+    expect(sql).toContain(
+      'grant execute on function public.create_project_cash_account(uuid, uuid, text, text)',
     );
   });
 
