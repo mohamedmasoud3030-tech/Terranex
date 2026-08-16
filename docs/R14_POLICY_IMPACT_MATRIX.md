@@ -222,9 +222,9 @@ The hotfix must extend `tests/r10-policy-block.test.ts` (or equivalent permanent
 - commitments remain distinguishable from ownership/entitlement (DS05-style wording preserved);
 - dormant S5 mechanics are not accidentally exposed on any other live route.
 
-### 4.4 Delivered — post-R14 policy-safety hotfix
+### 4.4 MERGED / CLOSED — post-R14 policy-safety hotfix
 
-**Status:** delivered in a dedicated post-R14 runtime PR (policy-safety correction + permanent tests + truthful status-doc updates). This subsection is an addendum; the audit body above remains historical evidence of the finding.
+**Status:** merged via PR #151 (final head `215a3c0e4de31600d6d9ad8931758a50690d988f`, `main` merge commit `b5854e5f80a1fdc152400d8839319c6ecadd4bbd`) with the policy-safety correction, permanent tests, and truthful status-doc updates. This subsection is an addendum; the audit body above remains historical evidence of the finding.
 
 - The three-leg intake leak (§4.1) is corrected. `/projects/[projectId]/intake` no longer imports or renders `ConfigureRulesForm`, no longer queries allocation rules (`getAllocationRuleSets` / `features/allocation`), no longer derives an `activeRuleSet`, and no longer passes `allocationRulesConfigured` into the readiness snapshot. Project readiness no longer reads S5 allocation configuration.
 - `DS04_AGREEMENT` no longer requires or implies ownership/allocation weights, a 100% total, or profit/loss assignment. It completes on safe agreement facts (active governing version, effective date, title/reference) and states the unresolved ownership/allocation/distribution policy explicitly as «غير محددة بسياسة معتمدة» — policy-blocked, not silently passed, and not a readiness gate.
@@ -249,5 +249,6 @@ Cross-checked against the Terranex accounting model, Project financial isolation
 - R1–R13 behavior untouched; no runtime, migration, schema, RPC, UI, or test behavior changed.
 - Deliverables are documentation only: this matrix, the Arabic owner decision pack, and status-register cross-references.
 - BD-001…BD-012: **all OPEN — awaiting the authorized owner of المجموعة العربية المتحدة.**
-- One verified runtime policy-boundary defect is on record (§4.1) with a mandatory follow-up **policy-safety hotfix** (§4.2/§4.3). That hotfix is now delivered in a separate runtime PR (§4.4): it removes the surfacing and the readiness dependency only and resolves no BD decision.
-- R15 is not started and must not start for any scope whose correctness depends on an OPEN item.
+- One verified runtime policy-boundary defect is on record (§4.1) with a mandatory follow-up **policy-safety hotfix** (§4.2/§4.3). That hotfix is **MERGED / CLOSED** via PR #151 (§4.4): it removes the surfacing and the readiness dependency only and resolves no BD decision.
+- R14 documentation work and the mandatory post-R14 safety closeout are complete; no owner-specific policy was inferred.
+- The exact next gate is **PRE-OWNER INDEPENDENT EVIDENCE AUDIT** (independent evidence and owner-decision validation, not implementation). R15 is not started and must not start for any scope whose correctness depends on an OPEN item.

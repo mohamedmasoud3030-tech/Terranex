@@ -45,7 +45,7 @@ Only after R13, ask the owner the questions only they/their contracts can answer
 
 **R14 progress (2026-08-16):** the owner-facing Arabic questionnaire is issued as `docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md` and the technical mapping/dormant-code audit as `docs/R14_POLICY_IMPACT_MATRIX.md`. BD-001…BD-012 all remain OPEN until the authorized owner's answers are recorded.
 
-**Post-R14 policy-safety hotfix (2026-08-16):** the mandatory policy-safety hotfix required by the R14 impact matrix (§4.2/§4.3) has been delivered in a separate runtime PR. It de-surfaces the intake ownership/allocation configuration leak and removes the readiness dependency without resolving any BD item; the dormant S5 machinery remains dormant and R15 has not started.
+**Post-R14 policy-safety hotfix — MERGED / CLOSED (2026-08-16):** the mandatory policy-safety hotfix required by the R14 impact matrix (§4.2/§4.3) was merged via PR #151. It de-surfaces the intake ownership/allocation configuration leak and removes the readiness dependency without resolving any BD item or inferring owner-specific policy; the dormant S5 machinery remains dormant. R14 documentation work and its mandatory safety closeout are complete. The exact next gate is **PRE-OWNER INDEPENDENT EVIDENCE AUDIT** (independent evidence and owner-decision validation, not implementation); R15 has not started and remains blocked for policy-dependent scope.
 
 ## 6. R15–R17 — small rule-dependent tail
 
