@@ -90,6 +90,7 @@ export async function createAccountingPeriodAction(_: ActionState, formData: For
     p_project_id: input.projectId,
     p_start_date: input.startDate,
     p_end_date: input.endDate,
+    p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذّر إنشاء الفترة المحاسبية');
   refreshProject(input.projectId);
@@ -107,6 +108,7 @@ export async function prepareCloseRunAction(_: ActionState, formData: FormData):
     p_project_id: input.projectId,
     p_period_id: input.periodId,
     p_notes: input.notes || null,
+    p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذّر بدء التحضير');
   refreshProject(input.projectId);
@@ -139,6 +141,7 @@ export async function requestCloseExceptionAction(_: ActionState, formData: Form
     p_reason: input.reason,
     p_evidence_reference: input.evidenceReference,
     p_materiality_comment: input.materialityComment || null,
+    p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذّر تسجيل الاستثناء');
   refreshProject(input.projectId);
@@ -169,6 +172,7 @@ export async function reopenPeriodAction(_: ActionState, formData: FormData): Pr
     p_period_id: input.periodId,
     p_reason: input.reason,
     p_evidence_reference: input.evidenceReference,
+    p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذّر إعادة فتح الفترة');
   refreshProject(input.projectId);
@@ -187,6 +191,7 @@ export async function requestCorrectionAction(_: ActionState, formData: FormData
     p_correction_period_id: input.correctionPeriodId,
     p_reason: input.reason,
     p_evidence_reference: input.evidenceReference,
+    p_idempotency_key: input.idempotencyKey,
   });
   if (error) return domainError(error.message, 'تعذّر تسجيل طلب التصحيح');
   refreshProject(input.projectId);
