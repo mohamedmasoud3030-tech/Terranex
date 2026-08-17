@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { newCommandNonce } from '@/shared/idempotency';
 import {
   getAuditEvents,
   getCashAccountPositions,
@@ -108,7 +109,12 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         )}
         <details className="stack">
           <summary>إنشاء حساب نقدي</summary>
-          <CashAccountForm organizationId={organizationId} projectId={projectId} currency={project.reporting_currency} />
+          <CashAccountForm
+            organizationId={organizationId}
+            projectId={projectId}
+            currency={project.reporting_currency}
+            commandNonce={newCommandNonce()}
+          />
         </details>
       </section>
 
@@ -122,6 +128,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             projectId={projectId}
             contributions={contributions}
             cashAccountId={accounts[0].cash_account_id}
+            commandNonce={newCommandNonce()}
           />
         )}
         {!isOwner && <p className="muted">ترحيل الإسناد يتطلب صلاحية مالك المنظمة.</p>}
@@ -151,7 +158,12 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
                     </td>
                     <td>
                       {!payment.is_reversed && isOwner && (
-                        <ReversePaymentForm organizationId={organizationId} projectId={projectId} payment={payment} />
+                        <ReversePaymentForm
+                          organizationId={organizationId}
+                          projectId={projectId}
+                          payment={payment}
+                          commandNonce={newCommandNonce()}
+                        />
                       )}
                     </td>
                   </tr>
@@ -182,7 +194,12 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         {accounts.length === 0 ? (
           <p className="muted">أنشئ حسابًا نقديًا أولًا لاستيراد كشف حسابه.</p>
         ) : (
-          <BankImportForm organizationId={organizationId} projectId={projectId} cashAccounts={accounts} />
+          <BankImportForm
+            organizationId={organizationId}
+            projectId={projectId}
+            cashAccounts={accounts}
+            commandNonce={newCommandNonce()}
+          />
         )}
       </section>
 
@@ -218,10 +235,16 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
                           line={line}
                           payments={payments}
                           accountName={accountName.get(line.cash_account_id) ?? ''}
+                          commandNonce={newCommandNonce()}
                         />
                       )}
                       {line.is_reconciled && line.match_id && isOwner && (
-                        <VoidMatchForm organizationId={organizationId} projectId={projectId} matchId={line.match_id} />
+                        <VoidMatchForm
+                          organizationId={organizationId}
+                          projectId={projectId}
+                          matchId={line.match_id}
+                          commandNonce={newCommandNonce()}
+                        />
                       )}
                     </td>
                   </tr>
