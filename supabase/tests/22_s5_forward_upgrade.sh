@@ -35,12 +35,23 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Exact pre-S5 boundary: replay every merged S0-S6 migration, excluding only
-# the S5 family under verification.
-for file in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$file")" in
-    20260812*.sql|20260813*.sql|20260814*.sql|20260815*.sql|20260816*.sql) continue ;;
-  esac
+# Exact pre-S5 boundary: the merged S0-S6 families that existed before S5.
+# Stage allowlisting prevents later migrations from leaking into this fixture.
+pre_s5_migrations=(
+  "$ROOT"/supabase/migrations/20260810000100_s0_foundation.sql
+  "$ROOT"/supabase/migrations/20260810000200_s1_terms_and_funding.sql
+  "$ROOT"/supabase/migrations/202608110001*.sql
+  "$ROOT"/supabase/migrations/202608110002*.sql
+  "$ROOT"/supabase/migrations/202608110003*.sql
+  "$ROOT"/supabase/migrations/202608110004*.sql
+  "$ROOT"/supabase/migrations/202608110005*.sql
+  "$ROOT"/supabase/migrations/202608110006*.sql
+)
+for file in "${pre_s5_migrations[@]}"; do
+  if [[ ! -e "$file" ]]; then
+    echo "ERROR: missing migration required for the pre-S5 boundary: $file" >&2
+    exit 1
+  fi
   psql_db "$UPGRADE_DB" < "$file"
 done
 
@@ -56,7 +67,7 @@ if [[ "$BEFORE" != 'true' ]]; then
   exit 1
 fi
 
-s5_migrations=("$ROOT"/supabase/migrations/20260812*.sql)
+s5_migrations=("$ROOT"/supabase/migrations/202608120001*.sql)
 if [[ ! -e "${s5_migrations[0]}" ]]; then
   echo 'ERROR: no S5 migration family found.' >&2
   exit 1
