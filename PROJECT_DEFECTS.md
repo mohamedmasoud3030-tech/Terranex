@@ -18,7 +18,7 @@ This register contains confirmed defects only. Unverified areas are listed separ
 ### DEF-001 — Greenfield CI receives unnecessary repository write permissions
 
 - Severity: High (security / CI supply-chain hardening)
-- Status: Fix implemented; PR verification pending.
+- Status: Closed on recovery branch; pending owner-authorized merge.
 - User-visible symptom: none expected during normal use; compromise or malicious execution inside the workflow would have had a larger repository mutation blast radius than required.
 - Evidence / reproduction:
   - `.github/workflows/greenfield-ci.yml` on the baseline SHA had no explicit top-level `permissions` block.
@@ -29,10 +29,12 @@ This register contains confirmed defects only. Unverified areas are listed separ
 - Confirmed root cause: missing explicit least-privilege `permissions` declaration in `.github/workflows/greenfield-ci.yml`.
 - Regression area: checkout and CI execution on pull requests / `main` pushes.
 - Smallest safe fix: add top-level `permissions: contents: read` without changing jobs, commands, triggers, application code, database code, secrets, or deployment behavior.
-- Verification method:
-  1. Run `Greenfield CI` from a pull request.
-  2. Confirm app/database jobs still pass.
-  3. Inspect job logs and confirm the `GITHUB_TOKEN Permissions` section no longer grants repository write permissions.
+- Verification observed:
+  - Pull-request run `32041349679` completed successfully.
+  - `app` job `95421096203` passed install, lint, all 53 Vitest files / 718 tests, production build, and typecheck.
+  - `database` job `95421096081` passed PostgreSQL replay and two-tenant isolation.
+  - The repaired app-job log reports only `Contents: read` and `Metadata: read` under `GITHUB_TOKEN Permissions`; the previous repository write grants are absent.
+  - The original over-privileged behavior therefore no longer reproduces in the affected workflow.
 
 ## Unverified areas (not defect entries)
 
@@ -43,4 +45,5 @@ This register contains confirmed defects only. Unverified areas are listed separ
 ## Change log
 
 - 2026-08-17: register created from baseline `fbd63dee8e7d4cdad808986b08e53ba154e3ae66`.
-- 2026-08-17: DEF-001 minimal fix implemented on `stabilize/project-recovery-20260817`; verification pending PR CI.
+- 2026-08-17: DEF-001 minimal fix implemented on `stabilize/project-recovery-20260817`.
+- 2026-08-17: DEF-001 closed after PR run `32041349679` passed and job logs confirmed least-privilege token scope.
