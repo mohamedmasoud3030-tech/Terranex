@@ -44,11 +44,12 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Pre-GF-013 boundary: every migration except the GF-013 family.
+# Pre-GF-013 boundary: every migration before the GF-013 family. This is a
+# historical boundary test, so every later migration (including same-day
+# recovery/hardening migrations) must stay out of the fixture.
 for file in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$file")" in
-    20260813000900*.sql|20260813001000*.sql|20260813001010*.sql|20260813001100*.sql|20260814*.sql|20260815*.sql|20260816*.sql) continue ;;
-  esac
+  base="$(basename "$file")"
+  [[ "$base" < "20260813000900_sector_aware_project.sql" ]] || continue
   psql_db "$UPGRADE_DB" < "$file"
 done
 
