@@ -25,7 +25,7 @@ import {
   recognizeAgricultureSale,
   transferHarvestInventory,
   transitionCropCycle,
-} from '@/features/agriculture/actions';
+} from '@/features/agriculture/command-actions';
 import type { Party } from '@/features/funding/queries';
 import type { CashAccountPosition } from '@/features/finance/queries';
 import { formatMinorUnits } from '@/shared/money';
