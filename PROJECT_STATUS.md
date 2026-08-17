@@ -10,6 +10,8 @@ The repository baseline is **build/test green**, but this archaeology pass does 
 
 The strongest verified result is that the current source compiles, all current Vitest tests pass, and the complete PostgreSQL migration/test replay passes in CI. The largest unresolved gap is operational: the currently connected Supabase and Vercel accounts do not expose a Terranex project, so live production behavior and operational controls could not be verified.
 
+A separate governance fact also requires owner confirmation: GitHub currently reports the **repository visibility as public**, while Terranex is implemented as a private/internal application. Public source visibility may be intentional, but that intent cannot be inferred from code.
+
 ## Verification vocabulary
 
 - **PASS** — executed successfully on the exact baseline SHA.
@@ -95,6 +97,14 @@ There are no failing lint/test/build/typecheck/database-replay checks on the exa
 
 **RISK:** npm reports **4 moderate severity vulnerabilities** during `npm ci`. They were not investigated or repaired in this discovery-only pass.
 
+### Repository visibility and credential-search scope
+
+**VERIFIED:** GitHub reports `mohamedmasoud3030-tech/Terranex` as **public**.
+
+**UNKNOWN:** whether public visibility is intentional. The application itself is designed for private/internal use, but repository visibility and application audience are separate concerns.
+
+The inspected `.env.example` / committed production configuration expose only public `NEXT_PUBLIC_*` application settings; this report does not reproduce their values. Indexed repository searches for `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`, and `DATABASE_URL` returned no matches. This is a useful check but **not equivalent to GitHub secret-scanning history or a forensic scan of every historical commit**, so no blanket “no secrets ever existed” claim is made.
+
 ### Production runtime not verified
 
 **UNKNOWN:** No Terranex project was visible through the currently connected Supabase or Vercel accounts. Consequently this pass did not verify:
@@ -177,6 +187,7 @@ These are policy unknowns, not implementation facts to be guessed by engineering
 
 ### Verified remote state
 
+- Repository visibility: **public**.
 - Default branch: `main`.
 - Verified baseline SHA: `9488588f0c6fd1984a1c09769af480f85905c661`.
 - GitHub reports `main` as **not branch-protected** at the time of this snapshot.
@@ -194,6 +205,7 @@ The discovery documents are intentionally isolated on a documentation-only branc
 | High | Production environment cannot be independently verified | Terranex absent from currently connected Supabase/Vercel accounts |
 | High | Core economic/business policy is still open | 12 OPEN business decisions; economic mutators fail closed |
 | High | `main` is not branch-protected | GitHub branch metadata |
+| Review now | Repository source is public; owner intent is unknown | GitHub repository metadata |
 | Medium | 4 moderate npm dependency vulnerabilities | Observed during baseline `npm ci` |
 | Medium | No real-browser E2E quality gate | No browser E2E framework/config found |
 | Medium | No dedicated automated accessibility gate | Current CI/package config |
@@ -211,6 +223,7 @@ This report does **not** claim:
 - that WCAG compliance is complete;
 - that no dead/duplicate code exists;
 - that no external integration exists outside the repository;
+- that no secret ever existed in repository history;
 - that unapproved investor economics have been decided;
 - that a local developer worktree is clean.
 
