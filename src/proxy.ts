@@ -24,10 +24,18 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const pathname = request.nextUrl.pathname;
+  const isPublicAuthRoute =
+    pathname === '/login' ||
+    pathname === '/forgot-password' ||
+    pathname === '/auth/recovery';
+
   // Next.js can render a page and its parent layout concurrently. Protect the
   // route here so anonymous requests never reach tenant queries before the
-  // layout's auth check has a chance to redirect.
-  if (!user && request.nextUrl.pathname !== '/login') {
+  // layout's auth check has a chance to redirect. Password-recovery entry
+  // routes stay public; /reset-password remains protected by the recovery
+  // session established in /auth/recovery.
+  if (!user && !isPublicAuthRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.search = '';

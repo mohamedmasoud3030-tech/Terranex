@@ -10,11 +10,13 @@ describe('runtime auth sequencing', () => {
 
   it('resolves the authenticated user before allowing private route rendering', () => {
     const getUser = source.indexOf('await supabase.auth.getUser()');
-    const anonymousGuard = source.indexOf("if (!user && request.nextUrl.pathname !== '/login')");
+    const publicRouteResolution = source.indexOf('const isPublicAuthRoute =');
+    const anonymousGuard = source.indexOf('if (!user && !isPublicAuthRoute)');
     const finalReturn = source.lastIndexOf('return response;');
 
     expect(getUser).toBeGreaterThan(-1);
-    expect(anonymousGuard).toBeGreaterThan(getUser);
+    expect(publicRouteResolution).toBeGreaterThan(getUser);
+    expect(anonymousGuard).toBeGreaterThan(publicRouteResolution);
     expect(finalReturn).toBeGreaterThan(anonymousGuard);
   });
 

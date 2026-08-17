@@ -24,6 +24,7 @@ export function LoginForm() {
           {state.error && <p className="error" role="alert">{state.error}</p>}
           <button disabled={pending}>{pending ? 'جارٍ الدخول…' : 'تسجيل الدخول'}</button>
         </form>
+        <a href="/forgot-password">نسيت كلمة المرور؟</a>
       </section>
     </main>
   );
