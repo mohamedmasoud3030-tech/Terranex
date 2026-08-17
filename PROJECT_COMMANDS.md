@@ -2,43 +2,38 @@
 
 > Archaeology snapshot: 2026-08-17  
 > Verified repository baseline: `main` at `9488588f0c6fd1984a1c09769af480f85905c661`  
-> Commands below come from the current repository. No secret values are included.
+> Commands below are taken from current `package.json`, `AGENTS.md`, and CI. No secret values are included.
 
-## 1. Package manager and runtime
+## 1. Runtime/package manager
 
-### Verified
+**Verified:**
 
-- Package manager: **npm** (`package-lock.json` is committed).
-- CI Node runtime: **Node 20**.
-- CI database runtime: **PostgreSQL 15**.
+- Package manager: npm (`package-lock.json` committed).
+- `package.json` Node engine: `>=20.9.0`.
+- Current CI Node: 20.
+- Current CI database: PostgreSQL 16.
 
-### Important runtime unknown
+## 2. Setup/install
 
-`package.json` does not declare an `engines.node` version. Node 20 is the version verified in CI; it should not be silently generalized to every deployment runtime until the actual Terranex deployment is inspected.
-
-## 2. Install
+Repository setup command in `AGENTS.md`:
 
 ```bash
-npm ci
+npm install
 ```
 
-This is the installation command used by current CI and is preferred for a lockfile-exact verification install.
+Exact CI install command:
 
-### Baseline result
+```bash
+npm ci --no-audit --no-fund
+```
 
-**PASS** on the verified baseline SHA.
+**Baseline CI result:** PASS — 482 packages added.
 
-Observed during CI:
-
-- 594 packages installed.
-- 595 packages audited.
-- npm reported 4 moderate severity vulnerabilities.
-
-The vulnerability warning is not currently a failing CI gate.
+Important: because CI uses `--no-audit`, the baseline run did **not** produce a verified npm vulnerability count.
 
 ## 3. Environment variables
 
-Application variable names represented by the repository:
+Application variable names represented by current source/configuration:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
@@ -46,17 +41,11 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
-The application accepts `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` with `NEXT_PUBLIC_SUPABASE_ANON_KEY` as the compatibility fallback for the public client key.
+The app prefers `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and accepts `NEXT_PUBLIC_SUPABASE_ANON_KEY` as a compatibility fallback. Values are intentionally omitted.
 
-Do not copy secrets or privileged database credentials into documentation or source control.
-
-For local development, use an ignored local environment file supported by Next.js, for example `.env.local`, populated from the authorized environment/configuration source.
-
-The DB test/operator scripts also consume PostgreSQL connection environment variables or a database URL. Their values are credentials and are intentionally not documented here.
+Database test/operator scripts consume PostgreSQL connection values from their execution environment. Never place privileged credentials in docs, commits, or command examples.
 
 ## 4. Development server
-
-Repository command:
 
 ```bash
 npm run dev
@@ -68,9 +57,9 @@ Equivalent script:
 next dev
 ```
 
-**Archaeology status:** repository-defined, but not started in this pass because no verified live Terranex Supabase target was available through the connected account. No browser-runtime claim is based on this command.
+**Discovery status:** defined by the repository but not started against a live Terranex backend in this pass because the currently connected Supabase account exposes no Terranex project.
 
-## 5. Production build and start
+## 5. Production build/start
 
 Build:
 
@@ -78,27 +67,27 @@ Build:
 npm run build
 ```
 
-Equivalent script:
+Equivalent:
 
 ```bash
 next build
 ```
 
-**Baseline:** PASS in current CI; 29 application routes compiled.
+**Baseline:** PASS. CI resolved Next.js 16.3.0 and compiled **30 Terranex application routes** plus framework `/_not-found`.
 
-Start a previously built application:
+Start a built app:
 
 ```bash
 npm run start
 ```
 
-Equivalent script:
+Equivalent:
 
 ```bash
 next start
 ```
 
-**Archaeology status for `start`:** repository-defined, not exercised against a live Terranex backend in this pass.
+**Discovery status for `start`:** defined but not exercised against a live Terranex backend.
 
 ## 6. Application validation
 
@@ -108,27 +97,33 @@ next start
 npm run lint
 ```
 
-Equivalent:
+Current script:
 
 ```bash
-eslint .
+eslint
 ```
 
 **Baseline:** PASS.
 
-### Unit/component/integration-style Vitest suite
+### Vitest
+
+```bash
+npm test
+```
+
+or equivalently:
 
 ```bash
 npm run test
 ```
 
-Equivalent configured command:
+Current script:
 
 ```bash
-vitest run --pool=threads --maxWorkers=1 --minWorkers=1
+vitest run
 ```
 
-**Baseline:** PASS — 52 test files, 714 tests.
+**Baseline:** PASS — Vitest 3.2.7; 52 test files; 714 tests.
 
 Watch mode:
 
@@ -136,170 +131,149 @@ Watch mode:
 npm run test:watch
 ```
 
-### Type checking
+Current script:
 
 ```bash
-npm run typecheck
+vitest watch
 ```
 
-Equivalent:
+### TypeScript
+
+Current CI executes TypeScript directly; there is no `typecheck` npm script:
 
 ```bash
-tsc --noEmit
+npx tsc --noEmit
 ```
 
 **Baseline:** PASS.
-
-### Repository convenience validation
-
-```bash
-npm run validate
-```
-
-Current definition:
-
-```text
-npm run lint && npm run test && npm run build
-```
-
-Important: `validate` currently **does not include** `typecheck` or database tests. To reproduce the full current CI quality surface, run them separately.
 
 ## 7. Database verification
 
 Current npm command:
 
 ```bash
-npm run test:db
+npm run db:test
 ```
 
-Equivalent script:
+Current script:
 
 ```bash
 bash scripts/db-test.sh
 ```
 
-**Baseline:** PASS in GitHub Actions using PostgreSQL 15.
+**Baseline:** PASS in GitHub Actions with PostgreSQL 16.
 
-The runner:
-
-1. creates/prepares its isolated test database context;
-2. applies all `supabase/migrations/*.sql` in order;
-3. runs the SQL verification files;
-4. runs database concurrency/race/replay/upgrade/backup/restore/smoke/isolation scripts;
-5. fails on migration/test errors.
-
-Final observed baseline message:
+The runner applies current migrations in order and executes SQL plus concurrency/replay/upgrade/backup-restore/smoke/isolation checks. Final observed baseline result:
 
 ```text
 Database migration replay and all SQL/concurrency verification suites passed.
 ```
 
-### DB shell
+### Database shell helper
 
-A repository shell helper exists at:
+```bash
+npm run db:shell
+```
+
+Current script:
 
 ```bash
 bash scripts/db-shell.sh
 ```
 
-There is **no current `npm run db:shell` script**.
+This is operator tooling, not a baseline CI check.
 
-### Documentation correction note
-
-`AGENTS.md` currently mentions `npm run db:test` and `npm run db:shell`. Those names are stale relative to `package.json`.
-
-The current executable sources of truth are:
-
-```bash
-npm run test:db
-bash scripts/db-shell.sh
-```
-
-## 8. R15 admission check
+## 8. R15 admission
 
 Repository command:
 
 ```bash
-npm run check:r15
+npm run r15:admission
 ```
 
-Equivalent:
+Current script:
 
 ```bash
 node scripts/check-r15-admission.mjs
 ```
 
-**Archaeology status:** command exists in the repository but was not required to establish the baseline lint/test/build/DB status and was not independently exercised in this pass. Its result must not be inferred from general CI success unless it is explicitly run.
+**Discovery status:** command is present but is not part of current `Greenfield CI` and was not independently executed during this archaeology pass. No result is inferred.
 
-## 9. Current CI command sequence
+## 9. Exact current CI sequence
 
-`.github/workflows/greenfield-ci.yml` currently verifies the application with:
+`.github/workflows/greenfield-ci.yml` triggers on push to `main`, pull requests targeting `main`, and manual dispatch.
+
+Application job:
 
 ```bash
-npm ci
+npm ci --no-audit --no-fund
 npm run lint
-npm run test
+npm test
 npm run build
-npm run typecheck
+npx tsc --noEmit
 ```
 
-and verifies the database independently with PostgreSQL 15 using:
+Database job uses PostgreSQL 16 and runs:
 
 ```bash
-npm run test:db
+npm run db:test
 ```
 
-At the archaeology baseline SHA, `Greenfield CI` run #454 (`32030212661`) completed successfully.
+Verified baseline run:
 
-## 10. Pilot/staging activation
+```text
+Greenfield CI #454
+Run ID: 32030212661
+SHA: 9488588f0c6fd1984a1c09769af480f85905c661
+Conclusion: success
+```
 
-`.github/workflows/pilot-activation.yml` is a **manual** workflow. Its safe defaults matter:
+## 10. Full baseline-equivalent validation sequence
+
+With an authorized isolated/test database target available, the current CI-equivalent checks are:
+
+```bash
+npm ci --no-audit --no-fund
+npm run lint
+npm test
+npm run build
+npx tsc --noEmit
+npm run db:test
+```
+
+There is no current `validate` npm script.
+
+## 11. Pilot/staging activation
+
+`.github/workflows/pilot-activation.yml` is manual and intentionally conservative:
 
 - inspection-first;
-- `apply_migrations` defaults to false;
+- migration application defaults to false;
+- explicit operator selection is required before migrations;
 - smoke verification defaults on;
-- database changes require explicit operator selection;
-- secrets are read from GitHub Actions secrets rather than committed as privileged values.
+- privileged credentials come from GitHub Actions secrets;
+- backup/checksum safeguards exist before explicit migration application.
 
-Do not treat the pilot workflow as an instruction to modify production during normal development/discovery.
+This archaeology pass did not invoke pilot activation, apply migrations, or write to production.
 
-This archaeology pass did not trigger pilot activation or any production migration.
-
-## 11. Recommended exact local/full validation sequence
-
-When a correctly configured isolated development/test database is available, the current repository's full baseline-equivalent verification is:
-
-```bash
-npm ci
-npm run lint
-npm run test
-npm run build
-npm run typecheck
-npm run test:db
-```
-
-This sequence mirrors the actual current CI surface more accurately than `npm run validate` alone.
-
-## 12. Commands not verified against live Terranex in this pass
-
-The following are valid repository commands/scripts, but their live-runtime behavior was not asserted here:
+## 12. Commands defined but not live-runtime verified in this pass
 
 ```bash
 npm run dev
 npm run start
 npm run test:watch
-npm run check:r15
-bash scripts/db-shell.sh
+npm run db:shell
+npm run r15:admission
 ```
 
-Reason: the currently connected Supabase/Vercel accounts do not expose a Terranex deployment/project, and discovery must not guess or write to an unidentified environment.
+Reason: no identified Terranex Supabase/Vercel live project was available through the currently connected accounts, and discovery must not guess a target environment.
 
-## 13. Safe-command rule
+## 13. Safety rule for future write/deploy commands
 
-Before any future command that can write data or deploy:
+Before any command that can alter data or deploy:
 
-1. identify the target environment explicitly;
-2. prove it is the intended non-production or approved target;
+1. identify the exact target environment;
+2. prove it is the intended approved target;
 3. preserve existing Git/local work;
-4. use read-only/validation commands first;
+4. run read-only/validation checks first;
 5. never expose credentials in logs, documentation, commits, or reports.
