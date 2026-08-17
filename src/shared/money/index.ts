@@ -36,10 +36,14 @@ const ARABIC_DIGITS: Record<string, string> = {
   '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
 };
 
-/** Currency minor-unit exponent (decimal places). Unknown currencies default
- * to 2 so the exact parser never silently truncates. */
+/** Currency minor-unit exponent (decimal places). Unsupported currencies fail
+ * closed so financial values can never be silently scaled with a guessed
+ * exponent. */
 export function currencyDecimals(currency: string): number {
-  return MONEY_CURRENCIES[currency] ?? 2;
+  const normalized = currency.trim().toUpperCase();
+  const decimals = MONEY_CURRENCIES[normalized];
+  if (decimals === undefined) throw new Error(`unsupported currency: ${normalized || '(empty)'}`);
+  return decimals;
 }
 
 function normalizeMoneyInput(value: string): string {
