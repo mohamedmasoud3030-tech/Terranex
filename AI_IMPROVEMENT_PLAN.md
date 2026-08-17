@@ -1,4 +1,4 @@
-# AI Improvement Plan — Terranex (2026-08-17)
+# AI Improvement Plan — Terranex (2026-08-18)
 
 Deduplicated, prioritized milestones. Recommended sequence below; each milestone defines the outcome, acceptance criteria, and verification. Status is maintained in `AI_PROJECT_STATUS.md`.
 
@@ -17,30 +17,34 @@ Deduplicated, prioritized milestones. Recommended sequence below; each milestone
 
 ## Priority 2 — business logic / core user outcomes
 
-### M3 — Intake copy made sector-honest (AD-05)
+### M3 — Intake copy made sector-honest (AD-05) ✅ VERIFIED COMPLETE
 - **Outcome:** `/intake` describes the three supported sectors accurately; project cards link to the correct sector landing page.
-- **Verification:** page renders in the running app (smoke), lint/typecheck/build, Vitest coverage of the copy change via an existing/added characterization test.
+- **Verification:** characterization tests, lint/typecheck/build, and PR CI passed.
 
-### M4 — Active-organization switcher (AD-04)
+### M4 — Active-organization switcher (AD-04) ✅ VERIFIED COMPLETE (code/CI)
 - **Outcome:** multi-org users choose which organization they operate on from the app header; all top-level org-scoped pages respect the choice; single-org users see no change.
-- **Fix:** `terranex_active_org` cookie + validated server helper + header `<select>` switcher; update Home, `/projects`, `/portfolios`, `/portfolios/new`, `/assets`, `/intake`, `/projects/new`; `create_organization` sets the cookie to the new org.
-- **Regression:** unit tests for the resolver (pure function), a component test for the switcher (cookie set + refresh), and form tests confirming the active org flows into portfolio/project creation.
-- **Verification:** `npm test`, lint, typecheck, build, running-app smoke.
+- **Fix:** `terranex_active_org` cookie + validated server helper + header `<select>` switcher; Home, `/projects`, `/portfolios`, `/portfolios/new`, `/assets`, `/intake`, `/projects/new`; `create_organization` sets the cookie to the new org.
+- **Regression:** resolver/component coverage passes. External multi-org browser journey remains to be verified against the pilot Supabase.
 
 ## Priority 3 — auth / UX / accessibility barriers
 
-### M5 — `/login` redirects authenticated users (AD-06)
+### M5 — `/login` redirects authenticated users (AD-06) ✅ VERIFIED COMPLETE
 - **Outcome:** signed-in users visiting `/login` land on the dashboard; anonymous flow unchanged.
-- **Regression:** component/server-wrapper test where possible; existing auth tests keep passing.
-- **Verification:** running-app smoke (anonymous 200, redirect logic unit-tested).
+- **Verification:** contract coverage + production-build anonymous smoke.
 
-### M6 — Arabic app-level error boundary + health endpoint (AD-07)
+### M6 — Arabic app-level error boundary + health endpoint (AD-07) ✅ VERIFIED COMPLETE
 - **Outcome:** unhandled errors inside the app shell show an Arabic recoverable state; `/api/health` answers `200 { status: 'ok' }` for deployment smoke.
-- **Verification:** build route table contains `/api/health`; curl smoke; `npm test`.
+- **Verification:** build route table, curl smoke, tests.
+
+### M7 — Secure password recovery ✅ VERIFIED COMPLETE (code/CI)
+- **Outcome:** a user can request a recovery email without exposing whether an account exists, exchange the Supabase PKCE recovery code for a session, and set a new password only from the verified recovery session.
+- **Fix:** `/forgot-password`, `/auth/recovery`, protected `/reset-password`, controlled callback destination, `private, no-store` callback redirects, and explicit proxy allowlist for only the recovery entry routes.
+- **Regression:** `tests/password-recovery.test.ts`, `tests/login-redirect.test.ts`, `tests/proxy-auth.test.ts`; Greenfield CI run `32067782245` passed app and database jobs before merge in PR #171.
+- **External acceptance still required:** verify the Terranex Supabase Auth Redirect URL configuration and execute a real recovery email journey. This connected session did not expose the Terranex Supabase project, so that environment-level step was not performed.
 
 ## Priority 4 — deferred / not scheduled (kept visible)
 
-- Password reset / MFA / public sign-up / invitations — pilot provisioning is documented; owner decision on identity features comes with pilot feedback. NOT STARTED.
+- MFA / public sign-up / invitations — pilot provisioning is documented; owner decision on identity features comes with pilot feedback. NOT STARTED.
 - PWA/offline/install — post-pilot. NOT STARTED.
 - Email/SMS notifications, jobs/queues, payment/bank APIs — only when a real workflow proves the need. NOT STARTED.
 - English/LTR locale — current product is Arabic-first by design. NOT STARTED.
@@ -49,4 +53,4 @@ Deduplicated, prioritized milestones. Recommended sequence below; each milestone
 
 ## Recommended sequence and why
 
-M1 first: it restores the product's primary demo/presentation vehicle and its failure mode (broken seed on fresh schema) is the only confirmed P1 left. M2 is a one-line CI hardening. M3–M4 then fix the two highest-impact user-facing correctness gaps (misleading copy, wrong-org data entry). M5–M6 are small UX/ops polish that complete the "finished product" experience for the pilot. Everything is safe, reversible, and verified against the existing gates without touching the shared Supabase project or production.
+M1–M7 are now implemented at code/CI level except M2, which remains externally blocked by GitHub workflow-write permission. The next engineering work should not expand R15 or speculative platform features. First close the two environment-level pilot checks: (1) verify the Terranex Supabase recovery redirect + real recovery email journey, and (2) verify a multi-organization browser switch against the pilot environment. Then use actual pilot feedback to decide whether MFA/invitations or PWA/offline deserves the next milestone. R15 remains fail-closed until BD-001…BD-012 are decided.

@@ -1,7 +1,7 @@
 # AI Project Status — Terranex (live)
 
-**Last updated:** 2026-08-17
-**Branch:** `arena/01a0112b-terranex`
+**Last updated:** 2026-08-18
+**Branch:** `main`
 **Evidence labels:** VERIFIED COMPLETE · IMPLEMENTED BUT NOT VERIFIED · BLOCKED BY OWNER/EXTERNAL ACTION · NOT STARTED
 
 ## Baseline verification (run on this branch, before any change)
@@ -29,7 +29,7 @@
 
 ## Milestones — this cycle
 
-**GitHub CI on the PR branch** (`arena/01a0112b-terranex`, PR #170): run `32065958563` — `app` job (install, lint, 60 Vitest files / 745 tests, production build, typecheck) and `database` job (migration replay + suites) both **success**. VERIFIED COMPLETE.
+**GitHub CI on PR #170** (`arena/01a0112b-terranex`): run `32065958563` — `app` job (install, lint, 60 Vitest files / 745 tests, production build, typecheck) and `database` job (migration replay + suites) both **success**. VERIFIED COMPLETE.
 
 ### M1 — Demo showcase seed: policy-safety + R4 payment boundary compatible
 Status: **VERIFIED COMPLETE**
@@ -60,12 +60,21 @@ Status: **VERIFIED COMPLETE**
 - `src/app/(app)/error.tsx`: Arabic recoverable state, no raw error exposure. `/api/health` returns `200 {"status":"ok"}`, excluded from the session proxy.
 - Evidence: runtime smoke `curl /api/health` → 200 without session; security headers intact; `tests/app-error-boundary.test.tsx` + `tests/login-redirect.test.ts` pass; build route table contains `/api/health`.
 
+### M7 — Secure password recovery
+Status: **VERIFIED COMPLETE** at code/CI level; **external Supabase redirect configuration and real-email journey are not yet verified**.
+- `/login` now links to `/forgot-password`; the request path uses `resetPasswordForEmail` with a controlled recovery callback and account-enumeration-safe success copy.
+- `/auth/recovery` exchanges the one-time PKCE code for a cookie-backed session, sets `Cache-Control: private, no-store`, and redirects only to `/reset-password`; invalid/expired callbacks return to the request page.
+- `/reset-password` stays private, re-verifies the authenticated user, validates password confirmation, and updates only the current user via `auth.updateUser`.
+- Proxy public routes are explicitly limited to `/login`, `/forgot-password`, and `/auth/recovery`; no DB/RLS/finance/R15 behavior changed.
+- Evidence: PR #171 merged to `main` as `8c9fd998a78b7d7fbf1f78e2ed8c1d0808bcff8d`; Greenfield CI run `32067782245` on the final PR head passed app gates and PostgreSQL replay/two-tenant isolation. Regression coverage: `tests/password-recovery.test.ts`, `tests/login-redirect.test.ts`, `tests/proxy-auth.test.ts`.
+
 ## Deferred items
-Password reset/MFA/sign-up/invites, PWA/offline, notifications, jobs/queues, payment APIs, English locale: **NOT STARTED** (see plan).
+MFA/sign-up/invites, PWA/offline, notifications, jobs/queues, payment APIs, English locale: **NOT STARTED** (see plan).
 R15 investor economics: **BLOCKED BY OWNER/EXTERNAL ACTION** — BD-001…BD-012 OPEN; `r15:admission` exit 1 (correct).
 
 ## Honest limits
 
-- No authenticated browser journeys were run against the shared/pilot Supabase project (no credentials used; repo policy forbids unauthorized access). Multi-org switching and the login redirect were verified at unit/contract/runtime-anonymous level only.
-- All database verification ran on a disposable local PostgreSQL; nothing was written to the pilot project.
-- Production deployment, customer UAT, and production restore are not claimed.
+- No authenticated browser journeys were run against the shared/pilot Supabase project (no credentials used; repo policy forbids unauthorized access). Multi-org switching, login redirect, and password recovery email delivery remain unverified against that external environment.
+- The Terranex Supabase project was not available through the connected Supabase account in this execution, so Auth Redirect URLs could not be inspected or changed. A production recovery journey must not be claimed until that external configuration is verified.
+- All database verification ran on disposable CI/local PostgreSQL; nothing was written to the pilot project.
+- Vercel's connected Terranex project did not expose a deployment for PR #171 or merge SHA `8c9fd998...` during post-merge verification; production deployment and customer UAT are therefore not claimed.
