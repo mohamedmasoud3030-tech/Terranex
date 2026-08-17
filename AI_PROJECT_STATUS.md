@@ -29,6 +29,8 @@
 
 ## Milestones — this cycle
 
+**GitHub CI on the PR branch** (`arena/01a0112b-terranex`, PR #170): run `32065958563` — `app` job (install, lint, 60 Vitest files / 745 tests, production build, typecheck) and `database` job (migration replay + suites) both **success**. VERIFIED COMPLETE.
+
 ### M1 — Demo showcase seed: policy-safety + R4 payment boundary compatible
 Status: **VERIFIED COMPLETE**
 - Fixed two real defects found by executing the seed on a fresh schema: (1) policy-gated commands (`attach_contribution_cash`, S5 allocation/distribution) failed because the demo org had no `policy_authority` rows; (2) the legacy direct `pay_cost_obligation` is now a fail-closed tombstone. The seed now activates synthetic demo policy **for the demo org only** and posts its three supplier payments through the production maker/checker surface (`prepare_cost_payment` maker + `approve_cost_payment` OWNER checker). Journal/cash effects identical.
