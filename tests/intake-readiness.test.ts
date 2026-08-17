@@ -357,3 +357,46 @@ describe('intake readiness derivation', () => {
     expect(result.sections.find((section) => section.code === 'DS13_DEVELOPMENT')?.status).toBe('MISSING');
   });
 });
+
+describe('intake readiness is sector-aware', () => {
+  it('keeps real-estate property requirements for REAL_ESTATE projects', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      sector: 'REAL_ESTATE',
+    }));
+    expect(result.sections.find((section) => section.code === 'DS11_PROPERTY')?.status).toBe('MISSING');
+    expect(result.groups.some((group) => group.id === 'PROPERTY')).toBe(true);
+  });
+
+  it('drops real-estate property requirements for AGRICULTURE projects', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      sector: 'AGRICULTURE',
+    }));
+    expect(result.sections.some((section) => section.code === 'DS11_PROPERTY')).toBe(false);
+    expect(result.sections.some((section) => section.code === 'DS12_ACQUISITION')).toBe(false);
+    expect(result.sections.some((section) => section.code === 'DS13_DEVELOPMENT')).toBe(false);
+    expect(result.groups.some((group) => group.id === 'PROPERTY')).toBe(false);
+  });
+
+  it('drops real-estate property requirements for LIVESTOCK projects', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      sector: 'LIVESTOCK',
+    }));
+    expect(result.sections.some((section) => section.code === 'DS11_PROPERTY')).toBe(false);
+    expect(result.groups.some((group) => group.id === 'PROPERTY')).toBe(false);
+  });
+
+  it('treats a legacy snapshot without a sector as real estate (backward compatible)', () => {
+    const result = evaluateIntakeReadiness(snapshot({
+      organizationName: 'أ',
+      projectName: 'ب',
+      sector: null,
+    }));
+    expect(result.sections.find((section) => section.code === 'DS11_PROPERTY')?.status).toBe('MISSING');
+  });
+});

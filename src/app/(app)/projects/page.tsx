@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getOrganizations } from '@/features/organizations/queries';
+import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,7 @@ const SECTOR_LABEL = {
 } as const;
 
 export default async function ProjectsPage() {
-  const organizations = await getOrganizations();
-  const organization = organizations[0];
+  const { organization } = await getActiveOrganization();
 
   if (!organization) {
     return (

@@ -4,6 +4,23 @@
 -- It intentionally runs through the production S0-S7 command surface instead
 -- of inserting financial facts directly. Re-running is a no-op once the
 -- project internal_reference exists.
+--
+-- Policy-safety compatibility (pre-owner policy boundary, migration
+-- 20260816062000): contribution-cash attachment and the S5 allocation/
+-- distribution commands fail closed unless the organization has approved
+-- policy_authority rows, and the registry ships EMPTY by design. This seed is
+-- an explicitly synthetic fixture, so — for the DEMO organization only — it
+-- activates the two policy scopes with clearly synthetic demo references
+-- (see DEMO-SHOWCASE-POLICY below). Real organizations always start with an
+-- empty registry and remain policy-inert; this seed never writes policy rows
+-- for any other tenant.
+--
+-- R4 payment boundary (migration 20260815034000): the legacy direct
+-- `pay_cost_obligation` command is a fail-closed tombstone. The seed therefore
+-- posts its three supplier payments through the production maker/checker
+-- surface: `prepare_cost_payment` (maker) + `approve_cost_payment` (OWNER
+-- checker). The journal and cash effects are identical to the historical
+-- direct payment.
 
 create or replace function pg_temp.terranex_demo_run(p_user uuid, p_sql text)
 returns void language plpgsql as $$
@@ -42,6 +59,7 @@ declare
   v_parcel_a uuid;
   v_phase uuid;
   v_milestone uuid;
+  v_pay_prop uuid;
   v_acq_obligation uuid;
   v_closing_obligation uuid;
   v_dev_obligation uuid;
@@ -113,6 +131,21 @@ begin
     v_org, v_checker, 'DEMO_MEMBER_BOOTSTRAPPED', 'organization', v_org,
     jsonb_build_object('purpose','persistent_showcase','role','MEMBER')
   );
+
+  -- Synthetic demo policy activation (DEMO ORGANIZATION ONLY). The showcase
+  -- narrative uses the 60/40 demo agreement, contributed capital and a
+  -- distribution, so the two policy-dependent scopes must be explicitly
+  -- approved for this synthetic fixture. The policy_version/evidence_reference
+  -- are demo labels, not a real company policy, and no other organization is
+  -- ever touched. Real tenants start with an empty policy_authority registry.
+  insert into public.policy_authority(
+    organization_id, scope, status, policy_version, evidence_reference, approved_by
+  ) values
+    (v_org, 'CAPITAL_CONTRIBUTION', 'APPROVED', 'DEMO-SHOWCASE-POLICY-2026-01',
+     'DEMO-AGREEMENT-2026-001 (synthetic demo fixture)', v_checker),
+    (v_org, 'INVESTOR_ECONOMICS', 'APPROVED', 'DEMO-SHOWCASE-POLICY-2026-01',
+     'DEMO-AGREEMENT-2026-001 (synthetic demo fixture)', v_checker)
+  on conflict (organization_id, scope) do nothing;
 
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.create_investment_project(%L,'مشروع واحة سفنكس – المرحلة الأولى (DEMO)',
@@ -343,9 +376,14 @@ begin
     v_org, v_acq_obligation, v_asset_a, v_parcel_a));
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.authorize_cost_obligation(%L,%L,'demo-authorize-acq-001')$$, v_org, v_acq_obligation));
-  perform pg_temp.terranex_demo_run(v_checker, format(
-    $$select public.pay_cost_obligation(%L,%L,%L,1800000000,date '2026-07-10','demo-pay-acq-001')$$,
+  perform pg_temp.terranex_demo_run(v_maker, format(
+    $$select public.prepare_cost_payment(%L,%L,%L,1800000000,date '2026-07-10','demo-prepare-acq-001')$$,
     v_org, v_acq_obligation, v_cash));
+  select id into v_pay_prop from public.cost_payment_proposals
+  where organization_id = v_org and idempotency_key = 'demo-prepare-acq-001';
+  perform pg_temp.terranex_demo_run(v_checker, format(
+    $$select public.approve_cost_payment(%L,%L,'demo-approve-acq-001')$$,
+    v_org, v_pay_prop));
 
   perform pg_temp.terranex_demo_run(v_maker, format(
     $$select public.classify_property_cost(%L,%L,%L,%L,null,'ACQUISITION',
@@ -353,9 +391,14 @@ begin
     v_org, v_closing_obligation, v_asset_a, v_parcel_a));
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.authorize_cost_obligation(%L,%L,'demo-authorize-closing-001')$$, v_org, v_closing_obligation));
-  perform pg_temp.terranex_demo_run(v_checker, format(
-    $$select public.pay_cost_obligation(%L,%L,%L,90000000,date '2026-07-10','demo-pay-closing-001')$$,
+  perform pg_temp.terranex_demo_run(v_maker, format(
+    $$select public.prepare_cost_payment(%L,%L,%L,90000000,date '2026-07-10','demo-prepare-closing-001')$$,
     v_org, v_closing_obligation, v_cash));
+  select id into v_pay_prop from public.cost_payment_proposals
+  where organization_id = v_org and idempotency_key = 'demo-prepare-closing-001';
+  perform pg_temp.terranex_demo_run(v_checker, format(
+    $$select public.approve_cost_payment(%L,%L,'demo-approve-closing-001')$$,
+    v_org, v_pay_prop));
 
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.transition_development_phase(%L,%L,'PLANNED','ACTIVE','بدء أعمال تجهيز الموقع','demo-phase-active-001')$$,
@@ -374,9 +417,14 @@ begin
     v_org, v_dev_obligation, v_asset_a, v_parcel_a, v_phase));
   perform pg_temp.terranex_demo_run(v_checker, format(
     $$select public.authorize_cost_obligation(%L,%L,'demo-authorize-site-001')$$, v_org, v_dev_obligation));
-  perform pg_temp.terranex_demo_run(v_checker, format(
-    $$select public.pay_cost_obligation(%L,%L,%L,610000000,date '2026-07-20','demo-pay-site-001')$$,
+  perform pg_temp.terranex_demo_run(v_maker, format(
+    $$select public.prepare_cost_payment(%L,%L,%L,610000000,date '2026-07-20','demo-prepare-site-001')$$,
     v_org, v_dev_obligation, v_cash));
+  select id into v_pay_prop from public.cost_payment_proposals
+  where organization_id = v_org and idempotency_key = 'demo-prepare-site-001';
+  perform pg_temp.terranex_demo_run(v_checker, format(
+    $$select public.approve_cost_payment(%L,%L,'demo-approve-site-001')$$,
+    v_org, v_pay_prop));
 
   perform pg_temp.terranex_demo_run(v_maker, format(
     $$select public.confirm_real_estate_event(%L,%L,%L,%L,%L,%L,'DEVELOPMENT_PROGRESS',
