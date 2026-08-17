@@ -41,6 +41,7 @@ import {
 import type { ConditionalSectionCode } from '@/features/intake/schema';
 import type { IntakeSection, SectionStatus } from '@/features/intake/readiness';
 import { formatMinorUnits } from '@/shared/money';
+import { newCommandNonce } from '@/shared/idempotency';
 import { CreatePartyForm, AddParticipantForm, AgreementDraftForm, ActivateVersionButton } from '../terms/forms';
 import { CapitalCallForm, ContributionForm } from '../funding/forms';
 import { CashAccountForm, BankImportForm } from '../cash/forms';
@@ -486,11 +487,21 @@ export default async function IntakePage({
               ))}
             </ul>
           )}
-          <CashAccountForm organizationId={organizationId} projectId={projectId} currency={project.reporting_currency} />
+          <CashAccountForm
+            organizationId={organizationId}
+            projectId={projectId}
+            currency={project.reporting_currency}
+            commandNonce={newCommandNonce()}
+          />
         </SectionCard>
         <SectionCard item={byCode.get('DS16_BANK_STATEMENTS')!}>
           {cashAccounts.length > 0 && (
-            <BankImportForm organizationId={organizationId} projectId={projectId} cashAccounts={cashAccounts} />
+            <BankImportForm
+              organizationId={organizationId}
+              projectId={projectId}
+              cashAccounts={cashAccounts}
+              commandNonce={newCommandNonce()}
+            />
           )}
           <ApplicabilityBlock
             organizationId={organizationId}
