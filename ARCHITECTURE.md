@@ -30,12 +30,12 @@ Current `package.json` declares:
 - Node engine: `>=20.9.0`.
 - Next.js: `^16.0.0` (baseline CI resolved Next.js `16.3.0`).
 - React / React DOM: `^19.2.0`.
-- TypeScript: `^5`.
+- TypeScript: `^5.8.0`.
 - Zod: `^4.1.0`.
 - `@supabase/supabase-js`: `^2.57.0`.
 - `@supabase/ssr`: `^0.8.0`.
-- ESLint 9 / `eslint-config-next` `^16.0.0`.
-- Vitest: `^3.2.4` (baseline CI ran Vitest `3.2.7`).
+- ESLint: `^9.39.5`; `eslint-config-next`: `^16.3.0`.
+- Vitest: `^3.2.0` (baseline CI ran Vitest `3.2.7`).
 - Testing Library + jsdom.
 - npm with committed `package-lock.json`.
 
@@ -194,7 +194,7 @@ Current ordered migrations extend the foundation across:
 - pre-owner policy safety;
 - cash-account idempotency.
 
-The complete migration chain replayed successfully in the verified PostgreSQL 16 CI database job.
+The complete migration chain replayed successfully in the verified PostgreSQL 16 baseline CI database job.
 
 ### Tenant boundary
 
@@ -297,16 +297,18 @@ Application job:
 ```bash
 npm ci --no-audit --no-fund
 npm run lint
-npm test
+npm run test
 npm run build
-npx tsc --noEmit
+npm run typecheck
 ```
 
 Database job:
 
 - PostgreSQL 16 service.
-- `npm run db:test`.
+- `bash ./scripts/db-test.sh`.
 - Full migration replay plus SQL/concurrency/replay/upgrade/backup-restore/smoke/isolation verification.
+
+`package.json` also exposes the equivalent operator convenience command `npm run db:test`.
 
 ### Pilot activation
 
