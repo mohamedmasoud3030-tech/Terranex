@@ -1,7 +1,8 @@
 'use client';
-import { useActionState, useState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import { createProject } from '@/features/projects/actions';
 import { SECTORS } from '@/features/projects/schema';
+import { commandIdempotencyKey } from '@/shared/idempotency';
 
 const SECTOR_LABEL: Record<(typeof SECTORS)[number], string> = {
   REAL_ESTATE: 'عقارات',
@@ -15,9 +16,22 @@ const SECTOR_DESCRIPTION: Record<(typeof SECTORS)[number], string> = {
   LIVESTOCK: 'سيُفتح المشروع في مساحة الثروة الحيوانية بعد إنشائه.',
 };
 
-export default function NewProjectForm({ organizationId }: Readonly<{ organizationId: string }>) {
-  const [state, action, pending] = useActionState(createProject, { error: undefined });
+type NewProjectFormProps = Readonly<{
+  organizationId: string;
+  commandNonce: string;
+}>;
+
+export default function NewProjectForm({ organizationId, commandNonce }: NewProjectFormProps) {
+  const [state, action, pending] = useActionState(createProject, {
+    error: undefined,
+    successCount: 0,
+  });
   const [sector, setSector] = useState<(typeof SECTORS)[number]>('REAL_ESTATE');
+  const idempotencyKey = useMemo(
+    () => commandIdempotencyKey('project-create', commandNonce, state.successCount ?? 0),
+    [commandNonce, state.successCount],
+  );
+
   return (
     <section className="card stack" style={{ maxWidth: 720 }}>
       <div>
@@ -26,6 +40,7 @@ export default function NewProjectForm({ organizationId }: Readonly<{ organizati
       </div>
       <form action={action} className="stack">
         <input type="hidden" name="organizationId" value={organizationId} />
+        <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <fieldset className="stack">
           <legend>القطاع</legend>
           <div className="form-grid">
