@@ -3,6 +3,12 @@ import { createClient } from '@/shared/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+function noStoreRedirect(url: URL) {
+  const response = NextResponse.redirect(url);
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
 
@@ -14,7 +20,7 @@ export async function GET(request: NextRequest) {
       const target = request.nextUrl.clone();
       target.pathname = '/reset-password';
       target.search = '';
-      return NextResponse.redirect(target);
+      return noStoreRedirect(target);
     }
   }
 
@@ -22,5 +28,5 @@ export async function GET(request: NextRequest) {
   retry.pathname = '/forgot-password';
   retry.search = '';
   retry.searchParams.set('recovery_error', '1');
-  return NextResponse.redirect(retry);
+  return noStoreRedirect(retry);
 }
