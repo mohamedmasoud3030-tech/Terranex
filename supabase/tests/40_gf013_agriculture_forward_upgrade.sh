@@ -46,7 +46,9 @@ sed 's/create role authenticated nologin; create role anon nologin;//' \
 
 # Pre-GF-013 boundary: every migration before the GF-013 family. This is a
 # historical boundary test, so every later migration (including same-day
-# recovery/hardening migrations) must stay out of the fixture.
+# recovery/hardening migrations) must stay out of the fixture. The cutoff
+# therefore excludes later families such as 20260814*.sql and every newer
+# migration name without requiring an ever-growing skip list.
 for file in "$ROOT"/supabase/migrations/*.sql; do
   base="$(basename "$file")"
   [[ "$base" < "20260813000900_sector_aware_project.sql" ]] || continue
