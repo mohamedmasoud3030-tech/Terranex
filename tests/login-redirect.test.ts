@@ -15,10 +15,14 @@ describe('login route session handling', () => {
     expect(loginForm).toContain('useActionState(signIn');
     expect(loginForm).toContain('سجّل الدخول للوصول إلى منظمة الاستثمار ومشاريعها.');
     expect(loginForm).toContain('autoComplete="current-password"');
+    expect(loginForm).toContain('href="/forgot-password"');
   });
 
-  it('excludes the public health probe from the session proxy', () => {
+  it('keeps only the intended anonymous routes public', () => {
+    expect(proxy).toContain("pathname === '/login'");
+    expect(proxy).toContain("pathname === '/forgot-password'");
+    expect(proxy).toContain("pathname === '/auth/recovery'");
+    expect(proxy).toContain('if (!user && !isPublicAuthRoute)');
     expect(proxy).toContain('api/health');
-    expect(proxy).toContain("pathname !== '/login'");
   });
 });
