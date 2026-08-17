@@ -187,11 +187,8 @@ describe('GF-015 migration contract', () => {
     expect(migration).toContain('create or replace function public.create_input_item');
     expect(migration).toContain('create or replace function public.create_input_lot');
     expect(migration).toContain('create or replace function public.record_input_application');
-    // Exactly three security-definer commands, and no fourth write path.
     expect(migration.match(/^security definer$/gm)?.length).toBe(3);
     expect(migration.match(/^create or replace function public\.\w+\($/gm)?.length).toBe(3);
-    // Every function this migration defines — the three commands and
-    // every guard trigger — pins its search_path.
     const definedFunctions = migration.match(/create or replace function public\.\w+/g) ?? [];
     const pinnedSearchPaths = migration.match(/set search_path\s*=\s*pg_catalog\s*,\s*public/g) ?? [];
     expect(pinnedSearchPaths.length).toBe(definedFunctions.length);
@@ -276,8 +273,6 @@ describe('GF-015 migration contract', () => {
     }
     expect(migration).not.toMatch(/insert into public\.(journal_batches|journal_lines|cost_obligations|project_payments|s5_distributions|accounting_periods)/);
     expect(migration).not.toMatch(/create table public\.(inventory_movements|storage_locations|harvest_events|harvest_lots)/);
-    // IAS 41 may only appear in the deferral commentary, never in
-    // executable SQL.
     const executable = migration
       .split('\n')
       .filter((line) => !line.trimStart().startsWith('--'))
@@ -347,25 +342,27 @@ describe('GF-015 database verification coverage', () => {
   });
 
   it('constructs the forward-upgrade fixture at the real pre-GF-015 boundary', () => {
-    // The skip list excludes the GF-015 family and every later family
-    // (GF-016/GF-017/GF-018) so a later migration is never applied before
-    // GF-015's own prerequisites.
     expect(upgradeTest).toContain('20260814001200*.sql|20260814001300*.sql|20260814001400*.sql|20260814001500*.sql|20260814001600*.sql|20260815*.sql|20260816*.sql) continue ;;');
-    // Guard against the GF-014 defect: the skip list must not remove a
-    // prerequisite, so the fixture asserts a minimum applied count.
     expect(upgradeTest).toContain('the skip list is too broad');
     expect(upgradeTest).toContain('field_activities where id');
     expect(upgradeTest).toContain('crop_cycle_field_assignments where id');
     expect(upgradeTest).toContain('sector = \'REAL_ESTATE\'');
   });
 
-  it('keeps every earlier forward-upgrade fixture excluding the GF-015 family', () => {
+  it('keeps historical forward-upgrade fixtures pinned to their real stage boundaries', () => {
+    for (const [file, allowlist] of [
+      ['supabase/tests/09_s3_forward_upgrade.sh', 'pre_s3_migrations=('],
+      ['supabase/tests/15_s4_forward_upgrade.sh', 'merged_s3_migrations=('],
+      ['supabase/tests/18_s6_forward_upgrade.sh', 'merged_s4_migrations=('],
+      ['supabase/tests/22_s5_forward_upgrade.sh', 'pre_s5_migrations=('],
+      ['supabase/tests/25_s7_forward_upgrade.sh', 'pre_s7_migrations=('],
+    ] as const) {
+      const source = readFileSync(file, 'utf8');
+      expect(source).toContain(allowlist);
+      expect(source).not.toContain('for file in "$ROOT"/supabase/migrations/*.sql; do');
+    }
+
     for (const file of [
-      'supabase/tests/09_s3_forward_upgrade.sh',
-      'supabase/tests/15_s4_forward_upgrade.sh',
-      'supabase/tests/18_s6_forward_upgrade.sh',
-      'supabase/tests/22_s5_forward_upgrade.sh',
-      'supabase/tests/25_s7_forward_upgrade.sh',
       'supabase/tests/40_gf013_agriculture_forward_upgrade.sh',
       'supabase/tests/43_gf014_field_activity_forward_upgrade.sh',
     ]) {
@@ -417,14 +414,10 @@ describe('GF-015 application layer', () => {
   });
 
   it('reports natural-key collisions as domain errors instead of leaking constraint names', () => {
-    // The commands pre-check the natural keys so a duplicate definition
-    // surfaces an explainable message rather than a raw unique violation.
     expect(migration).toContain('input item already exists for this project and category');
     expect(migration).toContain('input lot reference already exists for this input item');
     expect(actions).toContain('يوجد مدخل بنفس الاسم والفئة في هذا المشروع.');
     expect(actions).toContain('مرجع التشغيلة مستخدم بالفعل لهذا المدخل.');
-    // The pre-check must run after the idempotency replay lookup, so a
-    // genuine retry still returns the original row instead of erroring.
     const itemFn = migration.slice(migration.indexOf('function public.create_input_item'));
     const body = itemFn.slice(0, itemFn.indexOf('$$ language plpgsql'));
     expect(body.indexOf('return v_existing.id')).toBeLessThan(body.indexOf('input item already exists'));
@@ -468,7 +461,6 @@ describe('GF-015 workspace UI', () => {
     expect(forms).toContain('inputCategoryForActivity');
     expect(forms).toContain('l.input_item_id === item?.id');
     expect(forms).toContain('l.expires_on >= activity.activity_date');
-    // The six identifiers the activity already knows are shown, not asked for.
     expect(forms).toContain('النشاط يحدد المشروع ودورة المحصول والحقل والتخصيص تلقائيًا');
     expect(forms).not.toContain('name="cropCycleId"\n          required');
   });
@@ -496,7 +488,6 @@ describe('GF-015 workspace UI', () => {
     expect(forms).toMatch(/AgricultureSaleForm/);
     expect(actions).toMatch(/recordHarvestEvent/);
     expect(actions).toMatch(/createAgricultureSale/);
-    // Livestock, purchasing and warehouse ERP remain outside Agriculture scope.
     expect(page).not.toMatch(/ماشية|IAS 41|أمر شراء|إدارة مستودعات/);
     expect(forms).not.toMatch(/livestock|warehouse|purchaseOrder|createInvoice/i);
     expect(actions).not.toMatch(/createInvoice|createBuyer|createPurchaseOrder/i);
