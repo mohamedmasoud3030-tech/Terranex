@@ -12,6 +12,7 @@ import {
   getProjectCapitalPosition,
 } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import { CapitalCallForm, ContributionForm } from './forms';
 
@@ -34,6 +35,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
   const commitments = activeVersion ? await getCommitments(activeVersion.id) : [];
   const partnerPositions = activeVersion ? await getPartnerCapitalPositions(activeVersion.id) : [];
   const participantName = new Map(participants.map((participant) => [participant.id, participant.parties.legal_name]));
+  const capitalCallCommandNonce = newCommandNonce();
+  const contributionCommandNonce = newCommandNonce();
 
   if (!activeVersion) {
     return (
@@ -103,6 +106,7 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           currency={project.reporting_currency}
           participants={participants}
           commitments={commitments}
+          serverNonce={capitalCallCommandNonce}
         />
       </section>
 
@@ -147,6 +151,7 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           calls={calls}
           lines={lines}
           participants={participants}
+          serverNonce={contributionCommandNonce}
         />
       </section>
 

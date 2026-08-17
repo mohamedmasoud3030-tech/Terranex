@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/shared/supabase/server';
 import type { ActionState } from '@/features/auth/actions';
+import { commandFailureState, commandSuccessState } from '@/shared/idempotency';
 import { parseMajorUnitsToMinor } from '@/shared/money';
 import {
   activateVersionSchema,
@@ -15,6 +16,10 @@ import {
 
 function fail(message: string): ActionState {
   return { error: message };
+}
+
+function commandFail(prev: ActionState, message: string): ActionState {
+  return commandFailureState(prev, message);
 }
 
 function refreshProject(projectId?: string) {
@@ -37,6 +42,15 @@ function domainError(message: string | undefined, fallback: string): ActionState
     return fail('تعديل اتفاقية مفعّلة غير متاح في هذه المرحلة. النسخة الحالية تظل هي الحاكمة.');
   }
   return fail(fallback);
+}
+
+function commandDomainError(
+  prev: ActionState,
+  message: string | undefined,
+  fallback: string,
+): ActionState {
+  const resolved = domainError(message, fallback);
+  return commandFail(prev, resolved.error ?? fallback);
 }
 
 export async function createParty(_: ActionState, form: FormData): Promise<ActionState> {
@@ -75,7 +89,7 @@ export async function addParticipant(_: ActionState, form: FormData): Promise<Ac
   return {};
 }
 
-export async function createAgreementDraft(_: ActionState, form: FormData): Promise<ActionState> {
+export async function createAgreementDraft(prev: ActionState, form: FormData): Promise<ActionState> {
   const organizationId = String(form.get('organizationId') || '');
   const projectId = String(form.get('projectId') || '');
   const effectiveDate = String(form.get('effectiveDate') || '');
@@ -93,7 +107,9 @@ export async function createAgreementDraft(_: ActionState, form: FormData): Prom
       commitmentAmount: commitmentAmounts[i] ?? '',
     })),
   });
-  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات الاتفاقية غير صحيحة');
+  if (!parsed.success) {
+    return commandFail(prev, parsed.error.issues[0]?.message ?? 'بيانات الاتفاقية غير صحيحة');
+  }
 
   const commitments = parsed.data.participants.map((participant) =>
     parseMajorUnitsToMinor(participant.commitmentAmount, 'EGP'),
@@ -107,9 +123,11 @@ export async function createAgreementDraft(_: ActionState, form: FormData): Prom
     p_commitments: commitments,
     p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return domainError(error.message, 'تعذر حفظ مسودة الاتفاقية. راجع الالتزامات والمشاركين.');
+  if (error) {
+    return commandDomainError(prev, error.message, 'تعذر حفظ مسودة الاتفاقية. راجع الالتزامات والمشاركين.');
+  }
   refreshProject(parsed.data.projectId);
-  return {};
+  return commandSuccessState(prev);
 }
 
 export async function activateAgreementVersion(_: ActionState, form: FormData): Promise<ActionState> {
@@ -128,7 +146,7 @@ export async function activateAgreementVersion(_: ActionState, form: FormData): 
   return {};
 }
 
-export async function createCapitalCall(_: ActionState, form: FormData): Promise<ActionState> {
+export async function createCapitalCall(prev: ActionState, form: FormData): Promise<ActionState> {
   const organizationId = String(form.get('organizationId') || '');
   const projectId = String(form.get('projectId') || '');
   const agreementVersionId = String(form.get('agreementVersionId') || '');
@@ -147,7 +165,9 @@ export async function createCapitalCall(_: ActionState, form: FormData): Promise
     idempotencyKey,
     lines: participantIds.map((participantId, i) => ({ participantId, amount: amounts[i] ?? '' })),
   });
-  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات طلب رأس المال غير صحيحة');
+  if (!parsed.success) {
+    return commandFail(prev, parsed.error.issues[0]?.message ?? 'بيانات طلب رأس المال غير صحيحة');
+  }
 
   const minorAmounts = parsed.data.lines.map((line) => parseMajorUnitsToMinor(line.amount, 'EGP'));
   const supabase = await createClient();
@@ -161,12 +181,14 @@ export async function createCapitalCall(_: ActionState, form: FormData): Promise
     p_amounts: minorAmounts,
     p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return domainError(error.message, 'تعذر إصدار طلب رأس المال. تحقق من الالتزامات وحاول مجددًا.');
+  if (error) {
+    return commandDomainError(prev, error.message, 'تعذر إصدار طلب رأس المال. تحقق من الالتزامات وحاول مجددًا.');
+  }
   refreshProject(parsed.data.projectId);
-  return {};
+  return commandSuccessState(prev);
 }
 
-export async function recordContribution(_: ActionState, form: FormData): Promise<ActionState> {
+export async function recordContribution(prev: ActionState, form: FormData): Promise<ActionState> {
   const parsed = contributionSchema.safeParse({
     organizationId: form.get('organizationId'),
     projectId: form.get('projectId'),
@@ -178,7 +200,9 @@ export async function recordContribution(_: ActionState, form: FormData): Promis
     occurredOn: form.get('occurredOn'),
     idempotencyKey: form.get('idempotencyKey'),
   });
-  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'بيانات المساهمة غير صحيحة');
+  if (!parsed.success) {
+    return commandFail(prev, parsed.error.issues[0]?.message ?? 'بيانات المساهمة غير صحيحة');
+  }
 
   const minorAmount = parseMajorUnitsToMinor(parsed.data.amount, parsed.data.currency);
   const supabase = await createClient();
@@ -193,7 +217,9 @@ export async function recordContribution(_: ActionState, form: FormData): Promis
     p_occurred_on: parsed.data.occurredOn,
     p_idempotency_key: parsed.data.idempotencyKey,
   });
-  if (error) return domainError(error.message, 'تعذر تسجيل المساهمة. تحقق من المبلغ والطلب وحاول مجددًا.');
+  if (error) {
+    return commandDomainError(prev, error.message, 'تعذر تسجيل المساهمة. تحقق من المبلغ والطلب وحاول مجددًا.');
+  }
   refreshProject(parsed.data.projectId);
-  return {};
+  return commandSuccessState(prev);
 }
