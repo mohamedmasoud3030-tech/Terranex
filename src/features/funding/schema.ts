@@ -6,6 +6,11 @@ const moneyAmount = z
   .trim()
   .refine((value) => isValidMajorMoney(value, 'EGP'), 'أدخل مبلغًا موجبًا بحد أقصى خانتين عشريتين');
 
+const currencyAwareMoneyAmount = z
+  .string({ error: 'أدخل مبلغًا صحيحًا' })
+  .trim()
+  .min(1, 'أدخل مبلغًا صحيحًا');
+
 const idempotencyKey = z.string().trim().min(8, 'مفتاح إعادة المحاولة قصير جدًا').max(120);
 
 export const partySchema = z.object({
@@ -68,10 +73,18 @@ export const contributionSchema = z.object({
   participantId: z.string().uuid(),
   agreementVersionId: z.string().uuid(),
   capitalCallId: z.string().uuid(),
-  amount: moneyAmount,
+  amount: currencyAwareMoneyAmount,
   currency: z.string().regex(/^[A-Z]{3}$/, 'عملة غير صحيحة'),
   occurredOn: z.string().min(1, 'تاريخ الاستلام مطلوب'),
   idempotencyKey,
+}).superRefine((data, ctx) => {
+  if (!isValidMajorMoney(data.amount, data.currency)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['amount'],
+      message: 'أدخل مبلغًا موجبًا صالحًا لعدد الخانات العشرية الخاصة بالعملة',
+    });
+  }
 });
 
 export type PartyInput = z.infer<typeof partySchema>;
