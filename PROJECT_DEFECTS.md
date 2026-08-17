@@ -39,7 +39,7 @@ This register contains confirmed defects only. Unverified areas are listed separ
 ### DEF-002 — Project creation aliases distinct commands by project name
 
 - Severity: High (data integrity / project identity)
-- Status: Fix implemented; PR verification pending.
+- Status: Closed on recovery branch; pending owner-authorized merge.
 - User-visible symptom: creating a project with the same organization, sector, and normalized name as an existing project can return and open the older project even when the new internal reference or description is different.
 - Evidence / reproduction:
   - `src/app/(app)/projects/new/project-form.tsx` on the baseline has no command idempotency key.
@@ -55,15 +55,13 @@ This register contains confirmed defects only. Unverified areas are listed separ
   - Add a 6-argument command-aware RPC that binds each key to a SHA-256 request hash and rejects payload mismatch.
   - Keep the legacy 5-argument RPC but derive a deterministic key from its full payload so changed payloads no longer alias by name; the historical Real-Estate wrapper continues to delegate through it.
   - Pass a server-generated nonce through the existing shared `commandIdempotencyKey` lifecycle in `/projects/new`.
-- Verification method:
-  1. Migration replay succeeds from a clean PostgreSQL database.
-  2. Exact same key + same payload returns the same project and creates one audit event.
-  3. Same key + changed payload raises `idempotency key payload mismatch`.
-  4. New key + same name/sector creates a distinct project.
-  5. Legacy exact payload still replays while a changed legacy payload no longer aliases to the old row.
-  6. Cross-tenant creation remains `forbidden`.
-  7. Form regression proves failed retries preserve the same hidden command key.
-  8. Full lint/test/build/typecheck/database CI remains green.
+- Verification observed:
+  - Greenfield CI run `32051550041` passed the application gate: install, lint, all 54 Vitest files / 720 tests, production build, and typecheck.
+  - The same run passed PostgreSQL migration replay and two-tenant isolation.
+  - SQL regression coverage confirms exact-key replay returns one project with one audit event; changed payload with the same key is rejected; a fresh key may create a distinct same-name project; legacy exact payload replay remains compatible; changed legacy payload no longer aliases; cross-tenant creation is rejected.
+  - Form regression coverage confirms a failed retry preserves the same command key.
+  - Historical GF-013 forward-upgrade verification was corrected to use its actual chronological migration boundary, preventing later recovery migrations from contaminating a pre-GF-013 fixture.
+  - The original same-name command-alias behavior therefore no longer reproduces under the command-aware creation contract.
 
 ## Unverified areas (not defect entries)
 
@@ -77,4 +75,5 @@ This register contains confirmed defects only. Unverified areas are listed separ
 - 2026-08-17: register created from baseline `fbd63dee8e7d4cdad808986b08e53ba154e3ae66`.
 - 2026-08-17: DEF-001 minimal fix implemented on `stabilize/project-recovery-20260817`.
 - 2026-08-17: DEF-001 closed after PR run `32041349679` passed and job logs confirmed least-privilege token scope.
-- 2026-08-17: DEF-002 confirmed from the current form/action/schema and latest project-creation RPC; minimal command-identity fix implemented with regression coverage, verification pending.
+- 2026-08-17: DEF-002 confirmed from the current form/action/schema and latest project-creation RPC; minimal command-identity fix implemented with regression coverage.
+- 2026-08-17: DEF-002 closed after Greenfield CI run `32051550041` passed app and PostgreSQL gates with 720/720 tests and the dedicated project-creation regression suite.
