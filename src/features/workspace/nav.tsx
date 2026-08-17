@@ -30,6 +30,7 @@ export type WorkspaceSection =
   | 'agriculture-sales'
   | 'agriculture-results'
   | 'livestock'
+  | 'livestock-operations'
   | 'procurement';
 
 type SectionDef = {
@@ -53,6 +54,7 @@ const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
 
 const LIVESTOCK_SECTIONS: ReadonlyArray<SectionDef> = [
   { id: 'livestock', label: 'المواقع والقطعان', description: 'مواقع التشغيل، القطعان الإدارية، والدفعات القابلة للعد', href: (p) => `/projects/${p}/livestock` },
+  { id: 'livestock-operations', label: 'العمليات الحيوانية', description: 'الصحة والتكاثر والهوية والتغذية وقياسات التشغيل', href: (p) => `/projects/${p}/livestock/operations` },
 ];
 
 const PROCUREMENT_SECTION: SectionDef = {
