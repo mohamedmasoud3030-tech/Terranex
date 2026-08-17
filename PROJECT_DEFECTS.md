@@ -57,7 +57,7 @@ This register contains confirmed defects only. Unverified areas are listed separ
   - Pass a server-generated nonce through the existing shared `commandIdempotencyKey` lifecycle in `/projects/new`.
 - Verification observed:
   - Greenfield CI run `32051550041` passed the application gate: install, lint, all 54 Vitest files / 720 tests, production build, and typecheck.
-  - The same run passed PostgreSQL migration replay and two-tenant isolation.
+  - Greenfield CI run `32051820262` re-ran the final documentation-only head and passed both the complete application gate and PostgreSQL migration replay/two-tenant isolation.
   - SQL regression coverage confirms exact-key replay returns one project with one audit event; changed payload with the same key is rejected; a fresh key may create a distinct same-name project; legacy exact payload replay remains compatible; changed legacy payload no longer aliases; cross-tenant creation is rejected.
   - Form regression coverage confirms a failed retry preserves the same command key.
   - Historical GF-013 forward-upgrade verification was corrected to use its actual chronological migration boundary, preventing later recovery migrations from contaminating a pre-GF-013 fixture.
@@ -76,4 +76,4 @@ This register contains confirmed defects only. Unverified areas are listed separ
 - 2026-08-17: DEF-001 minimal fix implemented on `stabilize/project-recovery-20260817`.
 - 2026-08-17: DEF-001 closed after PR run `32041349679` passed and job logs confirmed least-privilege token scope.
 - 2026-08-17: DEF-002 confirmed from the current form/action/schema and latest project-creation RPC; minimal command-identity fix implemented with regression coverage.
-- 2026-08-17: DEF-002 closed after Greenfield CI run `32051550041` passed app and PostgreSQL gates with 720/720 tests and the dedicated project-creation regression suite.
+- 2026-08-17: DEF-002 closed after Greenfield CI run `32051550041` passed app and PostgreSQL gates with 720/720 tests and the dedicated project-creation regression suite; final head re-verified in run `32051820262`.
