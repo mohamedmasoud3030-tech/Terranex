@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:test": "bash ./scripts/db-test.sh",
-    "db:shell": "bash ./scripts/db-shell.sh"
+    "db:shell": "bash ./scripts/db-shell.sh",
+    "r15:admission": "node ./scripts/check-r15-admission.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
