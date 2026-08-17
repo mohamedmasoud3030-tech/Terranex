@@ -11,6 +11,7 @@ const agriculturePageSource = readFileSync('src/app/(app)/projects/[projectId]/a
 const overviewPageSource = readFileSync('src/app/(app)/projects/[projectId]/overview/page.tsx', 'utf8');
 const projectsActionsSource = readFileSync('src/features/projects/actions.ts', 'utf8');
 const projectsQueriesSource = readFileSync('src/features/projects/queries.ts', 'utf8');
+const idempotencyKey = 'project-create-validation-0001';
 
 describe('GF-013 sector-aware project identity', () => {
   it('exposes the canonical REAL_ESTATE | AGRICULTURE sector vocabulary to the application', () => {
@@ -21,21 +22,25 @@ describe('GF-013 sector-aware project identity', () => {
     expect(projectSchema.safeParse({
       organizationId: '00000000-0000-4000-8000-000000000001',
       name: 'مشروع',
+      idempotencyKey,
     }).success).toBe(false);
     expect(projectSchema.safeParse({
       organizationId: '00000000-0000-4000-8000-000000000001',
       name: 'مشروع',
       sector: 'REAL_ESTATE',
+      idempotencyKey,
     }).success).toBe(true);
     expect(projectSchema.safeParse({
       organizationId: '00000000-0000-4000-8000-000000000001',
       name: 'مشروع',
       sector: 'AGRICULTURE',
+      idempotencyKey,
     }).success).toBe(true);
     expect(projectSchema.safeParse({
       organizationId: '00000000-0000-4000-8000-000000000001',
       name: 'مشروع',
       sector: 'LIVESTOCK',
+      idempotencyKey,
     }).success).toBe(true);
   });
 
@@ -93,9 +98,6 @@ describe('GF-013 sector-aware navigation', () => {
   it('the project shell page displays a truthful sector label and a sector-correct entry', () => {
     expect(projectPageSource).toContain('SECTOR_LABEL');
     expect(projectPageSource).toContain('sectorLandingHref');
-    // The page reads `project.sector` (typed as ProjectSector =
-    // 'REAL_ESTATE' | 'AGRICULTURE') and routes the operator to the
-    // sector-correct workspace without hard-coding labels.
     expect(projectPageSource).toMatch(/sector = project\.sector/);
   });
 
