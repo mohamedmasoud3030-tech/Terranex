@@ -1,5 +1,6 @@
 import { createClient } from '@/shared/supabase/server';
 import { throwOperatorQuery } from '@/shared/supabase/errors';
+import { activePostedSourceIds } from './reversal';
 
 // S2 read models. Money arrives as text (bigint transported exactly through
 // the *_read views); it is formatted with the shared money module.
@@ -248,10 +249,9 @@ export async function getUnpostedContributions(projectId: string): Promise<Contr
     .order('occurred_on');
   if (error) throwOperatorQuery(error);
   const list = contributions as Contribution[];
-  const posted = new Set<string>();
   const { data: batches, error: batchError } = await s
     .from('journal_batches')
-    .select('source_id')
+    .select('id,source_id')
     .eq('source_type', 'CONTRIBUTION_CASH_ATTRIBUTION');
   if (batchError) throw batchError;
   const { data: reversals, error: reversalError } = await s
@@ -259,9 +259,7 @@ export async function getUnpostedContributions(projectId: string): Promise<Contr
     .select('reversal_of_batch_id')
     .not('reversal_of_batch_id', 'is', null);
   if (reversalError) throw reversalError;
-  const reversed = new Set((reversals ?? []).map((row) => row.reversal_of_batch_id));
-  for (const batch of batches ?? []) {
-    if (!reversed.has(batch.source_id)) posted.add(batch.source_id);
-  }
-  return list.filter((contribution) => !posted.has(contribution.id));
+
+  const postedSourceIds = activePostedSourceIds(batches ?? [], reversals ?? []);
+  return list.filter((contribution) => !postedSourceIds.has(contribution.id));
 }
