@@ -359,13 +359,20 @@ describe('GF-015 database verification coverage', () => {
     expect(upgradeTest).toContain('sector = \'REAL_ESTATE\'');
   });
 
-  it('keeps every earlier forward-upgrade fixture excluding the GF-015 family', () => {
+  it('keeps historical forward-upgrade fixtures pinned to their real stage boundaries', () => {
+    for (const [file, allowlist] of [
+      ['supabase/tests/09_s3_forward_upgrade.sh', 'pre_s3_migrations=('],
+      ['supabase/tests/15_s4_forward_upgrade.sh', 'merged_s3_migrations=('],
+      ['supabase/tests/18_s6_forward_upgrade.sh', 'merged_s4_migrations=('],
+      ['supabase/tests/22_s5_forward_upgrade.sh', 'pre_s5_migrations=('],
+      ['supabase/tests/25_s7_forward_upgrade.sh', 'pre_s7_migrations=('],
+    ] as const) {
+      const source = readFileSync(file, 'utf8');
+      expect(source).toContain(allowlist);
+      expect(source).not.toContain('for file in "$ROOT"/supabase/migrations/*.sql; do');
+    }
+
     for (const file of [
-      'supabase/tests/09_s3_forward_upgrade.sh',
-      'supabase/tests/15_s4_forward_upgrade.sh',
-      'supabase/tests/18_s6_forward_upgrade.sh',
-      'supabase/tests/22_s5_forward_upgrade.sh',
-      'supabase/tests/25_s7_forward_upgrade.sh',
       'supabase/tests/40_gf013_agriculture_forward_upgrade.sh',
       'supabase/tests/43_gf014_field_activity_forward_upgrade.sh',
     ]) {

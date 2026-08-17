@@ -35,13 +35,20 @@ psql_cmd postgres "create database \"$UPGRADE_DB\";" >/dev/null
 sed 's/create role authenticated nologin; create role anon nologin;//' \
   "$ROOT/supabase/tests/00_supabase_shim.sql" | psql_db "$UPGRADE_DB"
 
-# Exact pre-S3 boundary: replay only migration families older than S3. Later
-# stages must never leak into this historical forward-upgrade fixture as new
-# migrations are added to the repository.
-for file in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$file")" in
-    202608110004*.sql|202608110005*.sql|202608110006*.sql|20260812*.sql|20260813*.sql|20260814*.sql|20260815*.sql|20260816*.sql) continue ;;
-  esac
+# Exact pre-S3 boundary. Keep this as a stage allowlist so migrations added in
+# the future can never leak backwards into this historical fixture.
+pre_s3_migrations=(
+  "$ROOT"/supabase/migrations/20260810000100_s0_foundation.sql
+  "$ROOT"/supabase/migrations/20260810000200_s1_terms_and_funding.sql
+  "$ROOT"/supabase/migrations/202608110001*.sql
+  "$ROOT"/supabase/migrations/202608110002*.sql
+  "$ROOT"/supabase/migrations/202608110003*.sql
+)
+for file in "${pre_s3_migrations[@]}"; do
+  if [[ ! -e "$file" ]]; then
+    echo "ERROR: missing migration required for the pre-S3 boundary: $file" >&2
+    exit 1
+  fi
   psql_db "$UPGRADE_DB" < "$file"
 done
 

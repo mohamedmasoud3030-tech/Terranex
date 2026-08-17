@@ -10,6 +10,7 @@ export const createAccountingPeriodSchema = z.object({
   projectId: uuid,
   startDate: z.string().date(),
   endDate: z.string().date(),
+  idempotencyKey,
 }).superRefine((value, ctx) => {
   if (value.startDate > value.endDate) {
     ctx.addIssue({
@@ -43,6 +44,7 @@ export const requestExceptionSchema = z.object({
   reason: z.string().trim().min(5, 'السبب مطلوب (5 أحرف على الأقل)').max(2000),
   evidenceReference: z.string().trim().min(3, 'الدليل مطلوب (3 أحرف على الأقل)').max(200),
   materialityComment: z.string().trim().max(2000).optional().or(z.literal('')),
+  idempotencyKey,
 });
 
 export const approveExceptionSchema = z.object({
@@ -58,6 +60,7 @@ export const reopenSchema = z.object({
   periodId: uuid,
   reason: z.string().trim().min(5, 'سبب إعادة الفتح مطلوب (5 أحرف على الأقل)').max(2000),
   evidenceReference: z.string().trim().min(3, 'مرجع الدليل مطلوب (3 أحرف على الأقل)').max(200),
+  idempotencyKey,
 });
 
 export const requestCorrectionSchema = z.object({
@@ -68,6 +71,7 @@ export const requestCorrectionSchema = z.object({
   correctionPeriodId: uuid,
   reason: z.string().trim().min(5, 'سبب التصحيح مطلوب (5 أحرف على الأقل)').max(2000),
   evidenceReference: z.string().trim().min(3, 'مرجع الدليل مطلوب (3 أحرف على الأقل)').max(200),
+  idempotencyKey,
 });
 
 export const approveCorrectionSchema = z.object({

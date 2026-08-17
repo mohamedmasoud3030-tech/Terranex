@@ -25,12 +25,23 @@ describe('close schema', () => {
       projectId: base.projectId,
       startDate: '2026-03-01',
       endDate: '2026-03-31',
+      idempotencyKey: base.idempotencyKey,
     }).success).toBe(true);
     expect(createAccountingPeriodSchema.safeParse({
       organizationId: base.organizationId,
       projectId: base.projectId,
       startDate: '2026-03-31',
       endDate: '2026-03-01',
+      idempotencyKey: base.idempotencyKey,
+    }).success).toBe(false);
+  });
+
+  it('rejects open-period creation without an idempotency key', () => {
+    expect(createAccountingPeriodSchema.safeParse({
+      organizationId: base.organizationId,
+      projectId: base.projectId,
+      startDate: '2026-03-01',
+      endDate: '2026-03-31',
     }).success).toBe(false);
   });
 
