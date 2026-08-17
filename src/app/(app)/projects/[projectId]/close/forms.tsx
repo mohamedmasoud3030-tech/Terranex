@@ -3,17 +3,15 @@
 import { useActionState } from 'react';
 import type { ActionState } from '@/features/auth/actions';
 import {
+  approveCloseExceptionAction,
+  approveCloseRunAction,
+  approveCorrectionAction,
   createAccountingPeriodAction,
+  executeCorrectionAction,
   prepareCloseRunAction,
   reopenPeriodAction,
   requestCloseExceptionAction,
   requestCorrectionAction,
-} from '@/features/close/actions';
-import {
-  approveCloseExceptionAction,
-  approveCloseRunAction,
-  approveCorrectionAction,
-  executeCorrectionAction,
 } from '@/features/close/command-actions';
 import { commandIdempotencyKey } from '@/shared/idempotency';
 import { useResolvedCommandNonce } from '@/shared/idempotency/use-resolved-command-nonce';
@@ -62,10 +60,12 @@ export function CreateAccountingPeriodForm({
   disabled?: boolean;
 }) {
   const [state, action, pending] = useActionState(createAccountingPeriodAction, initial);
+  const key = useCommandKey('close-period-create', state);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
+      <CommandKey value={key} />
       <label>
         <span>بداية الفترة</span>
         <input type="date" name="startDate" required defaultValue={startDate} />
@@ -76,7 +76,7 @@ export function CreateAccountingPeriodForm({
       </label>
       <p className="muted">الفترة المفتوحة هي النافذة الوحيدة المسموح بالترحيل داخلها، بما في ذلك القيد الافتتاحي.</p>
       <ErrorBanner state={state} />
-      <Submit label="فتح فترة محاسبية" pending={pending} disabled={disabled} />
+      <Submit label="فتح فترة محاسبية" pending={pending} disabled={Boolean(disabled) || !key} />
       {disabled && <p className="muted">الإجراء متاح لمالك المنظمة فقط.</p>}
     </form>
   );
@@ -86,18 +86,19 @@ export function PrepareCloseForm({
   organizationId, projectId, periodId, disabled,
 }: { organizationId: string; projectId: string; periodId: string; disabled?: boolean }) {
   const [state, action, pending] = useActionState(prepareCloseRunAction, initial);
+  const key = useCommandKey(`close-prepare-${periodId}`, state);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="periodId" value={periodId} />
+      <CommandKey value={key} />
       <label>
         <span>ملاحظات (اختياري)</span>
         <textarea name="notes" rows={2} maxLength={2000} />
       </label>
-      <p className="muted">تحضير الإغلاق محمي حاليًا بقيود قاعدة البيانات، لكنه لا يملك بعد عقد replay بمفتاح idempotency. لا تعرض الواجهة مفتاحًا وهميًا.</p>
       <ErrorBanner state={state} />
-      <Submit label="بدء تحضير الإغلاق" pending={pending} disabled={disabled} />
+      <Submit label="بدء تحضير الإغلاق" pending={pending} disabled={Boolean(disabled) || !key} />
       {disabled && <p className="muted">الإجراء متاح لمالك المنظمة فقط.</p>}
     </form>
   );
@@ -125,12 +126,14 @@ export function RequestExceptionForm({
   organizationId, projectId, closeRunId, gateCode, disabled,
 }: { organizationId: string; projectId: string; closeRunId: string; gateCode: string; disabled?: boolean }) {
   const [state, action, pending] = useActionState(requestCloseExceptionAction, initial);
+  const key = useCommandKey(`close-exception-request-${closeRunId}-${gateCode}`, state);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="closeRunId" value={closeRunId} />
       <input type="hidden" name="gateCode" value={gateCode} />
+      <CommandKey value={key} />
       <label>
         <span>السبب (5 أحرف على الأقل)</span>
         <textarea name="reason" rows={2} minLength={5} maxLength={2000} required />
@@ -144,7 +147,7 @@ export function RequestExceptionForm({
         <textarea name="materialityComment" rows={2} maxLength={2000} />
       </label>
       <ErrorBanner state={state} />
-      <Submit label="طلب استثناء للبوابة" pending={pending} disabled={disabled} />
+      <Submit label="طلب استثناء للبوابة" pending={pending} disabled={Boolean(disabled) || !key} />
       {disabled && <p className="muted">الإجراء متاح لمالك المنظمة فقط.</p>}
     </form>
   );
@@ -172,11 +175,13 @@ export function ReopenForm({
   organizationId, projectId, periodId, disabled,
 }: { organizationId: string; projectId: string; periodId: string; disabled?: boolean }) {
   const [state, action, pending] = useActionState(reopenPeriodAction, initial);
+  const key = useCommandKey(`close-reopen-${periodId}`, state);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="periodId" value={periodId} />
+      <CommandKey value={key} />
       <label>
         <span>سبب إعادة الفتح (5 أحرف على الأقل)</span>
         <textarea name="reason" rows={2} minLength={5} maxLength={2000} required />
@@ -186,7 +191,7 @@ export function ReopenForm({
         <input name="evidenceReference" type="text" minLength={3} maxLength={200} required />
       </label>
       <ErrorBanner state={state} />
-      <Submit label="إعادة فتح الفترة كنسخة جديدة" pending={pending} disabled={disabled} />
+      <Submit label="إعادة فتح الفترة كنسخة جديدة" pending={pending} disabled={Boolean(disabled) || !key} />
       {disabled && <p className="muted">الإجراء متاح لمالك المنظمة فقط.</p>}
     </form>
   );
@@ -199,6 +204,7 @@ export function RequestCorrectionForm({
   sourcePeriodId: string; correctionPeriodId: string; disabled?: boolean;
 }) {
   const [state, action, pending] = useActionState(requestCorrectionAction, initial);
+  const key = useCommandKey(`close-correction-request-${targetBatchId}`, state);
   return (
     <form action={action} className="stack">
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -206,6 +212,7 @@ export function RequestCorrectionForm({
       <input type="hidden" name="targetBatchId" value={targetBatchId} />
       <input type="hidden" name="sourcePeriodId" value={sourcePeriodId} />
       <input type="hidden" name="correctionPeriodId" value={correctionPeriodId} />
+      <CommandKey value={key} />
       <label>
         <span>السبب (5 أحرف على الأقل)</span>
         <textarea name="reason" rows={2} minLength={5} maxLength={2000} required />
@@ -215,7 +222,7 @@ export function RequestCorrectionForm({
         <input name="evidenceReference" type="text" minLength={3} maxLength={200} required />
       </label>
       <ErrorBanner state={state} />
-      <Submit label="تسجيل طلب التصحيح" pending={pending} disabled={disabled} />
+      <Submit label="تسجيل طلب التصحيح" pending={pending} disabled={Boolean(disabled) || !key} />
       {disabled && <p className="muted">الإجراء متاح لمالك المنظمة فقط.</p>}
     </form>
   );
