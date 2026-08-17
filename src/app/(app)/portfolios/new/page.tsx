@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getOrganizations } from '@/features/organizations/queries';
+import { getActiveOrganization } from '@/features/organizations/context';
 import { getOrganizationMembers } from '@/features/portfolios/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { memberDisplayLabel } from '@/features/workspace/chrome';
@@ -9,9 +9,8 @@ import { PortfolioForm } from '../forms';
 export const dynamic = 'force-dynamic';
 
 export default async function NewPortfolioPage() {
-  const orgs = await getOrganizations();
-  if (!orgs.length) redirect('/onboarding');
-  const org = orgs[0];
+  const { organization: org } = await getActiveOrganization();
+  if (!org) redirect('/onboarding');
   const members = await getOrganizationMembers(org.id);
   const memberOptions = members.map((m, index) => ({
     user_id: m.user_id,

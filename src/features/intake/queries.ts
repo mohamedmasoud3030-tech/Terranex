@@ -121,6 +121,7 @@ export function applicabilityMap(
 export function buildIntakeSnapshot(input: {
   organizationName: string | null;
   projectName: string | null;
+  sector: 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK' | null;
   reportingCurrency: string | null;
   declaration: IntakeDeclaration | null;
   applicability: IntakeApplicability[];
@@ -158,6 +159,7 @@ export function buildIntakeSnapshot(input: {
     ...emptyIntakeSnapshot(),
     organizationName: input.organizationName,
     projectName: input.projectName,
+    sector: input.sector,
     reportingCurrency: input.reportingCurrency,
     freezeDate: input.declaration?.freeze_date ?? null,
     freezeEvidenceReference: input.declaration?.freeze_evidence_reference ?? null,

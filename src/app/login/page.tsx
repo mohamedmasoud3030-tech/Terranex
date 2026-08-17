@@ -1,30 +1,16 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/shared/supabase/server';
+import { LoginForm } from './login-form';
 
-import { useActionState } from 'react';
-import { signIn } from '@/features/auth/actions';
+export const dynamic = 'force-dynamic';
 
-export default function LoginPage() {
-  const [state, action, pending] = useActionState(signIn, { error: undefined });
-  return (
-    <main className="shell" style={{ maxWidth: 480, paddingTop: '12vh' }}>
-      <section className="card stack">
-        <div>
-          <h1>مرحبًا بك في تيرانكس</h1>
-          <p className="muted">سجّل الدخول للوصول إلى منظمة الاستثمار ومشاريعها.</p>
-        </div>
-        <form action={action} className="stack" noValidate>
-          <label>
-            البريد الإلكتروني
-            <input name="email" type="email" autoComplete="email" required />
-          </label>
-          <label>
-            كلمة المرور
-            <input name="password" type="password" autoComplete="current-password" required />
-          </label>
-          {state.error && <p className="error" role="alert">{state.error}</p>}
-          <button disabled={pending}>{pending ? 'جارٍ الدخول…' : 'تسجيل الدخول'}</button>
-        </form>
-      </section>
-    </main>
-  );
+export default async function LoginPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // A signed-in user landing on /login (bookmark, stale tab, password
+  // manager) belongs on the dashboard, not the sign-in form.
+  if (user) redirect('/');
+  return <LoginForm />;
 }

@@ -42,6 +42,8 @@ There is deliberately no fabricated customer UAT, bank statement, or external do
 
 The seed is an explicit, idempotent operational fixture, not a migration and not an automatic startup seed. It uses the production command/RPC surfaces for financial and lifecycle facts. Re-running after the project exists is a no-op.
 
+**Policy-safety compatibility:** after the pre-owner policy boundary, contribution-cash attachment and S5 allocation/distribution writes fail closed without approved `policy_authority` rows. Because this dataset is an explicitly synthetic fixture, the seed activates the two scopes (`CAPITAL_CONTRIBUTION`, `INVESTOR_ECONOMICS`) **for the demo organization only**, with the synthetic labels `DEMO-SHOWCASE-POLICY-2026-01` / `DEMO-AGREEMENT-2026-001`. This is demo-fixture behavior, never a real company policy; real organizations always start with an empty registry and remain policy-inert. Regression coverage: `supabase/tests/999_demo_seed_replay.sql` (end-to-end seed + no-op re-run + no policy leakage to other tenants) and `tests/demo-seed-policy.test.ts` (contract pins).
+
 The demo maker Auth identity is intentionally retained for maker/checker history. Its credentials are not stored in the repository.
 
 Presentation login is a real authenticated membership. See `docs/demo/PRESENTATION_ACCESS.md`.

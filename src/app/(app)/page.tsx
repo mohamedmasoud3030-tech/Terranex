@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getOrganizations } from '@/features/organizations/queries';
+import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getPortfolios } from '@/features/portfolios/queries';
 import { getRegisteredAssets, getSectorPerformance } from '@/features/assets/queries';
@@ -15,8 +15,8 @@ const FX_STATUS_AR: Record<string, string> = {
 };
 
 export default async function Home() {
-  const orgs = await getOrganizations();
-  if (!orgs.length) {
+  const { organization: org } = await getActiveOrganization();
+  if (!org) {
     return (
       <section className="card stack">
         <h1>لنبدأ بإنشاء منظمتك</h1>
@@ -25,8 +25,6 @@ export default async function Home() {
       </section>
     );
   }
-
-  const org = orgs[0];
   const [projects, portfolios, assets, sectorPerformance, consolidation, integritySignals] =
     await Promise.all([
       getProjects(org.id),

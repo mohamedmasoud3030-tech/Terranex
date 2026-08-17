@@ -211,6 +211,7 @@ export default async function IntakePage({
   const snapshot = buildIntakeSnapshot({
     organizationName: organizations.find((org) => org.id === organizationId)?.name ?? null,
     projectName: project.name,
+    sector: project.sector,
     reportingCurrency: project.reporting_currency,
     declaration,
     applicability,
@@ -312,7 +313,7 @@ export default async function IntakePage({
         <div className="section-heading">
           <div>
             <h2>إعداد المشروع</h2>
-            <p className="muted">المنظمة والمشروع وتاريخ التجميد. العملة والجنيه والقطاع العقاري ثوابت المنتج.</p>
+            <p className="muted">المنظمة والمشروع وتاريخ التجميد. عملة المشروع: جنيه مصري (EGP). القطاع يُحدد عند الإنشاء: عقارات أو زراعة أو ثروة حيوانية.</p>
           </div>
         </div>
         <SectionCard item={byCode.get('DS01_ORGANIZATION')!}>
@@ -533,6 +534,13 @@ export default async function IntakePage({
             <p className="muted">الاستراتيجية والأصل والقطعة منفصلة عن العقد والدفع.</p>
           </div>
         </div>
+        {project.sector !== 'REAL_ESTATE' ? (
+          <section className="card">
+            <p>هذا المشروع قطاعه {project.sector === 'AGRICULTURE' ? 'زراعة' : 'ثروة حيوانية'}، وتُدار حقائقه التشغيلية من مساحة القطاع الخاصة بالمشروع، وليست ضمن نموذج الإدخال العقاري.</p>
+            <Link className="button" href={`/projects/${projectId}/${project.sector === 'AGRICULTURE' ? 'agriculture' : 'livestock'}`}>فتح مساحة القطاع</Link>
+          </section>
+        ) : (
+          <>
         <SectionCard item={byCode.get('DS11_PROPERTY')!}>
           {!profile && <ProfileForm organizationId={organizationId} projectId={projectId} />}
           <AssetForm organizationId={organizationId} projectId={projectId} />
@@ -587,6 +595,8 @@ export default async function IntakePage({
             disabled={!isOwner}
           />
         </SectionCard>
+          </>
+        )}
       </section>
 
       <section id="opening" className="stack scroll-target">

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getOrganizations } from '@/features/organizations/queries';
+import { getActiveOrganization } from '@/features/organizations/context';
 import {
   getOrganizationActiveMemberships,
   getPortfolios,
@@ -12,8 +12,8 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function PortfoliosPage() {
-  const orgs = await getOrganizations();
-  if (!orgs.length) {
+  const { organization: org } = await getActiveOrganization();
+  if (!org) {
     return (
       <section className="card stack">
         <h1>لنبدأ بإنشاء منظمتك</h1>
@@ -22,7 +22,6 @@ export default async function PortfoliosPage() {
       </section>
     );
   }
-  const org = orgs[0];
   const portfolios = await getPortfolios(org.id);
   const memberships = await getOrganizationActiveMemberships(org.id);
   const countByPortfolio = new Map<string, number>();

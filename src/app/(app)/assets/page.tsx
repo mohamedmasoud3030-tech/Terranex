@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getOrganizations } from '@/features/organizations/queries';
+import { getActiveOrganization } from '@/features/organizations/context';
 import {
   getRegisteredAssets,
   getSectorPerformance,
@@ -191,8 +191,8 @@ function SectorCard({ row }: Readonly<{ row: SectorPerformance }>) {
 }
 
 export default async function AssetsPage() {
-  const orgs = await getOrganizations();
-  if (!orgs.length) {
+  const { organization: org } = await getActiveOrganization();
+  if (!org) {
     return (
       <section className="card stack">
         <h1>لنبدأ بإنشاء منظمتك</h1>
@@ -202,7 +202,6 @@ export default async function AssetsPage() {
     );
   }
 
-  const org = orgs[0];
   const [assets, performance] = await Promise.all([
     getRegisteredAssets(org.id),
     getSectorPerformance(org.id),

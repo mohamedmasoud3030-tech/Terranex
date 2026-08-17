@@ -74,6 +74,10 @@ export type ReadinessVerdict =
 export type IntakeSnapshot = {
   organizationName: string | null;
   projectName: string | null;
+  /** Primary project sector. Real-Estate property sections (DS11–DS13) are
+   * evaluated only for REAL_ESTATE projects; null is treated as REAL_ESTATE
+   * for backward compatibility with legacy snapshots. */
+  sector: 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK' | null;
   reportingCurrency: string | null;
   freezeDate: string | null;
   freezeEvidenceReference: string | null;
@@ -391,61 +395,63 @@ function evaluate(snapshot: IntakeSnapshot): IntakeSection[] {
       'توجد فترة محاسبية مفتوحة جاهزة لترحيل القيد الافتتاحي.'));
   }
 
-  if (!snapshot.realEstateProfile || snapshot.assetCount === 0 || snapshot.parcelCount === 0) {
-    const reasons: string[] = [];
-    if (!snapshot.realEstateProfile) reasons.push('ملف الاستراتيجية العقارية غير مُنشأ.');
-    if (snapshot.assetCount === 0) reasons.push('لا توجد أصول عقارية.');
-    if (snapshot.parcelCount === 0) reasons.push('لا توجد قطع بمساحة ووحدة.');
-    sections.push(section('DS11_PROPERTY', 'PROPERTY', 'MANDATORY',
-      snapshot.projectName ? (reasons.length === 3 ? 'MISSING' : 'IN_PROGRESS') : 'BLOCKED',
-      'الاستراتيجية والأصل والقطعة والمساحة وحدة لا تُخزَّن كنص حر.',
-      snapshot.projectName ? reasons : ['أنشئ المشروع أولًا.']));
-  } else {
-    sections.push(section('DS11_PROPERTY', 'PROPERTY', 'MANDATORY', 'COMPLETE',
-      `${snapshot.assetCount} أصلًا · ${snapshot.parcelCount} قطعة · ${snapshot.realEstateStrategy ?? '—'}.`));
-  }
+  const isRealEstateSector = snapshot.sector !== 'AGRICULTURE' && snapshot.sector !== 'LIVESTOCK';
+  if (isRealEstateSector) {
+    if (!snapshot.realEstateProfile || snapshot.assetCount === 0 || snapshot.parcelCount === 0) {
+      const reasons: string[] = [];
+      if (!snapshot.realEstateProfile) reasons.push('ملف الاستراتيجية العقارية غير مُنشأ.');
+      if (snapshot.assetCount === 0) reasons.push('لا توجد أصول عقارية.');
+      if (snapshot.parcelCount === 0) reasons.push('لا توجد قطع بمساحة ووحدة.');
+      sections.push(section('DS11_PROPERTY', 'PROPERTY', 'MANDATORY',
+        snapshot.projectName ? (reasons.length === 3 ? 'MISSING' : 'IN_PROGRESS') : 'BLOCKED',
+        'الاستراتيجية والأصل والقطعة والمساحة وحدة لا تُخزَّن كنص حر.',
+        snapshot.projectName ? reasons : ['أنشئ المشروع أولًا.']));
+    } else {
+      sections.push(section('DS11_PROPERTY', 'PROPERTY', 'MANDATORY', 'COMPLETE',
+        `${snapshot.assetCount} أصلًا · ${snapshot.parcelCount} قطعة · ${snapshot.realEstateStrategy ?? '—'}.`));
+    }
 
-  const acquisitionApplicable = applicabilityOf(snapshot, 'DS12_ACQUISITION');
-  if (snapshot.assetCount === 0) {
-    sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'BLOCKED',
-      'الاستحواذ للأصول المملوكة فعلًا في تاريخ التجميد.',
-      ['أضف أصلًا عقاريًا أولًا.']));
-  } else if (acquisitionApplicable === false) {
-    sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'NOT_APPLICABLE',
-      'لا توجد أصول مستحوذ عليها في تاريخ التجميد.'));
-  } else if (snapshot.acquisitionCount >= snapshot.assetCount) {
-    sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'COMPLETE',
-      'سُجّل عقد استحواذ لكل أصل حالي.'));
-  } else if (snapshot.acquisitionCount > 0) {
-    sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'IN_PROGRESS',
-      `${snapshot.acquisitionCount} من ${snapshot.assetCount} أصول لها عقد استحواذ.`,
-      ['أدخل أساس الاستحواذ لكل أصل مملوك، أو صرّح بأن الأصل غير مستحوذ عليه.']));
-  } else {
-    sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'CONDITIONAL_OPEN',
-      'إن كانت الأصول مستحوذًا عليها فأدخل البائع والعقد والمقابل وتكاليف الإقفال والدليل.'));
-  }
+    const acquisitionApplicable = applicabilityOf(snapshot, 'DS12_ACQUISITION');
+    if (snapshot.assetCount === 0) {
+      sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'BLOCKED',
+        'الاستحواذ للأصول المملوكة فعلًا في تاريخ التجميد.',
+        ['أضف أصلًا عقاريًا أولًا.']));
+    } else if (acquisitionApplicable === false) {
+      sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'NOT_APPLICABLE',
+        'لا توجد أصول مستحوذ عليها في تاريخ التجميد.'));
+    } else if (snapshot.acquisitionCount >= snapshot.assetCount) {
+      sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'COMPLETE',
+        'سُجّل عقد استحواذ لكل أصل حالي.'));
+    } else if (snapshot.acquisitionCount > 0) {
+      sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'IN_PROGRESS',
+        `${snapshot.acquisitionCount} من ${snapshot.assetCount} أصول لها عقد استحواذ.`,
+        ['أدخل أساس الاستحواذ لكل أصل مملوك، أو صرّح بأن الأصل غير مستحوذ عليه.']));
+    } else {
+      sections.push(section('DS12_ACQUISITION', 'PROPERTY', 'CONDITIONAL', 'CONDITIONAL_OPEN',
+        'إن كانت الأصول مستحوذًا عليها فأدخل البائع والعقد والمقابل وتكاليف الإقفال والدليل.'));
+    }
 
-  const developmentApplicable = applicabilityOf(snapshot, 'DS13_DEVELOPMENT');
-  const developSell = snapshot.realEstateStrategy === 'DEVELOP_SELL';
-  if (!snapshot.realEstateProfile) {
-    sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'BLOCKED',
-      'ميزانية التطوير المعتمدة إلزامية عند وجود نشاط تطوير.',
-      ['أنشئ الملف العقاري أولًا.']));
-  } else if (developmentApplicable === false) {
-    sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'NOT_APPLICABLE',
-      'لا يوجد نشاط تطوير يستدعي ميزانية معتمدة.'));
-  } else if (snapshot.approvedBudgetCount > 0) {
-    sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'COMPLETE',
-      `${snapshot.approvedBudgetCount} نسخة ميزانية معتمدة. التكلفة حتى التاريخ تدخل كأعمال تحت التنفيذ افتتاحية.`));
-  } else if (developSell) {
-    sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'MISSING',
-      'استراتيجية التطوير ثم البيع تتطلب ميزانية معتمدة أو تصريحًا بأنها لا تنطبق.',
-      ['لا توجد نسخة ميزانية معتمدة.']));
-  } else {
-    sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'CONDITIONAL_OPEN',
-      'إن وُجد نشاط تطوير فأدخل بنود الميزانية المعتمدة وتصنيف التكلفة صراحة: مصروف أو أعمال قابلة للرسملة.'));
+    const developmentApplicable = applicabilityOf(snapshot, 'DS13_DEVELOPMENT');
+    const developSell = snapshot.realEstateStrategy === 'DEVELOP_SELL';
+    if (!snapshot.realEstateProfile) {
+      sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'BLOCKED',
+        'ميزانية التطوير المعتمدة إلزامية عند وجود نشاط تطوير.',
+        ['أنشئ الملف العقاري أولًا.']));
+    } else if (developmentApplicable === false) {
+      sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'NOT_APPLICABLE',
+        'لا يوجد نشاط تطوير يستدعي ميزانية معتمدة.'));
+    } else if (snapshot.approvedBudgetCount > 0) {
+      sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'COMPLETE',
+        `${snapshot.approvedBudgetCount} نسخة ميزانية معتمدة. التكلفة حتى التاريخ تدخل كأعمال تحت التنفيذ افتتاحية.`));
+    } else if (developSell) {
+      sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'MISSING',
+        'استراتيجية التطوير ثم البيع تتطلب ميزانية معتمدة أو تصريحًا بأنها لا تنطبق.',
+        ['لا توجد نسخة ميزانية معتمدة.']));
+    } else {
+      sections.push(section('DS13_DEVELOPMENT', 'PROPERTY', 'CONDITIONAL', 'CONDITIONAL_OPEN',
+        'إن وُجد نشاط تطوير فأدخل بنود الميزانية المعتمدة وتصنيف التكلفة صراحة: مصروف أو أعمال قابلة للرسملة.'));
+    }
   }
-
   if (snapshot.declaredDebitTotal !== null && snapshot.declaredCreditTotal !== null) {
     if (snapshot.declaredDebitTotal !== snapshot.declaredCreditTotal) {
       sections.push(section('CONTROL_TOTALS', 'OPENING_POSITION', 'MANDATORY', 'FAILED',
@@ -695,18 +701,19 @@ export function evaluateIntakeReadiness(snapshot: IntakeSnapshot): IntakeReadine
   );
   const sections = [...evaluated, result];
 
-  const groups = INTAKE_GROUPS.map((id) => {
+  const groups = INTAKE_GROUPS.flatMap((id) => {
     const members = sections.filter((item) => item.group === id && item.code !== 'READINESS_RESULT');
+    if (members.length === 0) return []; // sector-inapplicable groups (e.g. PROPERTY for non-real-estate)
     const countable = members.filter((item) => item.status !== 'NOT_APPLICABLE' && item.status !== 'BLOCKED');
     const complete = countable.filter((item) => item.status === 'COMPLETE').length;
-    return {
+    return [{
       id,
       titleAr: GROUP_TITLE[id],
       complete,
       total: Math.max(countable.length, 1),
       hasFailure: members.some((item) => item.status === 'FAILED'),
       next: false,
-    };
+    }];
   });
 
   const nextSection = sections.find((item) =>
@@ -735,6 +742,7 @@ export function emptyIntakeSnapshot(): IntakeSnapshot {
   return {
     organizationName: null,
     projectName: null,
+    sector: 'REAL_ESTATE',
     reportingCurrency: null,
     freezeDate: null,
     freezeEvidenceReference: null,
