@@ -32,7 +32,7 @@ function fillName(container: HTMLElement, value: string) {
 async function submitAndSettle(container: HTMLElement) {
   fireEvent.submit(formElement(container));
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'إنشاء المشروع' })).not.toBeDisabled();
+    expect((screen.getByRole('button', { name: 'إنشاء المشروع' }) as HTMLButtonElement).disabled).toBe(false);
   });
 }
 
