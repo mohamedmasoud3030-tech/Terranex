@@ -1,99 +1,650 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import type { ActionState } from '@/features/auth/actions';
-import { commandFailureState, commandSuccessState } from '@/shared/idempotency';
-import * as domain from './domain-actions';
+import { createClient } from '@/shared/supabase/server';
+import { parseMajorUnitsToMinor } from '@/shared/money';
+import {
+  agriculturalLandAssetSchema,
+  agricultureProfileSchema,
+  agricultureSaleApprovalSchema,
+  agricultureSaleCollectionSchema,
+  agricultureSaleRecognitionSchema,
+  agricultureSaleSchema,
+  cropAssignmentSchema,
+  cropCycleCloseoutSchema,
+  cropCycleCostAttributionSchema,
+  cropCycleSchema,
+  cycleTransitionSchema,
+  farmSchema,
+  fieldActivitySchema,
+  fieldSchema,
+  farmLandAssetLinkSchema,
+  harvestEventSchema,
+  harvestInventoryAdjustmentSchema,
+  inputApplicationSchema,
+  inputItemSchema,
+  inputLotSchema,
+  storageLocationSchema,
+  transferHarvestInventorySchema,
+} from './schema';
 
-type AgricultureAction = (prev: ActionState, form: FormData) => Promise<ActionState>;
-
-/**
- * The mounted Agriculture forms intentionally keep one stable random base key.
- * Turn that base into the authoritative logical-command key at the server
- * boundary by suffixing the last server-confirmed success count.
- *
- * Lost/failed response => the client still has the previous success count and
- * therefore retries the exact same effective key. Confirmed success => the
- * returned count advances and the next distinct submit gets a fresh key.
- */
-async function withCommandLifecycle(
-  action: AgricultureAction,
-  prev: ActionState,
-  form: FormData,
-): Promise<ActionState> {
-  const baseKey = form.get('idempotencyKey');
-  if (typeof baseKey !== 'string' || baseKey.length === 0) {
-    return commandFailureState(prev, 'تعذر تجهيز مفتاح العملية الآمن. حدّث الصفحة ثم أعد المحاولة.');
-  }
-
-  form.set('idempotencyKey', `${baseKey}-${prev.successCount ?? 0}`);
-  const result = await action(prev, form);
-  if (result.error) return commandFailureState(prev, result.error);
-  return commandSuccessState(prev);
+function fail(error: string): ActionState { return { error }; }
+function refresh(projectId: string) {
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/agriculture`);
+  revalidatePath(`/projects/${projectId}/operations`);
 }
 
-export async function createAgricultureProfile(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createAgricultureProfile, prev, form);
+function parse<T>(result: { success: true; data: T } | { success: false; error: { issues: { message: string }[] } }): T | ActionState {
+  return result.success ? result.data : fail(result.error.issues[0]?.message ?? 'البيانات غير صحيحة');
 }
-export async function createAgriculturalLandAsset(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createAgriculturalLandAsset, prev, form);
+function isActionState(value: unknown): value is ActionState {
+  return typeof value === 'object' && value !== null && 'error' in value;
 }
-export async function linkFarmToAgriculturalLandAsset(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.linkFarmToAgriculturalLandAsset, prev, form);
+
+function domainError(message: string | undefined, fallback: string): ActionState {
+  const text = message ?? '';
+  if (text.includes('idempotency key payload mismatch')) return fail('مفتاح العملية استُخدم لبيانات مختلفة. حدّث الصفحة وأعد المحاولة.');
+  if (text.includes('forbidden')) return fail('لا تملك صلاحية تنفيذ هذا الإجراء على هذا المشروع.');
+  if (text.includes('agriculture project not found')) return fail('هذا المشروع ليس مشروعًا زراعيًا.');
+  if (text.includes('expected state mismatch')) return fail('تغيّرت حالة الدورة منذ فتح الصفحة. حدّث الصفحة قبل إعادة المحاولة.');
+  if (text.includes('field area capacity exceeded')) return fail('مجموع المساحات المخصصة للحقل يتجاوز سعته. راجع المواعيد والمساحات.');
+  if (text.includes('assigned area must be positive')) return fail('المساحة المخصصة يجب أن تكون موجبة.');
+  if (text.includes('field area must be positive')) return fail('مساحة الحقل يجب أن تكون موجبة.');
+  if (text.includes('field not found')) return fail('الحقل المحدد غير موجود في هذا المشروع.');
+  if (text.includes('farm not found')) return fail('المزرعة المحددة غير موجودة في هذا المشروع.');
+  if (text.includes('crop cycle not found')) return fail('دورة المحصول المحددة غير موجودة في هذا المشروع.');
+  if (text.includes('invalid crop cycle transition')) return fail('انتقال دورة الحياة المطلوب غير مسموح.');
+  if (text.includes('cancelled crop cycle cannot receive field assignments')) return fail('لا يمكن تخصيص حقول لدورة محصول ملغاة.');
+  if (text.includes('assigned area unit') && text.includes('must match')) return fail('وحدة المساحة المخصصة يجب أن تطابق وحدة الحقل.');
+  if (text.includes('authentication required')) return fail('انتهت جلسة الدخول. سجّل الدخول ثم أعد المحاولة.');
+  if (text.includes('invalid activity type')) return fail('نوع النشاط غير ضمن القائمة المعتمدة.');
+  if (text.includes('invalid activity date')) return fail('تاريخ النشاط غير صالح.');
+  if (text.includes('quantity and unit must be provided together')) return fail('الكمية ووحدتها يجب إدخالهما معًا أو تركهما معًا.');
+  if (text.includes('quantity must be positive')) return fail('الكمية يجب أن تكون موجبة.');
+  if (text.includes('crop cycle field assignment not found')) return fail('الحقل غير مخصص لهذه الدورة. اختر تخصيصًا قائمًا.');
+  // GF-015 — input item, input lot, and input application.
+  if (text.includes('invalid input category')) return fail('فئة المدخل يجب أن تكون تقاوي أو سماد أو مبيد/كيماوي.');
+  if (text.includes('invalid input name')) return fail('اسم المدخل مطلوب (حرفان على الأقل).');
+  if (text.includes('invalid application unit')) return fail('وحدة تطبيق المدخل مطلوبة.');
+  if (text.includes('invalid lot reference')) return fail('مرجع التشغيلة مطلوب.');
+  if (text.includes('input item already exists')) return fail('يوجد مدخل بنفس الاسم والفئة في هذا المشروع.');
+  if (text.includes('input lot reference already exists')) return fail('مرجع التشغيلة مستخدم بالفعل لهذا المدخل.');
+  if (text.includes('manufacture date must not be after the expiry date')) return fail('تاريخ التصنيع يجب ألا يكون بعد تاريخ الانتهاء.');
+  if (text.includes('input item not found')) return fail('المدخل المحدد غير موجود في هذا المشروع.');
+  if (text.includes('input lot not found')) return fail('التشغيلة المحددة غير موجودة لهذا المدخل.');
+  if (text.includes('field activity not found')) return fail('نشاط الحقل المحدد غير موجود في هذه المنظمة.');
+  if (text.includes('does not accept an input application')) return fail('نوع نشاط الحقل المحدد لا يستقبل تطبيق مدخلات. اختر زراعة أو تسميد أو رش.');
+  if (text.includes('requires a PLANT activity')) return fail('التقاوي تُسجَّل على نشاط زراعة فقط.');
+  if (text.includes('requires a FERTILIZE activity')) return fail('السماد يُسجَّل على نشاط تسميد فقط.');
+  if (text.includes('requires a SPRAY activity')) return fail('المبيد/الكيماوي يُسجَّل على نشاط رش فقط.');
+  if (text.includes('expired on')) return fail('التشغيلة منتهية الصلاحية في تاريخ التطبيق ولا يمكن تسجيلها.');
+  if (text.includes('application quantity must be positive')) return fail('كمية التطبيق يجب أن تكون موجبة.');
+  if (text.includes('application unit must be the input item unit')) return fail('وحدة الكمية يجب أن تطابق وحدة تطبيق المدخل.');
+  if (text.includes('applied area must be positive')) return fail('المساحة المعالجة يجب أن تكون موجبة.');
+  if (text.includes('applied area unit must be the assignment area unit')) return fail('وحدة المساحة المعالجة يجب أن تطابق وحدة مساحة التخصيص.');
+  if (text.includes('applied area exceeds the assigned area')) return fail('المساحة المعالجة تتجاوز المساحة المخصصة لهذا التخصيص.');
+  if (text.includes('invalid application date')) return fail('تاريخ التطبيق غير صالح.');
+  if (text.includes('invalid safety note')) return fail('ملاحظة السلامة غير صالحة.');
+  // GF-016 — harvest event, harvest lot, storage location, and harvest inventory movement.
+  if (text.includes('invalid storage location name')) return fail('اسم موقع التخزين مطلوب (حرفان على الأقل).');
+  if (text.includes('storage location already exists')) return fail('يوجد موقع تخزين بنفس الاسم في هذا المشروع.');
+  if (text.includes('storage location not found')) return fail('موقع التخزين المحدد غير موجود في هذا المشروع.');
+  if (text.includes('crop cycle is not harvest-ready')) return fail('دورة المحصول ليست جاهزة للحصاد. انقلها إلى حالة "قيد الحصاد" أولًا.');
+  if (text.includes('harvest gross quantity must be positive')) return fail('الكمية الإجمالية للحصاد يجب أن تكون موجبة.');
+  if (text.includes('harvest net quantity must be positive')) return fail('الكمية الصافية للحصاد يجب أن تكون موجبة.');
+  if (text.includes('harvest net quantity must not exceed gross quantity')) return fail('الكمية الصافية يجب ألا تتجاوز الكمية الإجمالية.');
+  if (text.includes('invalid harvest quantity unit')) return fail('وحدة كمية الحصاد مطلوبة.');
+  if (text.includes('invalid harvest grade')) return fail('درجة/جودة الحصاد غير صالحة.');
+  if (text.includes('harvest lot reference already exists')) return fail('مرجع تشغيلة الحصاد مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('harvest lot not found for sale')) return fail('تشغيلة الحصاد المحددة لا تنتمي إلى هذا المشروع.');
+  if (text.includes('harvest lot not found')) return fail('تشغيلة الحصاد المحددة غير موجودة في هذه المنظمة.');
+  if (text.includes('insufficient inventory for agriculture sale')) return fail('الرصيد المتاح لا يكفي لتسليم هذا البيع.');
+  if (text.includes('insufficient inventory')) return fail('الرصيد المتاح غير كافٍ لهذه الحركة.');
+  if (text.includes('transfer source and destination storage must differ')) return fail('لا يمكن النقل إلى نفس موقع التخزين.');
+  if (text.includes('cannot precede the harvest date')) return fail('تاريخ الحركة لا يمكن أن يسبق تاريخ الحصاد.');
+  if (text.includes('transfer quantity must be positive')) return fail('كمية النقل يجب أن تكون موجبة.');
+  if (text.includes('adjustment quantity must be positive')) return fail('كمية التعديل يجب أن تكون موجبة.');
+  if (text.includes('adjustment reason is required')) return fail('سبب التعديل مطلوب.');
+  if (text.includes('invalid harvest inventory movement type')) return fail('نوع حركة المخزون غير صالح.');
+  if (text.includes('invalid movement reason')) return fail('سبب الحركة غير صالح.');
+  if (text.includes('invalid movement date')) return fail('تاريخ الحركة غير صالح.');
+  // GF-017 — Agriculture land investment/control.
+  if (text.includes('agricultural land asset reference already exists')) return fail('مرجع الأرض/الأصل مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('agricultural land area must be positive')) return fail('مساحة الأرض القانونية/التعاقدية يجب أن تكون موجبة.');
+  if (text.includes('invalid agricultural land control basis')) return fail('أساس السيطرة على الأرض غير صالح.');
+  if (text.includes('land counterparty not found')) return fail('المالك/البائع/المؤجر المحدد غير موجود في هذه المنظمة.');
+  if (text.includes('land agreement reference is required')) return fail('مرجع عقد أو اتفاق السيطرة مطلوب.');
+  if (text.includes('land control evidence is required')) return fail('مرجع دليل السيطرة مطلوب.');
+  if (text.includes('control end date must not precede')) return fail('تاريخ نهاية السيطرة لا يمكن أن يسبق بدايتها.');
+  if (text.includes('consideration is only supported')) return fail('المقابل الشرائي يُسجّل للأرض المشتراة فقط.');
+  if (text.includes('purchase consideration and currency')) return fail('المقابل المتفق عليه وعملته يجب إدخالهما معًا.');
+  if (text.includes('land consideration obligation must belong')) return fail('التزام المقابل لا ينتمي إلى نفس المشروع.');
+  if (text.includes('land consideration obligation must match')) return fail('مبلغ وعملة الالتزام لا يطابقان المقابل المتفق عليه.');
+  if (text.includes('agricultural land asset not found in project')) return fail('الأرض/الأصل المحدد لا ينتمي إلى هذا المشروع.');
+  if (text.includes('farm not found in project')) return fail('المزرعة المحددة لا تنتمي إلى هذا المشروع.');
+  if (text.includes('farm already linked')) return fail('المزرعة مرتبطة بالفعل بأرض/أصل استثماري.');
+  // GF-018 — sale, physical dispatch, revenue and collection.
+  if (text.includes('buyer party not found')) return fail('المشتري المحدد غير موجود في هذه المنظمة.');
+  if (text.includes('agriculture sale reference already exists')) return fail('مرجع البيع مستخدم بالفعل في هذا المشروع.');
+  if (text.includes('source storage not found for sale')) return fail('موقع المصدر لا ينتمي إلى هذا المشروع.');
+  if (text.includes('sale cannot precede harvest') || text.includes('sale issue cannot precede harvest')) return fail('تاريخ البيع/التسليم لا يمكن أن يسبق تاريخ الحصاد.');
+  if (text.includes('sale quantity must be positive')) return fail('كمية البيع يجب أن تكون موجبة.');
+  if (text.includes('sale unit price must be positive')) return fail('سعر الوحدة يجب أن يكون موجبًا.');
+  if (text.includes('exact minor units')) return fail('الكمية والسعر ينتجان جزءًا من أصغر وحدة للعملة؛ راجع القيم.');
+  if (text.includes('duplicate lot and storage')) return fail('لا تكرر نفس التشغيلة وموقع التخزين داخل البيع؛ اجمع الكمية في سطر واحد.');
+  if (text.includes('only a draft agriculture sale')) return fail('لا يمكن اعتماد هذا البيع لأنه لم يعد مسودة. حدّث الصفحة.');
+  if (text.includes('must be approved before control transfer')) return fail('اعتمد البيع أولًا قبل تسجيل التسليم وانتقال السيطرة.');
+  if (text.includes('control transfer date must be effective')) return fail('تاريخ التسليم يجب ألا يكون في المستقبل.');
+  if (text.includes('collection date must be effective')) return fail('تاريخ التحصيل يجب ألا يكون في المستقبل.');
+  if (text.includes('collection exceeds outstanding agriculture receivable')) return fail('مبلغ التحصيل يتجاوز الذمة المدينة المتبقية.');
+  if (text.includes('cash account must belong')) return fail('حساب النقدية لا ينتمي إلى نفس المشروع أو العملة.');
+  if (text.includes('collection cannot precede recognition')) return fail('تاريخ التحصيل لا يمكن أن يسبق الاعتراف بالإيراد.');
+  if (text.includes('organization owner required')) return fail('هذا الإجراء المالي المادي يتطلب صلاحية مالك المنظمة.');
+  // GF-019 — result, posted-cost attribution and closeout.
+  if (text.includes('attributed cost amount must be positive')) return fail('مبلغ تكلفة التشغيل المحمّل يجب أن يكون موجبًا.');
+  if (text.includes('authoritative posted cost source not found')) return fail('مصدر التكلفة المالية المعتمد غير موجود أو غير متاح لهذا المشروع.');
+  if (text.includes('source is not an authoritative posted operating expense')) return fail('المصدر المختار ليس مصروف تشغيل مُرحّلًا في النواة المالية.');
+  if (text.includes('posted cost source does not belong')) return fail('مصدر التكلفة لا ينتمي إلى مشروع دورة المحصول.');
+  if (text.includes('exceeds authoritative source amount')) return fail('التحميل المطلوب يتجاوز الرصيد المتاح في مصدر التكلفة المالي.');
+  if (text.includes('land acquisition consideration is not eligible')) return fail('مقابل شراء الأرض أصل استثماري ولا يدخل في تكلفة تشغيل دورة المحصول.');
+  if (text.includes('field is not assigned to crop cycle')) return fail('الحقل المحدد ليس ضمن تخصيصات هذه الدورة.');
+  if (text.includes('cost attribution policy reference is required')) return fail('مرجع سياسة تحميل تكلفة التشغيل مطلوب.');
+  if (text.includes('cost attribution evidence is required')) return fail('مرجع دليل تحميل تكلفة التشغيل مطلوب.');
+  if (text.includes('crop cycle must be HARVESTING')) return fail('لا يمكن الإغلاق إلا عندما تكون الدورة في حالة «قيد الحصاد».');
+  if (text.includes('crop cycle close reason is required')) return fail('اكتب سببًا واضحًا لإغلاق الدورة.');
+  if (text.includes('crop cycle close evidence is required')) return fail('مرجع دليل الإغلاق مطلوب.');
+  if (text.includes('crop cycle close blocked: NO_HARVEST')) return fail('لا يمكن إغلاق دورة حصاد ناجحة بلا حدث حصاد. إذا لم ينتج المحصول فاستخدم مسار الفشل قبل بدء الحصاد.');
+  if (text.includes('crop cycle close blocked: NO_ASSIGNMENT')) return fail('لا يمكن الإغلاق دون تخصيص حقل صالح للدورة.');
+  if (text.includes('crop cycle close blocked: NEGATIVE_INVENTORY')) return fail('الإغلاق موقوف لأن رصيد مخزون الحصاد سالب. راجع الحركات وصحّحها أولًا.');
+  if (text.includes('crop cycle close blocked: BROKEN_SALE_ISSUE')) return fail('الإغلاق موقوف لأن كمية البيع لا تتطابق مع صرف المخزون.');
+  if (text.includes('crop cycle close blocked: COST_ATTRIBUTION_CEILING_BROKEN')) return fail('الإغلاق موقوف لأن تحميل تكلفة التشغيل يتجاوز مصدره المالي.');
+  if (text.includes('crop cycle close blocked:')) return fail('الإغلاق موقوف بسبب استثناء سلامة جوهري. راجع قائمة الاستثناءات في نتيجة الدورة.');
+  return fail(fallback);
 }
-export async function createFarm(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createFarm, prev, form);
+
+async function rpc(name: string, args: Record<string, unknown>, fallback: string, projectId: string): Promise<ActionState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc(name, args);
+  if (error) return domainError(error.message, fallback);
+  refresh(projectId);
+  return {};
 }
-export async function createField(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createField, prev, form);
+
+export async function createAgricultureProfile(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureProfileSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_agriculture_profile',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_notes: value.notes,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر إنشاء ملف الزراعة.',
+    value.projectId,
+  );
 }
-export async function createCropCycle(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createCropCycle, prev, form);
+
+export async function createFarm(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(farmSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_farm',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_operating_location: value.operatingLocation,
+      p_tenure_description: value.tenureDescription,
+      p_timezone: value.timezone,
+      p_map_reference: value.mapReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل المزرعة.',
+    value.projectId,
+  );
 }
-export async function transitionCropCycle(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.transitionCropCycle, prev, form);
+
+export async function createField(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(fieldSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_field',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_farm_id: value.farmId,
+      p_identifier: value.identifier,
+      p_area_quantity: value.areaQuantity.replace(',', '.'),
+      p_area_unit: value.areaUnit,
+      p_soil_notes: value.soilNotes,
+      p_irrigation_notes: value.irrigationNotes,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل الحقل.',
+    value.projectId,
+  );
 }
-export async function assignCropCycleToField(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.assignCropCycleToField, prev, form);
+
+export async function createCropCycle(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cropCycleSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_crop_cycle',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_crop: value.crop,
+      p_variety: value.variety,
+      p_season_reference: value.seasonReference,
+      p_planned_start_date: value.plannedStartDate,
+      p_planned_end_date: value.plannedEndDate,
+      p_target_yield_quantity: value.targetYieldQuantity?.replace(',', '.') ?? null,
+      p_target_yield_unit: value.targetYieldUnit,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر إنشاء دورة المحصول.',
+    value.projectId,
+  );
 }
-export async function createFieldActivity(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createFieldActivity, prev, form);
+
+export async function assignCropCycleToField(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cropAssignmentSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'assign_crop_cycle_to_field',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_crop_cycle_id: value.cropCycleId,
+      p_field_id: value.fieldId,
+      p_assigned_area_quantity: value.assignedAreaQuantity.replace(',', '.'),
+      p_assigned_area_unit: value.assignedAreaUnit,
+      p_planned_start_date: value.plannedStartDate,
+      p_planned_end_date: value.plannedEndDate,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تخصيص الحقل لدورة المحصول.',
+    value.projectId,
+  );
 }
-export async function createInputItem(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createInputItem, prev, form);
+
+export async function transitionCropCycle(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cycleTransitionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'transition_crop_cycle',
+    {
+      p_organization_id: value.organizationId,
+      p_crop_cycle_id: value.cropCycleId,
+      p_expected_state: value.expectedState,
+      p_new_state: value.newState,
+      p_reason: value.reason,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تأكيد انتقال دورة المحصول.',
+    value.projectId,
+  );
 }
-export async function createInputLot(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createInputLot, prev, form);
+
+export async function createFieldActivity(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(fieldActivitySchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_field_activity',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_crop_cycle_id: value.cropCycleId,
+      p_field_id: value.fieldId,
+      p_assignment_id: value.assignmentId,
+      p_activity_date: value.activityDate,
+      p_activity_type: value.activityType,
+      p_quantity: value.quantity?.replace(',', '.') ?? null,
+      p_unit: value.unit,
+      p_notes: value.notes,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل نشاط الحقل.',
+    value.projectId,
+  );
 }
-export async function recordInputApplication(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.recordInputApplication, prev, form);
+
+// ---------------------------------------------------------------------------
+// GF-015 — Field Input Application Foundation.
+//
+// Three commands, all server-authoritative. The browser never supplies
+// the actor, and for an application it never supplies the project,
+// crop cycle, field, or assignment: the server derives all four from
+// the referenced FieldActivity. `projectId` is carried in the form only
+// so the affected workspace paths can be revalidated.
+//
+// GF-015 records the operational fact only. No obligation, payment,
+// journal, investor balance, inventory balance, valuation, or
+// biological-asset accounting fact is created, and CropCycle lifecycle
+// state is never advanced. Available-stock validation begins only when
+// the canonical InventoryMovement slice exists.
+// ---------------------------------------------------------------------------
+
+export async function createInputItem(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(inputItemSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_input_item',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_category: value.category,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_application_unit: value.applicationUnit,
+      p_manufacturer: value.manufacturer,
+      p_notes: value.notes,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل المدخل الزراعي.',
+    value.projectId,
+  );
 }
-export async function createStorageLocation(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createStorageLocation, prev, form);
+
+export async function createInputLot(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(inputLotSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  // The project and the unit are derived server-side from the input
+  // item; they are deliberately not sent from the browser.
+  return rpc(
+    'create_input_lot',
+    {
+      p_organization_id: value.organizationId,
+      p_input_item_id: value.inputItemId,
+      p_lot_reference: value.lotReference,
+      p_supplier_reference: value.supplierReference,
+      p_manufactured_on: value.manufacturedOn ?? null,
+      p_expires_on: value.expiresOn ?? null,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل تشغيلة المدخل.',
+    value.projectId,
+  );
 }
-export async function recordHarvestEvent(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.recordHarvestEvent, prev, form);
+
+export async function recordInputApplication(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(inputApplicationSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'record_input_application',
+    {
+      p_organization_id: value.organizationId,
+      p_field_activity_id: value.fieldActivityId,
+      p_input_item_id: value.inputItemId,
+      p_input_lot_id: value.inputLotId,
+      p_application_date: value.applicationDate,
+      p_quantity: value.quantity.replace(',', '.'),
+      p_unit: value.unit,
+      p_applied_area_quantity: value.appliedAreaQuantity.replace(',', '.'),
+      p_applied_area_unit: value.appliedAreaUnit,
+      p_notes: value.notes,
+      p_safety_note: value.safetyNote,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل تطبيق المدخل.',
+    value.projectId,
+  );
 }
-export async function transferHarvestInventory(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.transferHarvestInventory, prev, form);
+
+// ---------------------------------------------------------------------------
+// GF-016 — Harvest & Inventory Flow Foundation.
+//
+// Four commands, all server-authoritative. The browser never supplies the
+// actor. For a harvest, project, crop cycle, field and assignment are all
+// derived server-side from the referenced assignment; the movement unit is
+// derived server-side from the referenced Harvest Lot. `projectId` is
+// carried in the form only so the affected workspace paths are revalidated.
+//
+// GF-016 tracks physical harvest-output quantity only: no sale, valuation,
+// accounting, biological-asset, or input-stock fact is created, and
+// CropCycle lifecycle state is never advanced.
+// ---------------------------------------------------------------------------
+
+export async function createStorageLocation(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(storageLocationSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'create_storage_location',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_notes: value.notes,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل موقع التخزين.',
+    value.projectId,
+  );
 }
-export async function recordHarvestInventoryAdjustment(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.recordHarvestInventoryAdjustment, prev, form);
+
+export async function recordHarvestEvent(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(harvestEventSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  // Project, crop cycle, field and assignment are derived server-side from
+  // the referenced assignment; they are not re-asserted by the browser.
+  return rpc(
+    'record_harvest_event',
+    {
+      p_organization_id: value.organizationId,
+      p_assignment_id: value.assignmentId,
+      p_harvest_date: value.harvestDate,
+      p_gross_quantity: value.grossQuantity.replace(',', '.'),
+      p_net_quantity: value.netQuantity.replace(',', '.'),
+      p_quantity_unit: value.quantityUnit,
+      p_grade: value.grade,
+      p_lot_reference: value.lotReference,
+      p_destination_storage_id: value.destinationStorageId,
+      p_notes: value.notes,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل حدث الحصاد.',
+    value.projectId,
+  );
 }
-export async function createAgricultureSale(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.createAgricultureSale, prev, form);
+
+export async function transferHarvestInventory(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(transferHarvestInventorySchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  // The movement unit is derived server-side from the Harvest Lot's own
+  // unit; it is never supplied by the browser.
+  return rpc(
+    'transfer_harvest_inventory',
+    {
+      p_organization_id: value.organizationId,
+      p_harvest_lot_id: value.harvestLotId,
+      p_from_storage_id: value.fromStorageId,
+      p_to_storage_id: value.toStorageId,
+      p_quantity: value.quantity.replace(',', '.'),
+      p_movement_date: value.movementDate,
+      p_reason: value.reason,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تنفيذ نقل المخزون.',
+    value.projectId,
+  );
 }
-export async function approveAgricultureSale(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.approveAgricultureSale, prev, form);
+
+export async function recordHarvestInventoryAdjustment(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(harvestInventoryAdjustmentSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'record_harvest_inventory_adjustment',
+    {
+      p_organization_id: value.organizationId,
+      p_harvest_lot_id: value.harvestLotId,
+      p_storage_id: value.storageId,
+      p_movement_type: value.movementType,
+      p_quantity: value.quantity.replace(',', '.'),
+      p_movement_date: value.movementDate,
+      p_reason: value.reason,
+      p_evidence_reference: value.evidenceReference,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل تعديل المخزون.',
+    value.projectId,
+  );
 }
-export async function recognizeAgricultureSale(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.recognizeAgricultureSale, prev, form);
+
+// ---------------------------------------------------------------------------
+// GF-017 — Agricultural Land Asset, Acquisition & Control.
+// ---------------------------------------------------------------------------
+export async function createAgriculturalLandAsset(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agriculturalLandAssetSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  const considerationMinor = value.agreedConsideration && value.considerationCurrency
+    ? parseMajorUnitsToMinor(value.agreedConsideration, value.considerationCurrency)
+    : null;
+  return rpc(
+    'create_agricultural_land_asset',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_name: value.name,
+      p_internal_reference: value.internalReference,
+      p_legal_reference: value.legalReference,
+      p_legal_area_quantity: value.legalAreaQuantity,
+      p_area_unit: value.areaUnit,
+      p_legal_location_description: value.legalLocationDescription,
+      p_control_basis: value.controlBasis,
+      p_control_start_date: value.controlStartDate,
+      p_control_end_date: value.controlEndDate,
+      p_counterparty_party_id: value.counterpartyPartyId,
+      p_agreement_reference: value.agreementReference,
+      p_evidence_reference: value.evidenceReference,
+      p_agreed_consideration_minor_units: considerationMinor,
+      p_consideration_currency: value.considerationCurrency,
+      p_consideration_obligation_id: value.considerationObligationId,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر تسجيل أرض/أصل الاستثمار الزراعي.',
+    value.projectId,
+  );
 }
-export async function collectAgricultureSaleReceivable(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.collectAgricultureSaleReceivable, prev, form);
+
+export async function linkFarmToAgriculturalLandAsset(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(farmLandAssetLinkSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc(
+    'link_farm_to_agricultural_land_asset',
+    {
+      p_organization_id: value.organizationId,
+      p_project_id: value.projectId,
+      p_land_asset_id: value.landAssetId,
+      p_farm_id: value.farmId,
+      p_idempotency_key: value.idempotencyKey,
+    },
+    'تعذر ربط المزرعة بالأرض/الأصل.',
+    value.projectId,
+  );
 }
-export async function attributeCropCycleCost(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.attributeCropCycleCost, prev, form);
+
+// ---------------------------------------------------------------------------
+// GF-018 — Agriculture Sale, Dispatch & Revenue.
+// ---------------------------------------------------------------------------
+export async function createAgricultureSale(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('create_agriculture_sale', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_buyer_party_id: value.buyerPartyId,
+    p_sale_reference: value.saleReference,
+    p_agreement_reference: value.agreementReference,
+    p_sale_date: value.saleDate,
+    p_currency: value.currency,
+    p_terms: value.terms,
+    p_evidence_reference: value.evidenceReference,
+    p_harvest_lot_ids: value.linesJson.map((line) => line.harvestLotId),
+    p_source_storage_ids: value.linesJson.map((line) => line.sourceStorageId),
+    p_quantities: value.linesJson.map((line) => line.quantity.replace(',', '.')),
+    p_unit_price_minor_units: value.linesJson.map((line) => parseMajorUnitsToMinor(line.unitPrice, value.currency)),
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر حفظ مسودة البيع الزراعي.', value.projectId);
 }
-export async function closeCropCycle(prev: ActionState, form: FormData) {
-  return withCommandLifecycle(domain.closeCropCycle, prev, form);
+
+export async function approveAgricultureSale(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleApprovalSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('approve_agriculture_sale', {
+    p_organization_id: value.organizationId,
+    p_sale_id: value.saleId,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر اعتماد البيع الزراعي.', value.projectId);
+}
+
+export async function recognizeAgricultureSale(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleRecognitionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('recognize_agriculture_sale', {
+    p_organization_id: value.organizationId,
+    p_sale_id: value.saleId,
+    p_control_transfer_date: value.controlTransferDate,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تسجيل التسليم والاعتراف بالإيراد.', value.projectId);
+}
+
+export async function collectAgricultureSaleReceivable(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(agricultureSaleCollectionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('collect_agriculture_sale_receivable', {
+    p_organization_id: value.organizationId,
+    p_recognition_id: value.recognitionId,
+    p_cash_account_id: value.cashAccountId,
+    p_amount_minor_units: parseMajorUnitsToMinor(value.amount, value.currency),
+    p_collection_date: value.collectionDate,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تسجيل التحصيل.', value.projectId);
+}
+
+// ---------------------------------------------------------------------------
+// GF-019 — dimensions existing posted Finance cost and closes the canonical
+// CropCycle lifecycle. Neither action accepts browser-supplied actor/result.
+// ---------------------------------------------------------------------------
+export async function attributeCropCycleCost(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cropCycleCostAttributionSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('attribute_crop_cycle_cost', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_crop_cycle_id: value.cropCycleId,
+    p_field_id: value.fieldId,
+    p_source_journal_line_id: value.sourceJournalLineId,
+    p_amount_minor_units: parseMajorUnitsToMinor(value.amount, value.currency),
+    p_cost_category: value.costCategory,
+    p_policy_reference: value.policyReference,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر تحميل تكلفة التشغيل على الدورة.', value.projectId);
+}
+
+export async function closeCropCycle(_: ActionState, form: FormData): Promise<ActionState> {
+  const value = parse(cropCycleCloseoutSchema.safeParse(Object.fromEntries(form)));
+  if (isActionState(value)) return value;
+  return rpc('close_crop_cycle', {
+    p_organization_id: value.organizationId,
+    p_project_id: value.projectId,
+    p_crop_cycle_id: value.cropCycleId,
+    p_close_reason: value.closeReason,
+    p_evidence_reference: value.evidenceReference,
+    p_idempotency_key: value.idempotencyKey,
+  }, 'تعذر إغلاق دورة المحصول.', value.projectId);
 }
