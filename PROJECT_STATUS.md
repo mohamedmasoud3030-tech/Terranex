@@ -6,225 +6,219 @@
 
 ## Executive status
 
-The repository baseline is **build/test green**, but this archaeology pass does **not** establish production readiness.
+The repository baseline is **green on its current automated quality gates**, but this archaeology pass does **not** establish production readiness.
 
-The strongest verified result is that the current source compiles, all current Vitest tests pass, and the complete PostgreSQL migration/test replay passes in CI. The largest unresolved gap is operational: the currently connected Supabase and Vercel accounts do not expose a Terranex project, so live production behavior and operational controls could not be verified.
+Strongest verified result: the exact baseline SHA installs, lints, passes 714 Vitest tests, builds successfully, passes TypeScript checking, and passes complete PostgreSQL migration replay/database verification in CI.
 
-A separate governance fact also requires owner confirmation: GitHub currently reports the **repository visibility as public**, while Terranex is implemented as a private/internal application. Public source visibility may be intentional, but that intent cannot be inferred from code.
+Largest unresolved gap: no Terranex project is visible through the currently connected Supabase or Vercel accounts, so live production behavior and operational controls could not be verified.
 
-## Verification vocabulary
+Separate governance facts requiring owner review: GitHub currently reports the repository as **public** and `main` as **not branch-protected**. Public source visibility may be intentional; intent cannot be inferred from code.
 
-- **PASS** — executed successfully on the exact baseline SHA.
-- **OPEN** — intentionally unresolved product/business policy.
-- **UNKNOWN** — not verifiable with the repository/current connected accounts.
-- **RISK** — a verified condition that deserves follow-up but is not necessarily a current functional failure.
-- **CONTRADICTION** — current documentation and executable/current implementation disagree.
+## Baseline checks observed on the exact SHA
 
-## Baseline checks executed by current CI
-
-| Check | Result | Observed baseline |
+| Check | Result | Observed outcome |
 |---|---|---|
-| `npm ci` | PASS with warning | 594 packages installed; 595 audited; npm reported 4 moderate severity vulnerabilities |
-| `npm run lint` | PASS | No lint failure |
-| `npm run test` | PASS | 52 test files; 714 tests passed |
-| `npm run build` | PASS | Next.js production build completed; 29 routes compiled |
-| `npm run typecheck` | PASS | TypeScript check completed without failure |
-| `npm run test:db` | PASS | Full migration replay and all SQL/concurrency verification suites passed |
+| `npm ci --no-audit --no-fund` | PASS | 482 packages added |
+| `npm run lint` | PASS | ESLint completed without failure |
+| `npm test` | PASS | 52 test files; 714 tests passed; Vitest 3.2.7 |
+| `npm run build` | PASS | Next.js 16.3.0 production build completed; 30 application routes compiled (+ framework `/_not-found`) |
+| `npx tsc --noEmit` | PASS | TypeScript check completed without failure |
+| `npm run db:test` | PASS | PostgreSQL 16; full migration replay and all SQL/concurrency verification suites passed |
 
-No source/test/build failure is present in this baseline CI run.
+There were **no failing baseline CI commands** on this exact SHA.
 
-### Important qualification
+### Dependency-audit qualification
 
-The four npm dependency vulnerabilities are a **pre-existing dependency risk**, not a failing CI gate. `npm audit` is not a current required quality gate, so a green workflow does not mean the dependency graph is vulnerability-free.
+Current CI intentionally installs with `--no-audit`, so this discovery pass has **no verified npm vulnerability count**. A green baseline must not be interpreted as a completed dependency-security audit.
 
 ## Verified working areas
 
 ### Repository/build system
 
-- Single npm/Next.js application, not a monorepo.
-- Lockfile-based deterministic CI install.
-- Lint, unit/component tests, production build, typecheck, and database replay are automated.
-- `codex/**`, `main`, pull-request and manual CI entry points are configured.
+- Single npm/Next.js application; not a monorepo.
+- Committed lockfile and deterministic CI install.
+- Current automated gates cover lint, Vitest, production build, TypeScript, migration replay, SQL tests, and DB concurrency/replay/restore/smoke/isolation suites.
+- CI triggers on `main` pushes, pull requests targeting `main`, and manual dispatch.
 
-### Application shell and authentication
+### Application shell/authentication
 
-- Login action using Supabase Auth.
-- Logout action.
+- Supabase email/password login.
+- Logout.
 - Authenticated-route gating in `src/proxy.ts`.
-- Authenticated onboarding for first organization creation.
+- Authenticated first-organization onboarding.
 - Arabic/RTL root layout.
-- Organization/project workspace navigation.
+- Organization/portfolio/project workspace navigation.
 
-### Tenant and database foundation
+### Tenant/database foundation
 
-- Organization membership boundary.
+- Organization membership tenant boundary.
 - `OWNER` / `MEMBER` roles and active/inactive membership state.
-- RLS and forced RLS on foundation tenant tables.
-- Explicit database command/RPC paths for important mutations.
+- RLS plus forced RLS on foundation tenant tables.
+- Explicit database functions/RPCs for important mutations.
 - Audit-event foundation.
-- Foreign-key and index controls.
+- Foreign-key/index controls.
 
 ### Business/domain implementation present and migration-replay verified
 
 - Portfolios/projects/intake/terms/funding.
-- Costs/cash/revenue/finance foundations.
+- Budget/costs/cash/revenue/finance foundations.
 - Real-estate operations.
-- Agriculture operations and lifecycle.
-- Livestock operations and lifecycle.
+- Agriculture operations/lifecycle.
+- Livestock operations/lifecycle.
 - Procurement/receiving.
 - Vendor finance/contracts/credits/payment allocation/advances.
-- Budget and approval/exception controls.
+- Approval/exception controls.
 - Close/integrity/performance/portfolio roll-up/governance foundations.
-- Idempotency/concurrency protections covered by database verification suites.
+- Idempotency/concurrency protections covered by DB verification suites.
 
 ### Investor-policy safety
 
-- Unapproved ownership/profit/distribution economics are currently fail-closed.
-- Current UI does not present economic entitlement as established fact.
-- Legacy economic mutation mechanisms are blocked pending approved policy.
+- Unapproved ownership/profit/distribution economics are fail-closed.
+- The current Investors UI does not present economic entitlement as established fact.
+- Legacy economic mutation mechanisms are blocked pending approved `BD-012` policy.
 
 ### Database verification
 
-The current DB test runner verifies ordered migration replay and runs SQL plus shell/concurrency suites including policy race, close, allocation, lifecycle, opening placement, livestock monetary/operational, portfolio, procurement receiving, vendor payment allocation, data-preservation replay, forward upgrade, backup/restore, backup-failure safety, smoke, and S2 isolation checks.
+The DB runner applies all current migrations in order and runs SQL plus shell/concurrency suites covering policy races, close, allocation, lifecycle, opening placement, livestock monetary/operational behavior, portfolio behavior, procurement receipt concurrency, vendor payment allocation, data-preservation replay, forward upgrade, backup/restore, backup-failure safety, smoke, and S2 isolation.
 
 ## Existing failures and incomplete areas
 
-### No baseline command failures
+### Baseline command failures
 
-There are no failing lint/test/build/typecheck/database-replay checks on the exact verified SHA.
+**None observed** in current `Greenfield CI` #454.
 
-### Dependency security risk
+### Production runtime
 
-**RISK:** npm reports **4 moderate severity vulnerabilities** during `npm ci`. They were not investigated or repaired in this discovery-only pass.
-
-### Repository visibility and credential-search scope
-
-**VERIFIED:** GitHub reports `mohamedmasoud3030-tech/Terranex` as **public**.
-
-**UNKNOWN:** whether public visibility is intentional. The application itself is designed for private/internal use, but repository visibility and application audience are separate concerns.
-
-The inspected `.env.example` / committed production configuration expose only public `NEXT_PUBLIC_*` application settings; this report does not reproduce their values. Indexed repository searches for `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`, and `DATABASE_URL` returned no matches. This is a useful check but **not equivalent to GitHub secret-scanning history or a forensic scan of every historical commit**, so no blanket “no secrets ever existed” claim is made.
-
-### Production runtime not verified
-
-**UNKNOWN:** No Terranex project was visible through the currently connected Supabase or Vercel accounts. Consequently this pass did not verify:
+**UNKNOWN:** no Terranex project is visible through the currently connected Supabase or Vercel accounts. This pass therefore did not verify:
 
 - deployed production URL behavior;
-- production database migration level/data state;
-- production Auth users/settings;
+- production migration/data state;
+- production Auth configuration/user population;
 - live RLS behavior against production data;
-- storage buckets/object policies;
+- Storage buckets/object policies;
 - runtime logs/errors;
 - monitoring/alerts;
 - scheduled backups/retention;
-- production restore/rollback behavior.
+- restore/rollback readiness.
 
-### Account lifecycle is incomplete as an application flow
+### Repository visibility/credential-search scope
 
-**OPEN/INCOMPLETE:** current code contains login/logout/onboarding, but no self-sign-up, password-reset, invitation, or administrator user-provisioning application flow was found. `BD-012` keeps the policy unresolved.
+**VERIFIED:** GitHub reports `mohamedmasoud3030-tech/Terranex` as **public**.
 
-### Investor/economic policy is intentionally incomplete
+**UNKNOWN:** whether that visibility is intentional.
 
-**OPEN:** business decisions governing investor/economic participation are not approved. The system correctly remains fail-closed rather than inventing ownership/profit rights.
+Inspected env/config files expose public `NEXT_PUBLIC_*` application settings only; values are intentionally omitted here. Indexed repository searches for `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`, and `DATABASE_URL` returned no matches. This is **not** equivalent to GitHub secret-scanning history or a forensic scan of every historical commit, so no claim is made that a secret never existed historically.
 
-### English/LTR support is unverified
+### Account lifecycle
 
-**CONTRADICTION:** repository instructions state Arabic/RTL and English/LTR support, while current root runtime is fixed Arabic/RTL and no i18n mechanism was found.
+**INCOMPLETE/UNKNOWN:** login/logout/onboarding exist, but no self-sign-up, password reset, invitation, or application admin-provisioning flow was found. Whether user provisioning is intentionally handled outside the application is not established.
+
+### Investor economics
+
+**OPEN by design:** `BD-012` leaves investor economics, distribution mechanics, and capital lifecycle policy undecided. Current fail-closed behavior is the correct verified safety posture, not a defect to bypass.
+
+### English/LTR
+
+**UNVERIFIED/CONTRADICTION:** `AGENTS.md` says English/LTR is supported, while current root runtime is fixed Arabic/RTL and no i18n system was found. `BD-008` keeps rollout scope OPEN.
 
 ### Browser E2E coverage
 
-**RISK:** no Playwright/Cypress-style browser E2E framework/configuration is present. Route compilation and component tests do not prove the complete deployed user journeys work in a real browser against a live backend.
+**RISK:** no Playwright/Cypress-style browser E2E framework/configuration is present. Successful compilation/component tests do not prove all live user journeys in a real browser/backend combination.
 
 ### Accessibility coverage
 
-**RISK:** focus/reduced-motion/responsive patterns exist, but there is no dedicated automated accessibility gate. Full WCAG 2.2 AA compliance was not established.
+**RISK:** focus/reduced-motion/responsive patterns exist, but current CI has no dedicated automated accessibility gate. Full WCAG 2.2 AA compliance was not established.
 
-### PWA/offline
+### PWA/installability
 
-**Not implemented by design on this baseline:** no manifest/service worker/offline cache/install/update flow. This aligns with current architecture guidance rather than constituting a discovered regression.
+**OPEN/not implemented:** no manifest/service worker/install/update/offline flow is present. `BD-009` (“Browser installability”) remains OPEN, so this is not classified as a regression.
 
 ### Operational observability
 
-**UNKNOWN:** no dedicated application observability SDK/configuration was found in the repository, and the live platform project is unavailable for inspection. Production monitoring/alerting therefore cannot be claimed.
+**UNKNOWN:** no dedicated application observability SDK/configuration was found, and the live platform project is unavailable for inspection. Production monitoring/alerting cannot be claimed.
 
-## Open business decisions
+### Dependency security
 
-`docs/OPEN_BUSINESS_DECISIONS.md` currently records **12 OPEN decisions**, `BD-001` through `BD-012`:
+**UNKNOWN in this pass:** current CI uses `npm ci --no-audit --no-fund`; no verified npm-audit result was produced by the baseline workflow.
 
-1. `BD-001` — investor/economic participation.
-2. `BD-002` — ownership/allocation basis.
-3. `BD-003` — profit/distribution waterfall.
-4. `BD-004` — capital calls/funding states.
-5. `BD-005` — tax policy.
-6. `BD-006` — base/reporting currency and FX policy.
-7. `BD-007` — approval thresholds, segregation of duties, exceptions.
-8. `BD-008` — evidence retention/legal hold.
-9. `BD-009` — variance policy.
-10. `BD-010` — project onboarding gates.
-11. `BD-011` — sector-specific accounting policy.
-12. `BD-012` — platform policy including account lifecycle, deletion/retention, and payment/AI advisory boundaries.
+## Current open business decisions
 
-These are policy unknowns, not implementation facts to be guessed by engineering.
+`docs/OPEN_BUSINESS_DECISIONS.md` currently records **12 OPEN decisions**:
+
+1. `BD-001` — Reporting calendar / time-zone convention.
+2. `BD-002` — Pilot environment.
+3. `BD-003` — Backup / restore drill target.
+4. `BD-004` — Evidence retention and deletion policy.
+5. `BD-005` — RPO / RTO.
+6. `BD-006` — Pilot user cohort.
+7. `BD-007` — UAT exit signatory.
+8. `BD-008` — English / LTR rollout scope.
+9. `BD-009` — Browser installability.
+10. `BD-010` — External security assessment.
+11. `BD-011` — Accounting export / reconciliation package.
+12. `BD-012` — Investor economics, distribution mechanics, and capital lifecycle policy.
+
+`BD-012` explicitly leaves undecided investor instrument/type, ownership/profit-share/allocation basis, legal structure, contribution/capital-call/refund/withdrawal/transfer states, waterfall/remainder rules, accrual/payment basis, and distribution reversal/recall/clawback/correction mechanics. Engineering must not invent those semantics before an owner decision is recorded.
 
 ## Documentation contradictions/staleness
 
-| Artifact | Contradiction | Current verified source of truth |
+| Artifact | Contradiction/staleness | Current verified source of truth |
 |---|---|---|
-| `README.md` | Describes procurement pricing/invoicing/payment as future work | Current migrations/features contain later procurement/vendor-finance/contracts/payment/budget/approval/close/integrity/performance work |
-| `AGENTS.md` | Says `npm run db:test` | Current `package.json` command is `npm run test:db` |
-| `AGENTS.md` | Says `npm run db:shell` | No npm script exists; `scripts/db-shell.sh` exists |
+| `README.md` | Describes the system as the first Greenfield slice and several now-present capabilities as future work | Current routes/features/migrations and successful full migration replay show substantially later implementation |
 | `AGENTS.md` | Refers to 13 policy questions | Current `docs/OPEN_BUSINESS_DECISIONS.md` contains 12 IDs |
-| `AGENTS.md` | States English/LTR support | Current root runtime is fixed Arabic/RTL; no i18n system found |
+| `AGENTS.md` | States English/LTR support | Current runtime is fixed Arabic/RTL; no i18n mechanism found; `BD-008` remains OPEN |
 
-## TODOs, dead code, duplication, and legacy behavior
+The current `AGENTS.md` command names **do match** `package.json`: `db:test`, `db:shell`, and `r15:admission`.
 
-- GitHub indexed code searches returned no `TODO` or `FIXME` hits on this baseline. This is not equivalent to a local raw-file grep and should not be treated as proof that no informal unfinished marker exists.
-- No dead-code analysis tool is configured, so dead code absence cannot be claimed.
-- Legacy allocation/distribution mechanisms remain represented historically/in code paths, but the current safety layer deliberately blocks unapproved economic mutation. That is **intentional legacy preservation plus fail-close**, not evidence that entitlement is enabled.
-- No broad code duplication audit was performed beyond the existing lint/test/CI gates; duplication absence cannot be claimed.
+## TODOs, dead code, duplication, legacy behavior
 
-## Git/repository governance state
+- GitHub indexed searches returned no `TODO` or `FIXME` hits on this baseline. This is not equivalent to a local raw-file grep.
+- No dead-code analysis tool is configured, so absence of dead code cannot be claimed.
+- No broad duplication scanner was verified in the current quality gates, so absence of duplication cannot be claimed.
+- Historical allocation/distribution mechanisms remain represented, but current safety controls deliberately block unapproved economic mutation. This is intentional preservation plus fail-close, not proof that economic entitlement is enabled.
+
+## Git/repository governance
 
 ### Verified remote state
 
 - Repository visibility: **public**.
 - Default branch: `main`.
-- Verified baseline SHA: `9488588f0c6fd1984a1c09769af480f85905c661`.
-- GitHub reports `main` as **not branch-protected** at the time of this snapshot.
+- Baseline SHA: `9488588f0c6fd1984a1c09769af480f85905c661`.
+- GitHub reports `main` as **not branch-protected** at this snapshot.
 
-### Unknown local state
+### Local state limitation
 
-The available GitHub connector reads/writes the remote repository and does not expose a local checkout/worktree. Therefore this archaeology pass does **not** claim that any developer's local working tree is clean, dirty, ahead, or behind.
+The available GitHub connector does not expose a developer local checkout/worktree. This report therefore does **not** claim any local worktree is clean, dirty, ahead, or behind.
 
-The discovery documents are intentionally isolated on a documentation-only branch and are not merged by this task.
+The four archaeology documents are isolated on `codex/project-archaeology-2026-08-17` and are not merged by this task.
 
 ## Risk register
 
-| Priority | Risk | Evidence/status |
+| Priority | Risk | Status |
 |---|---|---|
-| High | Production environment cannot be independently verified | Terranex absent from currently connected Supabase/Vercel accounts |
-| High | Core economic/business policy is still open | 12 OPEN business decisions; economic mutators fail closed |
-| High | `main` is not branch-protected | GitHub branch metadata |
-| Review now | Repository source is public; owner intent is unknown | GitHub repository metadata |
-| Medium | 4 moderate npm dependency vulnerabilities | Observed during baseline `npm ci` |
-| Medium | No real-browser E2E quality gate | No browser E2E framework/config found |
+| High | Live Terranex environment cannot be independently verified | Supabase/Vercel connected accounts expose no Terranex project |
+| High | `main` is not branch-protected | Verified GitHub branch metadata |
+| Review now | Source repository is public; owner intent unknown | Verified GitHub repository metadata |
+| High | Investor economics/capital lifecycle policy is unresolved | `BD-012` OPEN; mutators fail closed |
+| Medium | No real-browser E2E gate | No Playwright/Cypress framework/config found |
 | Medium | No dedicated automated accessibility gate | Current CI/package config |
-| Medium | Account lifecycle beyond login/logout/onboarding unresolved | Application search + `BD-012` |
-| Medium | Production monitoring/backups/rollback unverified | Live platform project unavailable |
-| Medium | Current repository documentation contains stale commands/status | Verified contradictions listed above |
+| Medium | Account provisioning/recovery flows not found | Repository search/code inspection |
+| Medium | Monitoring/backups/rollback unverified in live environment | Live platform project unavailable |
+| Medium | README is materially stale | Current implementation exceeds described “first slice” |
+| Unknown | Dependency vulnerability state | Baseline CI deliberately skips npm audit |
 
 ## Explicit non-claims
 
 This report does **not** claim:
 
-- that production is healthy or unhealthy;
-- that all 29 routes were exercised in a browser;
-- that test coverage is complete;
-- that WCAG compliance is complete;
-- that no dead/duplicate code exists;
-- that no external integration exists outside the repository;
-- that no secret ever existed in repository history;
-- that unapproved investor economics have been decided;
-- that a local developer worktree is clean.
+- production is healthy or unhealthy;
+- all 30 application routes were exercised in a live browser;
+- test coverage is complete;
+- WCAG compliance is complete;
+- no dead/duplicate code exists;
+- no external integration exists outside the repository;
+- no secret ever existed in repository history;
+- investor economics have been decided;
+- a developer local worktree is clean.
 
 No broad repair, migration, deployment, production write, or policy implementation was performed during this archaeology pass.
