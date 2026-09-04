@@ -186,6 +186,46 @@ export async function getProjectCashByCurrency(
   return (data ?? []) as unknown as ProjectCashByCurrency[];
 }
 
+/**
+ * One currency's capital position inside one project.
+ *
+ * Capital is raised and called in the currency of the commitment, the call line
+ * and the contribution — none of which is constrained to the project reporting
+ * currency. Rows are therefore per currency and MUST NOT be summed.
+ */
+export type ProjectCapitalByCurrency = {
+  organization_id: string;
+  project_id: string;
+  /** ISO-4217 code of the commitment / call line / contribution itself. */
+  currency: string;
+  committed_minor_units: string;
+  called_minor_units: string;
+  contributed_minor_units: string;
+  /** called − contributed. Zero is a real answer: called and settled. */
+  receivable_minor_units: string;
+  /** committed − called. Negative only if a call exceeds the commitment. */
+  uncalled_minor_units: string;
+  /** ISSUED call lines only; a CANCELLED call contributes neither. */
+  call_line_count: number;
+};
+
+const CAPITAL_BY_CURRENCY_COLUMNS =
+  'organization_id,project_id,currency,committed_minor_units,called_minor_units,' +
+  'contributed_minor_units,receivable_minor_units,uncalled_minor_units,call_line_count';
+
+export async function getProjectCapitalByCurrency(
+  projectId: string,
+): Promise<ProjectCapitalByCurrency[]> {
+  const s = await createClient();
+  const { data, error } = await s
+    .from('project_capital_by_currency_read')
+    .select(CAPITAL_BY_CURRENCY_COLUMNS)
+    .eq('project_id', projectId)
+    .order('currency');
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as unknown as ProjectCapitalByCurrency[];
+}
+
 export async function getObligationPositions(projectId: string): Promise<ObligationPosition[]> {
   const s = await createClient();
   const { data, error } = await s

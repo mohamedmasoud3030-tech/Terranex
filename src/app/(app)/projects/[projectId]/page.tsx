@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership, getProjectCashByCurrency } from '@/features/finance/queries';
-import { getProjectCapitalPosition } from '@/features/funding/queries';
+import { getCurrentMembership, getProjectCashByCurrency, getProjectCapitalByCurrency } from '@/features/finance/queries';
+import { buildProjectCapitalView } from '@/features/funding/project-capital';
+import { CapitalPanel } from '@/features/funding/capital-panel';
 import { getAccountingPeriods } from '@/features/close/queries';
 import { getRealizedResults } from '@/features/revenue/queries';
 import { formatMinorUnits } from '@/shared/money';
@@ -28,14 +29,15 @@ export default async function ProjectShell({
   const currency = project.reporting_currency;
   const sector = project.sector;
 
-  const [membership, position, cashByCurrency, results, periods] = await Promise.all([
+  const [membership, capitalRows, cashByCurrency, results, periods] = await Promise.all([
     getCurrentMembership(organizationId),
-    getProjectCapitalPosition(projectId),
+    getProjectCapitalByCurrency(projectId),
     getProjectCashByCurrency(projectId),
     getRealizedResults(projectId),
     getAccountingPeriods(projectId),
   ]);
 
+  const capital = buildProjectCapitalView(capitalRows);
   const isDemo = Boolean(project.internal_reference?.startsWith('DEMO'));
   // Cash is reported per currency and never summed. Adding OMR minor units to
   // USD minor units and labelling the result with the project reporting currency
@@ -76,6 +78,8 @@ export default async function ProjectShell({
 
       <WorkspaceNav projectId={projectId} active="overview" sector={sector} />
 
+      <CapitalPanel view={capital} />
+
       <section className="card stack">
         <div className="topline">
           <h2>مساحة عمل المشروع</h2>
@@ -83,11 +87,6 @@ export default async function ProjectShell({
         </div>
         <p>{project.description || 'لم يُضف وصف للمشروع بعد.'}</p>
         <div className="overview-kpis">
-          <article className="overview-kpi">
-            <span>رأس المال المساهم به</span>
-            <strong>{formatMinorUnits(position?.contributed_minor_units ?? '0', currency)}</strong>
-            <small>من القراءة الرسمية للموقف الرأسمالي</small>
-          </article>
           {cashByCurrency.length === 0 ? (
             <article className="overview-kpi">
               <span>النقدية الحالية</span>
