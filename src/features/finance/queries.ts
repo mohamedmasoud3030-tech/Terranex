@@ -149,6 +149,43 @@ export async function getCashAccountPositions(projectId: string): Promise<CashAc
   return data as CashAccountPosition[];
 }
 
+// H1 — cash by currency (ADR 0034, H1 item 4).
+//
+// One row per (project, currency). There is deliberately NO field here (or in
+// the view) representing a total across currencies, and no FX conversion: cash
+// held in different currencies is not comparable and must never be presented as
+// one number. The absence of a combined figure is structural, not a display
+// choice — a caller cannot sum across currencies even by accident.
+export type ProjectCashByCurrency = {
+  organization_id: string;
+  project_id: string;
+  currency: string;
+  account_count: number;
+  cash_balance_minor_units: string;
+  posted_line_count: number;
+  currency_mismatch_line_count: number;
+  /** True when an ACTIVE (posted, non-reversed) movement stands behind the
+   *  balance. A fully reversed position reports false, like an unused account. */
+  has_active_posted_movement: boolean;
+};
+
+const CASH_BY_CURRENCY_COLUMNS =
+  'organization_id,project_id,currency,account_count,cash_balance_minor_units,' +
+  'posted_line_count,currency_mismatch_line_count,has_active_posted_movement';
+
+export async function getProjectCashByCurrency(
+  projectId: string,
+): Promise<ProjectCashByCurrency[]> {
+  const s = await createClient();
+  const { data, error } = await s
+    .from('project_cash_by_currency_read')
+    .select(CASH_BY_CURRENCY_COLUMNS)
+    .eq('project_id', projectId)
+    .order('currency');
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as unknown as ProjectCashByCurrency[];
+}
+
 export async function getObligationPositions(projectId: string): Promise<ObligationPosition[]> {
   const s = await createClient();
   const { data, error } = await s

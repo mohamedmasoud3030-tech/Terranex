@@ -29,6 +29,11 @@ export type ProjectOperatingResultRow = {
   excluded_from_result_minor_units: string;
   unclassified_eligible_minor_units: string;
   expense_outside_classification_scope_minor_units: string;
+  /** DEDUCTION: cost actually subtracted in the result arithmetic. Distinct from
+   *  the attributed classification bucket — a Real Estate SELLING cost is
+   *  classified once but deducted zero times, because its economic effect is
+   *  already inside the sector realized disposal result. */
+  result_deducted_cost_minor_units: string;
   evidence_evidenced_count: number;
   evidence_subject_count: number;
   as_of: string;
@@ -53,9 +58,10 @@ export type SectorManagementResultRow = {
   excluded_from_result_minor_units: string;
   unclassified_eligible_minor_units: string;
   expense_outside_classification_scope_minor_units: string;
-  /** Attributed cost + declared overhead: exactly what the result deducts.
+  /** DEDUCTION: cost actually subtracted in the result arithmetic, summed from
+   *  the project rows. Not the same as the attributed classification bucket.
    *  Summed in SQL so no financial arithmetic happens in the UI. */
-  classified_deducted_minor_units: string;
+  result_deducted_cost_minor_units: string;
   evidence_evidenced_count: number;
   evidence_subject_count: number;
   as_of: string;
@@ -68,6 +74,7 @@ const PROJECT_RESULT_COLUMNS =
   'attributed_operating_cost_minor_units,selling_cost_attributed_minor_units,' +
   'project_overhead_minor_units,excluded_from_result_minor_units,' +
   'unclassified_eligible_minor_units,expense_outside_classification_scope_minor_units,' +
+  'result_deducted_cost_minor_units,' +
   'evidence_evidenced_count,evidence_subject_count,as_of';
 
 const SECTOR_RESULT_COLUMNS =
@@ -77,7 +84,7 @@ const SECTOR_RESULT_COLUMNS =
   'attributed_operating_cost_minor_units,selling_cost_attributed_minor_units,' +
   'project_overhead_minor_units,excluded_from_result_minor_units,' +
   'unclassified_eligible_minor_units,expense_outside_classification_scope_minor_units,' +
-  'classified_deducted_minor_units,' +
+  'result_deducted_cost_minor_units,' +
   'evidence_evidenced_count,evidence_subject_count,as_of';
 
 export async function getProjectOperatingResult(

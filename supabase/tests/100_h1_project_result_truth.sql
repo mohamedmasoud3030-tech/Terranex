@@ -438,33 +438,58 @@ select public.h1_assert(
 -- ===========================================================================
 select * from public.sector_management_result_read where organization_id = :'h1_org'::uuid;
 
--- Real Estate: SELLING cost must be counted exactly once in the Home value.
--- It IS recognized as attributed property cost, and it is NOT deducted again,
--- because it is already netted inside the sector-owned realized disposal result.
+-- Real Estate SELLING cost: classified exactly once, deducted zero times.
+--
+-- These are two different layers and must never be described in each other's
+-- terms. The invariant is not "deducted once"; it is that the management result
+-- includes the cost's economic effect EXACTLY ONCE. For SELLING that effect is
+-- already netted inside the sector-owned realized disposal result, so the
+-- correct split is: classification bucket 1, deduction 0.
+select public.h1_assert(
+  (select attributed_operating_cost_minor_units::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 1500000,
+  'SELLING cost is CLASSIFIED once, as attributed property cost');
+select public.h1_assert(
+  (select result_deducted_cost_minor_units::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 0,
+  'SELLING cost is DEDUCTED zero times, because it is already inside the realized disposal result');
+select public.h1_assert(
+  (select result_deducted_cost_minor_units::bigint
+        = attributed_operating_cost_minor_units::bigint
+          - selling_cost_attributed_minor_units::bigint
+          + project_overhead_minor_units::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE'),
+  'the deduction column is defined as non-SELLING attributed cost plus declared overhead');
 select public.h1_assert(
   (select (management_result ->> 'amount_minor_units')::bigint
      from public.sector_management_result_read
     where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 7000000,
-  'the Home Real Estate value does not deduct SELLING cost a second time');
+  'the Home Real Estate value includes the SELLING economic effect exactly once, not twice');
+
+-- The reconciling identity, at every layer: result = revenue - deducted cost.
+-- This is the invariant that catches a cost being counted twice or not at all,
+-- regardless of which layer introduced it.
 select public.h1_assert(
-  (select selling_cost_attributed_minor_units::bigint
-     from public.sector_management_result_read
-    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 1500000,
-  'SELLING cost is still recognized once, as attributed property cost');
+  (select count(*) from public.project_operating_result_read r
+    where (r.management_result ->> 'amount_minor_units')::bigint
+       <> (case r.sector
+             when 'REAL_ESTATE'
+               then r.realized_disposal_minor_units::bigint + r.rental_revenue_minor_units::bigint
+             else r.sale_revenue_minor_units::bigint
+           end) - r.result_deducted_cost_minor_units::bigint) = 0,
+  'every project result equals its revenue components less the deducted cost');
 select public.h1_assert(
-  (select classified_deducted_minor_units::bigint
-     from public.sector_management_result_read
-    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 1500000,
-  'the deducted classified-cost column counts SELLING exactly once');
-select public.h1_assert(
-  (select (management_result ->> 'amount_minor_units')::bigint
-        = rental_revenue_minor_units::bigint
-          - (attributed_operating_cost_minor_units::bigint
-             - selling_cost_attributed_minor_units::bigint)
-          - project_overhead_minor_units::bigint
-     from public.sector_management_result_read
-    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE'),
-  'the Home Real Estate value is exactly rental revenue less non-SELLING attributed cost less overhead');
+  (select count(*) from public.sector_management_result_read r
+    where (r.management_result ->> 'amount_minor_units')::bigint
+       <> (case r.sector
+             when 'REAL_ESTATE'
+               then r.realized_disposal_minor_units::bigint + r.rental_revenue_minor_units::bigint
+             else r.sale_revenue_minor_units::bigint
+           end) - r.result_deducted_cost_minor_units::bigint) = 0,
+  'every sector result equals its revenue components less the deducted cost');
 
 -- Agriculture: declared overhead is deducted, excluded cost is disclosed but not deducted.
 select public.h1_assert(
@@ -496,5 +521,238 @@ select public.h1_assert(
        from public.project_operating_result_read
       where organization_id = :'h1_org'::uuid and currency = 'EGP'),
   'the sector roll-up conserves the project results exactly');
+
+reset role;
+-- ===========================================================================
+-- 10. Cash by currency: two positions stay two positions.
+-- ===========================================================================
+-- The project pages summed every cash account balance into one number and
+-- stamped it with project.reporting_currency. That added minor units of one
+-- currency to minor units of another. The contract is now: one row per
+-- (project, currency), no FX conversion, and NO field anywhere that represents
+-- their sum.
+--
+-- A finding from building this: `create_project_cash_account` already rejects an
+-- account whose currency differs from the project's, and `investment_projects.
+-- reporting_currency` is constrained to EGP. So a project holding both OMR and
+-- USD accounts is NOT reachable through the command today. That guard is
+-- asserted below. The dangerous state is then built by direct DML, because the
+-- projection must still be correct for rows that arrive by import, backfill, or
+-- a future relaxation of that rule — and because the currency on a posted
+-- BANK_CASH journal line is NOT constrained to match its account at all, which
+-- is the live hazard.
+
+select public.create_investment_project(
+  :'h1_org'::uuid, 'مشروع نقد متعدد العملات H1', 'H1-CASH',
+  'إثبات فصل المراكز النقدية', 'AGRICULTURE') as h1_cash \gset
+
+select public.h1_assert(
+  public.h1_caught(format($$select public.create_project_cash_account(%L,%L,'حساب بعملة أخرى','OMR')$$,
+    :'h1_org'::uuid, :'h1_cash'::uuid)) like '%account currency must match project currency%',
+  'the command layer rejects a cash account whose currency differs from the project');
+
+-- Build the multi-currency project directly, as the table owner.
+reset role;
+
+insert into public.project_cash_accounts(organization_id, project_id, name, currency)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'حساب عماني — ريال عماني', 'OMR')
+returning id as h1_omr_account \gset
+
+insert into public.project_cash_accounts(organization_id, project_id, name, currency)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'حساب عماني ثانٍ', 'OMR')
+returning id as h1_omr_account_2 \gset
+
+insert into public.project_cash_accounts(organization_id, project_id, name, currency)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'حساب دولاري', 'USD')
+returning id as h1_usd_account \gset
+
+-- Registered but never used: it genuinely holds zero, and must be reported as
+-- such rather than omitted or invented.
+insert into public.project_cash_accounts(organization_id, project_id, name, currency)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'حساب بلا حركة', 'EUR')
+returning id as h1_eur_account \gset
+
+-- Post BANK_CASH movements: the posting commands are proven by gates 01-97;
+-- what is under test here is the projection over their facts.
+-- A journal batch holds exactly one currency (enforced by the ledger), so the
+-- OMR and USD movements are posted as two batches. That constraint is itself
+-- worth knowing: the leak was never in storage, it was in the UI summing across
+-- separately stored positions.
+insert into public.journal_batches(
+  organization_id, project_id, source_type, source_id, transaction_date,
+  posted_by, idempotency_key, request_hash)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'CONTRIBUTION_CASH_ATTRIBUTION', gen_random_uuid(),
+        current_date, '00a00000-0000-4000-8000-0000000000a1'::uuid,
+        'h1-batch-cash-omr-0001', repeat('0', 64))
+returning id as h1_omr_batch \gset
+
+insert into public.journal_batches(
+  organization_id, project_id, source_type, source_id, transaction_date,
+  posted_by, idempotency_key, request_hash)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'CONTRIBUTION_CASH_ATTRIBUTION', gen_random_uuid(),
+        current_date, '00a00000-0000-4000-8000-0000000000a1'::uuid,
+        'h1-batch-cash-usd-0001', repeat('0', 64))
+returning id as h1_usd_batch \gset
+
+-- OMR: 1,000.000 on the first account and 250.000 on the second (three decimals).
+insert into public.journal_lines(
+  batch_id, organization_id, project_id, account_id, cash_account_id,
+  debit_minor_units, credit_minor_units, currency, transaction_date, posting_date)
+select :'h1_omr_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'BANK_CASH'),
+       :'h1_omr_account'::uuid, 1000000, 0, 'OMR', current_date, current_date
+union all
+select :'h1_omr_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'CUSTOMER_RECEIVABLE'),
+       null, 0, 1000000, 'OMR', current_date, current_date
+union all
+select :'h1_omr_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'BANK_CASH'),
+       :'h1_omr_account_2'::uuid, 250000, 0, 'OMR', current_date, current_date
+union all
+select :'h1_omr_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'CUSTOMER_RECEIVABLE'),
+       null, 0, 250000, 'OMR', current_date, current_date;
+
+-- USD: 4,000.00 (two decimals).
+insert into public.journal_lines(
+  batch_id, organization_id, project_id, account_id, cash_account_id,
+  debit_minor_units, credit_minor_units, currency, transaction_date, posting_date)
+select :'h1_usd_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'BANK_CASH'),
+       :'h1_usd_account'::uuid, 400000, 0, 'USD', current_date, current_date
+union all
+select :'h1_usd_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'CUSTOMER_RECEIVABLE'),
+       null, 0, 400000, 'USD', current_date, current_date;
+
+select * from public.project_cash_by_currency_read where project_id = :'h1_cash'::uuid;
+
+-- One row per currency, never one row per project.
+select public.h1_assert(
+  (select count(*) from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid) = 3,
+  'a project with OMR, USD and an unused EUR account yields three rows, not one');
+select public.h1_assert(
+  (select count(*) from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'OMR') = 1,
+  'the two OMR accounts aggregate into one OMR position');
+
+-- Each position is exact and separately labelled.
+select public.h1_assert(
+  (select cash_balance_minor_units from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'OMR') = '1250000',
+  'the OMR position is the exact sum of OMR movements');
+select public.h1_assert(
+  (select cash_balance_minor_units from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'USD') = '400000',
+  'the USD position is the exact sum of USD movements');
+select public.h1_assert(
+  (select account_count from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'OMR') = 2,
+  'the OMR position reports how many accounts it aggregates');
+
+-- The dangerous case: OMR and USD must not be combined anywhere.
+select public.h1_assert(
+  (select count(*) from public.project_cash_by_currency_read r
+    where r.project_id = :'h1_cash'::uuid
+      and r.cash_balance_minor_units::bigint = 1650000) = 0,
+  'no row ever holds the cross-currency sum of the OMR and USD positions');
+select public.h1_assert(
+  (select count(*) from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'project_cash_by_currency_read'
+      and column_name ~* '(total|combined|converted|consolidat|all_currencies|_sum)') = 0,
+  'the read model exposes no field representing a cross-currency cash total');
+select public.h1_assert(
+  (select count(*) from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'project_cash_by_currency_read'
+      and column_name ~* '(fx|rate)') = 0,
+  'the read model performs no FX conversion');
+
+-- An unused account genuinely holds zero, and says so.
+select public.h1_assert(
+  (select cash_balance_minor_units from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'EUR') = '0',
+  'a registered account with no movement reports an exact zero, not null');
+select public.h1_assert(
+  (select has_active_posted_movement from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'EUR') = false,
+  'the zero is labelled as never-used, so it is not mistaken for a spent balance');
+select public.h1_assert(
+  (select has_active_posted_movement from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'OMR') = true,
+  'an active position is labelled as active');
+
+-- A project with no cash accounts yields no row at all: "no accounts" is not
+-- the same fact as "zero cash", so no zero is invented for it.
+select public.h1_assert(
+  (select count(*) from public.project_cash_by_currency_read
+    where project_id = :'h1_re'::uuid) = 0,
+  'a project with no cash accounts yields no row rather than an invented zero');
+
+-- The live hazard: a BANK_CASH journal line whose currency differs from its
+-- account's is NOT constrained today. It is excluded from the balance and
+-- disclosed, never silently summed in.
+insert into public.journal_batches(
+  organization_id, project_id, source_type, source_id, transaction_date,
+  posted_by, idempotency_key, request_hash)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'CONTRIBUTION_CASH_ATTRIBUTION', gen_random_uuid(),
+        current_date, '00a00000-0000-4000-8000-0000000000a1'::uuid,
+        'h1-batch-cash-mismatch-0001', repeat('0', 64))
+returning id as h1_mismatch_batch \gset
+
+insert into public.journal_lines(
+  batch_id, organization_id, project_id, account_id, cash_account_id,
+  debit_minor_units, credit_minor_units, currency, transaction_date, posting_date)
+select :'h1_mismatch_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'BANK_CASH'),
+       :'h1_usd_account'::uuid, 500000, 0, 'OMR', current_date, current_date
+union all
+select :'h1_mismatch_batch'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'CUSTOMER_RECEIVABLE'),
+       null, 0, 500000, 'OMR', current_date, current_date;
+
+select public.h1_assert(
+  (select cash_balance_minor_units from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'USD') = '400000',
+  'a mismatched-currency movement is not added to the USD position');
+select public.h1_assert(
+  (select currency_mismatch_line_count from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'USD') = 1,
+  'the mismatched movement is disclosed rather than silently dropped');
+
+-- Reversal discipline: a reversed cash movement leaves the position.
+insert into public.journal_batches(
+  organization_id, project_id, source_type, source_id, transaction_date,
+  posted_by, reversal_of_batch_id, idempotency_key, request_hash)
+values (:'h1_org'::uuid, :'h1_cash'::uuid, 'REVERSAL', gen_random_uuid(), current_date,
+        '00a00000-0000-4000-8000-0000000000a1'::uuid, :'h1_usd_batch'::uuid,
+        'h1-batch-cash-reversal-0001', repeat('0', 64))
+returning id as h1_cash_reversal \gset
+
+insert into public.journal_lines(
+  batch_id, organization_id, project_id, account_id, cash_account_id,
+  debit_minor_units, credit_minor_units, currency, transaction_date, posting_date)
+select :'h1_cash_reversal'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'BANK_CASH'),
+       :'h1_usd_account'::uuid, 0, 400000, 'USD', current_date, current_date
+union all
+select :'h1_cash_reversal'::uuid, :'h1_org'::uuid, :'h1_cash'::uuid,
+       (select id from public.semantic_accounts where role = 'CUSTOMER_RECEIVABLE'),
+       null, 400000, 0, 'USD', current_date, current_date;
+
+select public.h1_assert(
+  (select cash_balance_minor_units from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'USD') = '0',
+  'a reversed cash movement leaves the position');
+-- A fully reversed position has no ACTIVE movement behind it, so it is reported
+-- exactly like an account that was never used. Economically they are the same
+-- fact: no active movement stands behind the balance.
+select public.h1_assert(
+  (select has_active_posted_movement from public.project_cash_by_currency_read
+    where project_id = :'h1_cash'::uuid and currency = 'USD') = false,
+  'a fully reversed position reports no active movement, like an unused account');
 
 reset role;

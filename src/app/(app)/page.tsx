@@ -182,7 +182,7 @@ export default async function Home() {
                   <th>الأصول</th>
                   <th>النقدية</th>
                   <th>الإيراد المعترف به</th>
-                  <th>تكلفة مُصنَّفة مخصومة</th>
+                  <th>التكلفة المخصومة في النتيجة</th>
                   <th>تكلفة تشغيل غير مُصنَّفة</th>
                   <th>{RESULT_TERM_AR}</th>
                 </tr>
@@ -203,7 +203,7 @@ export default async function Home() {
                       <td>
                         {sectorResult
                           ? formatMinorUnits(
-                              resultRowBySector.get(key)?.classified_deducted_minor_units ?? '0',
+                              resultRowBySector.get(key)?.result_deducted_cost_minor_units ?? '0',
                               sectorResult.currency,
                             )
                           : '—'}

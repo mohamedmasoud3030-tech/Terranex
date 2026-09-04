@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership, getCashAccountPositions } from '@/features/finance/queries';
+import { getCurrentMembership, getProjectCashByCurrency } from '@/features/finance/queries';
 import { getProjectCapitalPosition } from '@/features/funding/queries';
 import { getAccountingPeriods } from '@/features/close/queries';
 import { getRealizedResults } from '@/features/revenue/queries';
@@ -28,16 +28,19 @@ export default async function ProjectShell({
   const currency = project.reporting_currency;
   const sector = project.sector;
 
-  const [membership, position, cashAccounts, results, periods] = await Promise.all([
+  const [membership, position, cashByCurrency, results, periods] = await Promise.all([
     getCurrentMembership(organizationId),
     getProjectCapitalPosition(projectId),
-    getCashAccountPositions(projectId),
+    getProjectCashByCurrency(projectId),
     getRealizedResults(projectId),
     getAccountingPeriods(projectId),
   ]);
 
   const isDemo = Boolean(project.internal_reference?.startsWith('DEMO'));
-  const totalCash = cashAccounts.reduce((sum, account) => sum + BigInt(account.balance_minor_units), 0n);
+  // Cash is reported per currency and never summed. Adding OMR minor units to
+  // USD minor units and labelling the result with the project reporting currency
+  // invented a number no ledger supports, so there is no combined figure here to
+  // render — by design, not by omission.
   const realizedResult = results.reduce((sum, result) => sum + BigInt(result.realized_result_minor_units), 0n);
   const openPeriod = periods.find((period) => period.status === 'OPEN') ?? null;
 
@@ -85,11 +88,27 @@ export default async function ProjectShell({
             <strong>{formatMinorUnits(position?.contributed_minor_units ?? '0', currency)}</strong>
             <small>من القراءة الرسمية للموقف الرأسمالي</small>
           </article>
-          <article className="overview-kpi">
-            <span>النقدية الحالية</span>
-            <strong>{formatMinorUnits(totalCash, currency)}</strong>
-            <small>مجموع أرصدة الحسابات النقدية</small>
-          </article>
+          {cashByCurrency.length === 0 ? (
+            <article className="overview-kpi">
+              <span>النقدية الحالية</span>
+              <strong>—</strong>
+              <small>لا توجد حسابات نقدية مسجلة؛ لا نعرض صفرًا مفترضًا</small>
+            </article>
+          ) : (
+            cashByCurrency.map((cash) => (
+              <article className="overview-kpi" key={cash.currency}>
+                <span>النقدية — {cash.currency}</span>
+                <strong>{formatMinorUnits(cash.cash_balance_minor_units, cash.currency)}</strong>
+                <small>
+                  {cash.account_count} حساب
+                  {cash.has_active_posted_movement ? '' : ' · بلا حركة نشطة'}
+                  {cash.currency_mismatch_line_count > 0
+                    ? ` · ${cash.currency_mismatch_line_count} حركة بعملة مخالفة مستبعدة`
+                    : ''}
+                </small>
+              </article>
+            ))
+          )}
           <article className="overview-kpi">
             <span>النتيجة المحققة</span>
             <strong>{formatMinorUnits(realizedResult, currency)}</strong>
