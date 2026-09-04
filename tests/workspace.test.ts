@@ -96,7 +96,13 @@ describe('frontend never hard-codes the demo financial truth', () => {
   for (const page of pages) {
     const source = readFileSync(page, 'utf8');
     it(`${page} derives figures from canonical read models`, () => {
-      expect(source).toMatch(/getProjectCapitalPosition|getCashAccountPositions|getRealizedResults|getPilotAcceptanceReport/);
+      // Canonical read-model readers. The per-currency contracts added by the
+      // Project Brief slices belong here: they are the authoritative read path,
+      // and the older project-grain readers remain for the surfaces that still
+      // legitimately consume them.
+      expect(source).toMatch(
+        /getProjectCapitalPosition|getCashAccountPositions|getRealizedResults|getPilotAcceptanceReport|getProjectCashByCurrency|getProjectCapitalByCurrency|getProjectResultByCurrency/,
+      );
     });
     for (const minor of demoMinorUnits) {
       it(`${page} does not embed the demo minor-unit literal ${minor}`, () => {

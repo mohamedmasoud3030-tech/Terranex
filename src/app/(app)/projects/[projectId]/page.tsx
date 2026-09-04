@@ -2,10 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership, getProjectCashByCurrency, getProjectCapitalByCurrency } from '@/features/finance/queries';
+import { getProjectResultByCurrency } from '@/features/result/queries';
+import { buildProjectResultView } from '@/features/result/project-result';
+import { ResultPanel } from '@/features/result/result-panel';
 import { buildProjectCapitalView } from '@/features/funding/project-capital';
 import { CapitalPanel } from '@/features/funding/capital-panel';
 import { getAccountingPeriods } from '@/features/close/queries';
-import { getRealizedResults } from '@/features/revenue/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceNav, sectorLandingHref } from '@/features/workspace/nav';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
@@ -29,21 +31,17 @@ export default async function ProjectShell({
   const currency = project.reporting_currency;
   const sector = project.sector;
 
-  const [membership, capitalRows, cashByCurrency, results, periods] = await Promise.all([
+  const [membership, capitalRows, cashByCurrency, resultRows, periods] = await Promise.all([
     getCurrentMembership(organizationId),
     getProjectCapitalByCurrency(projectId),
     getProjectCashByCurrency(projectId),
-    getRealizedResults(projectId),
+    getProjectResultByCurrency(projectId),
     getAccountingPeriods(projectId),
   ]);
 
   const capital = buildProjectCapitalView(capitalRows);
+  const result = buildProjectResultView(resultRows);
   const isDemo = Boolean(project.internal_reference?.startsWith('DEMO'));
-  // Cash is reported per currency and never summed. Adding OMR minor units to
-  // USD minor units and labelling the result with the project reporting currency
-  // invented a number no ledger supports, so there is no combined figure here to
-  // render — by design, not by omission.
-  const realizedResult = results.reduce((sum, result) => sum + BigInt(result.realized_result_minor_units), 0n);
   const openPeriod = periods.find((period) => period.status === 'OPEN') ?? null;
 
   return (
@@ -80,6 +78,8 @@ export default async function ProjectShell({
 
       <CapitalPanel view={capital} />
 
+      <ResultPanel view={result} />
+
       <section className="card stack">
         <div className="topline">
           <h2>مساحة عمل المشروع</h2>
@@ -108,11 +108,6 @@ export default async function ProjectShell({
               </article>
             ))
           )}
-          <article className="overview-kpi">
-            <span>النتيجة المحققة</span>
-            <strong>{formatMinorUnits(realizedResult, currency)}</strong>
-            <small>من قيود الاعتراف المتوازنة</small>
-          </article>
           <article className="overview-kpi">
             <span>الفترة المحاسبية</span>
             <strong>
