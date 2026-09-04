@@ -124,6 +124,22 @@ select public.h1_assert(
       and signal_code = 'UNCLASSIFIED_OPERATING_COST') = 400000,
   'UNCLASSIFIED_OPERATING_COST always carries its amount');
 
+-- The Home roll-up must refuse to present Agriculture revenue as a comparable
+-- net result while no operating cost has been classified. This is the defect
+-- being removed: revenue sitting in the same column as a net result.
+select public.h1_assert(
+  (select cost_classification_status from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'AGRICULTURE') = 'NONE',
+  'an Agriculture sector with revenue and no classified cost is NONE, never COMPLETE');
+select public.h1_assert(
+  (select (management_result ->> 'amount_minor_units')::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'AGRICULTURE')
+  = (select sale_revenue_minor_units::bigint
+       from public.sector_management_result_read
+      where organization_id = :'h1_org'::uuid and sector = 'AGRICULTURE'),
+  'the unclassified Agriculture roll-up equals revenue exactly, so Home must suppress it');
+
 -- Reconciliation identity per project and currency.
 select public.h1_assert(
   (select attributed_operating_cost_minor_units::bigint
@@ -416,5 +432,69 @@ select public.h1_assert(
            or table_name = 'project_cost_classification_read')
       and column_name ~* '(profit|investor_return|realized_return|irr|moic|tvpi|equity_multiple|cash_on_cash|distributable)') = 0,
   'reserved investor-return terminology does not appear on the result surfaces');
+
+-- ===========================================================================
+-- 9. The Home roll-up (sector_management_result_read).
+-- ===========================================================================
+select * from public.sector_management_result_read where organization_id = :'h1_org'::uuid;
+
+-- Real Estate: SELLING cost must be counted exactly once in the Home value.
+-- It IS recognized as attributed property cost, and it is NOT deducted again,
+-- because it is already netted inside the sector-owned realized disposal result.
+select public.h1_assert(
+  (select (management_result ->> 'amount_minor_units')::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 7000000,
+  'the Home Real Estate value does not deduct SELLING cost a second time');
+select public.h1_assert(
+  (select selling_cost_attributed_minor_units::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 1500000,
+  'SELLING cost is still recognized once, as attributed property cost');
+select public.h1_assert(
+  (select classified_deducted_minor_units::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE') = 1500000,
+  'the deducted classified-cost column counts SELLING exactly once');
+select public.h1_assert(
+  (select (management_result ->> 'amount_minor_units')::bigint
+        = rental_revenue_minor_units::bigint
+          - (attributed_operating_cost_minor_units::bigint
+             - selling_cost_attributed_minor_units::bigint)
+          - project_overhead_minor_units::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'REAL_ESTATE'),
+  'the Home Real Estate value is exactly rental revenue less non-SELLING attributed cost less overhead');
+
+-- Agriculture: declared overhead is deducted, excluded cost is disclosed but not deducted.
+select public.h1_assert(
+  (select (management_result ->> 'amount_minor_units')::bigint
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'AGRICULTURE') = 9800000,
+  'the Home Agriculture value deducts declared overhead and leaves excluded cost out');
+select public.h1_assert(
+  (select cost_classification_status from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and sector = 'AGRICULTURE') = 'COMPLETE',
+  'declared overhead completes Agriculture coverage without 100% attribution');
+
+-- A sector amount is only meaningful if every project in it shares one basis.
+-- result_basis is a pure function of sector and sector is the group key, so this
+-- is proved here rather than defended against in the view.
+select public.h1_assert(
+  (select count(*) from (
+     select sector, currency, count(distinct result_basis) as basis_count
+       from public.sector_management_result_read group by sector, currency
+   ) x where x.basis_count > 1) = 0,
+  'no sector row mixes bases, so a summed sector amount never mixes bases');
+
+-- The roll-up conserves the project results exactly, per currency.
+select public.h1_assert(
+  (select coalesce(sum((management_result ->> 'amount_minor_units')::bigint), 0)
+     from public.sector_management_result_read
+    where organization_id = :'h1_org'::uuid and currency = 'EGP')
+  = (select coalesce(sum((management_result ->> 'amount_minor_units')::bigint), 0)
+       from public.project_operating_result_read
+      where organization_id = :'h1_org'::uuid and currency = 'EGP'),
+  'the sector roll-up conserves the project results exactly');
 
 reset role;

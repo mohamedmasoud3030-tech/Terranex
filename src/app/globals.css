@@ -43,3 +43,9 @@ legend{font-weight:700;padding-inline:6px}.skeleton{background:linear-gradient(1
 .status-archived{background:#eee;color:#555}
 
 .org-switcher{display:flex;align-items:center;gap:8px;font-weight:700}.org-switcher select{width:auto;max-width:240px;padding:8px 10px}
+
+/* H1 qualified result — incompleteness must be impossible to miss. */
+.unclassified-cost{background:#fff7f7;color:#8a1f1f;font-weight:700;border-inline-start:3px solid var(--danger)}
+.unclassified-note{margin-block:4px;color:#8a1f1f;font-weight:700;font-size:.85rem;border-inline-start:3px solid var(--danger);padding-inline-start:8px}
+.result-suppressed{color:#8a1f1f}
+.result-caution{color:#8a5a1f}
