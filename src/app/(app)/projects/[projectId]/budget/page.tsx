@@ -120,7 +120,7 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
           </p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الفترة</th>
@@ -133,15 +133,15 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
               <tbody>
                 {budgets.map((budget) => (
                   <tr key={budget.budget_id}>
-                    <td>
+                    <td data-label="الفترة">
                       {budget.period_start} → {budget.period_end}
                     </td>
-                    <td>
+                    <td data-label="النوع / الإصدار">
                       {budget.budget_type === 'ORIGINAL' ? 'أصلية' : 'مراجعة'} · إصدار {budget.version}
                     </td>
-                    <td><span className="status">{STATUS_LABEL[budget.status] ?? budget.status}</span></td>
-                    <td>{formatMoney(budget.total_budget_minor_units, currency)}</td>
-                    <td>
+                    <td data-label="الحالة"><span className="status">{STATUS_LABEL[budget.status] ?? budget.status}</span></td>
+                    <td data-label="الإجمالي">{formatMoney(budget.total_budget_minor_units, currency)}</td>
+                    <td data-label="الإجراءات">
                       <div className="stack" style={{ gap: 8 }}>
                         {budget.status === 'DRAFT' && isOwner && (
                           <>
@@ -181,7 +181,7 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         <section className="card stack">
           <h2>الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)</h2>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الإصدار</th>
@@ -202,15 +202,15 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                   const lines = [expense, wip].filter((c): c is BudgetConsumption => Boolean(c));
                   return lines.map((line) => (
                     <tr key={`${line.budget_id}-${line.cost_treatment}`}>
-                      <td>{line.version}</td>
-                      <td>{budgetLineTreatmentLabel(line.cost_treatment)}</td>
-                      <td>{formatMoney(line.budget_minor_units, currency)}</td>
-                      <td>{formatMoney(line.committed_obligations_minor_units, currency)}</td>
-                      <td>{formatMoney(line.paid_minor_units, currency)}</td>
-                      <td>{formatMoney(line.actual_minor_units, currency)}</td>
-                      <td>{formatMoney(line.approved_exception_minor_units, currency)}</td>
-                      <td>{formatMoney(line.effective_remaining_minor_units, currency)}</td>
-                      <td>{formatMoney(line.fac_minor_units, currency)}</td>
+                      <td data-label="الإصدار">{line.version}</td>
+                      <td data-label="المعالجة">{budgetLineTreatmentLabel(line.cost_treatment)}</td>
+                      <td data-label="السقف">{formatMoney(line.budget_minor_units, currency)}</td>
+                      <td data-label="الالتزامات">{formatMoney(line.committed_obligations_minor_units, currency)}</td>
+                      <td data-label="المدفوع">{formatMoney(line.paid_minor_units, currency)}</td>
+                      <td data-label="الفعلية المرحّلة">{formatMoney(line.actual_minor_units, currency)}</td>
+                      <td data-label="استثناءات معتمدة">{formatMoney(line.approved_exception_minor_units, currency)}</td>
+                      <td data-label="المتبقي الفعلي">{formatMoney(line.effective_remaining_minor_units, currency)}</td>
+                      <td data-label="FAC للبند">{formatMoney(line.fac_minor_units, currency)}</td>
                     </tr>
                   ));
                 })}
@@ -228,7 +228,7 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         <section className="card stack">
           <h2>التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الإصدار</th>
@@ -243,13 +243,13 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
               <tbody>
                 {facRows.map((fac) => (
                   <tr key={fac.budget_id}>
-                    <td>{fac.version}</td>
-                    <td>{formatMoney(fac.budget_total_minor_units, currency)}</td>
-                    <td>{formatMoney(fac.approved_exception_total_minor_units, currency)}</td>
-                    <td>{formatMoney(fac.actual_total_minor_units, currency)}</td>
-                    <td>{formatMoney(fac.open_commitment_minor_units, currency)}</td>
-                    <td>{formatMoney(fac.approved_forecast_remainder_minor_units, currency)}</td>
-                    <td>{formatMoney(fac.fac_minor_units, currency)}</td>
+                    <td data-label="الإصدار">{fac.version}</td>
+                    <td data-label="إجمالي الموازنة">{formatMoney(fac.budget_total_minor_units, currency)}</td>
+                    <td data-label="استثناءات معتمدة">{formatMoney(fac.approved_exception_total_minor_units, currency)}</td>
+                    <td data-label="الفعلية (Actual)">{formatMoney(fac.actual_total_minor_units, currency)}</td>
+                    <td data-label="الالتزامات المفتوحة (PO)">{formatMoney(fac.open_commitment_minor_units, currency)}</td>
+                    <td data-label="المتبقي المعتمد للتنبؤ">{formatMoney(fac.approved_forecast_remainder_minor_units, currency)}</td>
+                    <td data-label="FAC">{formatMoney(fac.fac_minor_units, currency)}</td>
                   </tr>
                 ))}
               </tbody>

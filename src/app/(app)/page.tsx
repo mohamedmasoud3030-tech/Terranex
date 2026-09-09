@@ -125,7 +125,7 @@ export default async function Home() {
           <p className="muted">لا توجد حقائق مالية قطاعية مسجلة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>القطاع</th>
@@ -141,14 +141,14 @@ export default async function Home() {
               <tbody>
                 {sectorPerformance.map((row) => (
                   <tr key={`${row.sector}-${row.currency}`}>
-                    <td>{SECTOR_LABEL[row.sector] ?? row.sector}</td>
-                    <td>{row.project_count}</td>
-                    <td>{row.asset_count}</td>
-                    <td>{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.cost_of_sale_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.expense_posted_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
+                    <td data-label="القطاع">{SECTOR_LABEL[row.sector] ?? row.sector}</td>
+                    <td data-label="المشاريع">{row.project_count}</td>
+                    <td data-label="الأصول">{row.asset_count}</td>
+                    <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                    <td data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
+                    <td data-label="تكلفة المبيعات">{formatMinorUnits(row.cost_of_sale_minor_units, row.currency)}</td>
+                    <td data-label="المصروفات">{formatMinorUnits(row.expense_posted_minor_units, row.currency)}</td>
+                    <td data-label="النتيجة المحققة*">{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -98,16 +98,16 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           <p className="muted">لا توجد حسابات نقدية بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الحساب</th><th>الرصيد الدفتري</th><th>آخر ترحيل</th></tr>
               </thead>
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.cash_account_id}>
-                    <td>{account.name}</td>
-                    <td>{formatMinorUnits(account.balance_minor_units, account.currency)}</td>
-                    <td>{account.last_posting_date ? new Date(account.last_posting_date).toLocaleString('ar-EG') : '—'}</td>
+                    <td data-label="الحساب">{account.name}</td>
+                    <td data-label="الرصيد الدفتري">{formatMinorUnits(account.balance_minor_units, account.currency)}</td>
+                    <td data-label="آخر ترحيل">{account.last_posting_date ? new Date(account.last_posting_date).toLocaleString('ar-EG') : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -147,23 +147,23 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           <p className="muted">لا توجد دفعات بعد. سجّل دفعة من صفحة التكاليف أو انتظر أول دفعة.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>التاريخ</th><th>الالتزام</th><th>الحساب</th><th>المبلغ</th><th>الحالة</th><th>الإجراءات</th></tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.payment_id}>
-                    <td>{payment.payment_date}</td>
-                    <td>{obligationDescription.get(payment.obligation_id) ?? '—'}</td>
-                    <td>{accountName.get(payment.cash_account_id) ?? '—'}</td>
-                    <td>{formatMinorUnits(payment.amount_minor_units, payment.currency)}</td>
-                    <td>
+                    <td data-label="التاريخ">{payment.payment_date}</td>
+                    <td data-label="الالتزام">{obligationDescription.get(payment.obligation_id) ?? '—'}</td>
+                    <td data-label="الحساب">{accountName.get(payment.cash_account_id) ?? '—'}</td>
+                    <td data-label="المبلغ">{formatMinorUnits(payment.amount_minor_units, payment.currency)}</td>
+                    <td data-label="الحالة">
                       <span className="status">
                         {payment.is_reversed ? 'معكوسة' : payment.is_reconciled ? 'مطابقة' : 'غير مطابقة'}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="الإجراءات">
                       {!payment.is_reversed && isOwner && (
                         <ReversePaymentForm
                           organizationId={organizationId}
@@ -216,7 +216,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           <p className="muted">لا توجد حركات بنكية مستوردة بعد. استيراد كشف الحساب لا ينشئ أي قيد محاسبي.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>التاريخ</th><th>المرجع</th><th>الوصف</th><th>المبلغ</th>
@@ -226,15 +226,15 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
               <tbody>
                 {lines.map((line) => (
                   <tr key={line.line_id}>
-                    <td>{line.transaction_date}</td>
-                    <td>{line.provider_reference ?? '—'}</td>
-                    <td>{line.description}</td>
-                    <td>{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
-                    <td>{accountName.get(line.cash_account_id) ?? '—'}</td>
-                    <td>
+                    <td data-label="التاريخ">{line.transaction_date}</td>
+                    <td data-label="المرجع">{line.provider_reference ?? '—'}</td>
+                    <td data-label="الوصف">{line.description}</td>
+                    <td data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
+                    <td data-label="الحساب">{accountName.get(line.cash_account_id) ?? '—'}</td>
+                    <td data-label="الحالة">
                       <span className="status">{line.is_reconciled ? 'مطابقة' : 'غير مطابقة'}</span>
                     </td>
-                    <td>
+                    <td data-label="الإجراءات">
                       {!line.is_reconciled && isOwner && (
                         <ReconcileForm
                           organizationId={organizationId}
@@ -269,16 +269,16 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الحدث</th><th>الوقت</th><th>التفاصيل</th></tr>
               </thead>
               <tbody>
                 {audit.map((event) => (
                   <tr key={event.id}>
-                    <td>{event.event_type}</td>
-                    <td>{new Date(event.created_at).toLocaleString('ar-EG')}</td>
-                    <td><code>{JSON.stringify(event.payload)}</code></td>
+                    <td data-label="الحدث">{event.event_type}</td>
+                    <td data-label="الوقت">{new Date(event.created_at).toLocaleString('ar-EG')}</td>
+                    <td data-label="التفاصيل"><code>{JSON.stringify(event.payload)}</code></td>
                   </tr>
                 ))}
               </tbody>

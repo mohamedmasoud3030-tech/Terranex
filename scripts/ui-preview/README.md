@@ -16,3 +16,6 @@ node scripts/ui-preview/mock-supabase.mjs &
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54329 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=preview npm run dev
 node scripts/ui-preview/snapshot.mjs   # needs puppeteer-core + a chromium binary, see script header
 ```
+
+## add-data-labels.mjs
+One-off codemod that adds `data-label` (from static `<th>` text) to positional `<td>` cells and marks the table `table-stackable`. Re-run on new pages: `node scripts/ui-preview/add-data-labels.mjs path/to/page.tsx`. Tables with dynamic headers or `colSpan` mismatches are skipped and reported.

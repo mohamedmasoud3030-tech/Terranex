@@ -34,3 +34,20 @@ export function severityTone(severity: string): BadgeTone {
   if (severity === 'WARNING') return 'warning';
   return 'info';
 }
+
+/** Generic Arabic labels for common record statuses across the finance workspace. */
+export const RECORD_STATUS_LABEL: Record<string, string> = {
+  OPEN: 'مفتوح',
+  RESOLVED: 'مُعالج',
+  REQUESTED: 'مطلوب',
+  APPROVED: 'معتمد',
+  REJECTED: 'مرفوض',
+  EXECUTED: 'منفّذ',
+  VOID: 'ملغى',
+  PENDING: 'قيد الانتظار',
+  ACTIVE: 'نشط',
+  INACTIVE: 'غير نشط',
+  DRAFT: 'مسودة',
+  POSTED: 'مُرحّل',
+  REVERSED: 'معكوس',
+};

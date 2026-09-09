@@ -151,14 +151,14 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
           <p className="muted">لا توجد عضوية إضافية معروضة (متاح للمالك).</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>العضو</th><th>الدور</th><th>الحالة</th></tr></thead>
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>
-                    <td>{member.user_id}</td>
-                    <td>{member.role}</td>
-                    <td>{member.status}</td>
+                    <td data-label="العضو">{member.user_id}</td>
+                    <td data-label="الدور">{member.role}</td>
+                    <td data-label="الحالة">{member.status}</td>
                   </tr>
                 ))}
               </tbody>

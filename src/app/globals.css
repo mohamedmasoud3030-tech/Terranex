@@ -182,3 +182,17 @@ tr.row-actions-row>td{padding:0}
 .stepper .tab.done .step-index{background:var(--brand);color:#fff}
 .stepper .tab.current{outline:2px solid var(--brand);outline-offset:-2px}
 .stepper .tab[aria-current="step"]{background:#f0f8f4}
+
+/* Table stack mode on phones: each row becomes a card with label:value lines. */
+@media(max-width:720px){
+  .table-wrap:has(table.table-stackable){border:0;overflow:visible;margin-inline:0}
+  table.table-stackable{min-width:0;background:transparent}
+  table.table-stackable thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.table-stackable tbody tr{display:grid;gap:4px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  table.table-stackable td{display:grid;grid-template-columns:minmax(90px,38%) 1fr;gap:8px;border:0;padding:4px 0;min-width:0}
+  table.table-stackable td::before{content:attr(data-label);color:var(--muted);font-size:.82rem;font-weight:700}
+  table.table-stackable td:not([data-label])::before,table.table-stackable td[colspan]::before{content:none}
+  table.table-stackable td:not([data-label]),table.table-stackable td[colspan]{grid-template-columns:1fr}
+  table.table-stackable td code{white-space:normal;overflow-wrap:anywhere}
+  table.table-stackable tbody tr:last-child{margin-bottom:0}
+}

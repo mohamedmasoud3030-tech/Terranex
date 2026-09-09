@@ -94,13 +94,13 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
             <code>{activeVersion.terms_hash.slice(0, 16)}…</code>
           </p>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>المشارك</th><th>الالتزام</th></tr></thead>
               <tbody>
                 {commitments.map((commitment) => (
                   <tr key={commitment.id}>
-                    <td>{participantName.get(commitment.participant_id) ?? '—'}</td>
-                    <td>{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                    <td data-label="المشارك">{participantName.get(commitment.participant_id) ?? '—'}</td>
+                    <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                   </tr>
                 ))}
               </tbody>

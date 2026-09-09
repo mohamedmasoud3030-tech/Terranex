@@ -121,8 +121,8 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
           <article className="overview-kpi"><span>الأصول قيد التشغيل</span><strong>{assets.length - disposed}</strong><small>لم تُبع بعد</small></article>
         </div>
         {assets.length === 0 ? <p className="muted">لا توجد أصول عقارية مسجّلة بعد.</p> : (
-          <div className="table-wrap"><table><thead><tr><th>الأصل</th><th>الحالة</th><th>الاستراتيجية</th></tr></thead><tbody>
-            {assets.map((asset) => <tr key={asset.property_asset_id}><td>{asset.name}</td><td><span className="status">{ASSET_STATE[asset.operational_state] ?? asset.operational_state}</span></td><td>{asset.strategy ?? '—'}</td></tr>)}
+          <div className="table-wrap"><table className="table-stackable"><thead><tr><th>الأصل</th><th>الحالة</th><th>الاستراتيجية</th></tr></thead><tbody>
+            {assets.map((asset) => <tr key={asset.property_asset_id}><td data-label="الأصل">{asset.name}</td><td data-label="الحالة"><span className="status">{ASSET_STATE[asset.operational_state] ?? asset.operational_state}</span></td><td data-label="الاستراتيجية">{asset.strategy ?? '—'}</td></tr>)}
           </tbody></table></div>
         )}
       </section>
@@ -138,13 +138,9 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
         <p className="muted">الانتقال إلى <Link href={`/projects/${projectId}/close`}>الإغلاق المالي</Link> · <Link href={`/projects/${projectId}/pilot`}>الاستيراد والمطابقة</Link></p>
       </section>
 
-      <section className="card stack">
-        <h2>روابط التشغيل</h2>
-        <p className="muted">كل رابط أدناه يقود إلى واقعة تشغيلية أو رقابية مستقلة داخل Project boundary.</p>
-        <nav className="context-nav">
-          <Link href={`/projects/${projectId}/funding`}>رأس المال</Link><Link href={`/projects/${projectId}/operations`}>الأصول العقارية</Link><Link href={`/projects/${projectId}/costs`}>التكاليف والنقدية</Link><Link href={`/projects/${projectId}/revenue`}>الإيراد والبيع</Link><Link href={`/projects/${projectId}/close`}>الإغلاق المالي</Link><Link href={`/projects/${projectId}/investors`}>شفافية المشاركين</Link><Link href={`/projects/${projectId}/pilot`}>الاستيراد والمطابقة</Link><Link href={`/projects/${projectId}/controls`}>الرقابة والجاهزية</Link><Link href={`/projects/${projectId}/intake`}>إدخال مشروع حقيقي</Link>
-        </nav>
-      </section>
+      <p className="muted">
+        لإدخال بيانات مشروع حقيقي عبر المسار الموجّه: <Link href={`/projects/${projectId}/intake`}>إدخال مشروع حقيقي</Link>
+      </p>
     </section>
   );
 }

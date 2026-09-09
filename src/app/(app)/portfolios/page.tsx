@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PageHeader } from '@/shared/ui';
 import { getActiveOrganization } from '@/features/organizations/context';
 import {
   getOrganizationActiveMemberships,
@@ -31,17 +32,12 @@ export default async function PortfoliosPage() {
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <p className="muted">{org.name}</p>
-          <h1>المحافظ الاستثمارية</h1>
-          <p className="muted">
-            المحفظة إطار إداري وتنظيمي للمشاريع المستقلة، وليست كيانًا قانونيًا أو صندوقًا
-            أو وعاء أموال مجمّعًا.
-          </p>
-        </div>
-        <Link className="button" href="/portfolios/new">محفظة جديدة</Link>
-      </div>
+      <PageHeader
+        eyebrow={org.name}
+        title="المحافظ الاستثمارية"
+        description="المحفظة إطار إداري وتنظيمي للمشاريع المستقلة، وليست كيانًا قانونيًا أو صندوقًا أو وعاء أموال مجمّعًا."
+        actions={<Link className="button" href="/portfolios/new">محفظة جديدة</Link>}
+      />
 
       {portfolios.length === 0 ? (
         <section className="card stack empty">

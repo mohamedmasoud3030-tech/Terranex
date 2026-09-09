@@ -89,7 +89,7 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
           <p className="muted">لا توجد مخاطر مفتوحة مسجلة لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الخطورة</th>
@@ -103,12 +103,12 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
               <tbody>
                 {openRisks.map((risk) => (
                   <tr key={risk.risk_item_id}>
-                    <td><span className="status">{SEVERITY_AR[risk.severity] ?? risk.severity}</span></td>
-                    <td><strong>{risk.title}</strong></td>
-                    <td>{risk.description}</td>
-                    <td><code>{risk.owner_user_id}</code></td>
-                    <td>{risk.due_date ?? '—'}</td>
-                    <td>{risk.source_reference ?? '—'}{isOwner ? <details><summary>حسم</summary><ResolveRiskForm organizationId={project.organization_id} projectId={projectId} riskItemId={risk.risk_item_id} commandNonce={newCommandNonce()} /></details> : null}</td>
+                    <td data-label="الخطورة"><span className="status">{SEVERITY_AR[risk.severity] ?? risk.severity}</span></td>
+                    <td data-label="الخطر"><strong>{risk.title}</strong></td>
+                    <td data-label="الوصف">{risk.description}</td>
+                    <td data-label="المسؤول"><code>{risk.owner_user_id}</code></td>
+                    <td data-label="الاستحقاق">{risk.due_date ?? '—'}</td>
+                    <td data-label="المصدر">{risk.source_reference ?? '—'}{isOwner ? <details><summary>حسم</summary><ResolveRiskForm organizationId={project.organization_id} projectId={projectId} riskItemId={risk.risk_item_id} commandNonce={newCommandNonce()} /></details> : null}</td>
                   </tr>
                 ))}
               </tbody>
@@ -128,7 +128,7 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
           <p className="muted">لا توجد قرارات موثقة لهذا المشروع بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>التاريخ</th>
@@ -141,11 +141,11 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
               <tbody>
                 {decisions.map((decision) => (
                   <tr key={decision.id}>
-                    <td>{decision.decision_date}</td>
-                    <td><strong>{decision.title}</strong></td>
-                    <td>{decision.decision_text}</td>
-                    <td>{decision.rationale ?? '—'}</td>
-                    <td><code>{decision.evidence_reference}</code></td>
+                    <td data-label="التاريخ">{decision.decision_date}</td>
+                    <td data-label="القرار"><strong>{decision.title}</strong></td>
+                    <td data-label="النص">{decision.decision_text}</td>
+                    <td data-label="المبرر">{decision.rationale ?? '—'}</td>
+                    <td data-label="الدليل"><code>{decision.evidence_reference}</code></td>
                   </tr>
                 ))}
               </tbody>
@@ -158,17 +158,17 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
         <section className="card stack" aria-labelledby="resolved-risks-heading">
           <h2 id="resolved-risks-heading">مخاطر تم حسمها</h2>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الخطر</th><th>النتيجة</th><th>دليل الحسم</th><th>وقت الحسم</th></tr>
               </thead>
               <tbody>
                 {resolvedRisks.map((risk) => (
                   <tr key={risk.risk_item_id}>
-                    <td>{risk.title}</td>
-                    <td>{risk.resolution_outcome ?? '—'}</td>
-                    <td>{risk.resolution_evidence_reference ?? '—'}</td>
-                    <td>{risk.resolved_at ?? '—'}</td>
+                    <td data-label="الخطر">{risk.title}</td>
+                    <td data-label="النتيجة">{risk.resolution_outcome ?? '—'}</td>
+                    <td data-label="دليل الحسم">{risk.resolution_evidence_reference ?? '—'}</td>
+                    <td data-label="وقت الحسم">{risk.resolved_at ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

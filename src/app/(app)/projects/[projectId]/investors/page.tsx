@@ -55,16 +55,16 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
           <p className="muted">لا يوجد مشاركون مسجلون لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الاسم القانوني</th><th>الصفة المسجلة</th><th>حالة الدلالة الاقتصادية</th></tr>
               </thead>
               <tbody>
                 {participants.map((participant) => (
                   <tr key={participant.id}>
-                    <td>{participant.parties.legal_name}</td>
-                    <td>{participant.role === 'INVESTOR' ? 'مشارك مسجل (INVESTOR)' : participant.role}</td>
-                    <td>غير مستنتجة من الهوية — تنتظر السياسة الحاكمة</td>
+                    <td data-label="الاسم القانوني">{participant.parties.legal_name}</td>
+                    <td data-label="الصفة المسجلة">{participant.role === 'INVESTOR' ? 'مشارك مسجل (INVESTOR)' : participant.role}</td>
+                    <td data-label="حالة الدلالة الاقتصادية">غير مستنتجة من الهوية — تنتظر السياسة الحاكمة</td>
                   </tr>
                 ))}
               </tbody>

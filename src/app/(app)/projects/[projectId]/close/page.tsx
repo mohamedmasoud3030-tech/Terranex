@@ -20,6 +20,8 @@ import {
 } from '@/features/close/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
+import { RECORD_STATUS_LABEL } from '@/features/projects/labels';
+import { InPageTabs, StatusBadge } from '@/shared/ui';
 import {
   ApproveCloseForm,
   ApproveCorrectionForm,
@@ -102,13 +104,15 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
       />
-      <nav className="context-nav" aria-label="تنقل الإغلاق">
-        <a href="#periods">الفترات</a>
-        <a href="#close">الإغلاق</a>
-        <a href="#snapshots">اللقطات</a>
-        <a href="#corrections">التصحيح</a>
-        <Link href={`/projects/${projectId}/investors`}>المستثمرون</Link>
-      </nav>
+      <InPageTabs
+        label="تنقل الإغلاق"
+        items={[
+          { href: '#periods', label: 'الفترات' },
+          { href: '#close', label: 'الإغلاق' },
+          { href: '#snapshots', label: 'اللقطات' },
+          { href: '#corrections', label: 'التصحيح' },
+        ]}
+      />
 
       <div className="banner info" role="note">
         الإغلاق المالي للفترات مستقل تمامًا عن تخصيص النتيجة وتوزيعها على الشركاء.
@@ -180,11 +184,11 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
               <div><dt>تاريخ الاعتماد</dt><dd>{dateTime(snapshot.approved_at)}</dd></div>
               <div><dt>تاريخ القطع</dt><dd>{date(snapshot.source_cutoff_date)}</dd></div>
             </dl>
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>البند</th><th>القيمة</th></tr></thead>
               <tbody>
                 {snapshotTotals(snapshot).map(([label, value]) => (
-                  <tr key={label}><td>{label}</td><td>{value}</td></tr>
+                  <tr key={label}><td data-label="البند">{label}</td><td data-label="القيمة">{value}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -312,15 +316,15 @@ function PreparedRunCard({
         <strong>تاريخ القطع:</strong> {date(run.source_cutoff_date)} ·{' '}
         <strong>بوابات:</strong> {run.passing_gates} اجتياز / {run.failing_gates} فشل / {run.exception_gates} استثناء معتمد / {run.not_applicable_gates} لا ينطبق
       </p>
-      <table>
+      <table className="table-stackable">
         <thead><tr><th>البوابة</th><th>النتيجة</th><th>التفاصيل</th><th>إجراء</th></tr></thead>
         <tbody>
           {gates.map((gate) => (
             <tr key={gate.gate_id}>
-              <td>{gateLabelAr(gate.gate_code)}</td>
-              <td><span className="status">{gateResultLabelAr(gate.result)}</span></td>
-              <td>{gate.detail}</td>
-              <td>
+              <td data-label="البوابة">{gateLabelAr(gate.gate_code)}</td>
+              <td data-label="النتيجة"><span className="status">{gateResultLabelAr(gate.result)}</span></td>
+              <td data-label="التفاصيل">{gate.detail}</td>
+              <td data-label="إجراء">
                 {gate.result === 'FAIL' && isOwner && (
                   <RequestExceptionForm
                     organizationId={organizationId}
@@ -381,7 +385,7 @@ function CorrectionCard({
           <p><strong>السبب:</strong> {correction.reason}</p>
           <p><strong>الدليل:</strong> {correction.evidence_reference}</p>
         </div>
-        <span className="status">{correction.status}</span>
+        <StatusBadge>{RECORD_STATUS_LABEL[correction.status] ?? correction.status}</StatusBadge>
       </div>
       <dl className="facts">
         <div><dt>الفترة المصدر</dt><dd>إصدار {source?.version ?? '—'} ({source?.status ?? '—'})</dd></div>
