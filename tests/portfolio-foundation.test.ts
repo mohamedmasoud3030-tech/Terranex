@@ -309,9 +309,12 @@ describe('R1 operator-facing error mapping', () => {
 
 describe('R1 UI integration (Arabic/RTL, shallow navigation, honest states)', () => {
   it('lives inside the existing app shell navigation', () => {
+    // Primary navigation lives in the shared AppNav rendered by the app layout.
     const layout = readFileSync('src/app/(app)/layout.tsx', 'utf8');
-    expect(layout).toContain('href="/portfolios"');
-    expect(layout).toContain('المحافظ');
+    const nav = readFileSync('src/shared/ui/app-nav.tsx', 'utf8');
+    expect(layout).toContain('<AppNav');
+    expect(nav).toContain("href: '/portfolios'");
+    expect(nav).toContain('المحافظ');
   });
 
   it('shows honest empty and guidance states without fake numbers', () => {

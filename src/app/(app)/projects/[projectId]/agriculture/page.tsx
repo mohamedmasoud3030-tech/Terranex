@@ -5,6 +5,7 @@ import { getCashAccountPositions, getCurrentMembership } from '@/features/financ
 import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
+import { InPageTabs } from '@/shared/ui';
 import {
   type CropAssignmentRead,
   type CropCycleCostSourceRead,
@@ -281,6 +282,24 @@ export default async function AgriculturePage({
         title="المزرعة والمحاصيل"
         subtitle={`${project.name} · ${currency} · مساحة الزراعة`}
         internalReference={project.internal_reference}
+      />
+      <InPageTabs
+        label="أقسام الزراعة"
+        items={[
+          { href: '#overview', label: 'نظرة' },
+          { href: '#profile', label: 'الملف' },
+          { href: '#land-assets', label: 'الأراضي' },
+          { href: '#farms', label: 'المزارع' },
+          { href: '#fields', label: 'الحقول' },
+          { href: '#cycles', label: 'الدورات' },
+          { href: '#assignments', label: 'التخصيص' },
+          { href: '#activities', label: 'الأنشطة' },
+          { href: '#inputs', label: 'المدخلات' },
+          { href: '#harvest', label: 'الحصاد' },
+          { href: '#sales', label: 'المبيعات' },
+          { href: '#results-closeout', label: 'النتائج والإغلاق' },
+          { href: '#timeline', label: 'السجل' },
+        ]}
       />
 
       <section className="card stack scroll-target" id="overview">

@@ -1,1 +1,5 @@
-export default function PilotLoading(){return <section className="stack" aria-busy="true"><div className="card skeleton"><h1>جارٍ تحميل لوحة التشغيل التجريبي…</h1><p>نسترجع حالة الاستيراد الافتتاحي ومجاميع الرقابة وفروق المطابقة من مصادرها المعتمدة.</p></div><div className="grid"><div className="card skeleton">جارٍ تحميل تقرير الجاهزية…</div><div className="card skeleton">جارٍ تحميل نقاط المطابقة والاستثناءات…</div></div></section>;}
+import { PageSkeleton } from '@/shared/ui';
+
+export default function Loading() {
+  return <PageSkeleton blocks={4} withNav={true} />;
+}

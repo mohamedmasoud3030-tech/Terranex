@@ -1,3 +1,5 @@
-export default function PortfoliosLoading() {
-  return <p role="status" className="muted">جارٍ تحميل المحافظ الاستثمارية…</p>;
+import { PageSkeleton } from '@/shared/ui';
+
+export default function Loading() {
+  return <PageSkeleton blocks={2} withNav={false} />;
 }

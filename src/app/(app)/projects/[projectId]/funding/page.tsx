@@ -14,6 +14,7 @@ import {
 import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { EmptyState, SectionTabs } from '@/shared/ui';
 import { CapitalCallForm, ContributionForm } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -41,10 +42,6 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
   if (!activeVersion) {
     return (
       <section className="stack">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>التمويل</h1>
-        </div>
         <WorkspaceChrome
           projectId={projectId}
           active="capital"
@@ -52,23 +49,38 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           subtitle={project.name}
           internalReference={project.internal_reference}
         />
-        <section className="card stack">
-          <p>لا توجد اتفاقية مفعّلة بعد. فعّل الشروط أولًا لتتمكن من طلب رأس المال واستلام المساهمات.</p>
-          <Link className="button" href={`/projects/${projectId}/terms`}>إدارة الشروط والاتفاقية</Link>
-        </section>
+        <SectionTabs
+          label="رأس المال"
+          items={[
+            { href: `/projects/${projectId}/funding`, label: 'التمويل ورأس المال', current: true },
+            { href: `/projects/${projectId}/terms`, label: 'الشروط والاتفاقية' },
+          ]}
+        />
+        <EmptyState
+          title="لا توجد اتفاقية مفعّلة بعد"
+          description="فعّل الشروط أولًا لتتمكن من طلب رأس المال واستلام المساهمات."
+          action={<Link className="button" href={`/projects/${projectId}/terms`}>إدارة الشروط والاتفاقية</Link>}
+        />
       </section>
     );
   }
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>التمويل ورأس المال</h1>
-          <p className="muted">النسخة الحاكمة {activeVersion.version_no} · سارية من {activeVersion.effective_date}</p>
-        </div>
-      </div>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="capital"
+        title="التمويل ورأس المال"
+        subtitle={`${project.name} · النسخة الحاكمة ${activeVersion.version_no} · سارية من ${activeVersion.effective_date}`}
+        internalReference={project.internal_reference}
+      />
+      <SectionTabs
+        label="رأس المال"
+        items={[
+          { href: `/projects/${projectId}/funding`, label: 'التمويل ورأس المال', current: true },
+          { href: `/projects/${projectId}/terms`, label: 'الشروط والاتفاقية' },
+        ]}
+      />
 
       <section className="card stack">
         <h2>الموقف الرأسمالي للمشروع</h2>

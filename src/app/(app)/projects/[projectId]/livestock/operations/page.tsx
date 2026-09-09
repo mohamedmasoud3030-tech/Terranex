@@ -87,14 +87,10 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
   const context = { organizationId: project.organization_id, projectId };
 
   return <section className="stack">
-    <WorkspaceChrome projectId={projectId} active="livestock" sector="LIVESTOCK"
+    <WorkspaceChrome projectId={projectId} active="livestock-operations" sector="LIVESTOCK"
       title="العمليات الحيوانية" subtitle={`${project.name} · الصحة والتكاثر والهوية والتغذية`}
       internalReference={project.internal_reference} />
-    <header className="card stack">
-      <div><Link href={`/projects/${projectId}/livestock`}>العودة إلى المواقع والقطعان والأعداد</Link></div>
-      <h1>العمليات الحيوانية</h1>
-      <p className="muted">حقائق تشغيلية عربية/RTL ثابتة فوق نموذج الدفعة. لا مبيعات ولا مشترين ولا مخزون مفترض ولا قيود مالية.</p>
-    </header>
+    <p className="muted">حقائق تشغيلية عربية/RTL ثابتة فوق نموذج الدفعة. لا مبيعات ولا مشترين ولا مخزون مفترض ولا قيود مالية. <Link href={`/projects/${projectId}/livestock`}>العودة إلى المواقع والقطعان والأعداد</Link></p>
 
     <section className="card stack" id="health">
       <h2>الصحة والعلاجات والتطعيم</h2>

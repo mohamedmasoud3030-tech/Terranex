@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { SectionTabs } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { formatMinorUnits } from '@/shared/money';
@@ -60,14 +61,20 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>النقدية والبنك</h1>
-          <p className="muted">{project.name} · {project.reporting_currency}</p>
-        </div>
-        <Link className="button secondary" href={`/projects/${projectId}/costs`}>التكاليف والالتزامات</Link>
-      </div>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="costs-cash"
+        title="النقدية والبنك"
+        subtitle={`${project.name} · ${project.reporting_currency}`}
+        internalReference={project.internal_reference}
+      />
+      <SectionTabs
+        label="التكاليف والنقدية"
+        items={[
+          { href: `/projects/${projectId}/costs`, label: 'التكاليف والالتزامات' },
+          { href: `/projects/${projectId}/cash`, label: 'النقدية والبنك', current: true },
+        ]}
+      />
 
       <section className="grid">
         <div className="card">

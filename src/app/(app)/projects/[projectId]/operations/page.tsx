@@ -24,6 +24,7 @@ import {
   RecognizeSaleForm,ReconcileCollectionForm,SellingCostForm,
 } from './revenue-forms';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { InPageTabs } from '@/shared/ui';
 
 export const dynamic='force-dynamic';
 
@@ -66,16 +67,16 @@ export default async function OperationsPage({params}:{params:Promise<{projectId
       projectId={projectId}
       active="property"
       title="الأصول العقارية"
-      subtitle={`${project.name} · ${project.reporting_currency} · ${profile?STRATEGY[profile.strategy]: 'لم يُنشأ الملف العقاري'}`}
+      subtitle={`${project.name} · ${project.reporting_currency} · ${profile?(STRATEGY[profile.strategy]??profile.strategy): 'لم يُنشأ الملف العقاري'}`}
       internalReference={project.internal_reference}
     />
-    <nav className="context-nav" aria-label="تنقل المشروع"><a href="#assets">الأصول والسيطرة</a><a href="#development">التطوير</a><a href="#cost-control">ضبط التكلفة</a><a href="#disposition">التصرف</a><a href="#sale-collection">البيع والتحصيل</a><a href="#realized-result">النتيجة المحققة</a><a href="#valuation">التقييم</a><a href="#timeline">السجل</a></nav>
+    <InPageTabs label="أقسام العمليات العقارية" items={[{href:'#assets',label:'الأصول والسيطرة'},{href:'#development',label:'التطوير'},{href:'#cost-control',label:'ضبط التكلفة'},{href:'#disposition',label:'التصرف'},{href:'#sale-collection',label:'البيع والتحصيل'},{href:'#realized-result',label:'النتيجة المحققة'},{href:'#valuation',label:'التقييم'},{href:'#timeline',label:'السجل'}]} />
 
     {!profile&&<section className="card stack"><div><h2>ابدأ ملف العمليات العقارية</h2><p className="muted">حدّد استراتيجية المشروع فقط؛ السند والحيازة وحالة الأصل تُثبت لاحقًا كحقائق مستقلة.</p></div><ProfileForm {...{organizationId,projectId}}/></section>}
 
     {profile&&<>
       <section id="assets" className="stack scroll-target">
-        <div className="section-heading"><div><h2>الأصول والقطع والسيطرة</h2><p className="muted">الأصل الاقتصادي منفصل عن المشروع والقطعة والعقد والدفع.</p></div><span className="status">{STRATEGY[profile.strategy]}{profile.jurisdiction?` · ${profile.jurisdiction}`:''}</span></div>
+        <div className="section-heading"><div><h2>الأصول والقطع والسيطرة</h2><p className="muted">الأصل الاقتصادي منفصل عن المشروع والقطعة والعقد والدفع.</p></div><span className="status">{STRATEGY[profile.strategy]??profile.strategy}{profile.jurisdiction?` · ${profile.jurisdiction}`:''}</span></div>
         {assets.length===0?<div className="card empty"><h3>لا توجد أصول عقارية</h3><p className="muted">أضف الأصل الاقتصادي الأول. سيبدأ تلقائيًا كمرشح، وليس كمملوك.</p><AssetForm {...{organizationId,projectId}}/></div>:<>
           <div className="asset-grid">{assets.map(asset=><article className="card stack" key={asset.property_asset_id}>
             <div className="topline"><div><h3>{asset.name}</h3><p className="muted">{asset.asset_reference||'دون مرجع داخلي'}</p></div><span className="status">{ASSET_STATE[asset.operational_state]??asset.operational_state}</span></div>

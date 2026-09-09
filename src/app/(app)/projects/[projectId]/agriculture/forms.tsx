@@ -200,7 +200,7 @@ export function FarmForm({ organizationId, projectId }: { organizationId: string
       <Key prefix="ag-farm" />
       <label>
         اسم المزرعة
-        <input name="name" required minLength={2} maxLength={160} autoFocus />
+        <input name="name" required minLength={2} maxLength={160} />
       </label>
       <label>
         مرجع داخلي <span className="muted">(اختياري)</span>
@@ -302,7 +302,7 @@ export function CropCycleForm({
       <Key prefix="ag-cycle" />
       <label>
         المحصول
-        <input name="crop" required minLength={2} maxLength={80} autoFocus />
+        <input name="crop" required minLength={2} maxLength={80} />
       </label>
       <label>
         الصنف <span className="muted">(اختياري)</span>

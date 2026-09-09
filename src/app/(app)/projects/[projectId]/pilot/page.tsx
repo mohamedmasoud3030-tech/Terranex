@@ -19,6 +19,7 @@ import {
 } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard, memberDisplayLabel } from '@/features/workspace/chrome';
+import { InPageTabs } from '@/shared/ui';
 import {
   AcceptUatTaskForm,
   ApproveOpeningImportForm,
@@ -207,19 +208,20 @@ export default async function PilotPage({
         subtitle={`${project.name} · ${currency}`}
         internalReference={project.internal_reference}
       />
-      <header className="card">
-        <nav className="context-nav" aria-label="تنقل التشغيل التجريبي">
-          <a href="#readiness">الجاهزية</a>
-          <a href="#approvals">بانتظار الاعتماد</a>
-          <a href="#import">الاستيراد الافتتاحي</a>
-          <a href="#rows">سطور الملف</a>
-          <a href="#reconciliation">المطابقة</a>
-          <a href="#exceptions">الاستثناءات</a>
-          <a href="#uat">اختبار القبول</a>
-          <a href="#rehearsals">البروفات</a>
-          <a href="#access">الوصول</a>
-        </nav>
-      </header>
+      <InPageTabs
+        label="تنقل التشغيل التجريبي"
+        items={[
+          { href: '#readiness', label: 'الجاهزية' },
+          { href: '#approvals', label: 'بانتظار الاعتماد' },
+          { href: '#import', label: 'الاستيراد الافتتاحي' },
+          { href: '#rows', label: 'سطور الملف' },
+          { href: '#reconciliation', label: 'المطابقة' },
+          { href: '#exceptions', label: 'الاستثناءات' },
+          { href: '#uat', label: 'اختبار القبول' },
+          { href: '#rehearsals', label: 'البروفات' },
+          { href: '#access', label: 'الوصول' },
+        ]}
+      />
 
       {criticalOpenExceptions.length > 0 && (
         <p className="error" role="alert">

@@ -141,7 +141,7 @@ export function WorkspaceNav({
 }) {
   const sections = sectionsFor(sector);
   return (
-    <nav className="workspace-nav" aria-label="مساحة عمل المشروع">
+    <nav className="workspace-nav tab-strip" aria-label="مساحة عمل المشروع">
       {sections.map((section) => {
         const current = section.id === active;
         return (
@@ -149,6 +149,7 @@ export function WorkspaceNav({
             key={section.id}
             href={section.href(projectId)}
             aria-current={current ? 'page' : undefined}
+            title={section.description}
             className={current ? 'workspace-nav-item current' : 'workspace-nav-item'}
           >
             <strong>{section.label}</strong>

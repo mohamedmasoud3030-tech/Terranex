@@ -269,10 +269,17 @@ export default async function IntakePage({
           <h1>إدخال المشروع الحقيقي</h1>
           <p className="muted">{project.name} · {project.reporting_currency} · مسار موجّه بالعربية، دون نموذج قاعدة بيانات.</p>
         </div>
-        <nav className="context-nav" aria-label="أقسام الإدخال">
-          {readiness.groups.map((group) => (
-            <a key={group.id} href={GROUP_HREF[group.id]} aria-current={group.next ? 'page' : undefined}>
-              {group.titleAr} {group.complete}/{group.total}
+        <nav className="tab-strip tab-strip-inpage stepper" aria-label="أقسام الإدخال">
+          {readiness.groups.map((group, index) => (
+            <a
+              key={group.id}
+              href={GROUP_HREF[group.id]}
+              aria-current={group.next ? 'step' : undefined}
+              className={group.complete === group.total ? 'tab done' : group.next ? 'tab current' : 'tab'}
+            >
+              <span className="step-index" aria-hidden="true">{index + 1}</span>
+              {group.titleAr}
+              <span className="muted"> {group.complete}/{group.total}</span>
             </a>
           ))}
         </nav>

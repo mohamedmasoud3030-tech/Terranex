@@ -19,6 +19,7 @@ import {
 } from '@/features/control/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { SectionTabs } from '@/shared/ui';
 import {
   AchieveMilestoneButton,
   ObligationScheduleForm,
@@ -127,9 +128,13 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
       />
-      <nav className="context-nav">
-        <Link href={`/projects/${projectId}/cash`}>النقدية والبنك</Link>
-      </nav>
+      <SectionTabs
+        label="التكاليف والنقدية"
+        items={[
+          { href: `/projects/${projectId}/costs`, label: 'التكاليف والالتزامات', current: true },
+          { href: `/projects/${projectId}/cash`, label: 'النقدية والبنك' },
+        ]}
+      />
 
       <section className="grid">
         <div className="card">

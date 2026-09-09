@@ -1,3 +1,5 @@
-export default function IntakeLoading() {
-  return <p role="status" className="muted">جارٍ تحميل مسار إدخال المشروع…</p>;
+import { PageSkeleton } from '@/shared/ui';
+
+export default function Loading() {
+  return <PageSkeleton blocks={4} withNav={true} />;
 }
