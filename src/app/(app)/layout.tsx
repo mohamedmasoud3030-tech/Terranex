@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <>
       <OrganizationSwitcher organizations={organizations} activeId={organization?.id ?? null} />
       <form action={signOut}>
-        <button className="button secondary sm">تسجيل الخروج</button>
+        <button type="submit" className="button secondary sm">تسجيل الخروج</button>
       </form>
     </>
   );
