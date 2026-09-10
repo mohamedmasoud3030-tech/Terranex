@@ -60,4 +60,4 @@ jobs:
           pg_isready -h 127.0.0.1 -p 5432 -U postgres || echo "pg_isready failed"
           echo "gates: $(ls supabase/tests/*.sql | wc -l) migrations: $(ls supabase/migrations/*.sql | wc -l)"
       - name: PostgreSQL replay and two-tenant isolation
-        run: bash -x ./scripts/db-test.sh 2>&1 | tail -n 80
+        run: set -o pipefail; bash -x ./scripts/db-test.sh 2>&1 | tail -n 120
