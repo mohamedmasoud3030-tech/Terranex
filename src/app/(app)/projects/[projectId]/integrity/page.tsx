@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { StatusBadge } from '@/shared/ui';
+import { RECORD_STATUS_LABEL, severityTone } from '@/features/projects/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
@@ -127,7 +129,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         <section className="card stack">
           <h2>الوضع المالي الرسمي (من القيود المرحّلة فقط)</h2>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>النقدية</th>
@@ -142,14 +144,14 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
               </thead>
               <tbody>
                 <tr>
-                  <td>{formatMinorUnits(position.cash_balance_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.receivable_open_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.revenue_recognized_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.expense_posted_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.wip_posted_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.payable_open_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.paid_minor_units, currency)}</td>
-                  <td>{formatMinorUnits(position.retention_held_minor_units, currency)}</td>
+                  <td data-label="النقدية">{formatMinorUnits(position.cash_balance_minor_units, currency)}</td>
+                  <td data-label="ذمم مفتوحة">{formatMinorUnits(position.receivable_open_minor_units, currency)}</td>
+                  <td data-label="إيراد معترف به">{formatMinorUnits(position.revenue_recognized_minor_units, currency)}</td>
+                  <td data-label="مصروفات مرحّلة">{formatMinorUnits(position.expense_posted_minor_units, currency)}</td>
+                  <td data-label="أعمال تحت التطوير">{formatMinorUnits(position.wip_posted_minor_units, currency)}</td>
+                  <td data-label="مستحقات مفتوحة">{formatMinorUnits(position.payable_open_minor_units, currency)}</td>
+                  <td data-label="المدفوع">{formatMinorUnits(position.paid_minor_units, currency)}</td>
+                  <td data-label="حجز ضمان قائم">{formatMinorUnits(position.retention_held_minor_units, currency)}</td>
                 </tr>
               </tbody>
             </table>
@@ -166,7 +168,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">لا توجد إشارات لهذا المشروع حاليًا.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الخطورة</th>
@@ -180,10 +182,10 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                   const severity = SEVERITY_LABEL[signal.severity] ?? { label: signal.severity, className: '' };
                   return (
                     <tr key={`${signal.signal_code}-${signal.currency ?? ''}`}>
-                      <td><span className={`status ${severity.className}`}>{severity.label}</span></td>
-                      <td>{signal.signal_label_ar}</td>
-                      <td>{signal.subject_count}</td>
-                      <td>
+                      <td data-label="الخطورة"><span className={`status ${severity.className}`}>{severity.label}</span></td>
+                      <td data-label="الإشارة">{signal.signal_label_ar}</td>
+                      <td data-label="العدد">{signal.subject_count}</td>
+                      <td data-label="المبلغ">
                         {signal.amount_minor_units
                           ? formatMinorUnits(signal.amount_minor_units, signal.currency ?? currency)
                           : '—'}
@@ -199,7 +201,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <>
             <h3>إشارات على مستوى المنظمة</h3>
             <div className="table-wrap">
-              <table>
+              <table className="table-stackable">
                 <thead>
                   <tr><th>الخطورة</th><th>الإشارة</th><th>العدد</th></tr>
                 </thead>
@@ -208,9 +210,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                     const severity = SEVERITY_LABEL[signal.severity] ?? { label: signal.severity, className: '' };
                     return (
                       <tr key={signal.signal_code}>
-                        <td><span className={`status ${severity.className}`}>{severity.label}</span></td>
-                        <td>{signal.signal_label_ar}</td>
-                        <td>{signal.subject_count}</td>
+                        <td data-label="الخطورة"><span className={`status ${severity.className}`}>{severity.label}</span></td>
+                        <td data-label="الإشارة">{signal.signal_label_ar}</td>
+                        <td data-label="العدد">{signal.subject_count}</td>
                       </tr>
                     );
                   })}
@@ -229,18 +231,18 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           </p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>المجال</th><th>الحد</th><th>العملة</th><th>يتطلب مستندًا</th><th>مفعّلة</th></tr>
               </thead>
               <tbody>
                 {policies.map((policy) => (
                   <tr key={policy.policy_id}>
-                    <td>{policy.policy_domain}</td>
-                    <td>{policy.threshold_minor_units ?? '—'}</td>
-                    <td>{policy.currency ?? 'أي عملة'}</td>
-                    <td>{policy.evidence_required ? 'نعم' : 'لا'}</td>
-                    <td>{policy.active ? 'نعم' : 'لا'}</td>
+                    <td data-label="المجال">{policy.policy_domain}</td>
+                    <td data-label="الحد">{policy.threshold_minor_units ?? '—'}</td>
+                    <td data-label="العملة">{policy.currency ?? 'أي عملة'}</td>
+                    <td data-label="يتطلب مستندًا">{policy.evidence_required ? 'نعم' : 'لا'}</td>
+                    <td data-label="مفعّلة">{policy.active ? 'نعم' : 'لا'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -256,25 +258,25 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">لا توجد استثناءات مسجلة لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>المجال</th><th>النوع</th><th>الخطورة</th><th>الاستحقاق</th><th>الحالة</th><th>المبلغ</th><th>السبب</th><th>القرار</th></tr>
               </thead>
               <tbody>
                 {exceptions.map((exception) => (
                   <tr key={exception.exception_id}>
-                    <td>{exception.domain}</td>
-                    <td>{exception.exception_kind}</td>
-                    <td>{exception.severity}</td>
-                    <td>{exception.due_date ?? '—'}</td>
-                    <td><span className="status">{exception.status}</span></td>
-                    <td>
+                    <td data-label="المجال">{exception.domain}</td>
+                    <td data-label="النوع">{exception.exception_kind}</td>
+                    <td data-label="الخطورة"><StatusBadge tone={severityTone(exception.severity)}>{SEVERITY_LABEL[exception.severity]?.label ?? exception.severity}</StatusBadge></td>
+                    <td data-label="الاستحقاق">{exception.due_date ?? '—'}</td>
+                    <td data-label="الحالة"><StatusBadge tone={exception.status === 'OPEN' ? 'warning' : 'neutral'}>{RECORD_STATUS_LABEL[exception.status] ?? exception.status}</StatusBadge></td>
+                    <td data-label="المبلغ">
                       {exception.amount_minor_units
                         ? formatMinorUnits(exception.amount_minor_units, exception.currency ?? currency)
                         : '—'}
                     </td>
-                    <td>{exception.reason}</td>
-                    <td>
+                    <td data-label="السبب">{exception.reason}</td>
+                    <td data-label="القرار">
                       {exception.status === 'OPEN' && isOwner ? (
                         <DecideExceptionForm
                           organizationId={organizationId}
@@ -314,17 +316,17 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">لا توجد لقطات سعر صرف مسجلة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الزوج</th><th>الكسر</th><th>التاريخ</th><th>المصدر</th></tr>
               </thead>
               <tbody>
                 {snapshots.map((snapshot) => (
                   <tr key={snapshot.snapshot_id}>
-                    <td>{snapshot.base_currency} → {snapshot.quote_currency}</td>
-                    <td>{snapshot.rate_numerator} / {snapshot.rate_denominator}</td>
-                    <td>{snapshot.rate_date}</td>
-                    <td>{snapshot.rate_source}</td>
+                    <td data-label="الزوج">{snapshot.base_currency} → {snapshot.quote_currency}</td>
+                    <td data-label="الكسر">{snapshot.rate_numerator} / {snapshot.rate_denominator}</td>
+                    <td data-label="التاريخ">{snapshot.rate_date}</td>
+                    <td data-label="المصدر">{snapshot.rate_source}</td>
                   </tr>
                 ))}
               </tbody>
@@ -333,17 +335,17 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         )}
         {conversions.length > 0 ? (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>المصدر</th><th>الناتج</th><th>الغرض</th><th>التاريخ</th></tr>
               </thead>
               <tbody>
                 {conversions.map((conversion) => (
                   <tr key={conversion.conversion_id}>
-                    <td>{conversion.source_amount_minor_units} {conversion.source_currency}</td>
-                    <td>{conversion.converted_amount_minor_units} {conversion.target_currency}</td>
-                    <td>{conversion.purpose}</td>
-                    <td>{conversion.conversion_date}</td>
+                    <td data-label="المصدر">{conversion.source_amount_minor_units} {conversion.source_currency}</td>
+                    <td data-label="الناتج">{conversion.converted_amount_minor_units} {conversion.target_currency}</td>
+                    <td data-label="الغرض">{conversion.purpose}</td>
+                    <td data-label="التاريخ">{conversion.conversion_date}</td>
                   </tr>
                 ))}
               </tbody>
@@ -382,7 +384,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">لا توجد أرقام توحيد بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>المستوى</th>
@@ -398,14 +400,14 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
               <tbody>
                 {consolidation.map((row) => (
                   <tr key={`${row.level}-${row.currency ?? 'org'}`}>
-                    <td>{row.level === 'CONSOLIDATED' ? 'موحد' : 'حسب العملة'}</td>
-                    <td>{row.currency ?? '—'}</td>
-                    <td>{row.project_count}</td>
-                    <td>{row.cash_balance_minor_units ? formatMinorUnits(row.cash_balance_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td>{row.paid_minor_units ? formatMinorUnits(row.paid_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td>{row.payable_open_minor_units ? formatMinorUnits(row.payable_open_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td>{FX_STATUS_LABEL[row.fx_status] ?? row.fx_status}</td>
-                    <td>
+                    <td data-label="المستوى">{row.level === 'CONSOLIDATED' ? 'موحد' : 'حسب العملة'}</td>
+                    <td data-label="العملة">{row.currency ?? '—'}</td>
+                    <td data-label="المشاريع">{row.project_count}</td>
+                    <td data-label="النقدية">{row.cash_balance_minor_units ? formatMinorUnits(row.cash_balance_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td data-label="المدفوع">{row.paid_minor_units ? formatMinorUnits(row.paid_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td data-label="المستحقات">{row.payable_open_minor_units ? formatMinorUnits(row.payable_open_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td data-label="حالة التحويل">{FX_STATUS_LABEL[row.fx_status] ?? row.fx_status}</td>
+                    <td data-label="النقدية المحولة">
                       {row.converted_cash_balance_minor_units
                         ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency ?? '')
                         : '—'}
@@ -424,18 +426,18 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">لا توجد معالجات ضريبية مسجلة.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الضريبة</th><th>النطاق</th><th>المعالجة</th><th>جهة التقدير</th><th>سارية</th></tr>
               </thead>
               <tbody>
                 {taxRegistry.map((tax) => (
                   <tr key={tax.tax_registry_id}>
-                    <td>{tax.tax_name} ({tax.tax_domain})</td>
-                    <td>{tax.applies_to}</td>
-                    <td>{tax.treatment_status}</td>
-                    <td>{tax.authority ?? '—'}</td>
-                    <td>{tax.status === 'ACTIVE' ? 'نعم' : 'لا'}</td>
+                    <td data-label="الضريبة">{tax.tax_name} ({tax.tax_domain})</td>
+                    <td data-label="النطاق">{tax.applies_to}</td>
+                    <td data-label="المعالجة">{tax.treatment_status}</td>
+                    <td data-label="جهة التقدير">{tax.authority ?? '—'}</td>
+                    <td data-label="سارية">{tax.status === 'ACTIVE' ? 'نعم' : 'لا'}</td>
                   </tr>
                 ))}
               </tbody>

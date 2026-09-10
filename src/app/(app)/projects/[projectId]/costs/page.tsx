@@ -19,6 +19,7 @@ import {
 } from '@/features/control/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { SectionTabs } from '@/shared/ui';
 import {
   AchieveMilestoneButton,
   ObligationScheduleForm,
@@ -127,9 +128,13 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
       />
-      <nav className="context-nav">
-        <Link href={`/projects/${projectId}/cash`}>النقدية والبنك</Link>
-      </nav>
+      <SectionTabs
+        label="التكاليف والنقدية"
+        items={[
+          { href: `/projects/${projectId}/costs`, label: 'التكاليف والالتزامات', current: true },
+          { href: `/projects/${projectId}/cash`, label: 'النقدية والبنك' },
+        ]}
+      />
 
       <section className="grid">
         <div className="card">
@@ -175,7 +180,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           <p className="muted">لا توجد التزامات مسجلة بعد. سجّل أول التزام ثم اعتمده وادفعه من الحساب النقدي.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>المورد</th>
@@ -194,12 +199,12 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                   const due = dueByObligation.get(obligation.obligation_id);
                   return (
                     <tr key={obligation.obligation_id} id={obligation.obligation_id}>
-                      <td>{partyName.get(obligation.party_id) ?? '—'}</td>
-                      <td>{obligation.description}</td>
-                      <td>{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
-                      <td>{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
-                      <td>{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
-                      <td>
+                      <td data-label="المورد">{partyName.get(obligation.party_id) ?? '—'}</td>
+                      <td data-label="الوصف">{obligation.description}</td>
+                      <td data-label="المعالجة">{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
+                      <td data-label="المبلغ">{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
+                      <td data-label="المتبقي">{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
+                      <td data-label="الاستحقاق">
                         <div className="stack" style={{ gap: 4 }}>
                           {due ? (
                             <>
@@ -215,8 +220,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                           )}
                         </div>
                       </td>
-                      <td><span className="status">{state.label}</span></td>
-                      <td>
+                      <td data-label="الحالة"><span className="status">{state.label}</span></td>
+                      <td data-label="الإجراءات">
                         <div className="stack" style={{ gap: 8 }}>
                           {obligation.status === 'DRAFT' && isOwner && obligation.authorization_batch_id === null && (
                             <AuthorizeObligationButton
@@ -360,7 +365,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           <p className="muted">لا توجد إنجازات مسجلة. تُستخدم لجدولة الدفعات وربط الإفراج عن الحجز.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الرمز</th>
@@ -375,13 +380,13 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
               <tbody>
                 {milestones.map((milestone) => (
                   <tr key={milestone.milestone_id}>
-                    <td>{milestone.code}</td>
-                    <td>{milestone.label_ar}</td>
-                    <td>{milestone.planned_date ?? '—'}</td>
-                    <td><span className="status">{milestone.status === 'ACHIEVED' ? 'محقق' : 'قيد التنفيذ'}</span></td>
-                    <td>{milestone.achieved_date ?? '—'}</td>
-                    <td>{milestone.linked_schedule_lines}</td>
-                    <td>
+                    <td data-label="الرمز">{milestone.code}</td>
+                    <td data-label="الوصف">{milestone.label_ar}</td>
+                    <td data-label="التاريخ المخطط">{milestone.planned_date ?? '—'}</td>
+                    <td data-label="الحالة"><span className="status">{milestone.status === 'ACHIEVED' ? 'محقق' : 'قيد التنفيذ'}</span></td>
+                    <td data-label="تاريخ الإنجاز">{milestone.achieved_date ?? '—'}</td>
+                    <td data-label="بنود جدولة مرتبطة">{milestone.linked_schedule_lines}</td>
+                    <td data-label="الإجراء">
                       {milestone.status === 'PENDING' ? (
                         <AchieveMilestoneButton
                           organizationId={organizationId}
@@ -434,16 +439,16 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الحدث</th><th>الوقت</th><th>التفاصيل</th></tr>
               </thead>
               <tbody>
                 {audit.map((event) => (
                   <tr key={event.id}>
-                    <td>{event.event_type}</td>
-                    <td>{new Date(event.created_at).toLocaleString('ar-EG')}</td>
-                    <td><code>{JSON.stringify(event.payload)}</code></td>
+                    <td data-label="الحدث">{event.event_type}</td>
+                    <td data-label="الوقت">{new Date(event.created_at).toLocaleString('ar-EG')}</td>
+                    <td data-label="التفاصيل"><code>{JSON.stringify(event.payload)}</code></td>
                   </tr>
                 ))}
               </tbody>

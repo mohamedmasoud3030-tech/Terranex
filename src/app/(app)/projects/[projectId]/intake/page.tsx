@@ -269,10 +269,17 @@ export default async function IntakePage({
           <h1>إدخال المشروع الحقيقي</h1>
           <p className="muted">{project.name} · {project.reporting_currency} · مسار موجّه بالعربية، دون نموذج قاعدة بيانات.</p>
         </div>
-        <nav className="context-nav" aria-label="أقسام الإدخال">
-          {readiness.groups.map((group) => (
-            <a key={group.id} href={GROUP_HREF[group.id]} aria-current={group.next ? 'page' : undefined}>
-              {group.titleAr} {group.complete}/{group.total}
+        <nav className="tab-strip tab-strip-inpage stepper" aria-label="أقسام الإدخال">
+          {readiness.groups.map((group, index) => (
+            <a
+              key={group.id}
+              href={GROUP_HREF[group.id]}
+              aria-current={group.next ? 'step' : undefined}
+              className={group.complete === group.total ? 'tab done' : group.next ? 'tab current' : 'tab'}
+            >
+              <span className="step-index" aria-hidden="true">{index + 1}</span>
+              {group.titleAr}
+              <span className="muted"> {group.complete}/{group.total}</span>
             </a>
           ))}
         </nav>
@@ -396,15 +403,15 @@ export default async function IntakePage({
             <p className="muted">الالتزامات تُحفظ داخل مسودة الاتفاقية ثم تُجمَّد عند التفعيل.</p>
           ) : (
             <div className="table-wrap">
-              <table>
+              <table className="table-stackable">
                 <thead><tr><th>المستثمر</th><th>الالتزام</th></tr></thead>
                 <tbody>
                   {commitments.map((commitment) => {
                     const name = participants.find((participant) => participant.id === commitment.participant_id)?.parties.legal_name;
                     return (
                       <tr key={commitment.id}>
-                        <td>{name ?? '—'}</td>
-                        <td>{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                        <td data-label="المستثمر">{name ?? '—'}</td>
+                        <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                       </tr>
                     );
                   })}
@@ -644,16 +651,16 @@ export default async function IntakePage({
           </details>
           {gaps.length > 0 && (
             <div className="table-wrap">
-              <table>
+              <table className="table-stackable">
                 <thead><tr><th>المصدر</th><th>الوصف</th><th>المبلغ</th><th>الحالة</th><th></th></tr></thead>
                 <tbody>
                   {gaps.map((gap) => (
                     <tr key={gap.gap_id}>
-                      <td>{gap.source_reference}</td>
-                      <td>{gap.description}<br /><span className="muted">{gap.why_unmappable}</span></td>
-                      <td>{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
-                      <td>{gap.status === 'OPEN' ? 'مفتوحة' : 'مقبولة تجاريًا'}</td>
-                      <td>
+                      <td data-label="المصدر">{gap.source_reference}</td>
+                      <td data-label="الوصف">{gap.description}<br /><span className="muted">{gap.why_unmappable}</span></td>
+                      <td data-label="المبلغ">{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
+                      <td data-label="الحالة">{gap.status === 'OPEN' ? 'مفتوحة' : 'مقبولة تجاريًا'}</td>
+                      <td data-label="">
                         {gap.status === 'OPEN' && isOwner && (
                           <AcceptModellingGapForm organizationId={organizationId} projectId={projectId} gapId={gap.gap_id} />
                         )}
@@ -730,14 +737,14 @@ export default async function IntakePage({
         <SectionCard item={byCode.get('DS17_EVIDENCE')!}>
           {evidenceItems.length > 0 && (
             <div className="table-wrap">
-              <table>
+              <table className="table-stackable">
                 <thead><tr><th>المعرّف</th><th>الحقيقة</th><th>موقع العميل</th></tr></thead>
                 <tbody>
                   {evidenceItems.map((item) => (
                     <tr key={item.evidence_item_id}>
-                      <td>{item.evidence_identifier}</td>
-                      <td>{item.linked_fact}</td>
-                      <td>{item.customer_storage_location}</td>
+                      <td data-label="المعرّف">{item.evidence_identifier}</td>
+                      <td data-label="الحقيقة">{item.linked_fact}</td>
+                      <td data-label="موقع العميل">{item.customer_storage_location}</td>
                     </tr>
                   ))}
                 </tbody>

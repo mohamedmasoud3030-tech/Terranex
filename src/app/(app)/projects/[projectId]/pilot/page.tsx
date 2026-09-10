@@ -19,6 +19,7 @@ import {
 } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard, memberDisplayLabel } from '@/features/workspace/chrome';
+import { InPageTabs } from '@/shared/ui';
 import {
   AcceptUatTaskForm,
   ApproveOpeningImportForm,
@@ -207,19 +208,20 @@ export default async function PilotPage({
         subtitle={`${project.name} · ${currency}`}
         internalReference={project.internal_reference}
       />
-      <header className="card">
-        <nav className="context-nav" aria-label="تنقل التشغيل التجريبي">
-          <a href="#readiness">الجاهزية</a>
-          <a href="#approvals">بانتظار الاعتماد</a>
-          <a href="#import">الاستيراد الافتتاحي</a>
-          <a href="#rows">سطور الملف</a>
-          <a href="#reconciliation">المطابقة</a>
-          <a href="#exceptions">الاستثناءات</a>
-          <a href="#uat">اختبار القبول</a>
-          <a href="#rehearsals">البروفات</a>
-          <a href="#access">الوصول</a>
-        </nav>
-      </header>
+      <InPageTabs
+        label="تنقل التشغيل التجريبي"
+        items={[
+          { href: '#readiness', label: 'الجاهزية' },
+          { href: '#approvals', label: 'بانتظار الاعتماد' },
+          { href: '#import', label: 'الاستيراد الافتتاحي' },
+          { href: '#rows', label: 'سطور الملف' },
+          { href: '#reconciliation', label: 'المطابقة' },
+          { href: '#exceptions', label: 'الاستثناءات' },
+          { href: '#uat', label: 'اختبار القبول' },
+          { href: '#rehearsals', label: 'البروفات' },
+          { href: '#access', label: 'الوصول' },
+        ]}
+      />
 
       {criticalOpenExceptions.length > 0 && (
         <p className="error" role="alert">
@@ -277,15 +279,15 @@ export default async function PilotPage({
           <p className="empty">لا توجد عناصر تنتظر اعتمادًا.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>النوع</th><th>العنصر</th><th>منذ</th><th></th></tr></thead>
               <tbody>
                 {pendingApprovals.map((item) => (
                   <tr key={`${item.kind}-${item.label}-${item.since}`}>
-                    <td>{item.kind}</td>
-                    <td>{item.label}</td>
-                    <td>{dt(item.since)}</td>
-                    <td><a href={item.href}>انتقال</a></td>
+                    <td data-label="النوع">{item.kind}</td>
+                    <td data-label="العنصر">{item.label}</td>
+                    <td data-label="منذ">{dt(item.since)}</td>
+                    <td data-label=""><a href={item.href}>انتقال</a></td>
                   </tr>
                 ))}
               </tbody>
@@ -308,7 +310,7 @@ export default async function PilotPage({
           <p className="empty">لم يُسجَّل أي استيراد افتتاحي لهذا المشروع بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>الملف</th><th>الحالة</th><th>البصمة</th><th>سطور مقبولة/مرفوضة</th>
@@ -319,21 +321,21 @@ export default async function PilotPage({
               <tbody>
                 {imports.map((row) => (
                   <tr key={row.import_id}>
-                    <td>{row.source_file_name}</td>
-                    <td>
+                    <td data-label="الملف">{row.source_file_name}</td>
+                    <td data-label="الحالة">
                       <span className="status">{IMPORT_STATUS_AR[row.status] ?? row.status}</span>
                       {row.is_reversed && <span className="muted"> · معكوس</span>}
                     </td>
-                    <td><code>{row.source_file_checksum.slice(0, 12)}…</code></td>
-                    <td>{row.accepted_row_count} / {row.rejected_row_count}</td>
-                    <td>{money(row.computed_debit_total_minor_units)}</td>
-                    <td>{money(row.computed_credit_total_minor_units)}</td>
-                    <td className={BigInt(row.debit_variance_minor_units) === 0n ? undefined : 'error'}>{money(row.debit_variance_minor_units)}</td>
-                    <td className={BigInt(row.credit_variance_minor_units) === 0n ? undefined : 'error'}>{money(row.credit_variance_minor_units)}</td>
-                    <td>مُعِدّ مسجّل</td>
-                    <td>{row.approved_by ? 'مالك معتمد' : '—'}</td>
-                    <td>{d(row.posting_date)}</td>
-                    <td>{row.journal_batch_id ? <Link href={`/projects/${projectId}/cash`}>عرض المصدر</Link> : '—'}</td>
+                    <td data-label="البصمة"><code>{row.source_file_checksum.slice(0, 12)}…</code></td>
+                    <td data-label="سطور مقبولة/مرفوضة">{row.accepted_row_count} / {row.rejected_row_count}</td>
+                    <td data-label="مدين محسوب">{money(row.computed_debit_total_minor_units)}</td>
+                    <td data-label="دائن محسوب">{money(row.computed_credit_total_minor_units)}</td>
+                    <td data-label="فرق المدين" className={BigInt(row.debit_variance_minor_units) === 0n ? undefined : 'error'}>{money(row.debit_variance_minor_units)}</td>
+                    <td data-label="فرق الدائن" className={BigInt(row.credit_variance_minor_units) === 0n ? undefined : 'error'}>{money(row.credit_variance_minor_units)}</td>
+                    <td data-label="أعدّه">مُعِدّ مسجّل</td>
+                    <td data-label="اعتمده">{row.approved_by ? 'مالك معتمد' : '—'}</td>
+                    <td data-label="تاريخ الترحيل">{d(row.posting_date)}</td>
+                    <td data-label="القيد">{row.journal_batch_id ? <Link href={`/projects/${projectId}/cash`}>عرض المصدر</Link> : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -428,21 +430,21 @@ export default async function PilotPage({
           </p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>#</th><th>الترميز</th><th>الطرف</th><th>مدين</th><th>دائن</th><th>الوصف</th><th>النتيجة</th><th>سبب الرفض</th></tr>
               </thead>
               <tbody>
                 {filteredRows.map((row) => (
                   <tr key={row.row_id}>
-                    <td>{row.row_number}</td>
-                    <td>{row.mapping_label ?? row.mapping_code}</td>
-                    <td>{row.party_legal_name ?? '—'}</td>
-                    <td>{money(row.debit_minor_units)}</td>
-                    <td>{money(row.credit_minor_units)}</td>
-                    <td>{row.description}</td>
-                    <td><span className="status">{ROW_STATUS_AR[row.status] ?? row.status}</span></td>
-                    <td className={row.reject_reason ? 'error' : undefined}>
+                    <td data-label="#">{row.row_number}</td>
+                    <td data-label="الترميز">{row.mapping_label ?? row.mapping_code}</td>
+                    <td data-label="الطرف">{row.party_legal_name ?? '—'}</td>
+                    <td data-label="مدين">{money(row.debit_minor_units)}</td>
+                    <td data-label="دائن">{money(row.credit_minor_units)}</td>
+                    <td data-label="الوصف">{row.description}</td>
+                    <td data-label="النتيجة"><span className="status">{ROW_STATUS_AR[row.status] ?? row.status}</span></td>
+                    <td data-label="سبب الرفض" className={row.reject_reason ? 'error' : undefined}>
                       {row.reject_reason ? REJECT_REASON_AR[row.reject_reason] ?? row.reject_reason : '—'}
                     </td>
                   </tr>
@@ -465,7 +467,7 @@ export default async function PilotPage({
           <p className="empty">لم تُسجَّل نقاط مطابقة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>النقطة</th><th>حتى تاريخ</th><th>خارجي</th><th>Terranex</th><th>الفرق</th>
@@ -475,19 +477,19 @@ export default async function PilotPage({
               <tbody>
                 {checkpoints.map((row) => (
                   <tr key={row.checkpoint_id}>
-                    <td>{CHECKPOINT_AR[row.checkpoint_code] ?? row.checkpoint_code}</td>
-                    <td>{d(row.as_of_date)}</td>
-                    <td>{money(row.external_value_minor_units)}</td>
-                    <td>{money(row.terranex_value_minor_units)}</td>
-                    <td className={row.is_zero_variance ? undefined : 'error'}>
+                    <td data-label="النقطة">{CHECKPOINT_AR[row.checkpoint_code] ?? row.checkpoint_code}</td>
+                    <td data-label="حتى تاريخ">{d(row.as_of_date)}</td>
+                    <td data-label="خارجي">{money(row.external_value_minor_units)}</td>
+                    <td data-label="Terranex">{money(row.terranex_value_minor_units)}</td>
+                    <td data-label="الفرق" className={row.is_zero_variance ? undefined : 'error'}>
                       {row.is_zero_variance ? 'صفر — مطابقة تامة' : money(row.variance_minor_units)}
                     </td>
-                    <td><span className="status">{row.status === 'SIGNED_OFF' ? 'معتمدة' : row.status === 'MATCHED' ? 'مطابقة' : 'فرق'}</span></td>
-                    <td>{row.open_exception_count}{row.max_open_severity ? ` · ${SEVERITY_AR[row.max_open_severity]}` : ''}</td>
-                    <td>مُعِدّ مسجّل</td>
-                    <td>{row.signed_off_by ? 'مالك معتمد' : '—'}</td>
-                    <td>{row.external_evidence_reference}</td>
-                    <td>
+                    <td data-label="الحالة"><span className="status">{row.status === 'SIGNED_OFF' ? 'معتمدة' : row.status === 'MATCHED' ? 'مطابقة' : 'فرق'}</span></td>
+                    <td data-label="استثناءات مفتوحة">{row.open_exception_count}{row.max_open_severity ? ` · ${SEVERITY_AR[row.max_open_severity]}` : ''}</td>
+                    <td data-label="سجّلها">مُعِدّ مسجّل</td>
+                    <td data-label="اعتمدها">{row.signed_off_by ? 'مالك معتمد' : '—'}</td>
+                    <td data-label="الدليل">{row.external_evidence_reference}</td>
+                    <td data-label="">
                       {isOwner && row.status !== 'SIGNED_OFF' && row.open_exception_count === 0 && (
                         <SignOffCheckpointForm organizationId={organizationId} projectId={projectId} checkpointId={row.checkpoint_id} />
                       )}
@@ -518,22 +520,22 @@ export default async function PilotPage({
           <p className="empty">لا توجد استثناءات مطابقة.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>النقطة</th><th>حتى تاريخ</th><th>الفرق</th><th>الخطورة</th><th>المالك</th><th>الحالة</th><th>البيان</th><th>المعالجة</th><th></th></tr>
               </thead>
               <tbody>
                 {exceptions.map((row) => (
                   <tr key={row.exception_id}>
-                    <td>{CHECKPOINT_AR[row.checkpoint_code] ?? row.checkpoint_code}</td>
-                    <td>{d(row.as_of_date)}</td>
-                    <td className="error">{money(row.variance_minor_units)}</td>
-                    <td>{SEVERITY_AR[row.severity] ?? row.severity}</td>
-                    <td>{row.owner_user_id.slice(0, 8)}…</td>
-                    <td><span className="status">{row.status === 'OPEN' ? 'مفتوح' : 'مُعالج'}</span></td>
-                    <td>{row.detail}</td>
-                    <td>{row.resolution ? `${row.resolution} · ${row.resolution_evidence_reference ?? ''}` : '—'}</td>
-                    <td>
+                    <td data-label="النقطة">{CHECKPOINT_AR[row.checkpoint_code] ?? row.checkpoint_code}</td>
+                    <td data-label="حتى تاريخ">{d(row.as_of_date)}</td>
+                    <td data-label="الفرق" className="error">{money(row.variance_minor_units)}</td>
+                    <td data-label="الخطورة">{SEVERITY_AR[row.severity] ?? row.severity}</td>
+                    <td data-label="المالك">{row.owner_user_id.slice(0, 8)}…</td>
+                    <td data-label="الحالة"><span className="status">{row.status === 'OPEN' ? 'مفتوح' : 'مُعالج'}</span></td>
+                    <td data-label="البيان">{row.detail}</td>
+                    <td data-label="المعالجة">{row.resolution ? `${row.resolution} · ${row.resolution_evidence_reference ?? ''}` : '—'}</td>
+                    <td data-label="">
                       {isOwner && row.status === 'OPEN' && (
                         <ResolveExceptionForm organizationId={organizationId} projectId={projectId} exceptionId={row.exception_id} />
                       )}
@@ -559,22 +561,22 @@ export default async function PilotPage({
           <p className="empty">لم تُسجَّل مهام اختبار قبول بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr><th>الرمز</th><th>العنوان</th><th>النتيجة المتوقعة</th><th>الحالة</th><th>نفّذها</th><th>راجعها</th><th>الدليل</th><th>ملاحظات</th><th></th></tr>
               </thead>
               <tbody>
                 {uatTasks.map((row) => (
                   <tr key={row.task_id}>
-                    <td>{row.task_code}</td>
-                    <td>{row.title}</td>
-                    <td>{row.expected_outcome}</td>
-                    <td><span className="status">{UAT_STATUS_AR[row.status] ?? row.status}</span></td>
-                    <td>{row.executed_by ? `${row.executed_by.slice(0, 8)}… · ${dt(row.executed_at)}` : '—'}</td>
-                    <td>{row.reviewed_by ? `${row.reviewed_by.slice(0, 8)}… · ${dt(row.reviewed_at)}` : '—'}</td>
-                    <td>{row.acceptance_evidence_reference ?? row.execution_evidence_reference ?? '—'}</td>
-                    <td className={row.rejection_reason ? 'error' : undefined}>{row.rejection_reason ?? row.notes ?? '—'}</td>
-                    <td>
+                    <td data-label="الرمز">{row.task_code}</td>
+                    <td data-label="العنوان">{row.title}</td>
+                    <td data-label="النتيجة المتوقعة">{row.expected_outcome}</td>
+                    <td data-label="الحالة"><span className="status">{UAT_STATUS_AR[row.status] ?? row.status}</span></td>
+                    <td data-label="نفّذها">{row.executed_by ? `${row.executed_by.slice(0, 8)}… · ${dt(row.executed_at)}` : '—'}</td>
+                    <td data-label="راجعها">{row.reviewed_by ? `${row.reviewed_by.slice(0, 8)}… · ${dt(row.reviewed_at)}` : '—'}</td>
+                    <td data-label="الدليل">{row.acceptance_evidence_reference ?? row.execution_evidence_reference ?? '—'}</td>
+                    <td data-label="ملاحظات" className={row.rejection_reason ? 'error' : undefined}>{row.rejection_reason ?? row.notes ?? '—'}</td>
+                    <td data-label="">
                       {isOwner && row.status === 'PENDING' && (
                         <RecordUatExecutionForm organizationId={organizationId} projectId={projectId} taskId={row.task_id} />
                       )}
@@ -607,16 +609,16 @@ export default async function PilotPage({
           <p className="empty">لم تُسجَّل بروفات لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>البروفة</th><th>النتيجة</th><th>البيان</th><th>نفّذها</th><th>التاريخ</th></tr></thead>
               <tbody>
                 {rehearsals.map((row) => (
                   <tr key={row.rehearsal_id}>
-                    <td>{REHEARSAL_AR[row.rehearsal_code] ?? row.rehearsal_code}</td>
-                    <td className={row.result === 'PASS' ? undefined : 'error'}>{row.result}</td>
-                    <td>{row.detail}</td>
-                    <td>{row.executed_by.slice(0, 8)}…</td>
-                    <td>{dt(row.executed_at)}</td>
+                    <td data-label="البروفة">{REHEARSAL_AR[row.rehearsal_code] ?? row.rehearsal_code}</td>
+                    <td data-label="النتيجة" className={row.result === 'PASS' ? undefined : 'error'}>{row.result}</td>
+                    <td data-label="البيان">{row.detail}</td>
+                    <td data-label="نفّذها">{row.executed_by.slice(0, 8)}…</td>
+                    <td data-label="التاريخ">{dt(row.executed_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -639,17 +641,17 @@ export default async function PilotPage({
           <p className="empty">لا توجد عضويات في هذه المنظمة.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الوصول</th><th>منذ</th><th></th></tr></thead>
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>
-                    <td>{memberDisplayLabel(member.role, members.indexOf(member))}</td>
-                    <td>{member.role === 'OWNER' ? 'مالك' : 'عضو'}</td>
-                    <td><span className="status">{member.status === 'ACTIVE' ? 'نشط' : 'مُلغى'}</span></td>
-                    <td className={member.has_access ? undefined : 'error'}>{member.has_access ? 'ممنوح' : 'محجوب'}</td>
-                    <td>{dt(member.created_at)}</td>
-                    <td>
+                    <td data-label="المستخدم">{memberDisplayLabel(member.role, members.indexOf(member))}</td>
+                    <td data-label="الدور">{member.role === 'OWNER' ? 'مالك' : 'عضو'}</td>
+                    <td data-label="الحالة"><span className="status">{member.status === 'ACTIVE' ? 'نشط' : 'مُلغى'}</span></td>
+                    <td data-label="الوصول" className={member.has_access ? undefined : 'error'}>{member.has_access ? 'ممنوح' : 'محجوب'}</td>
+                    <td data-label="منذ">{dt(member.created_at)}</td>
+                    <td data-label="">
                       <SetMembershipStatusForm
                         organizationId={organizationId}
                         projectId={projectId}

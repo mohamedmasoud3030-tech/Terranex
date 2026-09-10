@@ -14,6 +14,7 @@ import {
 import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { EmptyState, SectionTabs } from '@/shared/ui';
 import { CapitalCallForm, ContributionForm } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -41,10 +42,6 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
   if (!activeVersion) {
     return (
       <section className="stack">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>التمويل</h1>
-        </div>
         <WorkspaceChrome
           projectId={projectId}
           active="capital"
@@ -52,23 +49,38 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           subtitle={project.name}
           internalReference={project.internal_reference}
         />
-        <section className="card stack">
-          <p>لا توجد اتفاقية مفعّلة بعد. فعّل الشروط أولًا لتتمكن من طلب رأس المال واستلام المساهمات.</p>
-          <Link className="button" href={`/projects/${projectId}/terms`}>إدارة الشروط والاتفاقية</Link>
-        </section>
+        <SectionTabs
+          label="رأس المال"
+          items={[
+            { href: `/projects/${projectId}/funding`, label: 'التمويل ورأس المال', current: true },
+            { href: `/projects/${projectId}/terms`, label: 'الشروط والاتفاقية' },
+          ]}
+        />
+        <EmptyState
+          title="لا توجد اتفاقية مفعّلة بعد"
+          description="فعّل الشروط أولًا لتتمكن من طلب رأس المال واستلام المساهمات."
+          action={<Link className="button" href={`/projects/${projectId}/terms`}>إدارة الشروط والاتفاقية</Link>}
+        />
       </section>
     );
   }
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>التمويل ورأس المال</h1>
-          <p className="muted">النسخة الحاكمة {activeVersion.version_no} · سارية من {activeVersion.effective_date}</p>
-        </div>
-      </div>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="capital"
+        title="التمويل ورأس المال"
+        subtitle={`${project.name} · النسخة الحاكمة ${activeVersion.version_no} · سارية من ${activeVersion.effective_date}`}
+        internalReference={project.internal_reference}
+      />
+      <SectionTabs
+        label="رأس المال"
+        items={[
+          { href: `/projects/${projectId}/funding`, label: 'التمويل ورأس المال', current: true },
+          { href: `/projects/${projectId}/terms`, label: 'الشروط والاتفاقية' },
+        ]}
+      />
 
       <section className="card stack">
         <h2>الموقف الرأسمالي للمشروع</h2>
@@ -79,16 +91,16 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           <Metric label="المتبقي استلامه" value={formatMinorUnits(position?.receivable_minor_units ?? '0', project.reporting_currency)} />
         </div>
         <div className="table-wrap">
-          <table>
+          <table className="table-stackable">
             <thead><tr><th>المستثمر</th><th>الالتزام</th><th>المطلوب</th><th>المستلم</th><th>المتبقي</th></tr></thead>
             <tbody>
               {partnerPositions.map((partner) => (
                 <tr key={partner.participant_id}>
-                  <td>{participantName.get(partner.participant_id) ?? '—'}</td>
-                  <td>{formatMinorUnits(partner.commitment_minor_units, partner.currency)}</td>
-                  <td>{formatMinorUnits(partner.called_minor_units, partner.currency)}</td>
-                  <td>{formatMinorUnits(partner.contributed_minor_units, partner.currency)}</td>
-                  <td>{formatMinorUnits(partner.receivable_minor_units, partner.currency)}</td>
+                  <td data-label="المستثمر">{participantName.get(partner.participant_id) ?? '—'}</td>
+                  <td data-label="الالتزام">{formatMinorUnits(partner.commitment_minor_units, partner.currency)}</td>
+                  <td data-label="المطلوب">{formatMinorUnits(partner.called_minor_units, partner.currency)}</td>
+                  <td data-label="المستلم">{formatMinorUnits(partner.contributed_minor_units, partner.currency)}</td>
+                  <td data-label="المتبقي">{formatMinorUnits(partner.receivable_minor_units, partner.currency)}</td>
                 </tr>
               ))}
             </tbody>
@@ -116,15 +128,15 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           <p className="muted">لا توجد طلبات بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>المرجع</th><th>تاريخ الاستحقاق</th><th>الحالة</th><th>البنود</th></tr></thead>
               <tbody>
                 {calls.map((call) => (
                   <tr key={call.id}>
-                    <td>{call.reference || '—'}</td>
-                    <td>{call.due_date}</td>
-                    <td><span className="status">{call.status === 'ISSUED' ? 'مُصدر' : 'ملغى'}</span></td>
-                    <td>
+                    <td data-label="المرجع">{call.reference || '—'}</td>
+                    <td data-label="تاريخ الاستحقاق">{call.due_date}</td>
+                    <td data-label="الحالة"><span className="status">{call.status === 'ISSUED' ? 'مُصدر' : 'ملغى'}</span></td>
+                    <td data-label="البنود">
                       <ul>
                         {lines.filter((line) => line.capital_call_id === call.id).map((line) => (
                           <li key={line.id}>
@@ -161,18 +173,18 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           <p className="muted">لا توجد مساهمات بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>التاريخ</th><th>المستثمر</th><th>الطلب</th><th>المبلغ</th><th>النسخة الحاكمة</th></tr></thead>
               <tbody>
                 {contributions.map((contribution) => {
                   const call = calls.find((item) => item.id === contribution.capital_call_id);
                   return (
                     <tr key={contribution.id}>
-                      <td>{contribution.occurred_on}</td>
-                      <td>{participantName.get(contribution.participant_id) ?? '—'}</td>
-                      <td>{call?.reference || contribution.capital_call_id.slice(0, 8)}</td>
-                      <td>{formatMinorUnits(contribution.contribution_minor_units, contribution.currency)}</td>
-                      <td>النسخة الحاكمة {activeVersion.version_no}</td>
+                      <td data-label="التاريخ">{contribution.occurred_on}</td>
+                      <td data-label="المستثمر">{participantName.get(contribution.participant_id) ?? '—'}</td>
+                      <td data-label="الطلب">{call?.reference || contribution.capital_call_id.slice(0, 8)}</td>
+                      <td data-label="المبلغ">{formatMinorUnits(contribution.contribution_minor_units, contribution.currency)}</td>
+                      <td data-label="النسخة الحاكمة">النسخة الحاكمة {activeVersion.version_no}</td>
                     </tr>
                   );
                 })}

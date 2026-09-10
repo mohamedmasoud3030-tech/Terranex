@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PageHeader } from '@/shared/ui';
 import { getActiveOrganization } from '@/features/organizations/context';
 import {
   getRegisteredAssets,
@@ -209,16 +210,11 @@ export default async function AssetsPage() {
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <p className="muted">{org.name}</p>
-          <h1>الأصول وأداء القطاعات</h1>
-          <p className="muted">
-            عرض موحَّد للقراءة فقط فوق أصول القطاعات. كل أصل ما زال مملوكًا ومُدارًا
-            داخل قطاعه ومشروعه؛ هذه الصفحة لا تنشئ سجلًا موحَّدًا للأصول ولا تكتب أي بيانات.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={org.name}
+        title="الأصول وأداء القطاعات"
+        description="عرض موحَّد للقراءة فقط فوق أصول القطاعات. كل أصل ما زال مملوكًا ومُدارًا داخل قطاعه ومشروعه؛ هذه الصفحة لا تنشئ سجلًا موحَّدًا للأصول ولا تكتب أي بيانات."
+      />
 
       <section className="stack">
         <h2>أداء القطاعات</h2>
@@ -251,7 +247,7 @@ export default async function AssetsPage() {
           </section>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <caption className="muted">
                 {assets.length} أصل مُسجَّل عبر جميع القطاعات
               </caption>

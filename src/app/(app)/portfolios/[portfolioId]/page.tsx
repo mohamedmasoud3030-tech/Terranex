@@ -112,7 +112,7 @@ export default async function PortfolioDetailPage({
           <p className="muted">لا توجد مشاريع مرتبطة حاليًا بهذه المحفظة.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>العملة</th>
@@ -134,20 +134,20 @@ export default async function PortfolioDetailPage({
               <tbody>
                 {rollup.map((row) => (
                   <tr key={row.currency}>
-                    <td>{row.currency}</td>
-                    <td>{row.project_count}</td>
-                    <td>{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.payable_open_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.paid_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.retention_held_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.open_commitment_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.fac_minor_units, row.currency)}</td>
-                    <td>{row.disputed_obligations} / {row.overdue_obligations}</td>
-                    <td>{row.open_exception_count}</td>
-                    <td>{row.cash_concentration_ratio ?? '—'}</td>
-                    <td>{row.fx_status}</td>
-                    <td>
+                    <td data-label="العملة">{row.currency}</td>
+                    <td data-label="المشاريع">{row.project_count}</td>
+                    <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                    <td data-label="مستحقات مفتوحة">{formatMinorUnits(row.payable_open_minor_units, row.currency)}</td>
+                    <td data-label="المدفوع">{formatMinorUnits(row.paid_minor_units, row.currency)}</td>
+                    <td data-label="حجز ضمان">{formatMinorUnits(row.retention_held_minor_units, row.currency)}</td>
+                    <td data-label="النتيجة المحققة">{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
+                    <td data-label="التزامات PO مفتوحة">{formatMinorUnits(row.open_commitment_minor_units, row.currency)}</td>
+                    <td data-label="FAC">{formatMinorUnits(row.fac_minor_units, row.currency)}</td>
+                    <td data-label="نزاعات / متأخرات">{row.disputed_obligations} / {row.overdue_obligations}</td>
+                    <td data-label="استثناءات مفتوحة">{row.open_exception_count}</td>
+                    <td data-label="تركّز النقدية">{row.cash_concentration_ratio ?? '—'}</td>
+                    <td data-label="حالة التحويل">{row.fx_status}</td>
+                    <td data-label="النقدية بعملة التقارير">
                       {row.converted_cash_balance_minor_units && row.org_reporting_currency
                         ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency)
                         : '—'}
@@ -278,7 +278,7 @@ export default async function PortfolioDetailPage({
           <p className="muted empty">لا توجد مشاريع مُسندة إلى هذه المحفظة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>المشروع</th>
@@ -291,15 +291,15 @@ export default async function PortfolioDetailPage({
               <tbody>
                 {activeMemberships.map((m) => (
                   <tr key={m.id}>
-                    <td>
+                    <td data-label="المشروع">
                       <Link href={sectorLandingHref(m.project_sector, m.investment_project_id)}>
                         <strong>{m.project_name}</strong>
                       </Link>
                     </td>
-                    <td>{SECTOR_LABEL[m.project_sector as keyof typeof SECTOR_LABEL] ?? m.project_sector}</td>
-                    <td>{m.project_internal_reference || '—'}</td>
-                    <td>{formatDate(m.assigned_at)}</td>
-                    <td>
+                    <td data-label="القطاع">{SECTOR_LABEL[m.project_sector as keyof typeof SECTOR_LABEL] ?? m.project_sector}</td>
+                    <td data-label="المرجع الداخلي">{m.project_internal_reference || '—'}</td>
+                    <td data-label="تاريخ الإسناد">{formatDate(m.assigned_at)}</td>
+                    <td data-label="إجراءات">
                       <div className="stack" style={{ gap: 8 }}>
                         <RemoveProjectForm
                           organizationId={portfolio.organization_id}
@@ -348,7 +348,7 @@ export default async function PortfolioDetailPage({
         <section className="card stack">
           <h2>سجل الإسنادات السابقة</h2>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>المشروع</th>
@@ -360,10 +360,10 @@ export default async function PortfolioDetailPage({
               <tbody>
                 {pastMemberships.map((m) => (
                   <tr key={m.id}>
-                    <td>{m.project_name}</td>
-                    <td>{formatDate(m.assigned_at)}</td>
-                    <td>{formatDate(m.removed_at)}</td>
-                    <td>{m.removal_reason ?? '—'}</td>
+                    <td data-label="المشروع">{m.project_name}</td>
+                    <td data-label="أُسند في">{formatDate(m.assigned_at)}</td>
+                    <td data-label="أُزيل في">{formatDate(m.removed_at)}</td>
+                    <td data-label="سبب الإزالة">{m.removal_reason ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

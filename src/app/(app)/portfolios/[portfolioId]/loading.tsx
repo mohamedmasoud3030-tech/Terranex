@@ -1,3 +1,5 @@
-export default function PortfolioDetailLoading() {
-  return <p role="status" className="muted">جارٍ تحميل بيانات المحفظة…</p>;
+import { PageSkeleton } from '@/shared/ui';
+
+export default function Loading() {
+  return <PageSkeleton blocks={4} withNav={false} />;
 }

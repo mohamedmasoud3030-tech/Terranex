@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { signIn } from '@/features/auth/actions';
 
-export function LoginForm() {
+export function LoginForm({ sessionExpired = false }: { sessionExpired?: boolean }) {
   const [state, action, pending] = useActionState(signIn, { error: undefined });
   return (
     <main className="shell" style={{ maxWidth: 480, paddingTop: '12vh' }}>
@@ -11,6 +11,9 @@ export function LoginForm() {
         <div>
           <h1>مرحبًا بك في تيرانكس</h1>
           <p className="muted">سجّل الدخول للوصول إلى منظمة الاستثمار ومشاريعها.</p>
+          {sessionExpired ? (
+            <p className="banner warning" role="status">انتهت جلستك أو لم تعد صالحة. سجّل الدخول مرة أخرى للمتابعة.</p>
+          ) : null}
         </div>
         <form action={action} className="stack" noValidate>
           <label>

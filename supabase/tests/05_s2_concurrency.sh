@@ -182,13 +182,16 @@ create trigger s2_test_delay_statement before insert on public.bank_statement_li
 for each row execute function public.s2_test_delay_statement_insert();
 "
 
+# Dated today so it lands inside the period that 16_s6_period_close.sql reopens
+# ([prior end_date .. current_date]) and stays the one truthful close failure
+# that 17_s6_close_concurrency.sh expects, regardless of the calendar.
 SQL_IMPORT_A="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
 select public.import_bank_statement_lines('$ORG','$ACCOUNT',
-  array[date '2026-09-06'], array['-777777'], array['EGP'],
+  array[current_date], array['-777777'], array['EGP'],
   array['حركة سباق البصمة'], array['TXN-RACE-FP'], 's2-race-fp-session-a');"
 SQL_IMPORT_B="set request.jwt.claim.sub='$USER_ID'; set role authenticated;
 select public.import_bank_statement_lines('$ORG','$ACCOUNT',
-  array[date '2026-09-06'], array['-777777'], array['EGP'],
+  array[current_date], array['-777777'], array['EGP'],
   array['حركة سباق البصمة'], array['TXN-RACE-FP'], 's2-race-fp-session-b');"
 
 set +e

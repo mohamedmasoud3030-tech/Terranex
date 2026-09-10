@@ -283,6 +283,9 @@ describe('R8 page renders reasons, not fabricated zeros', () => {
   });
 
   it('is reachable from the main navigation', () => {
-    expect(layout).toMatch(/href="\/assets">الأصول</);
+    // Primary navigation lives in the shared AppNav rendered by the app layout.
+    const nav = readFileSync('src/shared/ui/app-nav.tsx', 'utf8');
+    expect(layout).toContain('<AppNav');
+    expect(nav).toMatch(/href: '\/assets', label: 'الأصول'/);
   });
 });

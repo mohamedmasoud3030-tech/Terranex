@@ -64,6 +64,7 @@ import {
 } from '@/features/livestock/queries';
 import { getProject } from '@/features/projects/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
+import { InPageTabs } from '@/shared/ui';
 import { newCommandNonce } from '@/features/livestock/idempotency';
 import {
   ActivateForm,
@@ -714,32 +715,44 @@ export default async function LivestockPage({
         subtitle={`${project.name} · المواقع والقطعان`}
         internalReference={project.internal_reference}
       />
-      <header className="card">
-        <h1>الثروة الحيوانية</h1>
-        <p className="muted">
-          المواقع والقطعان والدفعات · تتبع جماعي قابل للعد دون افتراض سجل فردي لكل حيوان.
-        </p>
-      </header>
-      <section className="card stack">
+      <InPageTabs
+        label="أقسام الثروة الحيوانية"
+        items={[
+          { href: '#sites', label: 'المواقع' },
+          { href: '#herds', label: 'القطعان' },
+          { href: '#batches', label: 'الدفعات' },
+          { href: '#movements', label: 'الحركات' },
+          { href: '#headcount', label: 'الأعداد' },
+          { href: '#births', label: 'الولادات' },
+          { href: '#deaths', label: 'النفوق' },
+          { href: '#split', label: 'التقسيم' },
+          { href: '#merge', label: 'الدمج' },
+          { href: '#weights', label: 'الأوزان' },
+        ]}
+      />
+      <p className="muted">
+        المواقع والقطعان والدفعات · تتبع جماعي قابل للعد دون افتراض سجل فردي لكل حيوان.
+      </p>
+      <section className="card stack scroll-target" id="setup">
         <h2>تهيئة القطاع</h2>
         <ProfileForm {...context} commandNonce={newCommandNonce()} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="sites">
         <h2>مواقع التشغيل</h2>
         <SiteForm {...context} commandNonce={newCommandNonce()} />
         <Sites sites={sites} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="herds">
         <h2>القطعان (المجموعات الإدارية)</h2>
         <HerdForm {...context} commandNonce={newCommandNonce()} />
         <Herds herds={herds} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="batches">
         <h2>الدفعات الحيوانية القابلة للعد</h2>
         <CohortForm {...context} herds={herds} sites={sites} commandNonce={newCommandNonce()} />
         <Cohorts {...context} cohorts={cohorts} timeline={timeline} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="location">
         <h2>الموقع الحالي</h2>
         <p className="muted">
           الموقع الحالي المشتق لكل دفعة، ومنه تُسجَّل حركة النقل. الوضع الافتتاحي يظل ثابتًا في بطاقة الدفعة.
@@ -753,23 +766,23 @@ export default async function LivestockPage({
           operationalCohortIds={operationalCohortIds}
         />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="movements">
         <h2>سجل الحركات</h2>
         <Movements movements={movements} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="headcount">
         <h2>الرصيد العددي الحالي</h2>
         <QuantityRollforward rows={quantities} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="births">
         <h2>تسجيل ولادات</h2>
         <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={operationalActiveCohorts} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="deaths">
         <h2>تسجيل نفوق</h2>
         <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="split">
         <h2>تقسيم دفعة</h2>
         <SplitForm
           {...context}
@@ -779,7 +792,7 @@ export default async function LivestockPage({
           sites={sites}
         />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="merge">
         <h2>دمج دفعات</h2>
         <MergeForm
           {...context}
@@ -789,15 +802,15 @@ export default async function LivestockPage({
           sites={sites}
         />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="count-flow">
         <h2>حركة العدد</h2>
         <QuantityEvents events={quantityEvents} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="lineage">
         <h2>سلسلة التقسيم والدمج</h2>
         <Lineage lineage={lineage} />
       </section>
-      <section className="card stack">
+      <section className="card stack scroll-target" id="weights">
         <h2>تسجيل وزن</h2>
         <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
       </section>

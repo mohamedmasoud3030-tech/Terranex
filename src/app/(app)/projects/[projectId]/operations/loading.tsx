@@ -1,1 +1,5 @@
-export default function OperationsLoading(){return <section className="stack" aria-busy="true"><div className="card skeleton"><h1>جارٍ تحميل العمليات العقارية…</h1><p>نسترجع حالة الأصول والأدلة والتكاليف من مصادرها المعتمدة.</p></div><div className="grid"><div className="card skeleton">جارٍ تحميل الأصول…</div><div className="card skeleton">جارٍ تحميل ضبط التكلفة…</div></div></section>;}
+import { PageSkeleton } from '@/shared/ui';
+
+export default function Loading() {
+  return <PageSkeleton blocks={4} withNav={true} />;
+}

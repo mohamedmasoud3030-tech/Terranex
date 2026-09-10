@@ -39,6 +39,10 @@ export async function proxy(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.search = '';
+    // Tell the sign-in page why the user landed there so it can explain
+    // "session ended" instead of silently showing the form (root is
+    // the normal entry point and carries no such hint).
+    if (pathname !== '/') loginUrl.searchParams.set('reason', 'expired');
     return NextResponse.redirect(loginUrl);
   }
 

@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { WorkspaceChrome } from '@/features/workspace/chrome';
+import { SectionTabs } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import {
@@ -40,13 +41,20 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← العودة للمشروع</Link>
-          <h1>الشروط والاتفاقية</h1>
-          <p className="muted">{project.name}</p>
-        </div>
-      </div>
+      <WorkspaceChrome
+        projectId={projectId}
+        active="capital"
+        title="الشروط والاتفاقية"
+        subtitle={project.name}
+        internalReference={project.internal_reference}
+      />
+      <SectionTabs
+        label="رأس المال"
+        items={[
+          { href: `/projects/${projectId}/funding`, label: 'التمويل ورأس المال' },
+          { href: `/projects/${projectId}/terms`, label: 'الشروط والاتفاقية', current: true },
+        ]}
+      />
 
       <section className="card stack">
         <h2>الأطراف والمشاركون</h2>
@@ -86,13 +94,13 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
             <code>{activeVersion.terms_hash.slice(0, 16)}…</code>
           </p>
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead><tr><th>المشارك</th><th>الالتزام</th></tr></thead>
               <tbody>
                 {commitments.map((commitment) => (
                   <tr key={commitment.id}>
-                    <td>{participantName.get(commitment.participant_id) ?? '—'}</td>
-                    <td>{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                    <td data-label="المشارك">{participantName.get(commitment.participant_id) ?? '—'}</td>
+                    <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                   </tr>
                 ))}
               </tbody>

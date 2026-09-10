@@ -7,6 +7,8 @@ import { getIntegritySignals, getOrganizationConsolidation } from '@/features/co
 import { sectorLandingHref } from '@/features/workspace/nav';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
 import { formatMinorUnits } from '@/shared/money';
+import { SEVERITY_LABEL, severityTone } from '@/features/projects/labels';
+import { EmptyState, PageHeader, Section, Stat, StatGrid, StatusBadge } from '@/shared/ui';
 
 const FX_STATUS_AR: Record<string, string> = {
   CONSOLIDATED_AT_RATE: 'مجمّع بسعر صرف مسجل',
@@ -18,11 +20,11 @@ export default async function Home() {
   const { organization: org } = await getActiveOrganization();
   if (!org) {
     return (
-      <section className="card stack">
-        <h1>لنبدأ بإنشاء منظمتك</h1>
-        <p className="muted">المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك.</p>
-        <Link className="button" href="/onboarding">إنشاء منظمة</Link>
-      </section>
+      <EmptyState
+        title="لنبدأ بإنشاء منظمتك"
+        description="المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك."
+        action={<Link className="button" href="/onboarding">إنشاء منظمة</Link>}
+      />
     );
   }
   const [projects, portfolios, assets, sectorPerformance, consolidation, integritySignals] =
@@ -45,40 +47,29 @@ export default async function Home() {
 
   return (
     <section className="stack">
-      <div className="top">
-        <div>
-          <p className="muted">{org.name}</p>
-          <h1>لوحة الإدارة التنفيذية</h1>
-          <p className="muted">ملخص تشغيلي ومالي من الحقائق المسجلة فقط، بدون أرقام تقديرية أو تجميع عملات غير مكتمل.</p>
-        </div>
-        <div className="stack" style={{ justifyItems: 'end' }}>
-          <Link className="button" href="/intake">إدخال مشروع حقيقي</Link>
-          <Link className="button secondary" href="/projects/new">مشروع جديد</Link>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={org.name}
+        title="لوحة الإدارة التنفيذية"
+        description="ملخص تشغيلي ومالي من الحقائق المسجلة فقط، بدون أرقام تقديرية أو تجميع عملات غير مكتمل."
+        actions={
+          <>
+            <Link className="button" href="/projects/new">مشروع جديد</Link>
+            <Link className="button secondary" href="/intake">إدخال مشروع حقيقي (مسار موجّه)</Link>
+          </>
+        }
+      />
 
-      <div className="overview-kpis" aria-label="ملخص المحفظة التشغيلية">
-        <Link className="overview-kpi" href="/portfolios">
-          <span>المحافظ الاستثمارية</span>
-          <strong>{portfolios.length}</strong>
-          <small>فتح المحافظ</small>
-        </Link>
-        <Link className="overview-kpi" href="/projects">
-          <span>المشاريع</span>
-          <strong>{projects.length}</strong>
-          <small>فتح المشاريع</small>
-        </Link>
-        <Link className="overview-kpi" href="/assets">
-          <span>الأصول المسجلة عبر القطاعات</span>
-          <strong>{assets.length}</strong>
-          <small>فتح سجل الأصول</small>
-        </Link>
-        <div className={`overview-kpi${criticalSignals.length ? ' negative' : ''}`}>
-          <span>موضوعات سلامة البيانات المفتوحة</span>
-          <strong>{integritySubjects}</strong>
-          <small>{criticalSignals.length ? `${criticalSignals.length} إشارات حرجة` : 'لا توجد إشارة حرجة مسجلة'}</small>
-        </div>
-      </div>
+      <StatGrid label="ملخص المحفظة التشغيلية">
+        <Stat label="المحافظ الاستثمارية" value={portfolios.length} hint="فتح المحافظ" href="/portfolios" />
+        <Stat label="المشاريع" value={projects.length} hint="فتح المشاريع" href="/projects" />
+        <Stat label="الأصول المسجلة عبر القطاعات" value={assets.length} hint="فتح سجل الأصول" href="/assets" />
+        <Stat
+          label="موضوعات سلامة البيانات المفتوحة"
+          value={integritySubjects}
+          tone={criticalSignals.length ? 'negative' : undefined}
+          hint={criticalSignals.length ? `${criticalSignals.length} إشارات حرجة` : 'لا توجد إشارة حرجة مسجلة'}
+        />
+      </StatGrid>
 
       {consolidated ? (
         <section className="card stack" aria-labelledby="consolidated-heading">
@@ -111,7 +102,7 @@ export default async function Home() {
               <div className="overview-kpi">
                 <span>مشاريع داخلة في التجميع</span>
                 <strong>{consolidated.project_count}</strong>
-                <small>Project truth → Organization</small>
+                <small>من حقيقة المشروع إلى المنظمة</small>
               </div>
             </div>
           ) : (
@@ -134,7 +125,7 @@ export default async function Home() {
           <p className="muted">لا توجد حقائق مالية قطاعية مسجلة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="table-stackable">
               <thead>
                 <tr>
                   <th>القطاع</th>
@@ -150,14 +141,14 @@ export default async function Home() {
               <tbody>
                 {sectorPerformance.map((row) => (
                   <tr key={`${row.sector}-${row.currency}`}>
-                    <td>{SECTOR_LABEL[row.sector] ?? row.sector}</td>
-                    <td>{row.project_count}</td>
-                    <td>{row.asset_count}</td>
-                    <td>{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.cost_of_sale_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.expense_posted_minor_units, row.currency)}</td>
-                    <td>{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
+                    <td data-label="القطاع">{SECTOR_LABEL[row.sector] ?? row.sector}</td>
+                    <td data-label="المشاريع">{row.project_count}</td>
+                    <td data-label="الأصول">{row.asset_count}</td>
+                    <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                    <td data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
+                    <td data-label="تكلفة المبيعات">{formatMinorUnits(row.cost_of_sale_minor_units, row.currency)}</td>
+                    <td data-label="المصروفات">{formatMinorUnits(row.expense_posted_minor_units, row.currency)}</td>
+                    <td data-label="النتيجة المحققة*">{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -183,7 +174,7 @@ export default async function Home() {
                   <p className="muted">{signal.signal_code}</p>
                 </div>
                 <div>
-                  <span className="status">{signal.severity}</span>
+                  <StatusBadge tone={severityTone(signal.severity)}>{SEVERITY_LABEL[signal.severity] ?? signal.severity}</StatusBadge>
                   <p>{signal.subject_count} موضوع</p>
                 </div>
               </div>
@@ -192,34 +183,31 @@ export default async function Home() {
         </section>
       ) : null}
 
-      <section className="card stack" aria-labelledby="projects-heading">
-        <div className="section-heading">
-          <div>
-            <h2 id="projects-heading">المشاريع الاستثمارية</h2>
-            <p className="muted">كل مشروع يحتفظ بدورته وأصوله ودفتره المالي بشكل مستقل.</p>
-          </div>
-          <Link className="button secondary" href="/projects">كل المشاريع</Link>
-        </div>
+      <Section
+        title="المشاريع الاستثمارية"
+        description="كل مشروع يحتفظ بدورته وأصوله ودفتره المالي بشكل مستقل."
+        actions={<Link className="button secondary sm" href="/projects">كل المشاريع</Link>}
+      >
         {projects.length === 0 ? (
-          <section className="stack empty">
-            <h3>لا توجد مشاريع بعد</h3>
-            <p className="muted">أدخل أول مشروع عبر المسار الموجّه. لن نعرض أرقامًا أو بيانات تجريبية.</p>
-            <Link className="button" href="/intake">بدء إدخال المشروع</Link>
-          </section>
+          <EmptyState
+            title="لا توجد مشاريع بعد"
+            description="أدخل أول مشروع عبر المسار الموجّه. لن نعرض أرقامًا أو بيانات تجريبية."
+            action={<Link className="button" href="/intake">بدء إدخال المشروع</Link>}
+          />
         ) : (
-          <div className="grid">
+          <ul className="link-list" aria-label="أحدث المشاريع">
             {projects.slice(0, 6).map((project) => (
-              <Link key={project.id} href={sectorLandingHref(project.sector, project.id)} className="project">
-                <strong>{project.name}</strong>
-                <p className="muted">{project.internal_reference || 'بدون مرجع داخلي'}</p>
-                <span className="status">
-                  {SECTOR_LABEL[project.sector] ?? project.sector} · {project.reporting_currency}
-                </span>
-              </Link>
+              <li key={project.id}>
+                <Link href={sectorLandingHref(project.sector, project.id)}>
+                  <strong>{project.name}</strong>
+                  <span className="muted">{project.internal_reference || 'بدون مرجع داخلي'}</span>
+                  <StatusBadge>{SECTOR_LABEL[project.sector] ?? project.sector} · {project.reporting_currency}</StatusBadge>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

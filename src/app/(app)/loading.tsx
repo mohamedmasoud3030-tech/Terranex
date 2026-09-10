@@ -1,1 +1,5 @@
-export default function Loading(){return <p role="status" className="muted">جارٍ تحميل البيانات…</p>}
+import { PageSkeleton } from '@/shared/ui';
+
+export default function Loading() {
+  return <PageSkeleton blocks={3} withNav={false} />;
+}
