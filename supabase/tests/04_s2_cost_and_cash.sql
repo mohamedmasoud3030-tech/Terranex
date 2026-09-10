@@ -575,9 +575,11 @@ select 1/case when (select count(*) from public.bank_statement_lines where impor
   then 1 else 0 end as s2_import_bad_rows_wrote_nothing;
 
 -- Lines on the second account for wrong-account reconciliation tests.
+-- These negative fixtures are never reconciled by design; they are dated in
+-- the future (relative to today) so the S6 close period never contains them.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25'],
+    array[current_date + 30],
     array['-150000'],
     array['EGP'],
     array['دفعة على حساب آخر'],
@@ -588,7 +590,7 @@ where import_id=(select id from public.bank_statement_imports where idempotency_
 -- A wrong-amount line on the main account.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25'],
+    array[current_date + 30],
     array['-149999'],
     array['EGP'],
     array['مبلغ غير مطابق'],
