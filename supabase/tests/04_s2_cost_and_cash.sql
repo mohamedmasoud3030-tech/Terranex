@@ -484,13 +484,16 @@ select s2_run('00000000-0000-4000-8000-000000000001', format(
 
 -- Reconciliation-race fixture: an active payment with a matching statement
 -- line that stays unreconciled until 05_s2_concurrency.sh races on it.
+-- Dated relative to today (future) so the S6 close-period suite, which
+-- opens a period ending at current_date, never absorbs it as calendar time
+-- passes (a fixed 2026-09-02 broke CI once that date arrived).
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,50000,date '2026-09-02','s2-pay-race-01')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,50000,current_date + 30,'s2-pay-race-01')$$,
   :'s2_obl_race', :'s2_account_a'));
 select id as s2_pay_race from public.project_payments where idempotency_key='s2-pay-race-01' \gset
 select s2_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-09-02'],
+    array[current_date + 30],
     array['-50000'],
     array['EGP'],
     array['دفعة سباق التسوية'],
