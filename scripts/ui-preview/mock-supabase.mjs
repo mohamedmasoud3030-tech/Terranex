@@ -18,16 +18,25 @@
 import http from 'node:http';
 import { fixtures, DEMO_USER } from './fixtures.mjs';
 
+import { randomBytes } from 'node:crypto';
+
 const PORT = Number(process.env.MOCK_SUPABASE_PORT ?? 54329);
 const SCENARIO = process.env.MOCK_SCENARIO ?? 'populated'; // populated | empty
+// Synthetic session material for the local mock only. Values come from the
+// environment (so nothing secret-looking is committed) and default to random
+// per-process strings; `--print-cookie` and the login form use the same env.
+const ACCESS_TOKEN = process.env.MOCK_ACCESS_TOKEN ?? randomBytes(16).toString('hex');
+const REFRESH_TOKEN = process.env.MOCK_REFRESH_TOKEN ?? randomBytes(16).toString('hex');
+const LOGIN_EMAIL = process.env.MOCK_LOGIN_EMAIL ?? 'preview@terranex.local';
+const LOGIN_SECRET = process.env.MOCK_LOGIN_SECRET ?? randomBytes(8).toString('hex');
 
 function sessionCookieValue() {
   const session = {
-    access_token: 'preview-access-token',
+    access_token: ACCESS_TOKEN,
     token_type: 'bearer',
     expires_in: 3600 * 24,
     expires_at: Math.floor(Date.now() / 1000) + 3600 * 24,
-    refresh_token: 'preview-refresh-token',
+    refresh_token: REFRESH_TOKEN,
     user: DEMO_USER,
   };
   const b64 = Buffer.from(JSON.stringify(session), 'utf8')
@@ -122,7 +131,7 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   if (url.pathname === '/auth/v1/user') {
     const auth = req.headers.authorization ?? '';
-    if (!auth.includes('preview-access-token')) {
+    if (!auth.includes(ACCESS_TOKEN)) {
       res.writeHead(401, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ code: 401, msg: 'invalid JWT' }));
       return;
@@ -137,7 +146,7 @@ const server = http.createServer((req, res) => {
     req.on('data', (c) => { body += c; });
     req.on('end', () => {
       let ok = false;
-      try { const j = JSON.parse(body); ok = j.email === 'preview@terranex.local' && j.password === 'preview-pass'; } catch { /* noop */ }
+      try { const j = JSON.parse(body); ok = j.email === LOGIN_EMAIL && j.password === LOGIN_SECRET; } catch { /* noop */ }
       if (!ok) {
         res.writeHead(400, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid login credentials' }));
@@ -145,8 +154,8 @@ const server = http.createServer((req, res) => {
       }
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({
-        access_token: 'preview-access-token', token_type: 'bearer', expires_in: 86400,
-        expires_at: Math.floor(Date.now() / 1000) + 86400, refresh_token: 'preview-refresh-token', user: DEMO_USER,
+        access_token: ACCESS_TOKEN, token_type: 'bearer', expires_in: 86400,
+        expires_at: Math.floor(Date.now() / 1000) + 86400, refresh_token: REFRESH_TOKEN, user: DEMO_USER,
       }));
     });
     return;
@@ -159,4 +168,5 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`mock-supabase listening on http://127.0.0.1:${PORT} scenario=${SCENARIO}`);
+  console.log(`login: ${LOGIN_EMAIL} / MOCK_LOGIN_SECRET=${LOGIN_SECRET} (set MOCK_ACCESS_TOKEN to reuse --print-cookie across processes)`);
 });
