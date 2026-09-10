@@ -110,6 +110,12 @@ select 1/case when (select status = 'PREPARED' from public.close_runs where id =
 -- OPEN_APPROVAL_EXCEPTIONS; older forward-upgrade fixtures replay this suite
 -- against a pre-F3 schema where 10 gates is the correct count.
 select 1/case when (select count(*) from public.close_run_gates where close_run_id = :'s6_run1') in (10, 11) then 1 else 0 end as s6_ten_gates_present;
+\echo DIAG_PERIOD
+select start_date, end_date from public.accounting_periods where id = :'s6_period1';
+\echo DIAG_GATE
+select result, message, details from public.close_run_gates where close_run_id = :'s6_run1' and gate_code = 'BANK_RECONCILIATION_COVERAGE';
+\echo DIAG_LINES
+select provider_reference, transaction_date, amount_minor_units from public.bank_statement_lines where project_id = :'s6_project' order by transaction_date;
 select 1/case when (select result = 'PASS' from public.close_run_gates
   where close_run_id = :'s6_run1' and gate_code = 'BANK_RECONCILIATION_COVERAGE')
   then 1 else 0 end as s6_run1_bank_gate_truthful_pass;
