@@ -419,12 +419,12 @@ select (to_regprocedure('public.prepare_cost_payment(uuid,uuid,uuid,bigint,date,
   as s2_uses_historical_payment_api \gset
 \if :s2_uses_historical_payment_api
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
-  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-member-0001')$$,
+  $$select public.pay_cost_obligation('10000000-0000-4000-8000-000000000001',%L,%L,150000,(current_date + 30),'s2-pay-member-0001')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_member_denied;
 \endif
 
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,(current_date + 30),'s2-pay-1-000001')$$,
   :'s2_obl_expense', :'s2_account_a'));
 select id as s2_payment_1 from public.project_payments where idempotency_key='s2-pay-1-000001' \gset
 
@@ -440,35 +440,35 @@ select 1/case when (select outstanding_minor_units from public.cost_obligation_p
   where obligation_id=:'s2_obl_expense')='250000' then 1 else 0 end as s2_outstanding_after_partial;
 
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,300000,date '2026-08-25','s2-pay-over-00001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,300000,(current_date + 30),'s2-pay-over-00001')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_overpayment_rejected;
 
 -- Retry: same key + same payload returns the original payment.
 select 1/case when s2_expect_ok('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,date '2026-08-25','s2-pay-1-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,150000,(current_date + 30),'s2-pay-1-000001')$$,
   :'s2_obl_expense', :'s2_account_a')) then 1 else 0 end as s2_payment_retry_ok;
 select 1/case when (select count(*) from public.project_payments where idempotency_key='s2-pay-1-000001')=1
   then 1 else 0 end as s2_payment_retry_single_effect;
 -- Same key + different payload -> reject.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,149999,date '2026-08-25','s2-pay-1-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,149999,(current_date + 30),'s2-pay-1-000001')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_payload_mismatch_rejected;
 
 -- Cross-project cash account rejected.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,1000,date '2026-08-25','s2-pay-cross-proj-01')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,1000,(current_date + 30),'s2-pay-cross-proj-01')$$,
   :'s2_obl_expense', :'s2_account_b'), 'P0001') then 1 else 0 end as s2_payment_cross_project_rejected;
 
 -- Pay the remainder in full.
 select s2_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,250000,date '2026-08-26','s2-pay-2-000001')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,250000,(current_date + 31),'s2-pay-2-000001')$$,
   :'s2_obl_expense', :'s2_account_a'));
 select id as s2_payment_2 from public.project_payments where idempotency_key='s2-pay-2-000001' \gset
 
 select 1/case when (select outstanding_minor_units from public.cost_obligation_position_read
   where obligation_id=:'s2_obl_expense')='0' then 1 else 0 end as s2_outstanding_zero_after_full;
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000001', format(
-  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,1,date '2026-08-27','s2-pay-after-full-01')$$,
+  $$select public.s2_payment_workflow('10000000-0000-4000-8000-000000000001',%L,%L,1,(current_date + 32),'s2-pay-after-full-01')$$,
   :'s2_obl_expense', :'s2_account_a'), 'P0001') then 1 else 0 end as s2_payment_after_full_rejected;
 
 select 1/case when (select balance_minor_units from public.project_cash_position_read
@@ -510,7 +510,7 @@ select count(*) as s2_batches_before_import from public.journal_batches \gset
 select count(*) as s2_lines_before_import from public.journal_lines \gset
 select s2_run('00000000-0000-4000-8000-000000000003', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25', date '2026-08-26'],
+    array[(current_date + 30), (current_date + 31)],
     array['-150000','-250000'],
     array['EGP','EGP'],
     array['دفعة للمورد الأول','الدفعة الثانية للمورد'],
@@ -528,7 +528,7 @@ select 1/case when (select count(*) from public.journal_lines)=:'s2_lines_before
 -- Retry: same key + same payload returns the same import.
 select 1/case when s2_expect_ok('00000000-0000-4000-8000-000000000003', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25', date '2026-08-26'],
+    array[(current_date + 30), (current_date + 31)],
     array['-150000','-250000'],
     array['EGP','EGP'],
     array['دفعة للمورد الأول','الدفعة الثانية للمورد'],
@@ -539,7 +539,7 @@ select 1/case when (select count(*) from public.bank_statement_lines where impor
 -- Same key + different payload -> reject.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25'],
+    array[(current_date + 30)],
     array['-1'],
     array['EGP'],
     array['مختلف'],
@@ -548,7 +548,7 @@ select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', forma
 -- Same fingerprint with a different key -> duplicate protection.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25'],
+    array[(current_date + 30)],
     array['-150000'],
     array['EGP'],
     array['دفعة للمورد الأول'],
@@ -557,7 +557,7 @@ select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', forma
 -- Invalid rows rejected before any line is written.
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25'],
+    array[(current_date + 30)],
     array['1.5.3'],
     array['EGP'],
     array['مبلغ خاطئ'],
@@ -565,7 +565,7 @@ select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', forma
     's2-import-bad-0001')$$, :'s2_account_a'), 'P0001') then 1 else 0 end as s2_import_invalid_amount_rejected;
 select 1/case when s2_expect_raise('00000000-0000-4000-8000-000000000003', format(
   $$select public.import_bank_statement_lines('10000000-0000-4000-8000-000000000001',%L,
-    array[date '2026-08-25'],
+    array[(current_date + 30)],
     array['-50000'],
     array['USD'],
     array['عملة خاطئة'],
