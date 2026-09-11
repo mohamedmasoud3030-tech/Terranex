@@ -126,7 +126,7 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                   <th>الفترة</th>
                   <th>النوع / الإصدار</th>
                   <th>الحالة</th>
-                  <th>الإجمالي</th>
+                  <th className="num">الإجمالي</th>
                   <th>الإجراءات</th>
                 </tr>
               </thead>
@@ -140,9 +140,9 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                       {budget.budget_type === 'ORIGINAL' ? 'أصلية' : 'مراجعة'} · إصدار {budget.version}
                     </td>
                     <td data-label="الحالة"><span className="status">{STATUS_LABEL[budget.status] ?? budget.status}</span></td>
-                    <td data-label="الإجمالي">{formatMoney(budget.total_budget_minor_units, currency)}</td>
+                    <td className="num" data-label="الإجمالي">{formatMoney(budget.total_budget_minor_units, currency)}</td>
                     <td data-label="الإجراءات">
-                      <div className="stack" style={{ gap: 8 }}>
+                      <div className="stack-xs">
                         {budget.status === 'DRAFT' && isOwner && (
                           <>
                             <ApproveBudgetButton
@@ -187,12 +187,12 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                   <th>الإصدار</th>
                   <th>المعالجة</th>
                   <th>السقف</th>
-                  <th>الالتزامات</th>
-                  <th>المدفوع</th>
-                  <th>الفعلية المرحّلة</th>
-                  <th>استثناءات معتمدة</th>
-                  <th>المتبقي الفعلي</th>
-                  <th>FAC للبند</th>
+                  <th className="num">الالتزامات</th>
+                  <th className="num">المدفوع</th>
+                  <th className="num">الفعلية المرحّلة</th>
+                  <th className="num">استثناءات معتمدة</th>
+                  <th className="num">المتبقي الفعلي</th>
+                  <th className="num">FAC للبند</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,12 +205,12 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                       <td data-label="الإصدار">{line.version}</td>
                       <td data-label="المعالجة">{budgetLineTreatmentLabel(line.cost_treatment)}</td>
                       <td data-label="السقف">{formatMoney(line.budget_minor_units, currency)}</td>
-                      <td data-label="الالتزامات">{formatMoney(line.committed_obligations_minor_units, currency)}</td>
-                      <td data-label="المدفوع">{formatMoney(line.paid_minor_units, currency)}</td>
-                      <td data-label="الفعلية المرحّلة">{formatMoney(line.actual_minor_units, currency)}</td>
-                      <td data-label="استثناءات معتمدة">{formatMoney(line.approved_exception_minor_units, currency)}</td>
-                      <td data-label="المتبقي الفعلي">{formatMoney(line.effective_remaining_minor_units, currency)}</td>
-                      <td data-label="FAC للبند">{formatMoney(line.fac_minor_units, currency)}</td>
+                      <td className="num" data-label="الالتزامات">{formatMoney(line.committed_obligations_minor_units, currency)}</td>
+                      <td className="num" data-label="المدفوع">{formatMoney(line.paid_minor_units, currency)}</td>
+                      <td className="num" data-label="الفعلية المرحّلة">{formatMoney(line.actual_minor_units, currency)}</td>
+                      <td className="num" data-label="استثناءات معتمدة">{formatMoney(line.approved_exception_minor_units, currency)}</td>
+                      <td className="num" data-label="المتبقي الفعلي">{formatMoney(line.effective_remaining_minor_units, currency)}</td>
+                      <td className="num" data-label="FAC للبند">{formatMoney(line.fac_minor_units, currency)}</td>
                     </tr>
                   ));
                 })}
@@ -233,11 +233,11 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                 <tr>
                   <th>الإصدار</th>
                   <th>إجمالي الموازنة</th>
-                  <th>استثناءات معتمدة</th>
-                  <th>الفعلية (Actual)</th>
-                  <th>الالتزامات المفتوحة (PO)</th>
-                  <th>المتبقي المعتمد للتنبؤ</th>
-                  <th>FAC</th>
+                  <th className="num">استثناءات معتمدة</th>
+                  <th className="num">الفعلية (Actual)</th>
+                  <th className="num">الالتزامات المفتوحة (PO)</th>
+                  <th className="num">المتبقي المعتمد للتنبؤ</th>
+                  <th className="num">FAC</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,11 +245,11 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                   <tr key={fac.budget_id}>
                     <td data-label="الإصدار">{fac.version}</td>
                     <td data-label="إجمالي الموازنة">{formatMoney(fac.budget_total_minor_units, currency)}</td>
-                    <td data-label="استثناءات معتمدة">{formatMoney(fac.approved_exception_total_minor_units, currency)}</td>
-                    <td data-label="الفعلية (Actual)">{formatMoney(fac.actual_total_minor_units, currency)}</td>
-                    <td data-label="الالتزامات المفتوحة (PO)">{formatMoney(fac.open_commitment_minor_units, currency)}</td>
-                    <td data-label="المتبقي المعتمد للتنبؤ">{formatMoney(fac.approved_forecast_remainder_minor_units, currency)}</td>
-                    <td data-label="FAC">{formatMoney(fac.fac_minor_units, currency)}</td>
+                    <td className="num" data-label="استثناءات معتمدة">{formatMoney(fac.approved_exception_total_minor_units, currency)}</td>
+                    <td className="num" data-label="الفعلية (Actual)">{formatMoney(fac.actual_total_minor_units, currency)}</td>
+                    <td className="num" data-label="الالتزامات المفتوحة (PO)">{formatMoney(fac.open_commitment_minor_units, currency)}</td>
+                    <td className="num" data-label="المتبقي المعتمد للتنبؤ">{formatMoney(fac.approved_forecast_remainder_minor_units, currency)}</td>
+                    <td className="num" data-label="FAC">{formatMoney(fac.fac_minor_units, currency)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -132,26 +132,26 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             <table className="table-stackable">
               <thead>
                 <tr>
-                  <th>النقدية</th>
-                  <th>ذمم مفتوحة</th>
-                  <th>إيراد معترف به</th>
+                  <th className="num">النقدية</th>
+                  <th className="num">ذمم مفتوحة</th>
+                  <th className="num">إيراد معترف به</th>
                   <th>مصروفات مرحّلة</th>
                   <th>أعمال تحت التطوير</th>
-                  <th>مستحقات مفتوحة</th>
-                  <th>المدفوع</th>
-                  <th>حجز ضمان قائم</th>
+                  <th className="num">مستحقات مفتوحة</th>
+                  <th className="num">المدفوع</th>
+                  <th className="num">حجز ضمان قائم</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td data-label="النقدية">{formatMinorUnits(position.cash_balance_minor_units, currency)}</td>
-                  <td data-label="ذمم مفتوحة">{formatMinorUnits(position.receivable_open_minor_units, currency)}</td>
-                  <td data-label="إيراد معترف به">{formatMinorUnits(position.revenue_recognized_minor_units, currency)}</td>
+                  <td className="num" data-label="النقدية">{formatMinorUnits(position.cash_balance_minor_units, currency)}</td>
+                  <td className="num" data-label="ذمم مفتوحة">{formatMinorUnits(position.receivable_open_minor_units, currency)}</td>
+                  <td className="num" data-label="إيراد معترف به">{formatMinorUnits(position.revenue_recognized_minor_units, currency)}</td>
                   <td data-label="مصروفات مرحّلة">{formatMinorUnits(position.expense_posted_minor_units, currency)}</td>
                   <td data-label="أعمال تحت التطوير">{formatMinorUnits(position.wip_posted_minor_units, currency)}</td>
-                  <td data-label="مستحقات مفتوحة">{formatMinorUnits(position.payable_open_minor_units, currency)}</td>
-                  <td data-label="المدفوع">{formatMinorUnits(position.paid_minor_units, currency)}</td>
-                  <td data-label="حجز ضمان قائم">{formatMinorUnits(position.retention_held_minor_units, currency)}</td>
+                  <td className="num" data-label="مستحقات مفتوحة">{formatMinorUnits(position.payable_open_minor_units, currency)}</td>
+                  <td className="num" data-label="المدفوع">{formatMinorUnits(position.paid_minor_units, currency)}</td>
+                  <td className="num" data-label="حجز ضمان قائم">{formatMinorUnits(position.retention_held_minor_units, currency)}</td>
                 </tr>
               </tbody>
             </table>
@@ -174,7 +174,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                   <th>الخطورة</th>
                   <th>الإشارة</th>
                   <th>العدد</th>
-                  <th>المبلغ</th>
+                  <th className="num">المبلغ</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,7 +185,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                       <td data-label="الخطورة"><span className={`status ${severity.className}`}>{severity.label}</span></td>
                       <td data-label="الإشارة">{signal.signal_label_ar}</td>
                       <td data-label="العدد">{signal.subject_count}</td>
-                      <td data-label="المبلغ">
+                      <td className="num" data-label="المبلغ">
                         {signal.amount_minor_units
                           ? formatMinorUnits(signal.amount_minor_units, signal.currency ?? currency)
                           : '—'}
@@ -260,7 +260,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>المجال</th><th>النوع</th><th>الخطورة</th><th>الاستحقاق</th><th>الحالة</th><th>المبلغ</th><th>السبب</th><th>القرار</th></tr>
+                <tr><th>المجال</th><th>النوع</th><th>الخطورة</th><th>الاستحقاق</th><th>الحالة</th><th className="num">المبلغ</th><th>السبب</th><th>القرار</th></tr>
               </thead>
               <tbody>
                 {exceptions.map((exception) => (
@@ -270,7 +270,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                     <td data-label="الخطورة"><StatusBadge tone={severityTone(exception.severity)}>{SEVERITY_LABEL[exception.severity]?.label ?? exception.severity}</StatusBadge></td>
                     <td data-label="الاستحقاق">{exception.due_date ?? '—'}</td>
                     <td data-label="الحالة"><StatusBadge tone={exception.status === 'OPEN' ? 'warning' : 'neutral'}>{RECORD_STATUS_LABEL[exception.status] ?? exception.status}</StatusBadge></td>
-                    <td data-label="المبلغ">
+                    <td className="num" data-label="المبلغ">
                       {exception.amount_minor_units
                         ? formatMinorUnits(exception.amount_minor_units, exception.currency ?? currency)
                         : '—'}
@@ -390,11 +390,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                   <th>المستوى</th>
                   <th>العملة</th>
                   <th>المشاريع</th>
-                  <th>النقدية</th>
-                  <th>المدفوع</th>
-                  <th>المستحقات</th>
+                  <th className="num">النقدية</th>
+                  <th className="num">المدفوع</th>
+                  <th className="num">المستحقات</th>
                   <th>حالة التحويل</th>
-                  <th>النقدية المحولة</th>
+                  <th className="num">النقدية المحولة</th>
                 </tr>
               </thead>
               <tbody>
@@ -403,11 +403,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                     <td data-label="المستوى">{row.level === 'CONSOLIDATED' ? 'موحد' : 'حسب العملة'}</td>
                     <td data-label="العملة">{row.currency ?? '—'}</td>
                     <td data-label="المشاريع">{row.project_count}</td>
-                    <td data-label="النقدية">{row.cash_balance_minor_units ? formatMinorUnits(row.cash_balance_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td data-label="المدفوع">{row.paid_minor_units ? formatMinorUnits(row.paid_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td data-label="المستحقات">{row.payable_open_minor_units ? formatMinorUnits(row.payable_open_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td className="num" data-label="النقدية">{row.cash_balance_minor_units ? formatMinorUnits(row.cash_balance_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td className="num" data-label="المدفوع">{row.paid_minor_units ? formatMinorUnits(row.paid_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td className="num" data-label="المستحقات">{row.payable_open_minor_units ? formatMinorUnits(row.payable_open_minor_units, row.currency ?? currency) : '—'}</td>
                     <td data-label="حالة التحويل">{FX_STATUS_LABEL[row.fx_status] ?? row.fx_status}</td>
-                    <td data-label="النقدية المحولة">
+                    <td className="num" data-label="النقدية المحولة">
                       {row.converted_cash_balance_minor_units
                         ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency ?? '')
                         : '—'}

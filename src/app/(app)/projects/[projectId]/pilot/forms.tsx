@@ -101,7 +101,7 @@ export function StageOpeningImportForm({
         <table>
           <thead>
             <tr>
-              <th>الترميز المعتمد</th>
+              <th className="num">الترميز المعتمد</th>
               <th>الطرف</th>
               <th>الحساب النقدي</th>
               <th>مدين (وحدات صغرى)</th>
@@ -112,7 +112,7 @@ export function StageOpeningImportForm({
           <tbody>
             {OPENING_ROW_SLOTS.map((slot) => (
               <tr key={slot}>
-                <td>
+                <td className="num">
                   <select name="mappingCode" defaultValue="" aria-label={`ترميز السطر ${slot + 1}`}>
                     <option value="">— لا يُدرج —</option>
                     {mappingCodes.map((mapping) => (

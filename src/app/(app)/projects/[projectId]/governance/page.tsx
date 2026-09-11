@@ -160,13 +160,13 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>الخطر</th><th>النتيجة</th><th>دليل الحسم</th><th>وقت الحسم</th></tr>
+                <tr><th>الخطر</th><th className="num">النتيجة</th><th>دليل الحسم</th><th>وقت الحسم</th></tr>
               </thead>
               <tbody>
                 {resolvedRisks.map((risk) => (
                   <tr key={risk.risk_item_id}>
                     <td data-label="الخطر">{risk.title}</td>
-                    <td data-label="النتيجة">{risk.resolution_outcome ?? '—'}</td>
+                    <td className="num" data-label="النتيجة">{risk.resolution_outcome ?? '—'}</td>
                     <td data-label="دليل الحسم">{risk.resolution_evidence_reference ?? '—'}</td>
                     <td data-label="وقت الحسم">{risk.resolved_at ?? '—'}</td>
                   </tr>

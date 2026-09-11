@@ -9,7 +9,7 @@ export default async function IntakeStartPage() {
   const { organization } = await getActiveOrganization();
   if (!organization) {
     return (
-      <section className="card stack" style={{ maxWidth: 680 }}>
+      <section className="card stack shell-form-lg">
         <h1>إدخال أول مشروع حقيقي</h1>
         <p>ابدأ بالمنظمة. عملة المشاريع: جنيه مصري (EGP). القطاعات المدعومة: عقارات، زراعة، ثروة حيوانية.</p>
         <p className="muted">لا نعرض بيانات تجريبية. المسار يستخدم أوامر المنتج الحالية فقط.</p>

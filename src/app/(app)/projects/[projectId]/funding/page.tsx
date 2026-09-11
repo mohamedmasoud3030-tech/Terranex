@@ -48,6 +48,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           title="رأس المال"
           subtitle={project.name}
           internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
         />
         <SectionTabs
           label="رأس المال"
@@ -92,15 +94,15 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         </div>
         <div className="table-wrap">
           <table className="table-stackable">
-            <thead><tr><th>المستثمر</th><th>الالتزام</th><th>المطلوب</th><th>المستلم</th><th>المتبقي</th></tr></thead>
+            <thead><tr><th>المستثمر</th><th className="num">الالتزام</th><th>المطلوب</th><th>المستلم</th><th className="num">المتبقي</th></tr></thead>
             <tbody>
               {partnerPositions.map((partner) => (
                 <tr key={partner.participant_id}>
                   <td data-label="المستثمر">{participantName.get(partner.participant_id) ?? '—'}</td>
-                  <td data-label="الالتزام">{formatMinorUnits(partner.commitment_minor_units, partner.currency)}</td>
+                  <td className="num" data-label="الالتزام">{formatMinorUnits(partner.commitment_minor_units, partner.currency)}</td>
                   <td data-label="المطلوب">{formatMinorUnits(partner.called_minor_units, partner.currency)}</td>
                   <td data-label="المستلم">{formatMinorUnits(partner.contributed_minor_units, partner.currency)}</td>
-                  <td data-label="المتبقي">{formatMinorUnits(partner.receivable_minor_units, partner.currency)}</td>
+                  <td className="num" data-label="المتبقي">{formatMinorUnits(partner.receivable_minor_units, partner.currency)}</td>
                 </tr>
               ))}
             </tbody>
@@ -174,7 +176,7 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>التاريخ</th><th>المستثمر</th><th>الطلب</th><th>المبلغ</th><th>النسخة الحاكمة</th></tr></thead>
+              <thead><tr><th>التاريخ</th><th>المستثمر</th><th>الطلب</th><th className="num">المبلغ</th><th>النسخة الحاكمة</th></tr></thead>
               <tbody>
                 {contributions.map((contribution) => {
                   const call = calls.find((item) => item.id === contribution.capital_call_id);
@@ -183,7 +185,7 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
                       <td data-label="التاريخ">{contribution.occurred_on}</td>
                       <td data-label="المستثمر">{participantName.get(contribution.participant_id) ?? '—'}</td>
                       <td data-label="الطلب">{call?.reference || contribution.capital_call_id.slice(0, 8)}</td>
-                      <td data-label="المبلغ">{formatMinorUnits(contribution.contribution_minor_units, contribution.currency)}</td>
+                      <td className="num" data-label="المبلغ">{formatMinorUnits(contribution.contribution_minor_units, contribution.currency)}</td>
                       <td data-label="النسخة الحاكمة">النسخة الحاكمة {activeVersion.version_no}</td>
                     </tr>
                   );
@@ -202,7 +204,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="muted">{label}</p>
-      <strong style={{ fontSize: '1.4rem' }}>{value}</strong>
+      <strong className="stat-value">{value}</strong>
     </div>
   );
 }

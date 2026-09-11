@@ -207,6 +207,8 @@ export default async function PilotPage({
         title="الاستيراد والمطابقة"
         subtitle={`${project.name} · ${currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="تنقل التشغيل التجريبي"
@@ -432,7 +434,7 @@ export default async function PilotPage({
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>#</th><th>الترميز</th><th>الطرف</th><th>مدين</th><th>دائن</th><th>الوصف</th><th>النتيجة</th><th>سبب الرفض</th></tr>
+                <tr><th>#</th><th>الترميز</th><th>الطرف</th><th>مدين</th><th>دائن</th><th>الوصف</th><th className="num">النتيجة</th><th>سبب الرفض</th></tr>
               </thead>
               <tbody>
                 {filteredRows.map((row) => (
@@ -443,7 +445,7 @@ export default async function PilotPage({
                     <td data-label="مدين">{money(row.debit_minor_units)}</td>
                     <td data-label="دائن">{money(row.credit_minor_units)}</td>
                     <td data-label="الوصف">{row.description}</td>
-                    <td data-label="النتيجة"><span className="status">{ROW_STATUS_AR[row.status] ?? row.status}</span></td>
+                    <td className="num" data-label="النتيجة"><span className="status">{ROW_STATUS_AR[row.status] ?? row.status}</span></td>
                     <td data-label="سبب الرفض" className={row.reject_reason ? 'error' : undefined}>
                       {row.reject_reason ? REJECT_REASON_AR[row.reject_reason] ?? row.reject_reason : '—'}
                     </td>
@@ -563,14 +565,14 @@ export default async function PilotPage({
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>الرمز</th><th>العنوان</th><th>النتيجة المتوقعة</th><th>الحالة</th><th>نفّذها</th><th>راجعها</th><th>الدليل</th><th>ملاحظات</th><th></th></tr>
+                <tr><th>الرمز</th><th>العنوان</th><th className="num">النتيجة المتوقعة</th><th>الحالة</th><th>نفّذها</th><th>راجعها</th><th>الدليل</th><th>ملاحظات</th><th></th></tr>
               </thead>
               <tbody>
                 {uatTasks.map((row) => (
                   <tr key={row.task_id}>
                     <td data-label="الرمز">{row.task_code}</td>
                     <td data-label="العنوان">{row.title}</td>
-                    <td data-label="النتيجة المتوقعة">{row.expected_outcome}</td>
+                    <td className="num" data-label="النتيجة المتوقعة">{row.expected_outcome}</td>
                     <td data-label="الحالة"><span className="status">{UAT_STATUS_AR[row.status] ?? row.status}</span></td>
                     <td data-label="نفّذها">{row.executed_by ? `${row.executed_by.slice(0, 8)}… · ${dt(row.executed_at)}` : '—'}</td>
                     <td data-label="راجعها">{row.reviewed_by ? `${row.reviewed_by.slice(0, 8)}… · ${dt(row.reviewed_at)}` : '—'}</td>
@@ -610,7 +612,7 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>البروفة</th><th>النتيجة</th><th>البيان</th><th>نفّذها</th><th>التاريخ</th></tr></thead>
+              <thead><tr><th>البروفة</th><th className="num">النتيجة</th><th>البيان</th><th>نفّذها</th><th>التاريخ</th></tr></thead>
               <tbody>
                 {rehearsals.map((row) => (
                   <tr key={row.rehearsal_id}>

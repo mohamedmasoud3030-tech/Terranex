@@ -20,7 +20,7 @@ export default function AppError({
       <p className="muted">
         تعذر عرض هذه الصفحة حاليًا. يمكنك إعادة المحاولة أو العودة إلى اللوحة الرئيسية؛ بياناتك المسجلة لم تتأثر.
       </p>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div className="row-wrap">
         <button onClick={reset}>إعادة المحاولة</button>
         <Link className="button secondary" href="/">العودة إلى اللوحة الرئيسية</Link>
       </div>

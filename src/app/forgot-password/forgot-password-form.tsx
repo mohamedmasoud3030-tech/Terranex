@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { requestPasswordReset } from '@/features/auth/actions';
+import { AuthShell } from '@/shared/ui/auth';
 
 type ForgotPasswordFormProps = {
   recoveryError?: boolean;
@@ -11,7 +12,7 @@ export function ForgotPasswordForm({ recoveryError = false }: ForgotPasswordForm
   const [state, action, pending] = useActionState(requestPasswordReset, {});
 
   return (
-    <main className="shell" style={{ maxWidth: 480, paddingTop: '12vh' }}>
+    <AuthShell>
       <section className="card stack">
         <div>
           <h1>استعادة كلمة المرور</h1>
@@ -41,6 +42,6 @@ export function ForgotPasswordForm({ recoveryError = false }: ForgotPasswordForm
 
         <a href="/login">العودة إلى تسجيل الدخول</a>
       </section>
-    </main>
+    </AuthShell>
   );
 }

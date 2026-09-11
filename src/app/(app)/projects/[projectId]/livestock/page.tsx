@@ -570,11 +570,11 @@ function CohortResults({ results }: Readonly<{ results: readonly LivestockCohort
           <th scope="col">الدفعة</th>
           <th scope="col">العدد الحي غير المباع</th>
           <th scope="col">الكمية المباعة</th>
-          <th scope="col">الإيراد المعترف به</th>
+          <th className="num" scope="col">الإيراد المعترف به</th>
           <th scope="col">النقد المحصَّل</th>
-          <th scope="col">التكلفة التشغيلية المُحمَّلة</th>
-          <th scope="col">النتيجة التشغيلية حتى الآن</th>
-          <th scope="col">حالة تكلفة البضاعة</th>
+          <th className="num" scope="col">التكلفة التشغيلية المُحمَّلة</th>
+          <th className="num" scope="col">النتيجة التشغيلية حتى الآن</th>
+          <th className="num" scope="col">حالة تكلفة البضاعة</th>
         </tr>
       </thead>
       <tbody>
@@ -714,6 +714,7 @@ export default async function LivestockPage({
         title="الثروة الحيوانية"
         subtitle={`${project.name} · المواقع والقطعان`}
         internalReference={project.internal_reference}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="أقسام الثروة الحيوانية"

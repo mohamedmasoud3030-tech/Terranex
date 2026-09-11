@@ -13,7 +13,7 @@ export default function AgricultureError({
       <p className="error" role="alert">
         حدث خطأ أثناء قراءة بيانات الزراعة. أعد المحاولة بعد التحقق من اتصال الدخول.
       </p>
-      <div className="stack" style={{ flexDirection: 'row' }}>
+      <div className="row-wrap">
         <button onClick={reset} className="button">إعادة المحاولة</button>
         <Link className="button secondary" href="/">العودة إلى المشاريع</Link>
       </div>

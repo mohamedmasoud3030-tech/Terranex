@@ -2,12 +2,13 @@
 
 import { useActionState } from 'react';
 import { updatePassword } from '@/features/auth/actions';
+import { AuthShell } from '@/shared/ui/auth';
 
 export function ResetPasswordForm() {
   const [state, action, pending] = useActionState(updatePassword, {});
 
   return (
-    <main className="shell" style={{ maxWidth: 480, paddingTop: '12vh' }}>
+    <AuthShell>
       <section className="card stack">
         <div>
           <h1>تعيين كلمة مرور جديدة</h1>
@@ -27,6 +28,6 @@ export function ResetPasswordForm() {
           <button disabled={pending}>{pending ? 'جارٍ الحفظ…' : 'حفظ كلمة المرور'}</button>
         </form>
       </section>
-    </main>
+    </AuthShell>
   );
 }

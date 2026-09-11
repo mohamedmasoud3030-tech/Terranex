@@ -282,6 +282,7 @@ export default async function AgriculturePage({
         title="المزرعة والمحاصيل"
         subtitle={`${project.name} · ${currency} · مساحة الزراعة`}
         internalReference={project.internal_reference}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="أقسام الزراعة"
@@ -911,7 +912,7 @@ export default async function AgriculturePage({
                   <th scope="col">التاريخ</th>
                   <th scope="col">الدورة</th>
                   <th scope="col">الحقل</th>
-                  <th scope="col">الإجمالي</th>
+                  <th className="num" scope="col">الإجمالي</th>
                   <th scope="col">الصافي</th>
                   <th scope="col">الفاقد</th>
                   <th scope="col">الدرجة</th>
@@ -925,7 +926,7 @@ export default async function AgriculturePage({
                     <td data-label="التاريخ">{d(e.harvest_date)}</td>
                     <td data-label="الدورة">{`${e.crop} · ${e.season_reference}`}</td>
                     <td data-label="الحقل">{e.field_identifier}</td>
-                    <td data-label="الإجمالي">{formatHarvestQuantity(e.gross_quantity, e.quantity_unit)}</td>
+                    <td className="num" data-label="الإجمالي">{formatHarvestQuantity(e.gross_quantity, e.quantity_unit)}</td>
                     <td data-label="الصافي">{formatHarvestQuantity(e.net_quantity, e.quantity_unit)}</td>
                     <td data-label="الفاقد">{formatHarvestQuantity(e.harvest_loss, e.quantity_unit)}</td>
                     <td data-label="الدرجة">{e.grade ?? '—'}</td>
@@ -963,7 +964,7 @@ export default async function AgriculturePage({
                   <th scope="col">الحقل</th>
                   <th scope="col">تاريخ الحصاد</th>
                   <th scope="col">الكمية الأولية</th>
-                  <th scope="col">الرصيد الحالي الكلي</th>
+                  <th className="num" scope="col">الرصيد الحالي الكلي</th>
                   <th scope="col">الدرجة</th>
                 </tr>
               </thead>
@@ -975,7 +976,7 @@ export default async function AgriculturePage({
                     <td data-label="الحقل">{l.field_identifier}</td>
                     <td data-label="تاريخ الحصاد">{d(l.harvest_date)}</td>
                     <td data-label="الكمية الأولية">{formatHarvestQuantity(l.initial_quantity, l.quantity_unit)}</td>
-                    <td data-label="الرصيد الحالي الكلي">{formatHarvestQuantity(l.current_total_balance, l.quantity_unit)}</td>
+                    <td className="num" data-label="الرصيد الحالي الكلي">{formatHarvestQuantity(l.current_total_balance, l.quantity_unit)}</td>
                     <td data-label="الدرجة">{l.grade ?? '—'}</td>
                   </tr>
                 ))}
@@ -994,7 +995,7 @@ export default async function AgriculturePage({
                 <tr>
                   <th scope="col">التشغيلة</th>
                   <th scope="col">موقع التخزين</th>
-                  <th scope="col">الرصيد الحالي</th>
+                  <th className="num" scope="col">الرصيد الحالي</th>
                   <th scope="col">آخر حركة</th>
                 </tr>
               </thead>
@@ -1003,7 +1004,7 @@ export default async function AgriculturePage({
                   <tr key={`${e.harvest_lot_id}-${e.storage_id}`}>
                     <td data-label="التشغيلة">{e.lot_reference}</td>
                     <td data-label="موقع التخزين">{e.storage_name}</td>
-                    <td data-label="الرصيد الحالي">{formatHarvestQuantity(e.current_balance, e.quantity_unit)}</td>
+                    <td className="num" data-label="الرصيد الحالي">{formatHarvestQuantity(e.current_balance, e.quantity_unit)}</td>
                     <td data-label="آخر حركة">{d(e.last_movement_date)}</td>
                   </tr>
                 ))}
@@ -1132,7 +1133,7 @@ export default async function AgriculturePage({
                       <div><dt>الكمية</dt><dd>{sale.aggregate_quantity ? `${sale.aggregate_quantity} ${sale.quantity_unit}` : 'وحدات متعددة — راجع السطور'}</dd></div>
                       <div><dt>تاريخ التسليم</dt><dd>{d(sale.control_transfer_date)}</dd></div>
                     </dl>
-                    <div className="table-wrap"><table className="table-stackable"><thead><tr><th>التشغيلة</th><th>موقع المصدر</th><th>الكمية</th><th>سعر الوحدة</th><th>قيمة السطر</th><th>الصرف</th></tr></thead><tbody>{lines.map((line) => <tr key={line.sale_line_id}><td data-label="التشغيلة">{line.lot_reference}</td><td data-label="موقع المصدر">{line.source_storage_name}</td><td data-label="الكمية">{formatHarvestQuantity(line.quantity, line.unit)}</td><td data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, sale.currency)}</td><td data-label="قيمة السطر">{formatMinorUnits(line.line_amount_minor_units, sale.currency)}</td><td data-label="الصرف">{line.sale_issue_movement_id ? `تم ${d(line.dispatch_date)}` : 'لم يتم'}</td></tr>)}</tbody></table></div>
+                    <div className="table-wrap"><table className="table-stackable"><thead><tr><th>التشغيلة</th><th>موقع المصدر</th><th>الكمية</th><th className="num">سعر الوحدة</th><th className="num">قيمة السطر</th><th>الصرف</th></tr></thead><tbody>{lines.map((line) => <tr key={line.sale_line_id}><td data-label="التشغيلة">{line.lot_reference}</td><td data-label="موقع المصدر">{line.source_storage_name}</td><td data-label="الكمية">{formatHarvestQuantity(line.quantity, line.unit)}</td><td className="num" data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, sale.currency)}</td><td className="num" data-label="قيمة السطر">{formatMinorUnits(line.line_amount_minor_units, sale.currency)}</td><td data-label="الصرف">{line.sale_issue_movement_id ? `تم ${d(line.dispatch_date)}` : 'لم يتم'}</td></tr>)}</tbody></table></div>
                     {sale.state === 'DRAFT' && canPostSales ? <ApproveAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
                     {sale.state === 'APPROVED' && canPostSales ? <RecognizeAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
                     {!canPostSales && (sale.state === 'DRAFT' || sale.state === 'APPROVED') ? <p className="muted">الاعتماد والتسليم/الترحيل المالي يتطلبان صلاحية مالك المنظمة.</p> : null}
@@ -1149,7 +1150,7 @@ export default async function AgriculturePage({
         <div className="card stack">
           <h3>تتبّع تشغيلة الحصاد إلى البيع</h3>
           <p className="muted">خطوة واحدة للأمام من التشغيلة إلى موقع الصرف والمشتري والتسليم وقيد الإيراد.</p>
-          <div className="table-wrap"><table className="table-stackable"><thead><tr><th>التشغيلة</th><th>البيع</th><th>المشتري</th><th>المصدر</th><th>الكمية المباعة</th><th>الإيراد</th></tr></thead><tbody>{lotSaleTraceability.map((trace, index) => <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}><td data-label="التشغيلة">{trace.lot_reference}</td><td data-label="البيع">{trace.sale_reference ?? 'لم تُبع'}</td><td data-label="المشتري">{trace.buyer_name ?? '—'}</td><td data-label="المصدر">{trace.source_storage_name ?? '—'}</td><td data-label="الكمية المباعة">{trace.sold_quantity ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit) : '—'}</td><td data-label="الإيراد">{trace.revenue_journal_batch_id ? 'معترف به' : '—'}</td></tr>)}</tbody></table></div>
+          <div className="table-wrap"><table className="table-stackable"><thead><tr><th>التشغيلة</th><th>البيع</th><th>المشتري</th><th>المصدر</th><th>الكمية المباعة</th><th className="num">الإيراد</th></tr></thead><tbody>{lotSaleTraceability.map((trace, index) => <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}><td data-label="التشغيلة">{trace.lot_reference}</td><td data-label="البيع">{trace.sale_reference ?? 'لم تُبع'}</td><td data-label="المشتري">{trace.buyer_name ?? '—'}</td><td data-label="المصدر">{trace.source_storage_name ?? '—'}</td><td data-label="الكمية المباعة">{trace.sold_quantity ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit) : '—'}</td><td className="num" data-label="الإيراد">{trace.revenue_journal_batch_id ? 'معترف به' : '—'}</td></tr>)}</tbody></table></div>
         </div>
       </section>
 
@@ -1211,7 +1212,7 @@ export default async function AgriculturePage({
       </section>
 
       <p className="muted">
-        <Link href={`/projects/${projectId}`}>← العودة إلى مساحة المشروع</Link>
+        <Link className="back-link" href={`/projects/${projectId}`}>→ العودة إلى مساحة المشروع</Link>
       </p>
     </section>
   );

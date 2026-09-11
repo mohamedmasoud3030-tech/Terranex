@@ -89,7 +89,8 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
   return <section className="stack">
     <WorkspaceChrome projectId={projectId} active="livestock-operations" sector="LIVESTOCK"
       title="العمليات الحيوانية" subtitle={`${project.name} · الصحة والتكاثر والهوية والتغذية`}
-      internalReference={project.internal_reference} />
+      internalReference={project.internal_reference}
+      lifecycleState={project.lifecycle_state} />
     <p className="muted">حقائق تشغيلية عربية/RTL ثابتة فوق نموذج الدفعة. لا مبيعات ولا مشترين ولا مخزون مفترض ولا قيود مالية. <Link href={`/projects/${projectId}/livestock`}>العودة إلى المواقع والقطعان والأعداد</Link></p>
 
     <section className="card stack" id="health">

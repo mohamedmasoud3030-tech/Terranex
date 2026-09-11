@@ -103,6 +103,8 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         title="الإغلاق المالي"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="تنقل الإغلاق"
@@ -185,10 +187,10 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
               <div><dt>تاريخ القطع</dt><dd>{date(snapshot.source_cutoff_date)}</dd></div>
             </dl>
             <table className="table-stackable">
-              <thead><tr><th>البند</th><th>القيمة</th></tr></thead>
+              <thead><tr><th>البند</th><th className="num">القيمة</th></tr></thead>
               <tbody>
                 {snapshotTotals(snapshot).map(([label, value]) => (
-                  <tr key={label}><td data-label="البند">{label}</td><td data-label="القيمة">{value}</td></tr>
+                  <tr key={label}><td data-label="البند">{label}</td><td className="num" data-label="القيمة">{value}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -317,12 +319,12 @@ function PreparedRunCard({
         <strong>بوابات:</strong> {run.passing_gates} اجتياز / {run.failing_gates} فشل / {run.exception_gates} استثناء معتمد / {run.not_applicable_gates} لا ينطبق
       </p>
       <table className="table-stackable">
-        <thead><tr><th>البوابة</th><th>النتيجة</th><th>التفاصيل</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>البوابة</th><th className="num">النتيجة</th><th>التفاصيل</th><th>إجراء</th></tr></thead>
         <tbody>
           {gates.map((gate) => (
             <tr key={gate.gate_id}>
               <td data-label="البوابة">{gateLabelAr(gate.gate_code)}</td>
-              <td data-label="النتيجة"><span className="status">{gateResultLabelAr(gate.result)}</span></td>
+              <td className="num" data-label="النتيجة"><span className="status">{gateResultLabelAr(gate.result)}</span></td>
               <td data-label="التفاصيل">{gate.detail}</td>
               <td data-label="إجراء">
                 {gate.result === 'FAIL' && isOwner && (

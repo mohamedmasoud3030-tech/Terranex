@@ -29,7 +29,7 @@ export function JournalTrace({ lines }: { lines: JournalLedgerLine[] }) {
         );
         return (
           <div key={batchId} className="card stack">
-            <div className="top" style={{ border: 0, margin: 0, padding: 0 }}>
+            <div className="top">
               <strong>{SOURCE_LABEL[first.source_type] ?? first.source_type}</strong>
               <span className="status">{first.reversal_of_batch_id ? 'معكوس' : 'مرحّل'}</span>
             </div>

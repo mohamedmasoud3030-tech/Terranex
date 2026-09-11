@@ -31,9 +31,9 @@ function Gate({
     <div className={`gate ${satisfied ? 'pass satisfied-row' : 'fail not-row'}`}>
       <div>
         <strong>{label}</strong>
-        {note ? <div className="muted" style={{ fontSize: '.82rem' }}>{note}</div> : null}
+        {note ? <div className="muted hint-sm">{note}</div> : null}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="flex-center-xs">
         <span>{satisfied ? 'محقق' : 'غير محقق'}</span>
         <span className={satisfied ? 'gate-dot satisfied' : 'gate-dot not'} aria-hidden />
       </div>
@@ -73,6 +73,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         title="الرقابة والجاهزية"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
 
       <section className="card stack">

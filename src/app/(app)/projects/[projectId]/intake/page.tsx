@@ -265,7 +265,7 @@ export default async function IntakePage({
     <section className="stack">
       <header className="project-context card">
         <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
+          <Link className="back-link" href={`/projects/${projectId}`}>→ مساحة المشروع</Link>
           <h1>إدخال المشروع الحقيقي</h1>
           <p className="muted">{project.name} · {project.reporting_currency} · مسار موجّه بالعربية، دون نموذج قاعدة بيانات.</p>
         </div>
@@ -404,14 +404,14 @@ export default async function IntakePage({
           ) : (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المستثمر</th><th>الالتزام</th></tr></thead>
+                <thead><tr><th>المستثمر</th><th className="num">الالتزام</th></tr></thead>
                 <tbody>
                   {commitments.map((commitment) => {
                     const name = participants.find((participant) => participant.id === commitment.participant_id)?.parties.legal_name;
                     return (
                       <tr key={commitment.id}>
                         <td data-label="المستثمر">{name ?? '—'}</td>
-                        <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                        <td className="num" data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                       </tr>
                     );
                   })}
@@ -652,13 +652,13 @@ export default async function IntakePage({
           {gaps.length > 0 && (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المصدر</th><th>الوصف</th><th>المبلغ</th><th>الحالة</th><th></th></tr></thead>
+                <thead><tr><th>المصدر</th><th>الوصف</th><th className="num">المبلغ</th><th>الحالة</th><th></th></tr></thead>
                 <tbody>
                   {gaps.map((gap) => (
                     <tr key={gap.gap_id}>
                       <td data-label="المصدر">{gap.source_reference}</td>
                       <td data-label="الوصف">{gap.description}<br /><span className="muted">{gap.why_unmappable}</span></td>
-                      <td data-label="المبلغ">{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
+                      <td className="num" data-label="المبلغ">{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
                       <td data-label="الحالة">{gap.status === 'OPEN' ? 'مفتوحة' : 'مقبولة تجاريًا'}</td>
                       <td data-label="">
                         {gap.status === 'OPEN' && isOwner && (

@@ -127,6 +127,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         title="التكاليف والنقدية"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <SectionTabs
         label="التكاليف والنقدية"
@@ -186,8 +188,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                   <th>المورد</th>
                   <th>الوصف</th>
                   <th>المعالجة</th>
-                  <th>المبلغ</th>
-                  <th>المتبقي</th>
+                  <th className="num">المبلغ</th>
+                  <th className="num">المتبقي</th>
                   <th>الاستحقاق</th>
                   <th>الحالة</th>
                   <th>الإجراءات</th>
@@ -202,10 +204,10 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                       <td data-label="المورد">{partyName.get(obligation.party_id) ?? '—'}</td>
                       <td data-label="الوصف">{obligation.description}</td>
                       <td data-label="المعالجة">{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
-                      <td data-label="المبلغ">{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
-                      <td data-label="المتبقي">{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
+                      <td className="num" data-label="المبلغ">{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
+                      <td className="num" data-label="المتبقي">{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
                       <td data-label="الاستحقاق">
-                        <div className="stack" style={{ gap: 4 }}>
+                        <div className="stack-xxs">
                           {due ? (
                             <>
                               <span className="status">{AGING_LABEL[due.aging_bucket] ?? due.aging_bucket}</span>
@@ -222,7 +224,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                       </td>
                       <td data-label="الحالة"><span className="status">{state.label}</span></td>
                       <td data-label="الإجراءات">
-                        <div className="stack" style={{ gap: 8 }}>
+                        <div className="stack-xs">
                           {obligation.status === 'DRAFT' && isOwner && obligation.authorization_batch_id === null && (
                             <AuthorizeObligationButton
                               organizationId={organizationId}

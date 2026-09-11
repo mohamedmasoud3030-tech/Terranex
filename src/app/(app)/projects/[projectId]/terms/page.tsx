@@ -47,6 +47,8 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
         title="الشروط والاتفاقية"
         subtitle={project.name}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <SectionTabs
         label="رأس المال"
@@ -95,12 +97,12 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
           </p>
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>المشارك</th><th>الالتزام</th></tr></thead>
+              <thead><tr><th>المشارك</th><th className="num">الالتزام</th></tr></thead>
               <tbody>
                 {commitments.map((commitment) => (
                   <tr key={commitment.id}>
                     <td data-label="المشارك">{participantName.get(commitment.participant_id) ?? '—'}</td>
-                    <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                    <td className="num" data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                   </tr>
                 ))}
               </tbody>

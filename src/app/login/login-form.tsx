@@ -2,11 +2,12 @@
 
 import { useActionState } from 'react';
 import { signIn } from '@/features/auth/actions';
+import { AuthShell } from '@/shared/ui/auth';
 
 export function LoginForm({ sessionExpired = false }: { sessionExpired?: boolean }) {
   const [state, action, pending] = useActionState(signIn, { error: undefined });
   return (
-    <main className="shell" style={{ maxWidth: 480, paddingTop: '12vh' }}>
+    <AuthShell>
       <section className="card stack">
         <div>
           <h1>مرحبًا بك في تيرانكس</h1>
@@ -29,6 +30,6 @@ export function LoginForm({ sessionExpired = false }: { sessionExpired?: boolean
         </form>
         <a href="/forgot-password">نسيت كلمة المرور؟</a>
       </section>
-    </main>
+    </AuthShell>
   );
 }

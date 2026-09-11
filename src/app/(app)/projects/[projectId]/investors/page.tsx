@@ -31,7 +31,7 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
     <section className="stack">
       <header className="project-context card">
         <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
+          <Link className="back-link" href={`/projects/${projectId}`}>→ مساحة المشروع</Link>
           <h1>شفافية المشاركين</h1>
           <p className="muted">{project.name} · معلومات تعريفية واتفاقية فقط قبل اعتماد سياسة الاستثمار R14.</p>
         </div>

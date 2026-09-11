@@ -98,13 +98,13 @@ export function AgreementDraftForm({
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>المستثمر</th><th>الالتزام ({currency})</th></tr>
+            <tr><th>المستثمر</th><th className="num">الالتزام ({currency})</th></tr>
           </thead>
           <tbody>
             {participants.map((participant) => (
               <tr key={participant.id}>
                 <td>{participant.parties.legal_name}</td>
-                <td>
+                <td className="num">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -136,7 +136,7 @@ export function ActivateVersionButton({
 }) {
   const [state, action, pending] = useActionState(activateAgreementVersion, { error: undefined });
   return (
-    <form action={action} style={{ display: 'inline' }}>
+    <form action={action} className="form-inline">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="versionId" value={versionId} />

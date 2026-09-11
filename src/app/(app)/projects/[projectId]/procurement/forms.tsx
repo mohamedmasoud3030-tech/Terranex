@@ -83,12 +83,12 @@ function LinesEditor({ name, commercial = false, currency = 'EGP' }: { name: str
   const update = (index: number, field: keyof EditableLine, value: string) => setLines((prev) => prev.map((line, i) => i === index ? { ...line, [field]: value } : line));
   return <div className="full">
     <input type="hidden" name={name} value={json} />
-    <div className="table-wrap"><table><thead><tr><th>الوصف</th><th>الكمية</th><th>الوحدة</th>{commercial && <th>سعر الوحدة ({currency})</th>}<th>ملاحظات</th><th></th></tr></thead>
+    <div className="table-wrap"><table><thead><tr><th>الوصف</th><th>الكمية</th><th>الوحدة</th>{commercial && <th className="num">سعر الوحدة ({currency})</th>}<th>ملاحظات</th><th></th></tr></thead>
       <tbody>{lines.map((line, index) => <tr key={index}>
         <td><input value={line.itemDescription} onChange={(e) => update(index, 'itemDescription', e.target.value)} maxLength={160} /></td>
         <td><input value={line.quantity} onChange={(e) => update(index, 'quantity', e.target.value)} inputMode="decimal" placeholder="0.000000" /></td>
         <td><input value={line.unit} onChange={(e) => update(index, 'unit', e.target.value)} maxLength={20} /></td>
-        {commercial && <td><input value={line.unitPrice} onChange={(e) => update(index, 'unitPrice', e.target.value)} inputMode="decimal" placeholder="0.00" /></td>}
+        {commercial && <td className="num"><input value={line.unitPrice} onChange={(e) => update(index, 'unitPrice', e.target.value)} inputMode="decimal" placeholder="0.00" /></td>}
         <td><input value={line.notes} onChange={(e) => update(index, 'notes', e.target.value)} maxLength={1000} /></td>
         <td><button type="button" onClick={() => setLines((prev) => prev.length === 1 ? prev : prev.filter((_, i) => i !== index))} aria-label="حذف السطر">×</button></td>
       </tr>)}</tbody></table></div>
@@ -182,11 +182,11 @@ export function SupplierInvoiceForm({ organizationId, projectId, order, basis, s
     <label>إجمالي الفاتورة كما هو مكتوب من المورد ({order.currency})<input name="supplierStatedTotal" inputMode="decimal" required /></label>
     <label>مرجع دليل الفاتورة<input name="evidenceReference" required minLength={3} maxLength={200} /></label><label className="full">ملاحظات <span className="muted">(اختياري)</span><textarea name="notes" maxLength={2000} /></label>
     <p className="muted full">أدخل إجمالي المستند كما طبعه المورد. Terranex يحسب إجمالي السطور مستقلًا ويقارن القيمتين عند الاعتماد؛ لا يتم اشتقاق هذا الحقل من السطور.</p>
-    <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table><thead><tr><th>الصنف / دليل الاستلام</th><th>متاح للفوترة</th><th>كمية الفاتورة</th><th>سعر أمر الشراء</th><th>سعر الفاتورة ({order.currency})</th></tr></thead><tbody>{available.map((line) => <tr key={line.purchase_receipt_line_id}>
+    <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table><thead><tr><th>الصنف / دليل الاستلام</th><th>متاح للفوترة</th><th className="num">كمية الفاتورة</th><th className="num">سعر أمر الشراء</th><th className="num">سعر الفاتورة ({order.currency})</th></tr></thead><tbody>{available.map((line) => <tr key={line.purchase_receipt_line_id}>
       <td>{line.item_description}<br /><span className="muted">{line.receipt_evidence_reference}</span></td><td>{line.available_to_invoice_quantity} {line.unit}</td>
-      <td><input inputMode="decimal" value={values[line.purchase_receipt_line_id]?.quantityInvoiced ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [line.purchase_receipt_line_id]: { quantityInvoiced: e.target.value, unitPrice: prev[line.purchase_receipt_line_id]?.unitPrice ?? '' } }))} /></td>
-      <td>{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td>
-      <td><input inputMode="decimal" value={values[line.purchase_receipt_line_id]?.unitPrice ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [line.purchase_receipt_line_id]: { quantityInvoiced: prev[line.purchase_receipt_line_id]?.quantityInvoiced ?? '', unitPrice: e.target.value } }))} /></td>
+      <td className="num"><input inputMode="decimal" value={values[line.purchase_receipt_line_id]?.quantityInvoiced ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [line.purchase_receipt_line_id]: { quantityInvoiced: e.target.value, unitPrice: prev[line.purchase_receipt_line_id]?.unitPrice ?? '' } }))} /></td>
+      <td className="num">{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td>
+      <td className="num"><input inputMode="decimal" value={values[line.purchase_receipt_line_id]?.unitPrice ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [line.purchase_receipt_line_id]: { quantityInvoiced: prev[line.purchase_receipt_line_id]?.quantityInvoiced ?? '', unitPrice: e.target.value } }))} /></td>
     </tr>)}</tbody></table></div><p className="muted">لا توجد نسبة سماح مفترضة: السعر يجب أن يطابق الأمر والكمية لا تتجاوز الاستلام.</p></div>
     <div className="full"><Result state={state} pending={pending} label="تسجيل فاتورة المورد للاعتماد" /></div>
   </form>;

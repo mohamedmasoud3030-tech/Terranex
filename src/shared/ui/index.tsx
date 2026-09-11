@@ -35,7 +35,7 @@ export function PageHeader({
       <div className="page-header-main">
         {backHref ? (
           <Link className="muted back-link" href={backHref}>
-            ← {backLabel ?? 'رجوع'}
+            → {backLabel ?? 'رجوع'}
           </Link>
         ) : null}
         {eyebrow ? <p className="muted eyebrow">{eyebrow}</p> : null}
@@ -300,5 +300,135 @@ export function KeyValueList({ items }: { items: { label: ReactNode; value: Reac
         </div>
       ))}
     </dl>
+  );
+}
+
+/* ----------------------------------------------------------------------- */
+/* Sector identity                                                          */
+/* ----------------------------------------------------------------------- */
+
+import { SECTOR_TONE_CLASS, SectorGlyph } from './sector';
+import { SECTOR_AR, isSectorKey } from '@/features/workspace/sectors';
+import type { WorkspaceSector } from '@/features/workspace/nav';
+
+export { SECTOR_AR };
+
+/**
+ * The vertical a record belongs to. Replaces a generic status pill for
+ * sector, so an operator scanning a list can tell real estate from
+ * agriculture from livestock without reading every label.
+ */
+export function SectorChip({
+  sector,
+  label,
+}: {
+  sector: WorkspaceSector;
+  label?: string;
+}) {
+  const known = isSectorKey(sector);
+  return (
+    <span className={`sector-chip ${known ? SECTOR_TONE_CLASS[sector] : 'badge-neutral'}`}>
+      {known ? <SectorGlyph sector={sector} /> : null}
+      {label ?? (known ? SECTOR_AR[sector] : sector)}
+    </span>
+  );
+}
+
+/* ----------------------------------------------------------------------- */
+/* Figures                                                                  */
+/* ----------------------------------------------------------------------- */
+
+/**
+ * Every balance is a number *plus* its basis. `asOf` and `basis` keep the
+ * figure honest: an operator must never have to guess when a total was true
+ * or what it was computed from.
+ */
+export function Figure({
+  value,
+  asOf,
+  basis,
+  negative,
+}: {
+  value: ReactNode;
+  asOf?: ReactNode;
+  basis?: ReactNode;
+  negative?: boolean;
+}) {
+  return (
+    <div className={`overview-kpi${negative ? ' negative' : ''}`}>
+      {basis ? <span>{basis}</span> : null}
+      <strong className="num">{value}</strong>
+      {asOf ? <small className="as-of">{asOf}</small> : null}
+    </div>
+  );
+}
+
+/** The date a balance or report is true as of. Renders nothing if unknown —
+ * an undated total is worse than no total. */
+export function AsOf({ date, label = 'اعتبارًا من' }: { date?: ReactNode; label?: string }) {
+  if (!date) return null;
+  return (
+    <span className="as-of">
+      {label} {date}
+    </span>
+  );
+}
+
+/* ----------------------------------------------------------------------- */
+/* Data table                                                               */
+/* ----------------------------------------------------------------------- */
+
+/**
+ * Wraps the existing `.table-wrap` convention with the accessibility the raw
+ * markup was missing: a programmatically associated caption and a scope on
+ * the header row. Pages keep writing their own `<thead>/<tbody>`; add
+ * `className="table-stackable"` to the `<table>` for the phone card layout.
+ */
+export function DataTable({
+  caption,
+  children,
+  wide = false,
+}: {
+  caption: string;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`table-wrap${wide ? ' wide' : ''}`}>
+      <table className="table-stackable">
+        <caption className="sr-only">{caption}</caption>
+        {children}
+      </table>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------------- */
+/* Consequential actions                                                    */
+/* ----------------------------------------------------------------------- */
+
+/**
+ * A consequential action must name its object and its consequence before it
+ * can be submitted. Wrap the form body in this panel so the operator reads
+ * the effect before pressing the button — and so a reviewer can see that the
+ * safeguard exists.
+ */
+export function ConfirmPanel({
+  title,
+  consequence,
+  tone = 'warning',
+  children,
+}: {
+  title: ReactNode;
+  consequence: ReactNode;
+  tone?: 'warning' | 'danger';
+  children: ReactNode;
+}) {
+  return (
+    <div className={`confirm-panel${tone === 'danger' ? ' danger' : ''}`}>
+      <h4>{title}</h4>
+      <p className="confirm-consequence">{consequence}</p>
+      {children}
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PageHeader } from '@/shared/ui';
+import { EmptyState, PageHeader, SectorChip, Section } from '@/shared/ui';
 import { getActiveOrganization } from '@/features/organizations/context';
 import {
   getRegisteredAssets,
@@ -70,13 +70,15 @@ function AssetRow({ asset }: Readonly<{ asset: RegisteredAsset }>) {
       </td>
       <td>
         <Link href={sectorLandingHref(asset.project_sector, asset.project_id)}>
-          {asset.project_name}
+          <strong>{asset.project_name}</strong>
         </Link>
         <br />
-        <small className="muted">
-          {SECTOR_LABEL[asset.project_sector] ?? asset.project_sector}
-          {asset.portfolio_name ? ` · ${asset.portfolio_name}` : ' · بدون محفظة'}
-        </small>
+        <SectorChip
+          sector={asset.project_sector}
+          label={SECTOR_LABEL[asset.project_sector] ?? asset.project_sector}
+        />
+        <br />
+        <small className="muted">{asset.portfolio_name ? asset.portfolio_name : 'بدون محفظة'}</small>
       </td>
       <td>
         {asset.operational_state ? (
@@ -93,14 +95,14 @@ function AssetRow({ asset }: Readonly<{ asset: RegisteredAsset }>) {
           </>
         ) : null}
       </td>
-      <td>
+      <td className="num">
         <Figure
           minorUnits={asset.acquisition_cost_minor_units}
           currency={asset.acquisition_cost_currency}
           status={asset.acquisition_cost_status}
         />
       </td>
-      <td>
+      <td className="num">
         <Figure
           minorUnits={asset.latest_approved_valuation_minor_units}
           currency={asset.latest_approved_valuation_currency}
@@ -115,7 +117,7 @@ function AssetRow({ asset }: Readonly<{ asset: RegisteredAsset }>) {
           </>
         ) : null}
       </td>
-      <td>
+      <td className="num">
         <Figure
           minorUnits={asset.realized_result_minor_units}
           currency={asset.realized_result_currency}
@@ -133,8 +135,8 @@ function SectorCard({ row }: Readonly<{ row: SectorPerformance }>) {
 
   return (
     <section className="panel">
-      <h3>
-        {SECTOR_LABEL[row.sector] ?? row.sector}{' '}
+      <h3 className="badge-row">
+        <SectorChip sector={row.sector} label={SECTOR_LABEL[row.sector] ?? row.sector} />
         <span className="status">{row.currency}</span>
       </h3>
       <p className="muted">
@@ -195,11 +197,11 @@ export default async function AssetsPage() {
   const { organization: org } = await getActiveOrganization();
   if (!org) {
     return (
-      <section className="card stack">
-        <h1>لنبدأ بإنشاء منظمتك</h1>
-        <p className="muted">المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك.</p>
-        <Link className="button" href="/onboarding">إنشاء منظمة</Link>
-      </section>
+      <EmptyState
+        title="لنبدأ بإنشاء منظمتك"
+        description="المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك."
+        action={<Link className="button" href="/onboarding">إنشاء منظمة</Link>}
+      />
     );
   }
 
@@ -209,23 +211,20 @@ export default async function AssetsPage() {
   ]);
 
   return (
-    <section className="stack">
+    <section className="stack-lg">
       <PageHeader
         eyebrow={org.name}
         title="الأصول وأداء القطاعات"
         description="عرض موحَّد للقراءة فقط فوق أصول القطاعات. كل أصل ما زال مملوكًا ومُدارًا داخل قطاعه ومشروعه؛ هذه الصفحة لا تنشئ سجلًا موحَّدًا للأصول ولا تكتب أي بيانات."
       />
 
-      <section className="stack">
-        <h2>أداء القطاعات</h2>
+      <Section title="أداء القطاعات" description="كل قطاع بعملة مشاريعه الأصلية؛ لا تُجمع أرقام عبر عملات مختلفة.">
         {performance.length === 0 ? (
-          <section className="card stack empty">
-            <h3>لا توجد قطاعات لعرضها بعد</h3>
-            <p className="muted">
-              أنشئ مشروعًا أولًا؛ سيظهر قطاعه هنا فور تسجيله، حتى قبل تسجيل أي حركة مالية.
-            </p>
-            <Link className="button" href="/intake">بدء إدخال المشروع</Link>
-          </section>
+          <EmptyState
+            title="لا توجد قطاعات لعرضها بعد"
+            description="أنشئ مشروعًا أولًا؛ سيظهر قطاعه هنا فور تسجيله، حتى قبل تسجيل أي حركة مالية."
+            action={<Link className="button" href="/intake">بدء إدخال المشروع</Link>}
+          />
         ) : (
           <div className="panel-grid">
             {performance.map((row) => (
@@ -233,32 +232,28 @@ export default async function AssetsPage() {
             ))}
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="stack">
-        <h2>سجل الأصول عبر القطاعات</h2>
+      <Section title="سجل الأصول عبر القطاعات" description={`${assets.length} أصل مُسجَّل — قراءة فقط، بلا أرقام تقديرية.`}>
         {assets.length === 0 ? (
-          <section className="card stack empty">
-            <h3>لا توجد أصول مُسجَّلة بعد</h3>
-            <p className="muted">
-              تُسجَّل الأصول من داخل مساحة عمل كل قطاع: أصل عقاري، أرض زراعية، مزرعة،
-              أو موقع ثروة حيوانية. لن نعرض هنا أرقامًا تقديرية أو بيانات تجريبية.
-            </p>
-          </section>
+          <EmptyState
+            title="لا توجد أصول مُسجَّلة بعد"
+            description="تُسجَّل الأصول من داخل مساحة عمل كل قطاع: أصل عقاري، أرض زراعية، مزرعة، أو موقع ثروة حيوانية. لن نعرض هنا أرقامًا تقديرية أو بيانات تجريبية."
+          />
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="muted">
-                {assets.length} أصل مُسجَّل عبر جميع القطاعات
+              <caption className="sr-only">
+                سجل الأصول عبر القطاعات: الأصل والمشروع والقطاع والحالة وتكلفة الاقتناء وآخر تقييم معتمد والنتيجة المحققة
               </caption>
               <thead>
                 <tr>
                   <th scope="col">الأصل</th>
                   <th scope="col">المشروع</th>
                   <th scope="col">الحالة</th>
-                  <th scope="col">تكلفة الاقتناء</th>
-                  <th scope="col">آخر تقييم معتمد</th>
-                  <th scope="col">النتيجة المحققة</th>
+                  <th scope="col" className="num">تكلفة الاقتناء</th>
+                  <th scope="col" className="num">آخر تقييم معتمد</th>
+                  <th scope="col" className="num">النتيجة المحققة</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +264,7 @@ export default async function AssetsPage() {
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

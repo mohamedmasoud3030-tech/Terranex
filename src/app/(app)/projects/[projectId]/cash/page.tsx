@@ -67,6 +67,8 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         title="النقدية والبنك"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <SectionTabs
         label="التكاليف والنقدية"
@@ -100,13 +102,13 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>الحساب</th><th>الرصيد الدفتري</th><th>آخر ترحيل</th></tr>
+                <tr><th>الحساب</th><th className="num">الرصيد الدفتري</th><th>آخر ترحيل</th></tr>
               </thead>
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.cash_account_id}>
                     <td data-label="الحساب">{account.name}</td>
-                    <td data-label="الرصيد الدفتري">{formatMinorUnits(account.balance_minor_units, account.currency)}</td>
+                    <td className="num" data-label="الرصيد الدفتري">{formatMinorUnits(account.balance_minor_units, account.currency)}</td>
                     <td data-label="آخر ترحيل">{account.last_posting_date ? new Date(account.last_posting_date).toLocaleString('ar-EG') : '—'}</td>
                   </tr>
                 ))}
@@ -149,15 +151,15 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>التاريخ</th><th>الالتزام</th><th>الحساب</th><th>المبلغ</th><th>الحالة</th><th>الإجراءات</th></tr>
+                <tr><th>التاريخ</th><th className="num">الالتزام</th><th>الحساب</th><th className="num">المبلغ</th><th>الحالة</th><th>الإجراءات</th></tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.payment_id}>
                     <td data-label="التاريخ">{payment.payment_date}</td>
-                    <td data-label="الالتزام">{obligationDescription.get(payment.obligation_id) ?? '—'}</td>
+                    <td className="num" data-label="الالتزام">{obligationDescription.get(payment.obligation_id) ?? '—'}</td>
                     <td data-label="الحساب">{accountName.get(payment.cash_account_id) ?? '—'}</td>
-                    <td data-label="المبلغ">{formatMinorUnits(payment.amount_minor_units, payment.currency)}</td>
+                    <td className="num" data-label="المبلغ">{formatMinorUnits(payment.amount_minor_units, payment.currency)}</td>
                     <td data-label="الحالة">
                       <span className="status">
                         {payment.is_reversed ? 'معكوسة' : payment.is_reconciled ? 'مطابقة' : 'غير مطابقة'}
@@ -219,7 +221,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             <table className="table-stackable">
               <thead>
                 <tr>
-                  <th>التاريخ</th><th>المرجع</th><th>الوصف</th><th>المبلغ</th>
+                  <th>التاريخ</th><th>المرجع</th><th>الوصف</th><th className="num">المبلغ</th>
                   <th>الحساب</th><th>الحالة</th><th>الإجراءات</th>
                 </tr>
               </thead>
@@ -229,7 +231,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
                     <td data-label="التاريخ">{line.transaction_date}</td>
                     <td data-label="المرجع">{line.provider_reference ?? '—'}</td>
                     <td data-label="الوصف">{line.description}</td>
-                    <td data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
+                    <td className="num" data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
                     <td data-label="الحساب">{accountName.get(line.cash_account_id) ?? '—'}</td>
                     <td data-label="الحالة">
                       <span className="status">{line.is_reconciled ? 'مطابقة' : 'غير مطابقة'}</span>
