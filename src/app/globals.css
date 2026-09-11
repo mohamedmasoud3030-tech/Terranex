@@ -35,7 +35,7 @@
   --ink: #10211b;
   --ink-2: #26362f;
   --muted: #5b6c64;
-  --muted-2: #78877f;
+  --muted-2: #627169;
   --line: #dbe5df;
   --line-strong: #c3d2ca;
   --line-soft: #e8efeb;
@@ -197,11 +197,6 @@ table td.num,
 .stat-value,
 .overview-kpi strong,
 .metric strong,
-.facts dd {
-  font-variant-numeric: var(--tnum);
-  font-feature-settings: var(--tnum);
-}
-
 .muted { color: var(--muted); }
 
 ::selection { background: var(--brand-soft); color: var(--brand-ink); }
@@ -493,28 +488,6 @@ details[open] > summary::before { transform: rotate(90deg); }
 .field-error::before { content: "⚠ "; }
 
 .error { color: var(--danger-ink); font-weight: 700; }
-
-/* A consequential action must state its object and its consequence. */
-.confirm-panel {
-  display: grid;
-  gap: var(--sp-3);
-  border: 1px solid var(--warning-edge);
-  border-inline-start: 4px solid var(--warning);
-  background: var(--warning-wash);
-  border-radius: var(--r-lg);
-  padding: var(--sp-4);
-}
-.confirm-panel.danger {
-  border-color: var(--danger-edge);
-  border-inline-start-color: var(--danger);
-  background: var(--danger-wash);
-}
-.confirm-panel h4 { color: var(--ink); }
-.confirm-panel .confirm-consequence {
-  font-size: var(--fs-300);
-  color: var(--ink-2);
-  line-height: 1.55;
-}
 
 .inline-form {
   display: flex;
@@ -867,6 +840,8 @@ tr.row-actions-row:hover { background: transparent; }
   font-weight: 700;
   overflow-wrap: anywhere;
   line-height: 1.4;
+  font-variant-numeric: var(--tnum);
+  font-feature-settings: var(--tnum);
 }
 
 /* ---------------------------------------------------- 10. FIGURES/STATS

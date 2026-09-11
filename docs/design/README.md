@@ -146,18 +146,29 @@ Three vocabularies are kept visually distinct on purpose, because conflating the
 
 ## 7. Consequential actions
 
-`ConfirmPanel` names the object and its consequence before the action can be submitted:
+Every mutating form in the product follows one pattern, and it is the pattern
+that carries the safeguard — there is no separate confirmation component:
 
 ```tsx
-<ConfirmPanel
-  title="ترحيل قيد الإغلاق — الفترة ٢٠٢٦/٠٨"
-  consequence="سيُقفل الشهر وتُثبَّت لقطته. بعد الترحيل لا يمكن تعديل أي قيد…"
->
-  <FormActions />
-</ConfirmPanel>
+const [state, action, pending] = useActionState(postClosingEntry, initial);
+<form action={action} className="form-grid">
+  <Context {...{ organizationId, projectId }} />
+  <Key prefix="close-post" state={state} />   {/* idempotency key, hidden */}
+  {/* …fields, each with its own <label>… */}
+  <div className="full"><Result {...{ state, pending }} label="ترحيل قيد الإغلاق" /></div>
+</form>
 ```
 
-Safeguards are not friction to be optimised away. One primary action per screen; the dangerous variant never looks like the primary one; cancel is always available and always visually separated (`margin-inline-start: auto`).
+The operator reads the effect in the section they are already in; the button
+names the act ("ترحيل قيد الإغلاق", not "حفظ"); `pending` disables it so a
+double press cannot double-post; and the hidden idempotency key means a
+retried submit is recognised rather than repeated. Server actions plus RLS
+are the real gate — the interface never has to be the only thing standing
+between an operator and a write.
+
+Safeguards are not friction to be optimised away. One primary action per
+screen; the dangerous variant never looks like the primary one; cancel is
+always available and always visually separated (`margin-inline-start: auto`).
 
 ---
 

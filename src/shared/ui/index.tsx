@@ -287,23 +287,6 @@ export function InPageTabs({ items, label }: { items: { href: string; label: str
 }
 
 /* ----------------------------------------------------------------------- */
-/* Key-value                                                                */
-/* ----------------------------------------------------------------------- */
-
-export function KeyValueList({ items }: { items: { label: ReactNode; value: ReactNode }[] }) {
-  return (
-    <dl className="facts">
-      {items.map((item, index) => (
-        <div key={index}>
-          <dt>{item.label}</dt>
-          <dd>{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-/* ----------------------------------------------------------------------- */
 /* Sector identity                                                          */
 /* ----------------------------------------------------------------------- */
 
@@ -363,72 +346,3 @@ export function Figure({
   );
 }
 
-/** The date a balance or report is true as of. Renders nothing if unknown —
- * an undated total is worse than no total. */
-export function AsOf({ date, label = 'اعتبارًا من' }: { date?: ReactNode; label?: string }) {
-  if (!date) return null;
-  return (
-    <span className="as-of">
-      {label} {date}
-    </span>
-  );
-}
-
-/* ----------------------------------------------------------------------- */
-/* Data table                                                               */
-/* ----------------------------------------------------------------------- */
-
-/**
- * Wraps the existing `.table-wrap` convention with the accessibility the raw
- * markup was missing: a programmatically associated caption and a scope on
- * the header row. Pages keep writing their own `<thead>/<tbody>`; add
- * `className="table-stackable"` to the `<table>` for the phone card layout.
- */
-export function DataTable({
-  caption,
-  children,
-  wide = false,
-}: {
-  caption: string;
-  children: ReactNode;
-  wide?: boolean;
-}) {
-  return (
-    <div className={`table-wrap${wide ? ' wide' : ''}`}>
-      <table className="table-stackable">
-        <caption className="sr-only">{caption}</caption>
-        {children}
-      </table>
-    </div>
-  );
-}
-
-/* ----------------------------------------------------------------------- */
-/* Consequential actions                                                    */
-/* ----------------------------------------------------------------------- */
-
-/**
- * A consequential action must name its object and its consequence before it
- * can be submitted. Wrap the form body in this panel so the operator reads
- * the effect before pressing the button — and so a reviewer can see that the
- * safeguard exists.
- */
-export function ConfirmPanel({
-  title,
-  consequence,
-  tone = 'warning',
-  children,
-}: {
-  title: ReactNode;
-  consequence: ReactNode;
-  tone?: 'warning' | 'danger';
-  children: ReactNode;
-}) {
-  return (
-    <div className={`confirm-panel${tone === 'danger' ? ' danger' : ''}`}>
-      <h4>{title}</h4>
-      <p className="confirm-consequence">{consequence}</p>
-      {children}
-    </div>
-  );
-}

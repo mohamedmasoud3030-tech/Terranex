@@ -42,7 +42,7 @@
   --ink: #10211b;
   --ink-2: #26362f;
   --muted: #5b6c64;
-  --muted-2: #78877f;
+  --muted-2: #627169;
   --line: #dbe5df;
   --line-strong: #c3d2ca;
   --line-soft: #e8efeb;
@@ -204,11 +204,6 @@ table td.num,
 .stat-value,
 .overview-kpi strong,
 .metric strong,
-.facts dd {
-  font-variant-numeric: var(--tnum);
-  font-feature-settings: var(--tnum);
-}
-
 .muted { color: var(--muted); }
 
 ::selection { background: var(--brand-soft); color: var(--brand-ink); }
@@ -500,28 +495,6 @@ details[open] > summary::before { transform: rotate(90deg); }
 .field-error::before { content: "⚠ "; }
 
 .error { color: var(--danger-ink); font-weight: 700; }
-
-/* A consequential action must state its object and its consequence. */
-.confirm-panel {
-  display: grid;
-  gap: var(--sp-3);
-  border: 1px solid var(--warning-edge);
-  border-inline-start: 4px solid var(--warning);
-  background: var(--warning-wash);
-  border-radius: var(--r-lg);
-  padding: var(--sp-4);
-}
-.confirm-panel.danger {
-  border-color: var(--danger-edge);
-  border-inline-start-color: var(--danger);
-  background: var(--danger-wash);
-}
-.confirm-panel h4 { color: var(--ink); }
-.confirm-panel .confirm-consequence {
-  font-size: var(--fs-300);
-  color: var(--ink-2);
-  line-height: 1.55;
-}
 
 .inline-form {
   display: flex;
@@ -874,6 +847,8 @@ tr.row-actions-row:hover { background: transparent; }
   font-weight: 700;
   overflow-wrap: anywhere;
   line-height: 1.4;
+  font-variant-numeric: var(--tnum);
+  font-feature-settings: var(--tnum);
 }
 
 /* ---------------------------------------------------- 10. FIGURES/STATS
@@ -2113,30 +2088,36 @@ body { padding-block-end: 80px; }
   <section id="confirm" class="gallery-block">
     <header><h2>الإجراءات الجسيمة</h2>
       <p class="gallery-note">
-        قبل أي إجراء لا رجعة فيه، تُسمى الواقعة ويُشرح أثرها. الحماية ليست عائقًا في مسار التحويل — هي جزء من المنتج.
+        قبل أي إجراء لا رجعة فيه، تُسمى الواقعة ويُشرح أثرها في نص القسم نفسه — لا في نافذة تأكيد منفصلة.
+        الزر يسمّي الفعل لا «حفظ»، والحالة المعلّقة تعطّله حتى لا ينشئ الضغط المزدوج واقعتين،
+        ومفتاح عدم التكرار المخفي يجعل إعادة الإرسال معروفة لا مكرّرة. البوابة الحقيقية هي إجراء الخادم وصلاحيات قاعدة البيانات.
       </p>
     </header>
-    <div class="confirm-panel">
-      <h4>ترحيل قيد الإغلاق — الفترة ٢٠٢٦/٠٨</h4>
-      <p class="confirm-consequence">
-        سيُقفل الشهر وتُثبَّت لقطته. بعد الترحيل لا يمكن تعديل أي قيد في هذه الفترة إلا بمسار تصحيح معتمد يُنشئ قيدًا عكسيًا في فترة مفتوحة.
-        البوابات المتحققة: ٧ من ٩.
+    <div class="card stack">
+      <h3>ترحيل قيد الإغلاق — الفترة ٢٠٢٦/٠٨</h3>
+      <p class="muted">
+        سيُقفل الشهر وتُثبَّت لقطته. بعد الترحيل لا يمكن تعديل أي قيد في هذه الفترة إلا بمسار تصحيح معتمد
+        يُنشئ قيدًا عكسيًا في فترة مفتوحة. البوابات المتحققة: ٧ من ٩.
       </p>
       <div class="form-actions">
-        <button class="secondary">ترحيل الإغلاق</button>
+        <button class="button">ترحيل الإغلاق</button>
         <button class="ghost cancel" type="button">تراجع</button>
       </div>
     </div>
-    <div class="confirm-panel danger">
-      <h4>عكس قيد مُرحّل</h4>
-      <p class="confirm-consequence">
-        القيد الأصلي أثّر على نقدية الفترة ٢٠٢٦/٠٧ بمبلغ ٢٥٠٬٠٠٠٫٠٠ ج.م. العكس ينشئ قيدًا مقابلًا بتاريخ اليوم ولا يحذف السجل الأصلي.
+    <div class="card stack">
+      <h3>عكس قيد مُرحّل</h3>
+      <p class="muted">
+        القيد الأصلي أثّر على نقدية الفترة ٢٠٢٦/٠٧ بمبلغ ٢٥٠٬٠٠٠٫٠٠ ج.م.
+        العكس ينشئ قيدًا مقابلًا بتاريخ اليوم ولا يحذف السجل الأصلي.
       </p>
       <div class="form-actions">
-        <button class="danger">عكس القيد</button>
+        <button class="button danger">عكس القيد</button>
         <button class="ghost cancel" type="button">تراجع</button>
       </div>
     </div>
+    <p class="gallery-note">
+      البديل الخطير لا يشبه الإجراء الأساسي أبدًا، و«تراجع» متاحة دائمًا ومنفصلة بصريًا (<code>margin-inline-start: auto</code>).
+    </p>
   </section>
 
   <!-- -------------------------------------------------------- RESPONSIVE -->
