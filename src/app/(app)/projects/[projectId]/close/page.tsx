@@ -20,7 +20,7 @@ import {
 } from '@/features/close/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
-import { RECORD_STATUS_LABEL } from '@/features/projects/labels';
+import { RECORD_STATUS_LABEL, recordStatusLabel } from '@/features/projects/labels';
 import { InPageTabs, StatusBadge } from '@/shared/ui';
 import {
   ApproveCloseForm,
@@ -109,8 +109,7 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
       <InPageTabs
         label="تنقل الإغلاق"
         items={[
-          { href: '#periods', label: 'الفترات' },
-          { href: '#close', label: 'الإغلاق' },
+          { href: '#periods', label: 'الفترات وبوابات الإغلاق' },
           { href: '#snapshots', label: 'اللقطات' },
           { href: '#corrections', label: 'التصحيح' },
         ]}
@@ -355,7 +354,7 @@ function PreparedRunCard({
           <ul>
             {exceptions.map((exc) => (
               <li key={exc.exception_id}>
-                <strong>{gateLabelAr(exc.gate_code)}</strong>: {exc.reason} ({exc.status}) — مرجع: {exc.evidence_reference}
+                <strong>{gateLabelAr(exc.gate_code)}</strong>: {exc.reason} ({recordStatusLabel(exc.status)}) — مرجع: {exc.evidence_reference}
               </li>
             ))}
           </ul>

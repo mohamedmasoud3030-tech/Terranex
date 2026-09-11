@@ -80,6 +80,12 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         label="تنقل الإيراد"
         items={[
           { href: '#dispositions', label: 'التصرفات' },
+          // The rental section only renders for real-estate projects, so its
+          // tab is conditional on exactly the same test — a tab that links to
+          // a section the page will not render is a dead link.
+          ...(project.sector === 'REAL_ESTATE'
+            ? [{ href: '#rentals', label: 'الإيجار' }]
+            : []),
           { href: '#result', label: 'النتيجة المحققة' },
           { href: '#collections', label: 'التحصيل' },
           { href: '#bank', label: 'المطابقة البنكية' },

@@ -719,15 +719,19 @@ export default async function LivestockPage({
       <InPageTabs
         label="أقسام الثروة الحيوانية"
         items={[
+          { href: '#setup', label: 'التهيئة' },
           { href: '#sites', label: 'المواقع' },
           { href: '#herds', label: 'القطعان' },
           { href: '#batches', label: 'الدفعات' },
+          { href: '#location', label: 'الموقع الحالي' },
           { href: '#movements', label: 'الحركات' },
           { href: '#headcount', label: 'الأعداد' },
           { href: '#births', label: 'الولادات' },
           { href: '#deaths', label: 'النفوق' },
           { href: '#split', label: 'التقسيم' },
           { href: '#merge', label: 'الدمج' },
+          { href: '#count-flow', label: 'حركة العدد' },
+          { href: '#lineage', label: 'سلسلة التقسيم' },
           { href: '#weights', label: 'الأوزان' },
         ]}
       />

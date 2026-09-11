@@ -1,3 +1,4 @@
+import { ROLE_LABEL, recordStatusLabel, roleLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
@@ -160,8 +161,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
                 {members.map((member) => (
                   <tr key={member.membership_id}>
                     <td data-label="العضو">{member.user_id}</td>
-                    <td data-label="الدور">{member.role}</td>
-                    <td data-label="الحالة">{member.status}</td>
+                    <td data-label="الدور">{roleLabel(member.role)}</td>
+                    <td data-label="الحالة">{recordStatusLabel(member.status)}</td>
                   </tr>
                 ))}
               </tbody>

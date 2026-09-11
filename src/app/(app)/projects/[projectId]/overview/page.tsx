@@ -1,3 +1,4 @@
+import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
@@ -130,7 +131,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
       <Section title="الفترة المحاسبية والإغلاق" description="حالة الإغلاق وبواباته كما هي مسجلة الآن.">
         <div className="overview-kpis">
           <article className="overview-kpi"><span>الفترة الحالية</span><strong>{openPeriod ? `${d(openPeriod.start_date)} → ${d(openPeriod.end_date)}` : 'لا توجد فترة مفتوحة'}</strong><small>{openPeriod ? PERIOD_STATUS[openPeriod.status] : 'أنشئ فترة OPEN'}</small></article>
-          <article className="overview-kpi"><span>آخر فترة مغلقة</span><strong>{lastClosed ? `${d(lastClosed.start_date)} → ${d(lastClosed.end_date)}` : 'لا توجد'}</strong><small>{activeCloseRun ? `آخر إغلاق: ${activeCloseRun.status}` : 'لا يوجد إغلاق'}</small></article>
+          <article className="overview-kpi"><span>آخر فترة مغلقة</span><strong>{lastClosed ? `${d(lastClosed.start_date)} → ${d(lastClosed.end_date)}` : 'لا توجد'}</strong><small>{activeCloseRun ? `آخر إغلاق: ${recordStatusLabel(activeCloseRun.status)}` : 'لا يوجد إغلاق'}</small></article>
           <article className="overview-kpi"><span>نقاط مطابقة موقّعة</span><strong>{report?.reconciliation_checkpoints ?? 0}</strong><small>فروق غير صفرية: {report?.reconciliation_non_zero_variances ?? 0}</small></article>
           <article className="overview-kpi"><span>مجاميع الرقابة الافتتاحية</span><strong>{report?.opening_control_totals_match == null ? '—' : report.opening_control_totals_match ? 'مطابقة' : 'غير مطابقة'}</strong><small>استيرادات مرحلة: {report?.posted_opening_imports ?? 0}</small></article>
         </div>

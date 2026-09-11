@@ -1,3 +1,4 @@
+import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -628,7 +629,7 @@ export default async function IntakePage({
         <SectionCard item={byCode.get('DS09_OPENING_BALANCES')!}>
           {latestImport && (
             <p>
-              {latestImport.source_file_name} · {latestImport.status} ·
+              {latestImport.source_file_name} · {recordStatusLabel(latestImport.status)} ·
               مقبول {latestImport.accepted_row_count} / مرفوض {latestImport.rejected_row_count} ·
               فرق المدين {money(latestImport.debit_variance_minor_units)} ·
               فرق الدائن {money(latestImport.credit_variance_minor_units)}

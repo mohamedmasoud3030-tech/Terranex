@@ -695,7 +695,7 @@ export default async function AgriculturePage({
         <h3 id="input-applications">أحدث التطبيقات</h3>
         {inputApplications.length === 0 ? (
           <div className="card empty">
-            <h4>لا توجد تطبيقات مدخلات بعد</h4>
+            <h3>لا توجد تطبيقات مدخلات بعد</h3>
             <p className="muted">
               عرّف مدخلًا، ثم سجّل تشغيلة له، ثم اربط التطبيق بنشاط زراعة أو تسميد أو رش قائم.
             </p>
@@ -771,7 +771,7 @@ export default async function AgriculturePage({
         <h3 id="input-items">المدخلات المعرّفة</h3>
         {inputItems.length === 0 ? (
           <div className="card empty">
-            <h4>لا توجد مدخلات معرّفة</h4>
+            <h3>لا توجد مدخلات معرّفة</h3>
             <p className="muted">ابدأ بتعريف مدخل واحد بفئته ووحدة تطبيقه.</p>
             <InputItemForm organizationId={organizationId} projectId={projectId} />
           </div>
@@ -905,7 +905,7 @@ export default async function AgriculturePage({
         <h3 id="harvest-events">أحداث الحصاد</h3>
         {harvestEvents.length === 0 ? (
           <div className="card empty">
-            <h4>لا توجد أحداث حصاد بعد</h4>
+            <h3>لا توجد أحداث حصاد بعد</h3>
             <p className="muted">
               سجّل أول حدث حصاد لدورة في حالة &quot;قيد الحصاد&quot; مع موقع تخزين لاستلام المحصول.
             </p>
@@ -1061,7 +1061,7 @@ export default async function AgriculturePage({
         <h3 id="storage-locations">مواقع التخزين</h3>
         {storages.length === 0 ? (
           <div className="card empty">
-            <h4>لا توجد مواقع تخزين</h4>
+            <h3>لا توجد مواقع تخزين</h3>
             <p className="muted">سجّل موقع تخزين لاستلام محصول الحصاد فيه.</p>
             <StorageLocationForm organizationId={organizationId} projectId={projectId} />
           </div>

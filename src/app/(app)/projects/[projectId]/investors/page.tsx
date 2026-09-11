@@ -1,3 +1,4 @@
+import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
@@ -80,7 +81,7 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
           <dl className="facts">
             <div><dt>الإصدار</dt><dd>v{activeVersion.version_no}</dd></div>
             <div><dt>تاريخ النفاذ</dt><dd>{activeVersion.effective_date}</dd></div>
-            <div><dt>الحالة</dt><dd>{activeVersion.status}</dd></div>
+            <div><dt>الحالة</dt><dd>{recordStatusLabel(activeVersion.status)}</dd></div>
             <div><dt>بصمة الشروط</dt><dd><code>{activeVersion.terms_hash}</code></dd></div>
           </dl>
         ) : (
