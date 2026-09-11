@@ -120,8 +120,8 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         تبقى آليات التخصيص والتوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.
       </div>
 
-      <section id="periods" className="card stack scroll-target">
-        <h2>الفترات المحاسبية</h2>
+      <section id="periods" className="card stack scroll-target" aria-labelledby="periods-title">
+        <h2 id="periods-title">الفترات المحاسبية</h2>
         {periods.length === 0 && (
           <p className="muted">لا توجد فترات محاسبية بعد. أنشئ فترة OPEN لتبدأ.</p>
         )}
@@ -165,8 +165,8 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         </details>
       </section>
 
-      <section id="snapshots" className="card stack scroll-target">
-        <h2>اللقطات المجمدة</h2>
+      <section id="snapshots" className="card stack scroll-target" aria-labelledby="snapshots-title">
+        <h2 id="snapshots-title">اللقطات المجمدة</h2>
         {snapshots.length === 0 && (
           <p className="muted">لا توجد لقطات معتمدة بعد.</p>
         )}
@@ -198,8 +198,8 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         ))}
       </section>
 
-      <section id="corrections" className="card stack scroll-target">
-        <h2>طلبات التصحيح</h2>
+      <section id="corrections" className="card stack scroll-target" aria-labelledby="corrections-title">
+        <h2 id="corrections-title">طلبات التصحيح</h2>
         {corrections.length === 0 && (
           <p className="muted">لا توجد طلبات تصحيح.</p>
         )}

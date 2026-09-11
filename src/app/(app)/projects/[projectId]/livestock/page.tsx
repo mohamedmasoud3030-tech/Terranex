@@ -738,27 +738,27 @@ export default async function LivestockPage({
       <p className="muted">
         المواقع والقطعان والدفعات · تتبع جماعي قابل للعد دون افتراض سجل فردي لكل حيوان.
       </p>
-      <section className="card stack scroll-target" id="setup">
-        <h2>تهيئة القطاع</h2>
+      <section className="card stack scroll-target" id="setup" aria-labelledby="setup-title">
+        <h2 id="setup-title">تهيئة القطاع</h2>
         <ProfileForm {...context} commandNonce={newCommandNonce()} />
       </section>
-      <section className="card stack scroll-target" id="sites">
-        <h2>مواقع التشغيل</h2>
+      <section className="card stack scroll-target" id="sites" aria-labelledby="sites-title">
+        <h2 id="sites-title">مواقع التشغيل</h2>
         <SiteForm {...context} commandNonce={newCommandNonce()} />
         <Sites sites={sites} />
       </section>
-      <section className="card stack scroll-target" id="herds">
-        <h2>القطعان (المجموعات الإدارية)</h2>
+      <section className="card stack scroll-target" id="herds" aria-labelledby="herds-title">
+        <h2 id="herds-title">القطعان (المجموعات الإدارية)</h2>
         <HerdForm {...context} commandNonce={newCommandNonce()} />
         <Herds herds={herds} />
       </section>
-      <section className="card stack scroll-target" id="batches">
-        <h2>الدفعات الحيوانية القابلة للعد</h2>
+      <section className="card stack scroll-target" id="batches" aria-labelledby="batches-title">
+        <h2 id="batches-title">الدفعات الحيوانية القابلة للعد</h2>
         <CohortForm {...context} herds={herds} sites={sites} commandNonce={newCommandNonce()} />
         <Cohorts {...context} cohorts={cohorts} timeline={timeline} />
       </section>
-      <section className="card stack scroll-target" id="location">
-        <h2>الموقع الحالي</h2>
+      <section className="card stack scroll-target" id="location" aria-labelledby="location-title">
+        <h2 id="location-title">الموقع الحالي</h2>
         <p className="muted">
           الموقع الحالي المشتق لكل دفعة، ومنه تُسجَّل حركة النقل. الوضع الافتتاحي يظل ثابتًا في بطاقة الدفعة.
         </p>
@@ -771,24 +771,24 @@ export default async function LivestockPage({
           operationalCohortIds={operationalCohortIds}
         />
       </section>
-      <section className="card stack scroll-target" id="movements">
-        <h2>سجل الحركات</h2>
+      <section className="card stack scroll-target" id="movements" aria-labelledby="movements-title">
+        <h2 id="movements-title">سجل الحركات</h2>
         <Movements movements={movements} />
       </section>
-      <section className="card stack scroll-target" id="headcount">
-        <h2>الرصيد العددي الحالي</h2>
+      <section className="card stack scroll-target" id="headcount" aria-labelledby="headcount-title">
+        <h2 id="headcount-title">الرصيد العددي الحالي</h2>
         <QuantityRollforward rows={quantities} />
       </section>
-      <section className="card stack scroll-target" id="births">
-        <h2>تسجيل ولادات</h2>
+      <section className="card stack scroll-target" id="births" aria-labelledby="births-title">
+        <h2 id="births-title">تسجيل ولادات</h2>
         <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={operationalActiveCohorts} />
       </section>
-      <section className="card stack scroll-target" id="deaths">
-        <h2>تسجيل نفوق</h2>
+      <section className="card stack scroll-target" id="deaths" aria-labelledby="deaths-title">
+        <h2 id="deaths-title">تسجيل نفوق</h2>
         <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
       </section>
-      <section className="card stack scroll-target" id="split">
-        <h2>تقسيم دفعة</h2>
+      <section className="card stack scroll-target" id="split" aria-labelledby="split-title">
+        <h2 id="split-title">تقسيم دفعة</h2>
         <SplitForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -797,8 +797,8 @@ export default async function LivestockPage({
           sites={sites}
         />
       </section>
-      <section className="card stack scroll-target" id="merge">
-        <h2>دمج دفعات</h2>
+      <section className="card stack scroll-target" id="merge" aria-labelledby="merge-title">
+        <h2 id="merge-title">دمج دفعات</h2>
         <MergeForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -807,24 +807,24 @@ export default async function LivestockPage({
           sites={sites}
         />
       </section>
-      <section className="card stack scroll-target" id="count-flow">
-        <h2>حركة العدد</h2>
+      <section className="card stack scroll-target" id="count-flow" aria-labelledby="count-flow-title">
+        <h2 id="count-flow-title">حركة العدد</h2>
         <QuantityEvents events={quantityEvents} />
       </section>
-      <section className="card stack scroll-target" id="lineage">
-        <h2>سلسلة التقسيم والدمج</h2>
+      <section className="card stack scroll-target" id="lineage" aria-labelledby="lineage-title">
+        <h2 id="lineage-title">سلسلة التقسيم والدمج</h2>
         <Lineage lineage={lineage} />
       </section>
-      <section className="card stack scroll-target" id="weights">
-        <h2>تسجيل وزن</h2>
+      <section className="card stack scroll-target" id="weights" aria-labelledby="weights-title">
+        <h2 id="weights-title">تسجيل وزن</h2>
         <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
       </section>
-      <section className="card stack">
-        <h2>سجل الأوزان</h2>
+      <section className="card stack" aria-labelledby="livestock-s15">
+        <h2 id="livestock-s15">سجل الأوزان</h2>
         <WeightLog events={weightEvents} />
       </section>
-      <section className="card stack">
-        <h2>المشتريات والإضافات</h2>
+      <section className="card stack" aria-labelledby="livestock-s16">
+        <h2 id="livestock-s16">المشتريات والإضافات</h2>
         <PurchaseForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -833,8 +833,8 @@ export default async function LivestockPage({
         />
         <Purchases purchases={purchases} lines={purchaseLines} />
       </section>
-      <section className="card stack">
-        <h2>المبيعات</h2>
+      <section className="card stack" aria-labelledby="livestock-s17">
+        <h2 id="livestock-s17">المبيعات</h2>
         <SaleForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -844,16 +844,16 @@ export default async function LivestockPage({
         />
         <Sales sales={sales} lines={saleLines} collections={collections} />
       </section>
-      <section className="card stack">
-        <h2>اعتماد البيع</h2>
+      <section className="card stack" aria-labelledby="livestock-s18">
+        <h2 id="livestock-s18">اعتماد البيع</h2>
         <SaleApprovalForm {...context} commandNonce={newCommandNonce()} sales={draftSales} />
       </section>
-      <section className="card stack">
-        <h2>نقل السيطرة والاعتراف بالإيراد</h2>
+      <section className="card stack" aria-labelledby="livestock-s19">
+        <h2 id="livestock-s19">نقل السيطرة والاعتراف بالإيراد</h2>
         <SaleRecognitionForm {...context} commandNonce={newCommandNonce()} sales={approvedSales} />
       </section>
-      <section className="card stack">
-        <h2>التحصيل</h2>
+      <section className="card stack" aria-labelledby="livestock-s20">
+        <h2 id="livestock-s20">التحصيل</h2>
         <SaleCollectionForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -861,8 +861,8 @@ export default async function LivestockPage({
           cashAccounts={cashAccountOptions}
         />
       </section>
-      <section className="card stack">
-        <h2>الربحية — تحميل التكلفة التشغيلية</h2>
+      <section className="card stack" aria-labelledby="livestock-s21">
+        <h2 id="livestock-s21">الربحية — تحميل التكلفة التشغيلية</h2>
         <CostAttributionForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -875,12 +875,12 @@ export default async function LivestockPage({
           attributions={activeAttributions}
         />
       </section>
-      <section className="card stack">
-        <h2>الربحية — نتيجة الدفعة</h2>
+      <section className="card stack" aria-labelledby="livestock-s22">
+        <h2 id="livestock-s22">الربحية — نتيجة الدفعة</h2>
         <CohortResults results={results} />
       </section>
-      <section className="card stack">
-        <h2>الإقفال</h2>
+      <section className="card stack" aria-labelledby="livestock-s23">
+        <h2 id="livestock-s23">الإقفال</h2>
         <CloseoutForm {...context} commandNonce={newCommandNonce()} cohorts={cohorts} />
         <h3>استثناءات السلامة المفتوحة</h3>
         <CohortIssues issues={issues} />

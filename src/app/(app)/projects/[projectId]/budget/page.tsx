@@ -111,8 +111,8 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>موازنات المشروع</h2>
+      <section className="card stack" aria-labelledby="budget-s1">
+        <h2 id="budget-s1">موازنات المشروع</h2>
         {budgets.length === 0 ? (
           <p className="muted">
             لا توجد موازنات بعد. أنشئ أول موازنة ثم اعتمدها؛ بعد الاعتماد يفرض السقف تلقائيًا
@@ -179,8 +179,8 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
       </section>
 
       {approved.length > 0 && (
-        <section className="card stack">
-          <h2>الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)</h2>
+        <section className="card stack" aria-labelledby="budget-s2">
+          <h2 id="budget-s2">الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)</h2>
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="sr-only">جدول: الإصدار · المعالجة · السقف · الالتزامات · المدفوع · الفعلية المرحّلة · استثناءات معتمدة · المتبقي الفعلي · FAC للبند</caption>
@@ -227,8 +227,8 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
       )}
 
       {facRows.length > 0 && (
-        <section className="card stack">
-          <h2>التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
+        <section className="card stack" aria-labelledby="budget-s3">
+          <h2 id="budget-s3">التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="sr-only">جدول: الإصدار · إجمالي الموازنة · استثناءات معتمدة · الفعلية (Actual) · الالتزامات المفتوحة (PO) · المتبقي المعتمد للتنبؤ · FAC</caption>
@@ -265,8 +265,8 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         </section>
       )}
 
-      <section className="card stack">
-        <h2>إنشاء مسودة موازنة</h2>
+      <section className="card stack" aria-labelledby="budget-s4">
+        <h2 id="budget-s4">إنشاء مسودة موازنة</h2>
         <BudgetForm
           organizationId={organizationId}
           projectId={projectId}

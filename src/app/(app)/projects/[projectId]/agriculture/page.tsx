@@ -303,8 +303,8 @@ export default async function AgriculturePage({
         ]}
       />
 
-      <section className="card stack scroll-target" id="overview">
-        <h2>نظرة الزراعة</h2>
+      <section className="card stack scroll-target" id="overview" aria-labelledby="overview-title">
+        <h2 id="overview-title">نظرة الزراعة</h2>
         <div className="overview-kpis">
           <article className="overview-kpi">
             <span>عدد المزارع</span>
@@ -342,8 +342,8 @@ export default async function AgriculturePage({
         </p>
       </section>
 
-      <section className="card stack scroll-target" id="profile">
-        <h2>ملف الزراعة</h2>
+      <section className="card stack scroll-target" id="profile" aria-labelledby="profile-title">
+        <h2 id="profile-title">ملف الزراعة</h2>
         <p className="muted">ملف الزراعة يُنشأ مرة واحدة لكل مشروع زراعي.</p>
         {farms.length > 0 ? (
           <p className="muted">تم إنشاء ملف الزراعة. لا يلزم تسجيله مرة أخرى.</p>
@@ -352,10 +352,10 @@ export default async function AgriculturePage({
         )}
       </section>
 
-      <section className="card stack scroll-target" id="land-assets">
+      <section className="card stack scroll-target" id="land-assets" aria-labelledby="land-assets-title">
         <div className="section-heading">
           <div>
-            <h2>الأراضي والأصول</h2>
+            <h2 id="land-assets-title">الأراضي والأصول</h2>
             <p className="muted">الأرض أصل استثماري/قانوني · المزرعة وحدة تشغيل · الحقل وحدة زراعية.</p>
           </div>
           <span className="status">{landAssets.length} أصل</span>
@@ -404,8 +404,8 @@ export default async function AgriculturePage({
         </div>
       </section>
 
-      <section className="card stack scroll-target" id="farms">
-        <h2>المزارع</h2>
+      <section className="card stack scroll-target" id="farms" aria-labelledby="farms-title">
+        <h2 id="farms-title">المزارع</h2>
         {farms.length === 0 ? (
           <EmptyState
             headingLevel={3}
@@ -448,8 +448,8 @@ export default async function AgriculturePage({
         )}
       </section>
 
-      <section className="card stack scroll-target" id="fields">
-        <h2>الحقول</h2>
+      <section className="card stack scroll-target" id="fields" aria-labelledby="fields-title">
+        <h2 id="fields-title">الحقول</h2>
         {fields.length === 0 ? (
           <EmptyState
             headingLevel={3}
@@ -497,8 +497,8 @@ export default async function AgriculturePage({
         )}
       </section>
 
-      <section className="card stack scroll-target" id="cycles">
-        <h2>دورات المحصول</h2>
+      <section className="card stack scroll-target" id="cycles" aria-labelledby="cycles-title">
+        <h2 id="cycles-title">دورات المحصول</h2>
         {cycles.length === 0 ? (
           <EmptyState
             headingLevel={3}
@@ -590,8 +590,8 @@ export default async function AgriculturePage({
         )}
       </section>
 
-      <section className="card stack scroll-target" id="assignments">
-        <h2>تخصيص الحقول للدورات</h2>
+      <section className="card stack scroll-target" id="assignments" aria-labelledby="assignments-title">
+        <h2 id="assignments-title">تخصيص الحقول للدورات</h2>
         <p className="muted">
           يضمن النظام أن وحدة المساحة المخصصة تطابق وحدة الحقل، وأن مجموع المساحات في أي فترة متداخلة لا يتجاوز سعة الحقل.
         </p>
@@ -603,8 +603,8 @@ export default async function AgriculturePage({
         />
       </section>
 
-      <section className="card stack scroll-target" id="activities">
-        <h2>أنشطة الحقل</h2>
+      <section className="card stack scroll-target" id="activities" aria-labelledby="activities-title">
+        <h2 id="activities-title">أنشطة الحقل</h2>
         <p className="muted">
           سجل تشغيلي لما حدث في الحقل على تخصيص دورة-حقل قائم. لا يغيّر حالة الدورة ولا ينشئ مخزونًا أو قيدًا.
         </p>
@@ -659,8 +659,8 @@ export default async function AgriculturePage({
         />
       </section>
 
-      <section className="card stack scroll-target" id="inputs">
-        <h2>المدخلات والتطبيقات</h2>
+      <section className="card stack scroll-target" id="inputs" aria-labelledby="inputs-title">
+        <h2 id="inputs-title">المدخلات والتطبيقات</h2>
         <p className="muted">
           تعريف المدخلات الزراعية (تقاوي، سماد، مبيد/كيماوي)، وتشغيلاتها القابلة للتتبع،
           وتسجيل تطبيقها الفعلي على نشاط حقل قائم.
@@ -870,8 +870,8 @@ export default async function AgriculturePage({
         ) : null}
       </section>
 
-      <section className="card stack scroll-target" id="harvest">
-        <h2>الحصاد والمخزون</h2>
+      <section className="card stack scroll-target" id="harvest" aria-labelledby="harvest-title">
+        <h2 id="harvest-title">الحصاد والمخزون</h2>
         <p className="muted">
           أحداث الحصاد، تشغيلات المحصول الناتجة، مواقع التخزين، وحركات المخزون المتراكمة.
           الرصيد الحالي لكل تشغيلة/موقع يُشتق من حركات المخزون ولا يُخزَّن أو يُدخَل يدويًا.
@@ -1121,9 +1121,9 @@ export default async function AgriculturePage({
         />
       </section>
 
-      <section className="card stack scroll-target" id="sales">
+      <section className="card stack scroll-target" id="sales" aria-labelledby="sales-title">
         <div className="section-heading">
-          <div><h2>المبيعات والتحصيل</h2><p className="muted">البيع والتسليم والإيراد والتحصيل وقائع مستقلة. النقد المحصل ليس هو الإيراد.</p></div>
+          <div><h2 id="sales-title">المبيعات والتحصيل</h2><p className="muted">البيع والتسليم والإيراد والتحصيل وقائع مستقلة. النقد المحصل ليس هو الإيراد.</p></div>
           <span className="status">{sales.length} عملية بيع</span>
         </div>
         {sales.length === 0 ? (
@@ -1167,10 +1167,10 @@ export default async function AgriculturePage({
         </div>
       </section>
 
-      <section className="card stack scroll-target" id="results-closeout">
+      <section className="card stack scroll-target" id="results-closeout" aria-labelledby="results-closeout-title">
         <div className="section-heading">
           <div>
-            <h2>النتائج والإغلاق</h2>
+            <h2 id="results-closeout-title">النتائج والإغلاق</h2>
             <p className="muted">نتيجة تشغيلية قابلة للتتبع من الحصاد والبيع والقيد المالي المعتمد — وليست رصيدًا قابلًا للتعديل.</p>
           </div>
           <span className="status">{cycleResults.length} دورة</span>
@@ -1201,8 +1201,8 @@ export default async function AgriculturePage({
         )}
       </section>
 
-      <section className="card stack scroll-target" id="timeline">
-        <h2>سجل دورة الحياة</h2>
+      <section className="card stack scroll-target" id="timeline" aria-labelledby="timeline-title">
+        <h2 id="timeline-title">سجل دورة الحياة</h2>
         {timeline.length === 0 ? (
           <p className="muted">لا توجد انتقالات دورة حياة بعد.</p>
         ) : (

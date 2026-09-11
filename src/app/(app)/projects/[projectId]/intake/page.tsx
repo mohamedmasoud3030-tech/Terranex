@@ -286,10 +286,10 @@ export default async function IntakePage({
         </nav>
       </header>
 
-      <section className="card stack" id="result">
+      <section className="card stack" id="result" aria-labelledby="result-title">
         <div className="topline">
           <div>
-            <h2>نتيجة الجاهزية</h2>
+            <h2 id="result-title">نتيجة الجاهزية</h2>
             <p>{readiness.verdictAr}</p>
           </div>
           <span className="status">{readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}</span>
@@ -317,10 +317,10 @@ export default async function IntakePage({
         {!isOwner && <p className="muted">أوامر الإدخال المادية متاحة لمالك المنظمة فقط.</p>}
       </section>
 
-      <section id="setup" className="stack scroll-target">
+      <section id="setup" className="stack scroll-target" aria-labelledby="setup-title">
         <div className="section-heading">
           <div>
-            <h2>إعداد المشروع</h2>
+            <h2 id="setup-title">إعداد المشروع</h2>
             <p className="muted">المنظمة والمشروع وتاريخ التجميد. عملة المشروع: جنيه مصري (EGP). القطاع يُحدد عند الإنشاء: عقارات أو زراعة أو ثروة حيوانية.</p>
           </div>
         </div>
@@ -347,10 +347,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="investors" className="stack scroll-target">
+      <section id="investors" className="stack scroll-target" aria-labelledby="investors-title">
         <div className="section-heading">
           <div>
-            <h2>المستثمرون والشروط</h2>
+            <h2 id="investors-title">المستثمرون والشروط</h2>
             <p className="muted">طرف واحد لكل شخص أو جهة. الالتزام ليس ملكية، والملكية ليست مساهمة.</p>
           </div>
         </div>
@@ -424,10 +424,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="capital" className="stack scroll-target">
+      <section id="capital" className="stack scroll-target" aria-labelledby="capital-title">
         <div className="section-heading">
           <div>
-            <h2>تاريخ رأس المال</h2>
+            <h2 id="capital-title">تاريخ رأس المال</h2>
             <p className="muted">اختياري إن لم توجد طلبات أو مساهمات قبل التجميد. مسار واحد لكل أثر نقدي.</p>
           </div>
         </div>
@@ -480,10 +480,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="cash" className="stack scroll-target">
+      <section id="cash" className="stack scroll-target" aria-labelledby="cash-title">
         <div className="section-heading">
           <div>
-            <h2>البنك والنقدية</h2>
+            <h2 id="cash-title">البنك والنقدية</h2>
             <p className="muted">الرصيد الدفتري يُشتق من القيود فقط. رقم الحساب البنكي دليل خارجي.</p>
           </div>
         </div>
@@ -536,10 +536,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="property" className="stack scroll-target">
+      <section id="property" className="stack scroll-target" aria-labelledby="property-title">
         <div className="section-heading">
           <div>
-            <h2>العقار</h2>
+            <h2 id="property-title">العقار</h2>
             <p className="muted">الاستراتيجية والأصل والقطعة منفصلة عن العقد والدفع.</p>
           </div>
         </div>
@@ -608,10 +608,10 @@ export default async function IntakePage({
         )}
       </section>
 
-      <section id="opening" className="stack scroll-target">
+      <section id="opening" className="stack scroll-target" aria-labelledby="opening-title">
         <div className="section-heading">
           <div>
-            <h2>المركز الافتتاحي</h2>
+            <h2 id="opening-title">المركز الافتتاحي</h2>
             <p className="muted">ستة ترميزات فقط. أي رصيد لا يناسبها فجوة نمذجة، لا اجتهاد.</p>
           </div>
         </div>
@@ -688,10 +688,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="validation" className="stack scroll-target">
+      <section id="validation" className="stack scroll-target" aria-labelledby="validation-title">
         <div className="section-heading">
           <div>
-            <h2>التحقق والمطابقة</h2>
+            <h2 id="validation-title">التحقق والمطابقة</h2>
             <p className="muted">مسودة → تحقق → ترشيح → اعتماد وترحيل → مطابقة بفرق صفر. المعدّ لا يعتمد.</p>
           </div>
         </div>

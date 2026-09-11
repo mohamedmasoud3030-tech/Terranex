@@ -28,8 +28,8 @@ export default async function IntakeStartPage() {
         <p className="muted">مسار موجّه: الإعداد → الأطراف والاتفاقية → رأس المال → البنك → حقائق القطاع → المركز الافتتاحي → التحقق.</p>
       </div>
       {projects.length === 0 ? (
-        <section className="card stack">
-          <h2>لا يوجد مشروع بعد</h2>
+        <section className="card stack" aria-labelledby="intake-s1">
+          <h2 id="intake-s1">لا يوجد مشروع بعد</h2>
           <p>أنشئ مشروعًا بقطاعه المحدد (عقارات، زراعة، أو ثروة حيوانية) ضمن نطاق التشغيل التجريبي المتفق عليه.</p>
           <Link className="button" href="/projects/new">إنشاء أول مشروع</Link>
         </section>

@@ -78,8 +78,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         lifecycleState={project.lifecycle_state}
       />
 
-      <section className="card stack">
-        <h2>دوري في المشروع</h2>
+      <section className="card stack" aria-labelledby="controls-s1">
+        <h2 id="controls-s1">دوري في المشروع</h2>
         <p>
           <span className={isOwner ? 'role-badge owner' : 'role-badge'}>
             {isOwner ? 'مالك المنظمة (OWNER)' : 'عضو (MEMBER)'}
@@ -92,8 +92,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         </p>
       </section>
 
-      <section className="card stack">
-        <h2>الجاهزية التقنية</h2>
+      <section className="card stack" aria-labelledby="controls-s2">
+        <h2 id="controls-s2">الجاهزية التقنية</h2>
         <p className="muted">
           تُشتق من وقائع مسجّلة داخل قاعدة البيانات عبر قراءات رسمية. نجاح هذه البوابات لا يعني أبدًا قبولًا بشريًا.
         </p>
@@ -119,8 +119,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>أدلة العالم الحقيقي</h2>
+      <section className="card stack" aria-labelledby="controls-s3">
+        <h2 id="controls-s3">أدلة العالم الحقيقي</h2>
         <div className="banner" role="note">
           البيانات التجريبية (مثل DEMO-RE-2026-001) بيانات اصطناعية للمعاينة والتدريب والتحقق. لا تُحتسب أبدًا
           كدليل عميل حقيقي ولا تُغلق أي بوابة مرحلَة ثانية أو ثالثة. لا تتحقق هذه البوابات إلا بدليل مصدري حقيقي
@@ -148,8 +148,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>أعضاء المنظمة والوصول</h2>
+      <section className="card stack" aria-labelledby="controls-s4">
+        <h2 id="controls-s4">أعضاء المنظمة والوصول</h2>
         {members.length === 0 ? (
           <p className="muted">لا توجد عضوية إضافية معروضة (متاح للمالك).</p>
         ) : (

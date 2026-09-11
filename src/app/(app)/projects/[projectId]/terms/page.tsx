@@ -58,8 +58,8 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
         ]}
       />
 
-      <section className="card stack">
-        <h2>الأطراف والمشاركون</h2>
+      <section className="card stack" aria-labelledby="terms-s1">
+        <h2 id="terms-s1">الأطراف والمشاركون</h2>
         {participants.length === 0 ? (
           <p className="muted">لم يُضف مستثمرون للمشروع بعد.</p>
         ) : (
@@ -88,8 +88,8 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
       </section>
 
       {activeVersion ? (
-        <section className="card stack">
-          <h2>الاتفاقية الحاكمة</h2>
+        <section className="card stack" aria-labelledby="terms-s2">
+          <h2 id="terms-s2">الاتفاقية الحاكمة</h2>
           <p><span className="status">نسخة {activeVersion.version_no} · مفعّلة</span></p>
           <p className="muted">
             سارية من {activeVersion.effective_date}. بصمة الشروط:{' '}
@@ -114,8 +114,8 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
           </p>
         </section>
       ) : (
-        <section className="card stack">
-          <h2>مسودة الاتفاقية</h2>
+        <section className="card stack" aria-labelledby="terms-s3">
+          <h2 id="terms-s3">مسودة الاتفاقية</h2>
           {participants.length === 0 ? (
             <p className="muted">أضف مستثمرًا واحدًا على الأقل قبل إنشاء مسودة الاتفاقية.</p>
           ) : (

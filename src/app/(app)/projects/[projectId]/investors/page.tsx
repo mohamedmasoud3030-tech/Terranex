@@ -45,10 +45,10 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
         </span>
       </div>
 
-      <section className="card stack">
+      <section className="card stack" aria-labelledby="investors-s1">
         <div className="section-heading">
           <div>
-            <h2>المشاركون المسجلون</h2>
+            <h2 id="investors-s1">المشاركون المسجلون</h2>
             <p className="muted">الهوية المسجلة لا تعني تلقائيًا ملكية أو entitlement أو حصة في الربح.</p>
           </div>
         </div>
@@ -75,8 +75,8 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
         )}
       </section>
 
-      <section className="card stack">
-        <h2>النسخة الاتفاقية الفعالة</h2>
+      <section className="card stack" aria-labelledby="investors-s2">
+        <h2 id="investors-s2">النسخة الاتفاقية الفعالة</h2>
         {activeVersion ? (
           <dl className="facts">
             <div><dt>الإصدار</dt><dd>v{activeVersion.version_no}</dd></div>
@@ -92,8 +92,8 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
         </p>
       </section>
 
-      <section className="card stack">
-        <h2>ما يمكن نشره بأمان قبل R14</h2>
+      <section className="card stack" aria-labelledby="investors-s3">
+        <h2 id="investors-s3">ما يمكن نشره بأمان قبل R14</h2>
         <ul>
           <li>هوية المشارك والطرف القانوني المسجل.</li>
           <li>مرجع النسخة الاتفاقية الفعالة وبصمتها وتاريخ نفاذها.</li>

@@ -84,8 +84,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         ]}
       />
 
-      <section className="card stack">
-        <h2>الموقف الرأسمالي للمشروع</h2>
+      <section className="card stack" aria-labelledby="funding-s1">
+        <h2 id="funding-s1">الموقف الرأسمالي للمشروع</h2>
         <div className="grid">
           <Metric label="الالتزام" value={formatMinorUnits(position?.committed_minor_units ?? '0', project.reporting_currency)} />
           <Metric label="المطلوب" value={formatMinorUnits(position?.called_minor_units ?? '0', project.reporting_currency)} />
@@ -112,8 +112,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         <p className="muted">هذه الأرقام مشتقة من السجلات المعتمدة ولا يمكن تعديلها يدويًا.</p>
       </section>
 
-      <section className="card stack">
-        <h2>إصدار طلب رأس مال</h2>
+      <section className="card stack" aria-labelledby="funding-s2">
+        <h2 id="funding-s2">إصدار طلب رأس مال</h2>
         <CapitalCallForm
           organizationId={organizationId}
           projectId={projectId}
@@ -125,8 +125,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         />
       </section>
 
-      <section className="card stack">
-        <h2>طلبات رأس المال</h2>
+      <section className="card stack" aria-labelledby="funding-s3">
+        <h2 id="funding-s3">طلبات رأس المال</h2>
         {calls.length === 0 ? (
           <p className="muted">لا توجد طلبات بعد.</p>
         ) : (
@@ -157,8 +157,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         )}
       </section>
 
-      <section className="card stack">
-        <h2>تسجيل مساهمة</h2>
+      <section className="card stack" aria-labelledby="funding-s4">
+        <h2 id="funding-s4">تسجيل مساهمة</h2>
         <ContributionForm
           organizationId={organizationId}
           projectId={projectId}
@@ -171,8 +171,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         />
       </section>
 
-      <section className="card stack">
-        <h2>سجل المساهمات</h2>
+      <section className="card stack" aria-labelledby="funding-s5">
+        <h2 id="funding-s5">سجل المساهمات</h2>
         {contributions.length === 0 ? (
           <p className="muted">لا توجد مساهمات بعد.</p>
         ) : (

@@ -231,9 +231,9 @@ export default async function PilotPage({
         </p>
       )}
 
-      <section id="readiness" className="card stack scroll-target">
+      <section id="readiness" className="card stack scroll-target" aria-labelledby="readiness-title">
         <div>
-          <h2>تقرير الجاهزية التقنية</h2>
+          <h2 id="readiness-title">تقرير الجاهزية التقنية</h2>
           <p className="muted">
             كل رقم هنا مشتق داخل قاعدة البيانات من وقائع مسجّلة، لا من إدخال يدوي. الجاهزية التقنية وقبول العميل
             حقلان منفصلان تمامًا: نجاح بروفة آلية لا يُترجم أبدًا إلى قبول عميل.
@@ -275,8 +275,8 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="approvals" className="card stack scroll-target">
-        <h2>بانتظار الاعتماد</h2>
+      <section id="approvals" className="card stack scroll-target" aria-labelledby="approvals-title">
+        <h2 id="approvals-title">بانتظار الاعتماد</h2>
         {pendingApprovals.length === 0 ? (
           <p className="empty">لا توجد عناصر تنتظر اعتمادًا.</p>
         ) : (
@@ -298,9 +298,9 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="import" className="card stack scroll-target">
+      <section id="import" className="card stack scroll-target" aria-labelledby="import-title">
         <div>
-          <h2>الاستيراد الافتتاحي المضبوط</h2>
+          <h2 id="import-title">الاستيراد الافتتاحي المضبوط</h2>
           <p className="muted">
             مسار واحد فقط: مسودة ← تحقق ← ترشيح للاعتماد ← اعتماد وترحيل. مُعِدّ الملف لا يعتمده.
             الترحيل ينتج قيدًا متوازنًا عبر سجل الحسابات الدلالية القائم؛ لا تُكتب أرصدة مباشرة أبدًا،
@@ -408,9 +408,9 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="rows" className="card stack scroll-target">
+      <section id="rows" className="card stack scroll-target" aria-labelledby="rows-title">
         <div className="section-heading">
-          <h2>سطور الملف ونتيجة كل سطر</h2>
+          <h2 id="rows-title">سطور الملف ونتيجة كل سطر</h2>
           <p className="muted">{rejectedRowCount} سطر مرفوض من {allRows.length} سطر مُقدَّم.</p>
         </div>
         <nav className="context-nav" aria-label="تصفية السطور">
@@ -459,9 +459,9 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="reconciliation" className="card stack scroll-target">
+      <section id="reconciliation" className="card stack scroll-target" aria-labelledby="reconciliation-title">
         <div>
-          <h2>نقاط المطابقة مع الأدلة الخارجية</h2>
+          <h2 id="reconciliation-title">نقاط المطابقة مع الأدلة الخارجية</h2>
           <p className="muted">
             القيمة الخارجية دليل يُسجَّل كما هو؛ القيمة المعتمدة يشتقها PostgreSQL من القيود المرحّلة.
             الفرق عدد صحيح تام، والصفر يُعلن صراحة. لا يوجد دفتر ثانٍ.
@@ -518,8 +518,8 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="exceptions" className="card stack scroll-target">
-        <h2>استثناءات الفروق</h2>
+      <section id="exceptions" className="card stack scroll-target" aria-labelledby="exceptions-title">
+        <h2 id="exceptions-title">استثناءات الفروق</h2>
         {exceptions.length === 0 ? (
           <p className="empty">لا توجد استثناءات مطابقة.</p>
         ) : (
@@ -553,9 +553,9 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="uat" className="card stack scroll-target">
+      <section id="uat" className="card stack scroll-target" aria-labelledby="uat-title">
         <div>
-          <h2>اختبار قبول العميل</h2>
+          <h2 id="uat-title">اختبار قبول العميل</h2>
           <p className="muted">
             التنفيذ والقبول فعلان منفصلان بشخصين مختلفين. المهمة تبقى «بانتظار» ما لم يوجد دليل بشري حقيقي؛
             لا شيء في النظام يحوّل نجاحًا آليًا إلى قبول عميل.
@@ -604,9 +604,9 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="rehearsals" className="card stack scroll-target">
+      <section id="rehearsals" className="card stack scroll-target" aria-labelledby="rehearsals-title">
         <div>
-          <h2>البروفات التقنية</h2>
+          <h2 id="rehearsals-title">البروفات التقنية</h2>
           <p className="muted">بروفات مُنفَّذة على بيانات اختبار حتمية داخل خط التحقق. ليست تشغيلًا حقيقيًا ولا قبول عميل.</p>
         </div>
         {rehearsals.length === 0 ? (
@@ -632,9 +632,9 @@ export default async function PilotPage({
         )}
       </section>
 
-      <section id="access" className="card stack scroll-target">
+      <section id="access" className="card stack scroll-target" aria-labelledby="access-title">
         <div>
-          <h2>الوصول والاسترداد</h2>
+          <h2 id="access-title">الوصول والاسترداد</h2>
           <p className="muted">
             إلغاء العضوية يسري فورًا على مستوى قاعدة البيانات: العضو المُلغى يفقد القراءة والأوامر معًا،
             ولا يمكن ترك المنظمة بلا مالك نشط واحد على الأقل.

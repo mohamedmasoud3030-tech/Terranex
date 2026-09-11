@@ -165,8 +165,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>تسجيل التزام جديد</h2>
+      <section className="card stack" aria-labelledby="costs-s1">
+        <h2 id="costs-s1">تسجيل التزام جديد</h2>
         <ObligationForm
           organizationId={organizationId}
           projectId={projectId}
@@ -176,8 +176,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         />
       </section>
 
-      <section className="card stack">
-        <h2>التزامات المشروع</h2>
+      <section className="card stack" aria-labelledby="costs-s2">
+        <h2 id="costs-s2">التزامات المشروع</h2>
         {obligations.length === 0 ? (
           <p className="muted">لا توجد التزامات مسجلة بعد. سجّل أول التزام ثم اعتمده وادفعه من الحساب النقدي.</p>
         ) : (
@@ -362,8 +362,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         )}
       </section>
 
-      <section className="card stack">
-        <h2>إنجازات المشروع التعاقدية</h2>
+      <section className="card stack" aria-labelledby="costs-s3">
+        <h2 id="costs-s3">إنجازات المشروع التعاقدية</h2>
         {milestones.length === 0 ? (
           <p className="muted">لا توجد إنجازات مسجلة. تُستخدم لجدولة الدفعات وربط الإفراج عن الحجز.</p>
         ) : (
@@ -413,8 +413,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         />
       </section>
 
-      <section className="card stack">
-        <h2>الأثر المحاسبي ومصدر القيد</h2>
+      <section className="card stack" aria-labelledby="costs-s4">
+        <h2 id="costs-s4">الأثر المحاسبي ومصدر القيد</h2>
         {obligations.length === 0 ? (
           <p className="muted">لا توجد قيود بعد.</p>
         ) : (
@@ -437,8 +437,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         )}
       </section>
 
-      <section className="card stack">
-        <h2>سجل التدقيق</h2>
+      <section className="card stack" aria-labelledby="costs-s5">
+        <h2 id="costs-s5">سجل التدقيق</h2>
         {audit.length === 0 ? (
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (

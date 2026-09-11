@@ -92,8 +92,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         ]}
       />
 
-      <section className="card stack">
-        <h2>ملخص الإيراد</h2>
+      <section className="card stack" aria-labelledby="revenue-s1">
+        <h2 id="revenue-s1">ملخص الإيراد</h2>
         <div className="overview-kpis">
           <article className="overview-kpi">
             <span>إيراد البيع المعترف به</span>
@@ -118,8 +118,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         </div>
       </section>
 
-      {project.sector === 'REAL_ESTATE' ? <section id="rentals" className="stack scroll-target">
-        <div className="section-heading"><div><h2>إيراد الإيجار</h2><p className="muted">اعتراف ← ذمة مدينة ← تحصيل ← مطابقة بنكية، مع بقاء كل مرحلة واقعة مستقلة.</p></div></div>
+      {project.sector === 'REAL_ESTATE' ? <section id="rentals" className="stack scroll-target" aria-labelledby="rentals-title">
+        <div className="section-heading"><div><h2 id="rentals-title">إيراد الإيجار</h2><p className="muted">اعتراف ← ذمة مدينة ← تحصيل ← مطابقة بنكية، مع بقاء كل مرحلة واقعة مستقلة.</p></div></div>
         {membership.role === 'OWNER' ? <details className="card" open={rentals.length === 0}><summary>الاعتراف بإيراد إيجار</summary><RentalRecognitionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} currency={currency} assets={assets} parties={parties}/></details> : <p className="muted">أوامر الإيجار المالية متاحة لمالك المنظمة وفق سلطة قاعدة البيانات.</p>}
         <section className="card stack">
           {rentals.length === 0 ? <p className="empty">لا توجد اعترافات إيجار مرحلة.</p> : <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: العقد / الفترة · الأصل / المستأجر · المعترف · المحصل · الذمة المتبقية · الحالة / الإجراء</caption><thead><tr><th scope="col">العقد / الفترة</th><th scope="col">الأصل / المستأجر</th><th scope="col">المعترف</th><th scope="col">المحصل</th><th scope="col" className="num">الذمة المتبقية</th><th scope="col">الحالة / الإجراء</th></tr></thead><tbody>{rentals.map(r=><tr key={r.recognition_id}><td data-label="العقد / الفترة">{r.contract_reference}<br/><small>{d(r.rental_period_start)} — {d(r.rental_period_end)}</small></td><td data-label="الأصل / المستأجر">{assetName.get(r.property_asset_id)??r.property_asset_id}<br/><small>{partyName.get(r.tenant_party_id)??r.tenant_party_id}</small></td><td data-label="المعترف">{formatMinorUnits(r.recognized_amount_minor_units,r.currency)}</td><td data-label="المحصل">{formatMinorUnits(r.collected_minor_units,r.currency)}</td><td className="num" data-label="الذمة المتبقية">{formatMinorUnits(r.outstanding_receivable_minor_units,r.currency)}</td><td data-label="الحالة / الإجراء">{r.is_reversed?<span className="status">معكوس</span>:BigInt(r.outstanding_receivable_minor_units)===0n?<span className="status">محصل بالكامل</span>:membership.role==='OWNER'?<details><summary>تحصيل</summary><RentalCollectionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} recognition={r} cashAccounts={cashAccounts}/></details>:<span className="muted">مستحق</span>}</td></tr>)}</tbody></table></div>}
@@ -127,8 +127,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         <section className="card stack"><h3>تحصيلات الإيجار والمطابقة</h3>{rentalCollections.length===0?<p className="muted">لا توجد تحصيلات إيجار.</p>:<div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: التاريخ · المبلغ · الحساب · الدليل · المطابقة</caption><thead><tr><th scope="col">التاريخ</th><th scope="col" className="num">المبلغ</th><th scope="col">الحساب</th><th scope="col">الدليل</th><th scope="col">المطابقة</th></tr></thead><tbody>{rentalCollections.map(c=><tr key={c.collection_id}><td data-label="التاريخ">{d(c.collection_date)}</td><td className="num" data-label="المبلغ">{formatMinorUnits(c.amount_minor_units,c.currency)}</td><td data-label="الحساب">{cashName.get(c.cash_account_id)??c.cash_account_id}</td><td data-label="الدليل">{c.evidence_reference}</td><td data-label="المطابقة">{c.is_reversed?<span className="status">معكوس</span>:membership.role==='OWNER'?<RentalReconciliationForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} collection={c} statementLines={unreconciledLines}/>:c.is_reconciled?<span className="status">مطابق بنكيًا</span>:<span className="muted">غير مطابق</span>}</td></tr>)}</tbody></table></div>}</section>
       </section> : null}
 
-      <section id="dispositions" className="card stack scroll-target">
-        <h2>التصرفات</h2>
+      <section id="dispositions" className="card stack scroll-target" aria-labelledby="dispositions-title">
+        <h2 id="dispositions-title">التصرفات</h2>
         {dispositions.length === 0 ? (
           <p className="muted">لا توجد اتفاقيات تصرف مسجّلة بعد.</p>
         ) : (
@@ -153,8 +153,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         <p className="muted">تسجيل تصرف جديد، اعتماد، انتقال سيطرة واعتراف البيع من <Link href={`/projects/${projectId}/operations`}>الأصول العقارية</Link>.</p>
       </section>
 
-      <section id="result" className="card stack scroll-target">
-        <h2>النتيجة المحققة</h2>
+      <section id="result" className="card stack scroll-target" aria-labelledby="result-title">
+        <h2 id="result-title">النتيجة المحققة</h2>
         {results.length === 0 ? (
           <p className="empty">لا توجد نتيجة محققة بعد. تظهر فقط بعد قيد اعتراف متوازن.</p>
         ) : (
@@ -179,8 +179,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         )}
       </section>
 
-      <section id="collections" className="card stack scroll-target">
-        <h2>سجل التحصيل</h2>
+      <section id="collections" className="card stack scroll-target" aria-labelledby="collections-title">
+        <h2 id="collections-title">سجل التحصيل</h2>
         {collections.length === 0 ? (
           <p className="muted">لا توجد تحصيلات مسجّلة بعد.</p>
         ) : (
@@ -204,8 +204,8 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         )}
       </section>
 
-      <section id="bank" className="card stack scroll-target">
-        <h2>المطابقة البنكية للتحصيلات</h2>
+      <section id="bank" className="card stack scroll-target" aria-labelledby="bank-title">
+        <h2 id="bank-title">المطابقة البنكية للتحصيلات</h2>
         {unreconciledLines.length === 0 ? (
           <p className="muted">لا توجد سطور بنكية موجبة غير مطابقة.</p>
         ) : (
