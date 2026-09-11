@@ -12,7 +12,7 @@ has drifted from the code is worse than no count at all.
 - **190 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
 - **29 of 29 `force-dynamic` routes have a loading state.**
-- **9 of 30 workspace routes have a route-level `error.tsx`**; the rest
+- **29 of 30 workspace routes have a route-level `error.tsx`**; the rest
   fall through to the workspace boundary.
 
 ## Per route
@@ -20,35 +20,35 @@ has drifted from the code is worse than no count at all.
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
 | `/assets` | 271 | 1 | 1 | 0 | 2 | 0 | 0 | 2 | 0 | ✓ | ✓ |
-| `/intake` | 55 | 0 | 0 | 1 | 0 | 2 | 0 | 2 | 0 | ✓ | — |
-| `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | — |
+| `/intake` | 55 | 0 | 0 | 1 | 0 | 2 | 0 | 2 | 0 | ✓ | ✓ |
+| `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
 | `/` (home) | 247 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | — |
-| `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | — |
-| `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | — |
-| `/projects/[projectId]/agriculture` | 1231 | 15 | 15 | 13 | 0 | 13 | 11 | 9 | 13 | ✓ | ✓ |
-| `/projects/[projectId]/budget` | 280 | 3 | 3 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | — |
-| `/projects/[projectId]/cash` | 298 | 4 | 4 | 6 | 0 | 6 | 0 | 2 | 0 | ✓ | — |
-| `/projects/[projectId]/close` | 421 | 2 | 2 | 3 | 0 | 0 | 0 | 4 | 3 | ✓ | — |
-| `/projects/[projectId]/controls` | 180 | 1 | 1 | 4 | 0 | 4 | 0 | 0 | 0 | ✓ | — |
-| `/projects/[projectId]/costs` | 467 | 3 | 3 | 5 | 0 | 5 | 0 | 4 | 0 | ✓ | — |
-| `/projects/[projectId]/funding` | 214 | 3 | 3 | 5 | 0 | 5 | 0 | 1 | 0 | ✓ | — |
-| `/projects/[projectId]/governance` | 185 | 3 | 3 | 3 | 0 | 3 | 0 | 1 | 0 | ✓ | — |
+| `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
+| `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
+| `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/agriculture` | 1233 | 15 | 15 | 13 | 0 | 13 | 2 | 9 | 13 | ✓ | ✓ |
+| `/projects/[projectId]/budget` | 280 | 3 | 3 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/cash` | 298 | 4 | 4 | 6 | 0 | 6 | 0 | 2 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/close` | 421 | 2 | 2 | 3 | 0 | 0 | 0 | 4 | 3 | ✓ | ✓ |
+| `/projects/[projectId]/controls` | 180 | 1 | 1 | 4 | 0 | 4 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/costs` | 467 | 3 | 3 | 5 | 0 | 5 | 0 | 4 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/funding` | 214 | 3 | 3 | 5 | 0 | 5 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/governance` | 185 | 3 | 3 | 3 | 0 | 3 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/intake` | 788 | 3 | 3 | 8 | 0 | 1 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/integrity` | 461 | 9 | 9 | 7 | 0 | 7 | 0 | 0 | 0 | ✓ | — |
-| `/projects/[projectId]/investors` | 108 | 1 | 1 | 3 | 0 | 3 | 0 | 0 | 0 | ✓ | — |
+| `/projects/[projectId]/integrity` | 461 | 9 | 9 | 7 | 0 | 7 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/investors` | 108 | 1 | 1 | 3 | 0 | 3 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 152 | 0 | 0 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock` | 894 | 2 | 2 | 23 | 0 | 23 | 0 | 4 | 14 | ✓ | ✓ |
-| `/projects/[projectId]/operations` | 155 | 7 | 7 | 10 | 0 | 7 | 6 | 10 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/overview` | 147 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | — |
+| `/projects/[projectId]/operations` | 155 | 7 | 7 | 10 | 0 | 7 | 0 | 10 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/overview` | 147 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 132 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/pilot` | 677 | 8 | 8 | 9 | 0 | 0 | 10 | 6 | 12 | ✓ | ✓ |
-| `/projects/[projectId]/procurement` | 136 | 4 | 4 | 5 | 0 | 6 | 0 | 10 | 0 | ✓ | — |
-| `/projects/[projectId]/revenue` | 234 | 6 | 6 | 6 | 0 | 3 | 2 | 6 | 5 | ✓ | — |
+| `/projects/[projectId]/procurement` | 136 | 4 | 4 | 5 | 0 | 6 | 0 | 10 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/revenue` | 234 | 6 | 6 | 6 | 0 | 3 | 2 | 6 | 5 | ✓ | ✓ |
 | `/projects/[projectId]/statements` | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
-| `/projects/[projectId]/terms` | 152 | 1 | 1 | 3 | 0 | 3 | 0 | 1 | 0 | ✓ | — |
-| `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
-| `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | — |
+| `/projects/[projectId]/terms` | 152 | 1 | 1 | 3 | 0 | 3 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
+| `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/login` | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/reset-password` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
@@ -93,11 +93,11 @@ Applied to every route, and verified rather than asserted:
    uniform, and that is real work left.
 2. **122 bare `<h2>`** rely on a global style rule rather than `<Section>`'s
    `aria-labelledby` association. Correct today, weaker than it should be.
-3. **31 empty states** are hand-rolled. The four in `operations` were given
+3. **16 empty states** are hand-rolled. The four in `operations` were given
    headings and `agriculture`'s were levelled from a mix of `h3`/`h4`; none use
    `<EmptyState>` yet.
 4. **No browser in the build sandbox.** Responsive behaviour, focus order and reduced-motion
    were checked by CSS inspection and tests, not by rendering. The 360px target is expressed
    in the breakpoints but has not been looked at on a phone.
-5. **`error.tsx` exists on 9 of the 30 workspace routes.** The rest fall
+5. **`error.tsx` exists on 29 of the 30 workspace routes.** The rest fall
    through to the workspace-level boundary, which is correct but generic.

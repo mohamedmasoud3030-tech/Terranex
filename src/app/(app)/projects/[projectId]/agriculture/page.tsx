@@ -5,7 +5,7 @@ import { getCashAccountPositions, getCurrentMembership } from '@/features/financ
 import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
-import { InPageTabs } from '@/shared/ui';
+import { EmptyState, InPageTabs } from '@/shared/ui';
 import {
   type CropAssignmentRead,
   type CropCycleCostSourceRead,
@@ -407,11 +407,12 @@ export default async function AgriculturePage({
       <section className="card stack scroll-target" id="farms">
         <h2>المزارع</h2>
         {farms.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد مزارع بعد</h3>
-            <p className="muted">سجّل أول مزرعة. الحقول ودورات المحصول ترتبط بها لاحقًا.</p>
-            <FarmForm organizationId={organizationId} projectId={projectId} />
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد مزارع بعد"
+            description="سجّل أول مزرعة. الحقول ودورات المحصول ترتبط بها لاحقًا."
+            action={<FarmForm organizationId={organizationId} projectId={projectId} />}
+          />
         ) : (
           <>
             <div className="table-wrap">
@@ -450,13 +451,12 @@ export default async function AgriculturePage({
       <section className="card stack scroll-target" id="fields">
         <h2>الحقول</h2>
         {fields.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد حقول</h3>
-            <p className="muted">أضف مزرعة أولًا، ثم سجّل أول حقل بمساحة موجبة ووحدة مدعومة (م²، هكتار، فدان).</p>
-            {farms.length > 0 ? (
-              <FieldForm organizationId={organizationId} projectId={projectId} farms={farms} />
-            ) : null}
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد حقول"
+            description="أضف مزرعة أولًا، ثم سجّل أول حقل بمساحة موجبة ووحدة مدعومة (م²، هكتار، فدان)."
+            action={farms.length > 0 ? <FieldForm organizationId={organizationId} projectId={projectId} farms={farms} /> : null}
+          />
         ) : (
           <>
             <div className="table-wrap">
@@ -500,11 +500,12 @@ export default async function AgriculturePage({
       <section className="card stack scroll-target" id="cycles">
         <h2>دورات المحصول</h2>
         {cycles.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد دورات محصول</h3>
-            <p className="muted">أنشئ أول دورة محصول. كل دورة تبدأ في الحالة &quot;مخططة&quot; ثم تنتقل وفق المسار الرسمي.</p>
-            <CropCycleForm organizationId={organizationId} projectId={projectId} />
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد دورات محصول"
+            description={'أنشئ أول دورة محصول. كل دورة تبدأ في الحالة "مخططة" ثم تنتقل وفق المسار الرسمي.'}
+            action={<CropCycleForm organizationId={organizationId} projectId={projectId} />}
+          />
         ) : (
           <>
             <div className="stack">
@@ -608,10 +609,11 @@ export default async function AgriculturePage({
           سجل تشغيلي لما حدث في الحقل على تخصيص دورة-حقل قائم. لا يغيّر حالة الدورة ولا ينشئ مخزونًا أو قيدًا.
         </p>
         {activities.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد أنشطة مسجّلة</h3>
-            <p className="muted">بعد تخصيص حقل لدورة، سجّل الري أو التسميد أو المعاينة أو أي نشاط معتمد.</p>
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد أنشطة مسجّلة"
+            description="بعد تخصيص حقل لدورة، سجّل الري أو التسميد أو المعاينة أو أي نشاط معتمد."
+          />
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
@@ -694,12 +696,11 @@ export default async function AgriculturePage({
 
         <h3 id="input-applications">أحدث التطبيقات</h3>
         {inputApplications.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد تطبيقات مدخلات بعد</h3>
-            <p className="muted">
-              عرّف مدخلًا، ثم سجّل تشغيلة له، ثم اربط التطبيق بنشاط زراعة أو تسميد أو رش قائم.
-            </p>
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد تطبيقات مدخلات بعد"
+            description="عرّف مدخلًا، ثم سجّل تشغيلة له، ثم اربط التطبيق بنشاط زراعة أو تسميد أو رش قائم."
+          />
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
@@ -770,11 +771,12 @@ export default async function AgriculturePage({
 
         <h3 id="input-items">المدخلات المعرّفة</h3>
         {inputItems.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد مدخلات معرّفة</h3>
-            <p className="muted">ابدأ بتعريف مدخل واحد بفئته ووحدة تطبيقه.</p>
-            <InputItemForm organizationId={organizationId} projectId={projectId} />
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد مدخلات معرّفة"
+            description="ابدأ بتعريف مدخل واحد بفئته ووحدة تطبيقه."
+            action={<InputItemForm organizationId={organizationId} projectId={projectId} />}
+          />
         ) : (
           <>
             <div className="table-wrap">
@@ -904,12 +906,11 @@ export default async function AgriculturePage({
 
         <h3 id="harvest-events">أحداث الحصاد</h3>
         {harvestEvents.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد أحداث حصاد بعد</h3>
-            <p className="muted">
-              سجّل أول حدث حصاد لدورة في حالة &quot;قيد الحصاد&quot; مع موقع تخزين لاستلام المحصول.
-            </p>
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد أحداث حصاد بعد"
+            description={'سجّل أول حدث حصاد لدورة في حالة "قيد الحصاد" مع موقع تخزين لاستلام المحصول.'}
+          />
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
@@ -1060,11 +1061,12 @@ export default async function AgriculturePage({
 
         <h3 id="storage-locations">مواقع التخزين</h3>
         {storages.length === 0 ? (
-          <div className="card empty">
-            <h3>لا توجد مواقع تخزين</h3>
-            <p className="muted">سجّل موقع تخزين لاستلام محصول الحصاد فيه.</p>
-            <StorageLocationForm organizationId={organizationId} projectId={projectId} />
-          </div>
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد مواقع تخزين"
+            description="سجّل موقع تخزين لاستلام محصول الحصاد فيه."
+            action={<StorageLocationForm organizationId={organizationId} projectId={projectId} />}
+          />
         ) : (
           <>
             <div className="table-wrap">
@@ -1179,7 +1181,7 @@ export default async function AgriculturePage({
           <p className="muted">تشغيلات المدخلات للتتبّع فقط: تطبيق المدخل لا يدّعي التحقق من رصيد مخزون متاح. الشراء والاستلام ومخزون المدخلات مؤجل إلى نطاق ERP زراعي لاحق.</p>
         </div>
         {cycleResults.length === 0 ? (
-          <div className="card empty"><h3>لا توجد نتائج دورات بعد</h3><p className="muted">أنشئ دورة محصول وخصص لها حقلًا لتظهر قاعدة النتيجة هنا.</p></div>
+          <EmptyState headingLevel={3} title="لا توجد نتائج دورات بعد" description="أنشئ دورة محصول وخصص لها حقلًا لتظهر قاعدة النتيجة هنا." />
         ) : (
           <div className="stack">
             {cycleResults.map((result) => (

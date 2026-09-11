@@ -180,16 +180,26 @@ export function Banner({
   );
 }
 
+/**
+ * An absent thing, stated as a fact with the next step next to it.
+ *
+ * `headingLevel` matters: most empty states sit *inside* a section that already
+ * owns an `<h2>`, so defaulting to `h2` would put two `<h2>`s at the same level
+ * in the outline and a screen reader's heading list would read a section as its
+ * own child. Pass `3` for the in-section case.
+ */
 export function EmptyState({
   title,
   description,
   action,
   compact = false,
+  headingLevel = 2,
 }: {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
   compact?: boolean;
+  headingLevel?: 2 | 3;
 }) {
   if (compact) {
     return (
@@ -202,9 +212,10 @@ export function EmptyState({
       </div>
     );
   }
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
   return (
     <section className="card stack empty">
-      <h2>{title}</h2>
+      <Heading>{title}</Heading>
       {description ? <p className="muted">{description}</p> : null}
       {action ? <div className="page-actions center">{action}</div> : null}
     </section>
