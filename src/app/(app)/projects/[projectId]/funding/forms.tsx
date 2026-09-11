@@ -57,7 +57,7 @@ export function CapitalCallForm({
       </label>
       <p className="muted">أدخل المبلغ المطلوب في {currency}. اترك المستثمر فارغًا إذا لم يشمله هذا الطلب.</p>
       <div className="table-wrap">
-        <table>
+        <table><caption className="sr-only">جدول: المستثمر · المبلغ المطلوب · الالتزام</caption>
           <thead>
             <tr><th scope="col">المستثمر</th><th scope="col" className="num">المبلغ المطلوب ({currency})</th><th scope="col" className="num">الالتزام</th></tr>
           </thead>

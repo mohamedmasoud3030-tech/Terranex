@@ -281,7 +281,7 @@ export default async function PilotPage({
           <p className="empty">لا توجد عناصر تنتظر اعتمادًا.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: النوع · العنصر · منذ</caption>
               <thead><tr><th scope="col">النوع</th><th scope="col">العنصر</th><th scope="col">منذ</th><th scope="col"></th></tr></thead>
               <tbody>
                 {pendingApprovals.map((item) => (
@@ -471,7 +471,7 @@ export default async function PilotPage({
           <p className="empty">لم تُسجَّل نقاط مطابقة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: نقطة المطابقة · حتى تاريخ · الخارجي · Terranex · الفرق · الحالة · الاستثناءات المفتوحة · أعمدة الإجراء</caption>
               <thead>
                 <tr>
                   <th scope="col">النقطة</th><th scope="col">حتى تاريخ</th><th scope="col">خارجي</th><th scope="col">Terranex</th><th scope="col">الفرق</th>
@@ -524,7 +524,7 @@ export default async function PilotPage({
           <p className="empty">لا توجد استثناءات مطابقة.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: الاستثناء · حتى تاريخ · الفرق · الخطورة · المالك · الحالة · البيان · المعالجة</caption>
               <thead>
                 <tr><th scope="col">النقطة</th><th scope="col">حتى تاريخ</th><th scope="col">الفرق</th><th scope="col">الخطورة</th><th scope="col">المالك</th><th scope="col">الحالة</th><th scope="col">البيان</th><th scope="col">المعالجة</th><th scope="col"></th></tr>
               </thead>
@@ -565,7 +565,7 @@ export default async function PilotPage({
           <p className="empty">لم تُسجَّل مهام اختبار قبول بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: رمز حالة الاختبار · العنوان · النتيجة المتوقعة · الحالة · أعمدة الإجراء · الدليل · ملاحظات</caption>
               <thead>
                 <tr><th scope="col">الرمز</th><th scope="col">العنوان</th><th scope="col" className="num">النتيجة المتوقعة</th><th scope="col">الحالة</th><th scope="col">نفّذها</th><th scope="col">راجعها</th><th scope="col">الدليل</th><th scope="col">ملاحظات</th><th scope="col"></th></tr>
               </thead>
@@ -646,7 +646,7 @@ export default async function PilotPage({
           <p className="empty">لا توجد عضويات في هذه المنظمة.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: المستخدم · الدور · الحالة · الوصول · منذ</caption>
               <thead><tr><th scope="col">المستخدم</th><th scope="col">الدور</th><th scope="col">الحالة</th><th scope="col">الوصول</th><th scope="col">منذ</th><th scope="col"></th></tr></thead>
               <tbody>
                 {members.map((member) => (

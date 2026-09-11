@@ -653,7 +653,7 @@ export default async function IntakePage({
           </details>
           {gaps.length > 0 && (
             <div className="table-wrap">
-              <table className="table-stackable">
+              <table className="table-stackable"><caption className="sr-only">جدول: المصدر · الوصف · المبلغ · الحالة</caption>
                 <thead><tr><th scope="col">المصدر</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th><th scope="col">الحالة</th><th scope="col"></th></tr></thead>
                 <tbody>
                   {gaps.map((gap) => (

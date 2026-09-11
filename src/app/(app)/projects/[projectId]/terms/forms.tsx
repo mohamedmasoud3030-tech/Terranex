@@ -96,7 +96,7 @@ export function AgreementDraftForm({
       </label>
       <p className="muted">أدخل الالتزام بالمبلغ المعتاد في {currency}، ويمكن استخدام خانتين عشريتين.</p>
       <div className="table-wrap">
-        <table>
+        <table><caption className="sr-only">جدول: المستثمر · الالتزام</caption>
           <thead>
             <tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام ({currency})</th></tr>
           </thead>
