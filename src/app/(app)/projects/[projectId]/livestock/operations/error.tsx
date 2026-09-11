@@ -1,9 +1,15 @@
 'use client';
 
-export default function LivestockOperationsError({ reset }: Readonly<{ reset: () => void }>) {
-  return <section className="card stack" dir="rtl" role="alert">
-    <h1>تعذر تحميل العمليات الحيوانية</h1>
-    <p>لم تُعرض بيانات جزئية على أنها مكتملة. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.</p>
-    <button type="button" onClick={reset}>إعادة المحاولة</button>
-  </section>;
+import { RouteError } from '@/shared/ui/route-error';
+
+export default function LivestockOperationsError({ reset }: { reset: () => void }) {
+  return (
+    <RouteError
+      surface="العمليات الحيوانية"
+      detail="حدث خطأ أثناء قراءة العمليات الحيوانية."
+      reset={reset}
+      backHref="/projects"
+      backLabel="العودة إلى المشاريع"
+    />
+  );
 }
