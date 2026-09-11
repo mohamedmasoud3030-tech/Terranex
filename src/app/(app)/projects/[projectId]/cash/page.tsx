@@ -101,8 +101,9 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الحساب · الرصيد الدفتري · آخر ترحيل</caption>
               <thead>
-                <tr><th>الحساب</th><th className="num">الرصيد الدفتري</th><th>آخر ترحيل</th></tr>
+                <tr><th scope="col">الحساب</th><th scope="col" className="num">الرصيد الدفتري</th><th scope="col">آخر ترحيل</th></tr>
               </thead>
               <tbody>
                 {accounts.map((account) => (
@@ -150,8 +151,9 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · الالتزام · الحساب · المبلغ · الحالة · الإجراءات</caption>
               <thead>
-                <tr><th>التاريخ</th><th className="num">الالتزام</th><th>الحساب</th><th className="num">المبلغ</th><th>الحالة</th><th>الإجراءات</th></tr>
+                <tr><th scope="col">التاريخ</th><th scope="col" className="num">الالتزام</th><th scope="col">الحساب</th><th scope="col" className="num">المبلغ</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th></tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
@@ -219,10 +221,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · المرجع · الوصف · المبلغ · الحساب · الحالة · الإجراءات</caption>
               <thead>
                 <tr>
-                  <th>التاريخ</th><th>المرجع</th><th>الوصف</th><th className="num">المبلغ</th>
-                  <th>الحساب</th><th>الحالة</th><th>الإجراءات</th>
+                  <th scope="col">التاريخ</th><th scope="col">المرجع</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th>
+                  <th scope="col">الحساب</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,8 +275,9 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الحدث · الوقت · التفاصيل</caption>
               <thead>
-                <tr><th>الحدث</th><th>الوقت</th><th>التفاصيل</th></tr>
+                <tr><th scope="col">الحدث</th><th scope="col">الوقت</th><th scope="col">التفاصيل</th></tr>
               </thead>
               <tbody>
                 {audit.map((event) => (

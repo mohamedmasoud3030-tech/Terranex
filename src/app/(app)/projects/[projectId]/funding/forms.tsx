@@ -59,7 +59,7 @@ export function CapitalCallForm({
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>المستثمر</th><th className="num">المبلغ المطلوب ({currency})</th><th className="num">الالتزام</th></tr>
+            <tr><th scope="col">المستثمر</th><th scope="col" className="num">المبلغ المطلوب ({currency})</th><th scope="col" className="num">الالتزام</th></tr>
           </thead>
           <tbody>
             {participants.map((participant) => {

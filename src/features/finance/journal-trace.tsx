@@ -35,8 +35,9 @@ export function JournalTrace({ lines }: { lines: JournalLedgerLine[] }) {
             </div>
             <div className="table-wrap">
               <table>
+              <caption className="sr-only">جدول: الحساب · مدين · دائن · العملة · تاريخ القيد</caption>
                 <thead>
-                  <tr><th>الحساب</th><th>مدين</th><th>دائن</th><th>العملة</th><th>تاريخ القيد</th></tr>
+                  <tr><th scope="col">الحساب</th><th scope="col">مدين</th><th scope="col">دائن</th><th scope="col">العملة</th><th scope="col">تاريخ القيد</th></tr>
                 </thead>
                 <tbody>
                   {batchLines.map((line) => (

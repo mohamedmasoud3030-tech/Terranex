@@ -154,7 +154,8 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>العضو</th><th>الدور</th><th>الحالة</th></tr></thead>
+              <caption className="sr-only">جدول: العضو · الدور · الحالة</caption>
+              <thead><tr><th scope="col">العضو</th><th scope="col">الدور</th><th scope="col">الحالة</th></tr></thead>
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>

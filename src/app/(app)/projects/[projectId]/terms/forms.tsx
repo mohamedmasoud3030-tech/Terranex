@@ -98,7 +98,7 @@ export function AgreementDraftForm({
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>المستثمر</th><th className="num">الالتزام ({currency})</th></tr>
+            <tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام ({currency})</th></tr>
           </thead>
           <tbody>
             {participants.map((participant) => (

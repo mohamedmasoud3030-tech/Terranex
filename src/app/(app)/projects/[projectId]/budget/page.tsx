@@ -121,13 +121,14 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الفترة · النوع / الإصدار · الحالة · الإجمالي · الإجراءات</caption>
               <thead>
                 <tr>
-                  <th>الفترة</th>
-                  <th>النوع / الإصدار</th>
-                  <th>الحالة</th>
-                  <th className="num">الإجمالي</th>
-                  <th>الإجراءات</th>
+                  <th scope="col">الفترة</th>
+                  <th scope="col">النوع / الإصدار</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col" className="num">الإجمالي</th>
+                  <th scope="col">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,17 +183,18 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
           <h2>الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)</h2>
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الإصدار · المعالجة · السقف · الالتزامات · المدفوع · الفعلية المرحّلة · استثناءات معتمدة · المتبقي الفعلي · FAC للبند</caption>
               <thead>
                 <tr>
-                  <th>الإصدار</th>
-                  <th>المعالجة</th>
-                  <th>السقف</th>
-                  <th className="num">الالتزامات</th>
-                  <th className="num">المدفوع</th>
-                  <th className="num">الفعلية المرحّلة</th>
-                  <th className="num">استثناءات معتمدة</th>
-                  <th className="num">المتبقي الفعلي</th>
-                  <th className="num">FAC للبند</th>
+                  <th scope="col">الإصدار</th>
+                  <th scope="col">المعالجة</th>
+                  <th scope="col">السقف</th>
+                  <th scope="col" className="num">الالتزامات</th>
+                  <th scope="col" className="num">المدفوع</th>
+                  <th scope="col" className="num">الفعلية المرحّلة</th>
+                  <th scope="col" className="num">استثناءات معتمدة</th>
+                  <th scope="col" className="num">المتبقي الفعلي</th>
+                  <th scope="col" className="num">FAC للبند</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,15 +231,16 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
           <h2>التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الإصدار · إجمالي الموازنة · استثناءات معتمدة · الفعلية (Actual) · الالتزامات المفتوحة (PO) · المتبقي المعتمد للتنبؤ · FAC</caption>
               <thead>
                 <tr>
-                  <th>الإصدار</th>
-                  <th>إجمالي الموازنة</th>
-                  <th className="num">استثناءات معتمدة</th>
-                  <th className="num">الفعلية (Actual)</th>
-                  <th className="num">الالتزامات المفتوحة (PO)</th>
-                  <th className="num">المتبقي المعتمد للتنبؤ</th>
-                  <th className="num">FAC</th>
+                  <th scope="col">الإصدار</th>
+                  <th scope="col">إجمالي الموازنة</th>
+                  <th scope="col" className="num">استثناءات معتمدة</th>
+                  <th scope="col" className="num">الفعلية (Actual)</th>
+                  <th scope="col" className="num">الالتزامات المفتوحة (PO)</th>
+                  <th scope="col" className="num">المتبقي المعتمد للتنبؤ</th>
+                  <th scope="col" className="num">FAC</th>
                 </tr>
               </thead>
               <tbody>

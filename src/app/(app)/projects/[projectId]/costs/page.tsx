@@ -183,16 +183,17 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المورد · الوصف · المعالجة · المبلغ · المتبقي · الاستحقاق · الحالة · الإجراءات</caption>
               <thead>
                 <tr>
-                  <th>المورد</th>
-                  <th>الوصف</th>
-                  <th>المعالجة</th>
-                  <th className="num">المبلغ</th>
-                  <th className="num">المتبقي</th>
-                  <th>الاستحقاق</th>
-                  <th>الحالة</th>
-                  <th>الإجراءات</th>
+                  <th scope="col">المورد</th>
+                  <th scope="col">الوصف</th>
+                  <th scope="col">المعالجة</th>
+                  <th scope="col" className="num">المبلغ</th>
+                  <th scope="col" className="num">المتبقي</th>
+                  <th scope="col">الاستحقاق</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -368,15 +369,16 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الرمز · الوصف · التاريخ المخطط · الحالة · تاريخ الإنجاز · بنود جدولة مرتبطة · الإجراء</caption>
               <thead>
                 <tr>
-                  <th>الرمز</th>
-                  <th>الوصف</th>
-                  <th>التاريخ المخطط</th>
-                  <th>الحالة</th>
-                  <th>تاريخ الإنجاز</th>
-                  <th>بنود جدولة مرتبطة</th>
-                  <th>الإجراء</th>
+                  <th scope="col">الرمز</th>
+                  <th scope="col">الوصف</th>
+                  <th scope="col">التاريخ المخطط</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col">تاريخ الإنجاز</th>
+                  <th scope="col">بنود جدولة مرتبطة</th>
+                  <th scope="col">الإجراء</th>
                 </tr>
               </thead>
               <tbody>
@@ -442,8 +444,9 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الحدث · الوقت · التفاصيل</caption>
               <thead>
-                <tr><th>الحدث</th><th>الوقت</th><th>التفاصيل</th></tr>
+                <tr><th scope="col">الحدث</th><th scope="col">الوقت</th><th scope="col">التفاصيل</th></tr>
               </thead>
               <tbody>
                 {audit.map((event) => (

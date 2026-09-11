@@ -187,7 +187,8 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
               <div><dt>تاريخ القطع</dt><dd>{date(snapshot.source_cutoff_date)}</dd></div>
             </dl>
             <table className="table-stackable">
-              <thead><tr><th>البند</th><th className="num">القيمة</th></tr></thead>
+              <caption className="sr-only">جدول: البند · القيمة</caption>
+              <thead><tr><th scope="col">البند</th><th scope="col" className="num">القيمة</th></tr></thead>
               <tbody>
                 {snapshotTotals(snapshot).map(([label, value]) => (
                   <tr key={label}><td data-label="البند">{label}</td><td className="num" data-label="القيمة">{value}</td></tr>
@@ -319,7 +320,8 @@ function PreparedRunCard({
         <strong>بوابات:</strong> {run.passing_gates} اجتياز / {run.failing_gates} فشل / {run.exception_gates} استثناء معتمد / {run.not_applicable_gates} لا ينطبق
       </p>
       <table className="table-stackable">
-        <thead><tr><th>البوابة</th><th className="num">النتيجة</th><th>التفاصيل</th><th>إجراء</th></tr></thead>
+              <caption className="sr-only">جدول: البوابة · النتيجة · التفاصيل · إجراء</caption>
+        <thead><tr><th scope="col">البوابة</th><th scope="col" className="num">النتيجة</th><th scope="col">التفاصيل</th><th scope="col">إجراء</th></tr></thead>
         <tbody>
           {gates.map((gate) => (
             <tr key={gate.gate_id}>

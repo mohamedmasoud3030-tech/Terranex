@@ -83,7 +83,7 @@ function LinesEditor({ name, commercial = false, currency = 'EGP' }: { name: str
   const update = (index: number, field: keyof EditableLine, value: string) => setLines((prev) => prev.map((line, i) => i === index ? { ...line, [field]: value } : line));
   return <div className="full">
     <input type="hidden" name={name} value={json} />
-    <div className="table-wrap"><table><thead><tr><th>الوصف</th><th>الكمية</th><th>الوحدة</th>{commercial && <th className="num">سعر الوحدة ({currency})</th>}<th>ملاحظات</th><th></th></tr></thead>
+    <div className="table-wrap"><table><thead><tr><th scope="col">الوصف</th><th scope="col">الكمية</th><th scope="col">الوحدة</th>{commercial && <th scope="col" className="num">سعر الوحدة ({currency})</th>}<th scope="col">ملاحظات</th><th scope="col"></th></tr></thead>
       <tbody>{lines.map((line, index) => <tr key={index}>
         <td><input value={line.itemDescription} onChange={(e) => update(index, 'itemDescription', e.target.value)} maxLength={160} /></td>
         <td><input value={line.quantity} onChange={(e) => update(index, 'quantity', e.target.value)} inputMode="decimal" placeholder="0.000000" /></td>
@@ -157,7 +157,8 @@ export function ReceiptForm({ organizationId, projectId, order, lines, serverNon
     <input type="hidden" name="organizationId" value={organizationId} /><input type="hidden" name="projectId" value={projectId} /><input type="hidden" name="purchaseOrderId" value={order.id} />
     <CommandKey prefix="r4-receipt" state={state} serverNonce={serverNonce} />
     <label className="full">مرجع دليل الاستلام<input name="evidenceReference" required maxLength={200} /></label><label className="full">ملاحظات <span className="muted">(اختياري)</span><textarea name="notes" maxLength={2000} /></label>
-    <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table><thead><tr><th>الصنف</th><th>الوحدة</th><th>الكمية المستلمة</th></tr></thead><tbody>{lines.map((line) => <tr key={line.id}><td>{line.item_description}</td><td>{line.unit}</td><td><input value={quantities[line.id] ?? ''} onChange={(e) => setQuantities((prev) => ({ ...prev, [line.id]: e.target.value }))} inputMode="decimal" /></td></tr>)}</tbody></table></div></div>
+    <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table>
+              <caption className="sr-only">جدول: الصنف · الوحدة · الكمية المستلمة</caption><thead><tr><th scope="col">الصنف</th><th scope="col">الوحدة</th><th scope="col">الكمية المستلمة</th></tr></thead><tbody>{lines.map((line) => <tr key={line.id}><td>{line.item_description}</td><td>{line.unit}</td><td><input value={quantities[line.id] ?? ''} onChange={(e) => setQuantities((prev) => ({ ...prev, [line.id]: e.target.value }))} inputMode="decimal" /></td></tr>)}</tbody></table></div></div>
     <div className="full"><Result state={state} pending={pending} label="تسجيل الاستلام" /></div>
   </form>;
 }
@@ -182,7 +183,7 @@ export function SupplierInvoiceForm({ organizationId, projectId, order, basis, s
     <label>إجمالي الفاتورة كما هو مكتوب من المورد ({order.currency})<input name="supplierStatedTotal" inputMode="decimal" required /></label>
     <label>مرجع دليل الفاتورة<input name="evidenceReference" required minLength={3} maxLength={200} /></label><label className="full">ملاحظات <span className="muted">(اختياري)</span><textarea name="notes" maxLength={2000} /></label>
     <p className="muted full">أدخل إجمالي المستند كما طبعه المورد. Terranex يحسب إجمالي السطور مستقلًا ويقارن القيمتين عند الاعتماد؛ لا يتم اشتقاق هذا الحقل من السطور.</p>
-    <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table><thead><tr><th>الصنف / دليل الاستلام</th><th>متاح للفوترة</th><th className="num">كمية الفاتورة</th><th className="num">سعر أمر الشراء</th><th className="num">سعر الفاتورة ({order.currency})</th></tr></thead><tbody>{available.map((line) => <tr key={line.purchase_receipt_line_id}>
+    <div className="full"><input type="hidden" name="linesJson" value={json} /><div className="table-wrap"><table><thead><tr><th scope="col">الصنف / دليل الاستلام</th><th scope="col">متاح للفوترة</th><th scope="col" className="num">كمية الفاتورة</th><th scope="col" className="num">سعر أمر الشراء</th><th scope="col" className="num">سعر الفاتورة ({order.currency})</th></tr></thead><tbody>{available.map((line) => <tr key={line.purchase_receipt_line_id}>
       <td>{line.item_description}<br /><span className="muted">{line.receipt_evidence_reference}</span></td><td>{line.available_to_invoice_quantity} {line.unit}</td>
       <td className="num"><input inputMode="decimal" value={values[line.purchase_receipt_line_id]?.quantityInvoiced ?? ''} onChange={(e) => setValues((prev) => ({ ...prev, [line.purchase_receipt_line_id]: { quantityInvoiced: e.target.value, unitPrice: prev[line.purchase_receipt_line_id]?.unitPrice ?? '' } }))} /></td>
       <td className="num">{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td>

@@ -130,16 +130,17 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <h2>الوضع المالي الرسمي (من القيود المرحّلة فقط)</h2>
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: النقدية · ذمم مفتوحة · إيراد معترف به · مصروفات مرحّلة · أعمال تحت التطوير · مستحقات مفتوحة · المدفوع · حجز ضمان قائم</caption>
               <thead>
                 <tr>
-                  <th className="num">النقدية</th>
-                  <th className="num">ذمم مفتوحة</th>
-                  <th className="num">إيراد معترف به</th>
-                  <th>مصروفات مرحّلة</th>
-                  <th>أعمال تحت التطوير</th>
-                  <th className="num">مستحقات مفتوحة</th>
-                  <th className="num">المدفوع</th>
-                  <th className="num">حجز ضمان قائم</th>
+                  <th scope="col" className="num">النقدية</th>
+                  <th scope="col" className="num">ذمم مفتوحة</th>
+                  <th scope="col" className="num">إيراد معترف به</th>
+                  <th scope="col">مصروفات مرحّلة</th>
+                  <th scope="col">أعمال تحت التطوير</th>
+                  <th scope="col" className="num">مستحقات مفتوحة</th>
+                  <th scope="col" className="num">المدفوع</th>
+                  <th scope="col" className="num">حجز ضمان قائم</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,12 +170,13 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطورة · الإشارة · العدد · المبلغ</caption>
               <thead>
                 <tr>
-                  <th>الخطورة</th>
-                  <th>الإشارة</th>
-                  <th>العدد</th>
-                  <th className="num">المبلغ</th>
+                  <th scope="col">الخطورة</th>
+                  <th scope="col">الإشارة</th>
+                  <th scope="col">العدد</th>
+                  <th scope="col" className="num">المبلغ</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,8 +204,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             <h3>إشارات على مستوى المنظمة</h3>
             <div className="table-wrap">
               <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطورة · الإشارة · العدد</caption>
                 <thead>
-                  <tr><th>الخطورة</th><th>الإشارة</th><th>العدد</th></tr>
+                  <tr><th scope="col">الخطورة</th><th scope="col">الإشارة</th><th scope="col">العدد</th></tr>
                 </thead>
                 <tbody>
                   {orgSignals.map((signal) => {
@@ -232,8 +235,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المجال · الحد · العملة · يتطلب مستندًا · مفعّلة</caption>
               <thead>
-                <tr><th>المجال</th><th>الحد</th><th>العملة</th><th>يتطلب مستندًا</th><th>مفعّلة</th></tr>
+                <tr><th scope="col">المجال</th><th scope="col">الحد</th><th scope="col">العملة</th><th scope="col">يتطلب مستندًا</th><th scope="col">مفعّلة</th></tr>
               </thead>
               <tbody>
                 {policies.map((policy) => (
@@ -259,8 +263,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المجال · النوع · الخطورة · الاستحقاق · الحالة · المبلغ · السبب · القرار</caption>
               <thead>
-                <tr><th>المجال</th><th>النوع</th><th>الخطورة</th><th>الاستحقاق</th><th>الحالة</th><th className="num">المبلغ</th><th>السبب</th><th>القرار</th></tr>
+                <tr><th scope="col">المجال</th><th scope="col">النوع</th><th scope="col">الخطورة</th><th scope="col">الاستحقاق</th><th scope="col">الحالة</th><th scope="col" className="num">المبلغ</th><th scope="col">السبب</th><th scope="col">القرار</th></tr>
               </thead>
               <tbody>
                 {exceptions.map((exception) => (
@@ -317,8 +322,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الزوج · الكسر · التاريخ · المصدر</caption>
               <thead>
-                <tr><th>الزوج</th><th>الكسر</th><th>التاريخ</th><th>المصدر</th></tr>
+                <tr><th scope="col">الزوج</th><th scope="col">الكسر</th><th scope="col">التاريخ</th><th scope="col">المصدر</th></tr>
               </thead>
               <tbody>
                 {snapshots.map((snapshot) => (
@@ -336,8 +342,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         {conversions.length > 0 ? (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المصدر · الناتج · الغرض · التاريخ</caption>
               <thead>
-                <tr><th>المصدر</th><th>الناتج</th><th>الغرض</th><th>التاريخ</th></tr>
+                <tr><th scope="col">المصدر</th><th scope="col">الناتج</th><th scope="col">الغرض</th><th scope="col">التاريخ</th></tr>
               </thead>
               <tbody>
                 {conversions.map((conversion) => (
@@ -385,16 +392,17 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المستوى · العملة · المشاريع · النقدية · المدفوع · المستحقات · حالة التحويل · النقدية المحولة</caption>
               <thead>
                 <tr>
-                  <th>المستوى</th>
-                  <th>العملة</th>
-                  <th>المشاريع</th>
-                  <th className="num">النقدية</th>
-                  <th className="num">المدفوع</th>
-                  <th className="num">المستحقات</th>
-                  <th>حالة التحويل</th>
-                  <th className="num">النقدية المحولة</th>
+                  <th scope="col">المستوى</th>
+                  <th scope="col">العملة</th>
+                  <th scope="col">المشاريع</th>
+                  <th scope="col" className="num">النقدية</th>
+                  <th scope="col" className="num">المدفوع</th>
+                  <th scope="col" className="num">المستحقات</th>
+                  <th scope="col">حالة التحويل</th>
+                  <th scope="col" className="num">النقدية المحولة</th>
                 </tr>
               </thead>
               <tbody>
@@ -427,8 +435,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الضريبة · النطاق · المعالجة · جهة التقدير · سارية</caption>
               <thead>
-                <tr><th>الضريبة</th><th>النطاق</th><th>المعالجة</th><th>جهة التقدير</th><th>سارية</th></tr>
+                <tr><th scope="col">الضريبة</th><th scope="col">النطاق</th><th scope="col">المعالجة</th><th scope="col">جهة التقدير</th><th scope="col">سارية</th></tr>
               </thead>
               <tbody>
                 {taxRegistry.map((tax) => (

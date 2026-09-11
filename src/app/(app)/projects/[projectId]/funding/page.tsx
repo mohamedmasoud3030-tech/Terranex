@@ -94,7 +94,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         </div>
         <div className="table-wrap">
           <table className="table-stackable">
-            <thead><tr><th>المستثمر</th><th className="num">الالتزام</th><th>المطلوب</th><th>المستلم</th><th className="num">المتبقي</th></tr></thead>
+              <caption className="sr-only">جدول: المستثمر · الالتزام · المطلوب · المستلم · المتبقي</caption>
+            <thead><tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام</th><th scope="col">المطلوب</th><th scope="col">المستلم</th><th scope="col" className="num">المتبقي</th></tr></thead>
             <tbody>
               {partnerPositions.map((partner) => (
                 <tr key={partner.participant_id}>
@@ -131,7 +132,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>المرجع</th><th>تاريخ الاستحقاق</th><th>الحالة</th><th>البنود</th></tr></thead>
+              <caption className="sr-only">جدول: المرجع · تاريخ الاستحقاق · الحالة · البنود</caption>
+              <thead><tr><th scope="col">المرجع</th><th scope="col">تاريخ الاستحقاق</th><th scope="col">الحالة</th><th scope="col">البنود</th></tr></thead>
               <tbody>
                 {calls.map((call) => (
                   <tr key={call.id}>
@@ -176,7 +178,8 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>التاريخ</th><th>المستثمر</th><th>الطلب</th><th className="num">المبلغ</th><th>النسخة الحاكمة</th></tr></thead>
+              <caption className="sr-only">جدول: التاريخ · المستثمر · الطلب · المبلغ · النسخة الحاكمة</caption>
+              <thead><tr><th scope="col">التاريخ</th><th scope="col">المستثمر</th><th scope="col">الطلب</th><th scope="col" className="num">المبلغ</th><th scope="col">النسخة الحاكمة</th></tr></thead>
               <tbody>
                 {contributions.map((contribution) => {
                   const call = calls.find((item) => item.id === contribution.capital_call_id);

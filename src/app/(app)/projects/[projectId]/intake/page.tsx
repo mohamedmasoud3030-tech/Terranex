@@ -404,7 +404,8 @@ export default async function IntakePage({
           ) : (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المستثمر</th><th className="num">الالتزام</th></tr></thead>
+              <caption className="sr-only">جدول: المستثمر · الالتزام</caption>
+                <thead><tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام</th></tr></thead>
                 <tbody>
                   {commitments.map((commitment) => {
                     const name = participants.find((participant) => participant.id === commitment.participant_id)?.parties.legal_name;
@@ -652,7 +653,7 @@ export default async function IntakePage({
           {gaps.length > 0 && (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المصدر</th><th>الوصف</th><th className="num">المبلغ</th><th>الحالة</th><th></th></tr></thead>
+                <thead><tr><th scope="col">المصدر</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th><th scope="col">الحالة</th><th scope="col"></th></tr></thead>
                 <tbody>
                   {gaps.map((gap) => (
                     <tr key={gap.gap_id}>
@@ -738,7 +739,8 @@ export default async function IntakePage({
           {evidenceItems.length > 0 && (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المعرّف</th><th>الحقيقة</th><th>موقع العميل</th></tr></thead>
+              <caption className="sr-only">جدول: المعرّف · الحقيقة · موقع العميل</caption>
+                <thead><tr><th scope="col">المعرّف</th><th scope="col">الحقيقة</th><th scope="col">موقع العميل</th></tr></thead>
                 <tbody>
                   {evidenceItems.map((item) => (
                     <tr key={item.evidence_item_id}>

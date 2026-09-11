@@ -90,14 +90,15 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطورة · الخطر · الوصف · المسؤول · الاستحقاق · المصدر</caption>
               <thead>
                 <tr>
-                  <th>الخطورة</th>
-                  <th>الخطر</th>
-                  <th>الوصف</th>
-                  <th>المسؤول</th>
-                  <th>الاستحقاق</th>
-                  <th>المصدر</th>
+                  <th scope="col">الخطورة</th>
+                  <th scope="col">الخطر</th>
+                  <th scope="col">الوصف</th>
+                  <th scope="col">المسؤول</th>
+                  <th scope="col">الاستحقاق</th>
+                  <th scope="col">المصدر</th>
                 </tr>
               </thead>
               <tbody>
@@ -129,13 +130,14 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · القرار · النص · المبرر · الدليل</caption>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>القرار</th>
-                  <th>النص</th>
-                  <th>المبرر</th>
-                  <th>الدليل</th>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">القرار</th>
+                  <th scope="col">النص</th>
+                  <th scope="col">المبرر</th>
+                  <th scope="col">الدليل</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,8 +161,9 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
           <h2 id="resolved-risks-heading">مخاطر تم حسمها</h2>
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطر · النتيجة · دليل الحسم · وقت الحسم</caption>
               <thead>
-                <tr><th>الخطر</th><th className="num">النتيجة</th><th>دليل الحسم</th><th>وقت الحسم</th></tr>
+                <tr><th scope="col">الخطر</th><th scope="col" className="num">النتيجة</th><th scope="col">دليل الحسم</th><th scope="col">وقت الحسم</th></tr>
               </thead>
               <tbody>
                 {resolvedRisks.map((risk) => (

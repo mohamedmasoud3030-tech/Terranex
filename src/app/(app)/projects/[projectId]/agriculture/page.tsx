@@ -394,7 +394,7 @@ export default async function AgriculturePage({
           <h3>ربط المزرعة بالأرض الاستثمارية</h3>
           {farms.length === 0 ? <p className="muted">سجّل مزرعة تشغيلية أولًا.</p> : (
             <>
-              <div className="table-wrap"><table className="table-stackable"><thead><tr><th>المزرعة</th><th>الأرض/الأصل</th><th>حالة الربط</th></tr></thead><tbody>{farms.map((farm) => {
+              <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: المزرعة · الأرض/الأصل · حالة الربط</caption><thead><tr><th scope="col">المزرعة</th><th scope="col">الأرض/الأصل</th><th scope="col">حالة الربط</th></tr></thead><tbody>{farms.map((farm) => {
                 const link = farmLandLinks.find((item) => item.farm_id === farm.id);
                 return <tr key={farm.id}><td data-label="المزرعة">{farm.name}</td><td data-label="الأرض/الأصل">{link?.land_asset_name ?? '—'}</td><td data-label="حالة الربط">{link ? 'مرتبط' : 'لا يوجد أصل استثماري مرتبط'}</td></tr>;
               })}</tbody></table></div>
@@ -416,13 +416,14 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
+              <caption className="sr-only">جدول: الاسم · المرجع · الموقع · المنطقة الزمنية · عدد الحقول</caption>
                 <thead>
                   <tr>
-                    <th>الاسم</th>
-                    <th>المرجع</th>
-                    <th>الموقع</th>
-                    <th>المنطقة الزمنية</th>
-                    <th>عدد الحقول</th>
+                    <th scope="col">الاسم</th>
+                    <th scope="col">المرجع</th>
+                    <th scope="col">الموقع</th>
+                    <th scope="col">المنطقة الزمنية</th>
+                    <th scope="col">عدد الحقول</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -460,13 +461,14 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
+              <caption className="sr-only">جدول: المزرعة · الحقل · المساحة · الوحدة · ملاحظات</caption>
                 <thead>
                   <tr>
-                    <th>المزرعة</th>
-                    <th>الحقل</th>
-                    <th>المساحة</th>
-                    <th>الوحدة</th>
-                    <th>ملاحظات</th>
+                    <th scope="col">المزرعة</th>
+                    <th scope="col">الحقل</th>
+                    <th scope="col">المساحة</th>
+                    <th scope="col">الوحدة</th>
+                    <th scope="col">ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -537,12 +539,13 @@ export default async function AgriculturePage({
                     {cycleAssignments.length > 0 ? (
                       <div className="table-wrap">
                         <table className="table-stackable">
+              <caption className="sr-only">جدول: الحقل · المزرعة · المساحة المخصصة · الفترة</caption>
                           <thead>
                             <tr>
-                              <th>الحقل</th>
-                              <th>المزرعة</th>
-                              <th>المساحة المخصصة</th>
-                              <th>الفترة</th>
+                              <th scope="col">الحقل</th>
+                              <th scope="col">المزرعة</th>
+                              <th scope="col">المساحة المخصصة</th>
+                              <th scope="col">الفترة</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -612,14 +615,15 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · النوع · الدورة · الحقل · الكمية · ملاحظات</caption>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>النوع</th>
-                  <th>الدورة</th>
-                  <th>الحقل</th>
-                  <th>الكمية</th>
-                  <th>ملاحظات</th>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">النوع</th>
+                  <th scope="col">الدورة</th>
+                  <th scope="col">الحقل</th>
+                  <th scope="col">الكمية</th>
+                  <th scope="col">ملاحظات</th>
                 </tr>
               </thead>
               <tbody>
@@ -775,6 +779,7 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
+              <caption className="sr-only">جدول: الفئة · الاسم · وحدة التطبيق · المرجع · المُصنِّع · التشغيلات</caption>
                 <thead>
                   <tr>
                     <th scope="col">الفئة</th>
@@ -815,6 +820,7 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المدخل · مرجع التشغيلة · الوحدة · التصنيع · الانتهاء · الحالة · المورد / الدليل</caption>
               <thead>
                 <tr>
                   <th scope="col">المدخل</th>
@@ -907,6 +913,7 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · الدورة · الحقل · الإجمالي · الصافي · الفاقد · الدرجة · التشغيلة · موقع الاستلام</caption>
               <thead>
                 <tr>
                   <th scope="col">التاريخ</th>
@@ -957,6 +964,7 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: مرجع التشغيلة · الدورة · الحقل · تاريخ الحصاد · الكمية الأولية · الرصيد الحالي الكلي · الدرجة</caption>
               <thead>
                 <tr>
                   <th scope="col">مرجع التشغيلة</th>
@@ -991,6 +999,7 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التشغيلة · موقع التخزين · الرصيد الحالي · آخر حركة</caption>
               <thead>
                 <tr>
                   <th scope="col">التشغيلة</th>
@@ -1019,6 +1028,7 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · النوع · من · إلى · الكمية · السبب</caption>
               <thead>
                 <tr>
                   <th scope="col">التاريخ</th>
@@ -1059,6 +1069,7 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
+              <caption className="sr-only">جدول: الاسم · المرجع · ملاحظات</caption>
                 <thead>
                   <tr>
                     <th scope="col">الاسم</th>
@@ -1133,7 +1144,7 @@ export default async function AgriculturePage({
                       <div><dt>الكمية</dt><dd>{sale.aggregate_quantity ? `${sale.aggregate_quantity} ${sale.quantity_unit}` : 'وحدات متعددة — راجع السطور'}</dd></div>
                       <div><dt>تاريخ التسليم</dt><dd>{d(sale.control_transfer_date)}</dd></div>
                     </dl>
-                    <div className="table-wrap"><table className="table-stackable"><thead><tr><th>التشغيلة</th><th>موقع المصدر</th><th>الكمية</th><th className="num">سعر الوحدة</th><th className="num">قيمة السطر</th><th>الصرف</th></tr></thead><tbody>{lines.map((line) => <tr key={line.sale_line_id}><td data-label="التشغيلة">{line.lot_reference}</td><td data-label="موقع المصدر">{line.source_storage_name}</td><td data-label="الكمية">{formatHarvestQuantity(line.quantity, line.unit)}</td><td className="num" data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, sale.currency)}</td><td className="num" data-label="قيمة السطر">{formatMinorUnits(line.line_amount_minor_units, sale.currency)}</td><td data-label="الصرف">{line.sale_issue_movement_id ? `تم ${d(line.dispatch_date)}` : 'لم يتم'}</td></tr>)}</tbody></table></div>
+                    <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: التشغيلة · موقع المصدر · الكمية · سعر الوحدة · قيمة السطر · الصرف</caption><thead><tr><th scope="col">التشغيلة</th><th scope="col">موقع المصدر</th><th scope="col">الكمية</th><th scope="col" className="num">سعر الوحدة</th><th scope="col" className="num">قيمة السطر</th><th scope="col">الصرف</th></tr></thead><tbody>{lines.map((line) => <tr key={line.sale_line_id}><td data-label="التشغيلة">{line.lot_reference}</td><td data-label="موقع المصدر">{line.source_storage_name}</td><td data-label="الكمية">{formatHarvestQuantity(line.quantity, line.unit)}</td><td className="num" data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, sale.currency)}</td><td className="num" data-label="قيمة السطر">{formatMinorUnits(line.line_amount_minor_units, sale.currency)}</td><td data-label="الصرف">{line.sale_issue_movement_id ? `تم ${d(line.dispatch_date)}` : 'لم يتم'}</td></tr>)}</tbody></table></div>
                     {sale.state === 'DRAFT' && canPostSales ? <ApproveAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
                     {sale.state === 'APPROVED' && canPostSales ? <RecognizeAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
                     {!canPostSales && (sale.state === 'DRAFT' || sale.state === 'APPROVED') ? <p className="muted">الاعتماد والتسليم/الترحيل المالي يتطلبان صلاحية مالك المنظمة.</p> : null}
@@ -1150,7 +1161,7 @@ export default async function AgriculturePage({
         <div className="card stack">
           <h3>تتبّع تشغيلة الحصاد إلى البيع</h3>
           <p className="muted">خطوة واحدة للأمام من التشغيلة إلى موقع الصرف والمشتري والتسليم وقيد الإيراد.</p>
-          <div className="table-wrap"><table className="table-stackable"><thead><tr><th>التشغيلة</th><th>البيع</th><th>المشتري</th><th>المصدر</th><th>الكمية المباعة</th><th className="num">الإيراد</th></tr></thead><tbody>{lotSaleTraceability.map((trace, index) => <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}><td data-label="التشغيلة">{trace.lot_reference}</td><td data-label="البيع">{trace.sale_reference ?? 'لم تُبع'}</td><td data-label="المشتري">{trace.buyer_name ?? '—'}</td><td data-label="المصدر">{trace.source_storage_name ?? '—'}</td><td data-label="الكمية المباعة">{trace.sold_quantity ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit) : '—'}</td><td className="num" data-label="الإيراد">{trace.revenue_journal_batch_id ? 'معترف به' : '—'}</td></tr>)}</tbody></table></div>
+          <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: التشغيلة · البيع · المشتري · المصدر · الكمية المباعة · الإيراد</caption><thead><tr><th scope="col">التشغيلة</th><th scope="col">البيع</th><th scope="col">المشتري</th><th scope="col">المصدر</th><th scope="col">الكمية المباعة</th><th scope="col" className="num">الإيراد</th></tr></thead><tbody>{lotSaleTraceability.map((trace, index) => <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}><td data-label="التشغيلة">{trace.lot_reference}</td><td data-label="البيع">{trace.sale_reference ?? 'لم تُبع'}</td><td data-label="المشتري">{trace.buyer_name ?? '—'}</td><td data-label="المصدر">{trace.source_storage_name ?? '—'}</td><td data-label="الكمية المباعة">{trace.sold_quantity ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit) : '—'}</td><td className="num" data-label="الإيراد">{trace.revenue_journal_batch_id ? 'معترف به' : '—'}</td></tr>)}</tbody></table></div>
         </div>
       </section>
 

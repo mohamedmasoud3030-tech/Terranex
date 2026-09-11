@@ -282,7 +282,7 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>النوع</th><th>العنصر</th><th>منذ</th><th></th></tr></thead>
+              <thead><tr><th scope="col">النوع</th><th scope="col">العنصر</th><th scope="col">منذ</th><th scope="col"></th></tr></thead>
               <tbody>
                 {pendingApprovals.map((item) => (
                   <tr key={`${item.kind}-${item.label}-${item.since}`}>
@@ -313,11 +313,12 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الملف · الحالة · البصمة · سطور مقبولة/مرفوضة · مدين محسوب · دائن محسوب · فرق المدين · فرق الدائن · أعدّه · اعتمده · تاريخ الترحيل · القيد</caption>
               <thead>
                 <tr>
-                  <th>الملف</th><th>الحالة</th><th>البصمة</th><th>سطور مقبولة/مرفوضة</th>
-                  <th>مدين محسوب</th><th>دائن محسوب</th><th>فرق المدين</th><th>فرق الدائن</th>
-                  <th>أعدّه</th><th>اعتمده</th><th>تاريخ الترحيل</th><th>القيد</th>
+                  <th scope="col">الملف</th><th scope="col">الحالة</th><th scope="col">البصمة</th><th scope="col">سطور مقبولة/مرفوضة</th>
+                  <th scope="col">مدين محسوب</th><th scope="col">دائن محسوب</th><th scope="col">فرق المدين</th><th scope="col">فرق الدائن</th>
+                  <th scope="col">أعدّه</th><th scope="col">اعتمده</th><th scope="col">تاريخ الترحيل</th><th scope="col">القيد</th>
                 </tr>
               </thead>
               <tbody>
@@ -433,8 +434,9 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: # · الترميز · الطرف · مدين · دائن · الوصف · النتيجة · سبب الرفض</caption>
               <thead>
-                <tr><th>#</th><th>الترميز</th><th>الطرف</th><th>مدين</th><th>دائن</th><th>الوصف</th><th className="num">النتيجة</th><th>سبب الرفض</th></tr>
+                <tr><th scope="col">#</th><th scope="col">الترميز</th><th scope="col">الطرف</th><th scope="col">مدين</th><th scope="col">دائن</th><th scope="col">الوصف</th><th scope="col" className="num">النتيجة</th><th scope="col">سبب الرفض</th></tr>
               </thead>
               <tbody>
                 {filteredRows.map((row) => (
@@ -472,8 +474,8 @@ export default async function PilotPage({
             <table className="table-stackable">
               <thead>
                 <tr>
-                  <th>النقطة</th><th>حتى تاريخ</th><th>خارجي</th><th>Terranex</th><th>الفرق</th>
-                  <th>الحالة</th><th>استثناءات مفتوحة</th><th>سجّلها</th><th>اعتمدها</th><th>الدليل</th><th></th>
+                  <th scope="col">النقطة</th><th scope="col">حتى تاريخ</th><th scope="col">خارجي</th><th scope="col">Terranex</th><th scope="col">الفرق</th>
+                  <th scope="col">الحالة</th><th scope="col">استثناءات مفتوحة</th><th scope="col">سجّلها</th><th scope="col">اعتمدها</th><th scope="col">الدليل</th><th scope="col"></th>
                 </tr>
               </thead>
               <tbody>
@@ -524,7 +526,7 @@ export default async function PilotPage({
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>النقطة</th><th>حتى تاريخ</th><th>الفرق</th><th>الخطورة</th><th>المالك</th><th>الحالة</th><th>البيان</th><th>المعالجة</th><th></th></tr>
+                <tr><th scope="col">النقطة</th><th scope="col">حتى تاريخ</th><th scope="col">الفرق</th><th scope="col">الخطورة</th><th scope="col">المالك</th><th scope="col">الحالة</th><th scope="col">البيان</th><th scope="col">المعالجة</th><th scope="col"></th></tr>
               </thead>
               <tbody>
                 {exceptions.map((row) => (
@@ -565,7 +567,7 @@ export default async function PilotPage({
           <div className="table-wrap">
             <table className="table-stackable">
               <thead>
-                <tr><th>الرمز</th><th>العنوان</th><th className="num">النتيجة المتوقعة</th><th>الحالة</th><th>نفّذها</th><th>راجعها</th><th>الدليل</th><th>ملاحظات</th><th></th></tr>
+                <tr><th scope="col">الرمز</th><th scope="col">العنوان</th><th scope="col" className="num">النتيجة المتوقعة</th><th scope="col">الحالة</th><th scope="col">نفّذها</th><th scope="col">راجعها</th><th scope="col">الدليل</th><th scope="col">ملاحظات</th><th scope="col"></th></tr>
               </thead>
               <tbody>
                 {uatTasks.map((row) => (
@@ -612,7 +614,8 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>البروفة</th><th className="num">النتيجة</th><th>البيان</th><th>نفّذها</th><th>التاريخ</th></tr></thead>
+              <caption className="sr-only">جدول: البروفة · النتيجة · البيان · نفّذها · التاريخ</caption>
+              <thead><tr><th scope="col">البروفة</th><th scope="col" className="num">النتيجة</th><th scope="col">البيان</th><th scope="col">نفّذها</th><th scope="col">التاريخ</th></tr></thead>
               <tbody>
                 {rehearsals.map((row) => (
                   <tr key={row.rehearsal_id}>
@@ -644,7 +647,7 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الوصول</th><th>منذ</th><th></th></tr></thead>
+              <thead><tr><th scope="col">المستخدم</th><th scope="col">الدور</th><th scope="col">الحالة</th><th scope="col">الوصول</th><th scope="col">منذ</th><th scope="col"></th></tr></thead>
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>

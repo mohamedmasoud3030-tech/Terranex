@@ -56,8 +56,9 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الاسم القانوني · الصفة المسجلة · حالة الدلالة الاقتصادية</caption>
               <thead>
-                <tr><th>الاسم القانوني</th><th>الصفة المسجلة</th><th>حالة الدلالة الاقتصادية</th></tr>
+                <tr><th scope="col">الاسم القانوني</th><th scope="col">الصفة المسجلة</th><th scope="col">حالة الدلالة الاقتصادية</th></tr>
               </thead>
               <tbody>
                 {participants.map((participant) => (

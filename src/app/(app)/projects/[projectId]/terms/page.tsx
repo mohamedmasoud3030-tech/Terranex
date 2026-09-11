@@ -97,7 +97,8 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
           </p>
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>المشارك</th><th className="num">الالتزام</th></tr></thead>
+              <caption className="sr-only">جدول: المشارك · الالتزام</caption>
+              <thead><tr><th scope="col">المشارك</th><th scope="col" className="num">الالتزام</th></tr></thead>
               <tbody>
                 {commitments.map((commitment) => (
                   <tr key={commitment.id}>
