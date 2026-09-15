@@ -234,15 +234,17 @@ Every balance carries the triple:
 
 ---
 
-## The acknowledged gaps (from the honest ROUTE_REVIEW) and their state after the first execution pass
+## The acknowledged gaps (from the honest ROUTE_REVIEW) and their state after two execution passes
 
-| # | Gap | State after the pass |
+| # | Gap | State after the passes |
 |---|---|---|
-| 1 | `<Section>` adoption: was 17 vs 101 hand-rolled | **In progress:** both dense sector workspaces fully migrated (livestock 23, agriculture 13) — now 53 vs 65 across finance/governance/intake pages; continue the same way, one sector per PR |
-| 2 | 122 bare `<h2>` without `aria-labelledby` | Down to 86 automatically with #1; the rest resolve as it completes |
-| 3 | "16 hand-rolled empty states" | **Evidence-based correction:** 14 are `<p className="empty">` inline notes, **a deliberate documented form** (centring reads better than `EmptyState compact`); the other two in agriculture were genuine offenders that escaped the regex by class order — migrated to `EmptyState`, and the guard is now order-insensitive |
-| 4 | No real browser check (360px / focus order / motion) | Open — a narrowly scoped Playwright visual task |
+| 1 | `<Section>` adoption: was 17 vs 101 hand-rolled | **Done:** every titled card section in the workspace now composes the primitive — **131 vs 6** remaining, all deliberate (three `shell-form` page shells, which are h1 form surfaces, not titled sections, plus three heading-less content cards inside logical sections). Mid-execution it also emerged that **the route-review counter itself was attribute-order-blind**: `<section id="x" className="card stack">` was never counted at all — twelve sections in close and pilot were invisible — and it now reads attributes in any order (the same order-sensitivity lesson) |
+| 2 | 122 bare `<h2>` without `aria-labelledby` | **Done:** down to **17** (the remainder sits inside special structures such as the multi-step intake wizard) |
+| 3 | "16 hand-rolled empty states" | **Evidence-based correction:** 14 are `<p className="empty">` inline notes, **a deliberate documented form**; the other two in agriculture were genuine offenders that escaped the regex by class order — migrated to `EmptyState`, and the guard is now order-insensitive |
+| 4 | No real browser check (360px / focus order / motion) | **Mitigated:** the app now runs in a live preview with real Supabase keys, so 360px can be checked by hand; a full automated Playwright pass remains open |
 | 5 | One workspace route without its own `error.tsx` | **Closed as documented-won't-fix:** `/statements` is a redirect-only route (waiting on the R14 policy pack) and renders nothing of its own — a route-level boundary there would be dead weight; the workspace boundary is the correct net, and the reason is recorded in ROUTE_REVIEW |
+
+**Added in this pass:** the two hand-rolled "unauthorized" cards (investors, intake) now go through `PermissionState`; the readiness-result section (a topline pattern) was migrated by hand with its description passed as a ReactNode; a "no raw enum" guard landed (`tests/no-raw-enum-codes.test.ts`) together with two copy fixes for prose leaks ("فترة OPEN", "نسخة اتفاقية ACTIVE"); and `ROUTE_REVIEW.md` became a **CI merge gate** via `--check`.
 
 **Migration rule:** no "redesign" — replace hand-rolled markup with the matching component only, changing no route, permission, business rule, or data source (the same contract as the current PR).
 
@@ -255,7 +257,7 @@ From **ui-ux-pro-max-skill** we learned that an uncheckable rule bleeds: their r
 1. **Extend `tests/design-system.test.ts`** with every new textually-checkable rule (e.g. no `<section className="card` outside `src/shared/ui` — Section adoption can be ratcheted with explicit thresholds).
 2. **The `empty-state` test is a standing lesson:** a guard that depends on class order is not a guard — two real states in agriculture escaped `card(?: stack)? empty` purely by being written `card empty stack`. Any textual markup check must be order-insensitive (`card[^"]*\bempty\b`).
 3. **Add a "no raw enum" test:** grep the values the CHECK constraints permit against the label functions.
-4. **Make `ROUTE_REVIEW.md` a merge gate:** regenerate it in CI and fail on count drift (an unnamed table = a regression) — the script's `--check` mode is ready.
+4. **`ROUTE_REVIEW.md` is a merge gate now:** a `node scripts/route-review.mjs --check` CI step fails the build on count drift (an unnamed table = a regression).
 5. **Document a new rule as an incorrect/correct pair here first**, then turn it into a test — a rule lives where it is checked.
 
 ---
