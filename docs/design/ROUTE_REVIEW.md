@@ -20,33 +20,33 @@ has drifted from the code is worse than no count at all.
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
 | `/assets` | 271 | 1 | 1 | 0 | 2 | 0 | 0 | 2 | 0 | ✓ | ✓ |
-| `/intake` | 55 | 0 | 0 | 1 | 0 | 2 | 0 | 2 | 0 | ✓ | ✓ |
+| `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
 | `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
 | `/` (home) | 247 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
 | `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
 | `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/agriculture` | 1231 | 15 | 15 | 0 | 13 | 0 | 0 | 9 | 13 | ✓ | ✓ |
-| `/projects/[projectId]/budget` | 280 | 3 | 3 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/cash` | 298 | 4 | 4 | 6 | 0 | 6 | 0 | 2 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/close` | 421 | 2 | 2 | 3 | 0 | 0 | 0 | 4 | 3 | ✓ | ✓ |
-| `/projects/[projectId]/controls` | 180 | 1 | 1 | 4 | 0 | 4 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/costs` | 467 | 3 | 3 | 5 | 0 | 5 | 0 | 4 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/funding` | 214 | 3 | 3 | 5 | 0 | 5 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/governance` | 185 | 3 | 3 | 3 | 0 | 3 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/intake` | 788 | 3 | 3 | 8 | 0 | 1 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/integrity` | 461 | 9 | 9 | 7 | 0 | 7 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/investors` | 108 | 1 | 1 | 3 | 0 | 3 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/livestock/operations` | 152 | 0 | 0 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/budget` | 285 | 3 | 3 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/cash` | 304 | 4 | 4 | 0 | 6 | 0 | 0 | 2 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/close` | 427 | 2 | 2 | 0 | 3 | 0 | 0 | 4 | 3 | ✓ | ✓ |
+| `/projects/[projectId]/controls` | 183 | 1 | 1 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/costs` | 472 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/funding` | 219 | 3 | 3 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/governance` | 181 | 3 | 3 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/intake` | 787 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/integrity` | 468 | 9 | 9 | 0 | 7 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock` | 872 | 2 | 2 | 0 | 23 | 0 | 0 | 4 | 14 | ✓ | ✓ |
-| `/projects/[projectId]/operations` | 155 | 7 | 7 | 10 | 0 | 7 | 0 | 10 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/operations` | 155 | 7 | 7 | 9 | 8 | 2 | 0 | 10 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/overview` | 147 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 132 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/pilot` | 677 | 8 | 8 | 9 | 0 | 0 | 10 | 6 | 12 | ✓ | ✓ |
-| `/projects/[projectId]/procurement` | 136 | 4 | 4 | 5 | 0 | 6 | 0 | 10 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/revenue` | 234 | 6 | 6 | 6 | 0 | 3 | 2 | 6 | 5 | ✓ | ✓ |
+| `/projects/[projectId]/pilot` | 665 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
+| `/projects/[projectId]/procurement` | 137 | 4 | 4 | 0 | 6 | 0 | 0 | 10 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/revenue` | 243 | 6 | 6 | 1 | 6 | 1 | 2 | 6 | 5 | ✓ | ✓ |
 | `/projects/[projectId]/statements` | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
-| `/projects/[projectId]/terms` | 152 | 1 | 1 | 3 | 0 | 3 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/terms` | 155 | 1 | 1 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
 | `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
@@ -86,13 +86,14 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 53 against 65 hand-rolled
-   `<section className="card stack">`.** The two dense sector workspaces (livestock,
-   agriculture) now compose the primitive; the remainder is the wider workspace —
-   finance, governance and intake pages — which still hand-rolls. Spacing and headings
-   look consistent because they are styled globally, so the operator cannot see the
-   difference — but the markup is not uniform, and that is real work left.
-2. **86 bare `<h2>`** rely on a global style rule rather than `<Section>`'s
+1. **`<Section>` adoption is 131 against 6 hand-rolled
+   `<section className="card stack">`.** Every titled card section in the workspace now
+   composes the primitive. The six that remain are deliberate: three page shells
+   (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
+   content cards carrying a table inside a logical section. The counter itself was also
+   order-blind — `<section id="x" className="card stack">` escaped it entirely, hiding
+   twelve sections in close and pilot — and now reads attributes in any order.
+2. **17 bare `<h2>`** rely on a global style rule rather than `<Section>`'s
    `aria-labelledby` association. Correct today, weaker than it should be.
 3. **14 inline empty notes** remain, and they are the deliberate form:
    `<p className="empty">` centred one-liners inside sections that simply have no rows

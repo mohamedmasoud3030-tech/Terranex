@@ -58,7 +58,11 @@ const rows = walk(join(ROOT, 'src/app'))
       captioned,
       scope: count(source, /scope="col"/g),
       sections: count(source, /<Section\b/g),
-      handrolled: count(source, /<section className="card stack/g),
+      // Order-insensitive on purpose: <section id="x" className="card stack…">
+      // escaped the old prefix match purely by attribute order.
+      handrolled: [...source.matchAll(/<section\b[^>]*>/g)].filter((m) =>
+        /className="card stack/.test(m[0]),
+      ).length,
       empty: count(source, /className="[^"]*\bempty\b/g),
       status: count(source, /className="status/g),
       tabs: count(source, /href: '#/g),
@@ -142,11 +146,12 @@ Applied to every route, and verified rather than asserted:
 ## Where it is not done — the honest remainder
 
 1. **\`<Section>\` adoption is ${sum('sections')} against ${sum('handrolled')} hand-rolled
-   \`<section className="card stack">\`.** The two dense sector workspaces (livestock,
-   agriculture) now compose the primitive; the remainder is the wider workspace —
-   finance, governance and intake pages — which still hand-rolls. Spacing and headings
-   look consistent because they are styled globally, so the operator cannot see the
-   difference — but the markup is not uniform, and that is real work left.
+   \`<section className="card stack">\`.** Every titled card section in the workspace now
+   composes the primitive. The six that remain are deliberate: three page shells
+   (\`shell-form*\` — an h1 form surface, not a titled section) and three heading-less
+   content cards carrying a table inside a logical section. The counter itself was also
+   order-blind — \`<section id="x" className="card stack">\` escaped it entirely, hiding
+   twelve sections in close and pilot — and now reads attributes in any order.
 2. **${sum('h2')} bare \`<h2>\`** rely on a global style rule rather than \`<Section>\`'s
    \`aria-labelledby\` association. Correct today, weaker than it should be.
 3. **${sum('empty')} inline empty notes** remain, and they are the deliberate form:
