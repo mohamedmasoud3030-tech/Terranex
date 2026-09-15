@@ -92,8 +92,8 @@ has drifted from the code is worse than no count at all.
 - **${sum('numcells')} figure cells** carry \`.num\` (tabular numerals, end-aligned in RTL).
 - **${sum('inline')} inline \`style={{}}\`** in \`src\` — the visual system is tokens and classes only.
 - **${dynamicWithLoading.length} of ${dynamicRoutes.length} \`force-dynamic\` routes have a loading state.**
-- **${withError.length} of ${workspaceRoutes.length} workspace routes have a route-level \`error.tsx\`**; the rest
-  fall through to the workspace boundary.
+- **${withError.length} of ${workspaceRoutes.length} workspace routes have a route-level \`error.tsx\`**; the one
+  exception is the redirect-only \`/statements\` route.
 
 ## Per route
 
@@ -142,20 +142,25 @@ Applied to every route, and verified rather than asserted:
 ## Where it is not done — the honest remainder
 
 1. **\`<Section>\` adoption is ${sum('sections')} against ${sum('handrolled')} hand-rolled
-   \`<section className="card stack">\`.** The primitive exists and is correct; the dense
-   sector pages still hand-roll. Spacing and headings look consistent because they are
-   styled globally, so the operator cannot see the difference — but the markup is not
-   uniform, and that is real work left.
+   \`<section className="card stack">\`.** The two dense sector workspaces (livestock,
+   agriculture) now compose the primitive; the remainder is the wider workspace —
+   finance, governance and intake pages — which still hand-rolls. Spacing and headings
+   look consistent because they are styled globally, so the operator cannot see the
+   difference — but the markup is not uniform, and that is real work left.
 2. **${sum('h2')} bare \`<h2>\`** rely on a global style rule rather than \`<Section>\`'s
    \`aria-labelledby\` association. Correct today, weaker than it should be.
-3. **${sum('empty')} empty states** are hand-rolled. The four in \`operations\` were given
-   headings and \`agriculture\`'s were levelled from a mix of \`h3\`/\`h4\`; none use
-   \`<EmptyState>\` yet.
+3. **${sum('empty')} inline empty notes** remain, and they are the deliberate form:
+   \`<p className="empty">\` centred one-liners inside sections that simply have no rows
+   (\`EmptyState compact\` would start-align and bold them, which reads worse for a
+   "nothing here" note). Every card-level empty state goes through \`<EmptyState>\`, and
+   the guard is order-insensitive after two agriculture states escaped it by class order.
 4. **No browser in the build sandbox.** Responsive behaviour, focus order and reduced-motion
    were checked by CSS inspection and tests, not by rendering. The 360px target is expressed
    in the breakpoints but has not been looked at on a phone.
-5. **\`error.tsx\` exists on ${withError.length} of the ${workspaceRoutes.length} workspace routes.** The rest fall
-   through to the workspace-level boundary, which is correct but generic.
+5. **\`error.tsx\` exists on ${withError.length} of the ${workspaceRoutes.length} workspace routes.** The one
+   exception is \`/statements\`, which is a redirect to the participants page (statements
+   wait on the R14 policy pack) and renders nothing of its own — a route-level boundary
+   there would be dead weight, so the workspace boundary is the correct net.
 `;
 
 const target = join(ROOT, OUT);

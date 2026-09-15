@@ -12,8 +12,8 @@ has drifted from the code is worse than no count at all.
 - **190 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
 - **29 of 29 `force-dynamic` routes have a loading state.**
-- **29 of 30 workspace routes have a route-level `error.tsx`**; the rest
-  fall through to the workspace boundary.
+- **29 of 30 workspace routes have a route-level `error.tsx`**; the one
+  exception is the redirect-only `/statements` route.
 
 ## Per route
 
@@ -26,7 +26,7 @@ has drifted from the code is worse than no count at all.
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
 | `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
 | `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/agriculture` | 1233 | 15 | 15 | 13 | 0 | 13 | 2 | 9 | 13 | ✓ | ✓ |
+| `/projects/[projectId]/agriculture` | 1231 | 15 | 15 | 0 | 13 | 0 | 0 | 9 | 13 | ✓ | ✓ |
 | `/projects/[projectId]/budget` | 280 | 3 | 3 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/cash` | 298 | 4 | 4 | 6 | 0 | 6 | 0 | 2 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/close` | 421 | 2 | 2 | 3 | 0 | 0 | 0 | 4 | 3 | ✓ | ✓ |
@@ -38,7 +38,7 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/integrity` | 461 | 9 | 9 | 7 | 0 | 7 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 3 | 0 | 3 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 152 | 0 | 0 | 4 | 0 | 4 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/livestock` | 894 | 2 | 2 | 23 | 0 | 23 | 0 | 4 | 14 | ✓ | ✓ |
+| `/projects/[projectId]/livestock` | 872 | 2 | 2 | 0 | 23 | 0 | 0 | 4 | 14 | ✓ | ✓ |
 | `/projects/[projectId]/operations` | 155 | 7 | 7 | 10 | 0 | 7 | 0 | 10 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/overview` | 147 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 132 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
@@ -86,18 +86,23 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 17 against 101 hand-rolled
-   `<section className="card stack">`.** The primitive exists and is correct; the dense
-   sector pages still hand-roll. Spacing and headings look consistent because they are
-   styled globally, so the operator cannot see the difference — but the markup is not
-   uniform, and that is real work left.
-2. **122 bare `<h2>`** rely on a global style rule rather than `<Section>`'s
+1. **`<Section>` adoption is 53 against 65 hand-rolled
+   `<section className="card stack">`.** The two dense sector workspaces (livestock,
+   agriculture) now compose the primitive; the remainder is the wider workspace —
+   finance, governance and intake pages — which still hand-rolls. Spacing and headings
+   look consistent because they are styled globally, so the operator cannot see the
+   difference — but the markup is not uniform, and that is real work left.
+2. **86 bare `<h2>`** rely on a global style rule rather than `<Section>`'s
    `aria-labelledby` association. Correct today, weaker than it should be.
-3. **16 empty states** are hand-rolled. The four in `operations` were given
-   headings and `agriculture`'s were levelled from a mix of `h3`/`h4`; none use
-   `<EmptyState>` yet.
+3. **14 inline empty notes** remain, and they are the deliberate form:
+   `<p className="empty">` centred one-liners inside sections that simply have no rows
+   (`EmptyState compact` would start-align and bold them, which reads worse for a
+   "nothing here" note). Every card-level empty state goes through `<EmptyState>`, and
+   the guard is order-insensitive after two agriculture states escaped it by class order.
 4. **No browser in the build sandbox.** Responsive behaviour, focus order and reduced-motion
    were checked by CSS inspection and tests, not by rendering. The 360px target is expressed
    in the breakpoints but has not been looked at on a phone.
-5. **`error.tsx` exists on 29 of the 30 workspace routes.** The rest fall
-   through to the workspace-level boundary, which is correct but generic.
+5. **`error.tsx` exists on 29 of the 30 workspace routes.** The one
+   exception is `/statements`, which is a redirect to the participants page (statements
+   wait on the R14 policy pack) and renders nothing of its own — a route-level boundary
+   there would be dead weight, so the workspace boundary is the correct net.
