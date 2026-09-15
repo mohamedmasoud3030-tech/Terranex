@@ -66,12 +66,17 @@ describe('card-level empty states go through the primitive', () => {
    *   that simply has no rows. `.empty` centres it; `EmptyState compact`
    *   would start-align it and bold the sentence, which is worse for a
    *   "nothing here" note. That form is allowed to stay hand-written.
+   *
+   * The card-level match is order-insensitive on purpose: two agriculture
+   * states written `className="card empty stack"` escaped the original
+   * `card(?: stack)? empty` pattern purely by class order and survived a
+   * full pass. A guard that depends on token order is not a guard.
    */
   it('no page hand-rolls the card-level form', () => {
     const offenders: string[] = [];
     for (const file of files) {
       const source = readFileSync(file, 'utf8');
-      for (const m of source.matchAll(/className="card(?: stack)? empty"/g)) {
+      for (const m of source.matchAll(/className="card[^"]*\bempty\b[^"]*"/g)) {
         offenders.push(`${file}: ${m[0]}`);
       }
     }
@@ -82,7 +87,9 @@ describe('card-level empty states go through the primitive', () => {
     const notes: string[] = [];
     for (const file of files) {
       const source = readFileSync(file, 'utf8');
-      notes.push(...[...source.matchAll(/<(\w+) className="empty"/g)].map((m) => m[1]));
+      notes.push(
+        ...[...source.matchAll(/<(\w+) className="[^"]*\bempty\b[^"]*"/g)].map((m) => m[1]),
+      );
     }
     // Every remaining one is a <p>; a <div> or <section> here would mean the
     // card-level form creeping back in.
