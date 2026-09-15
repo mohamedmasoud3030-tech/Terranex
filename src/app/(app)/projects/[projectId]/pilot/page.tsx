@@ -19,7 +19,7 @@ import {
 } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard, memberDisplayLabel } from '@/features/workspace/chrome';
-import { InPageTabs } from '@/shared/ui';
+import { InPageTabs, Section } from '@/shared/ui';
 import {
   AcceptUatTaskForm,
   ApproveOpeningImportForm,
@@ -231,14 +231,11 @@ export default async function PilotPage({
         </p>
       )}
 
-      <section id="readiness" className="card stack scroll-target" aria-labelledby="readiness-title">
-        <div>
-          <h2 id="readiness-title">تقرير الجاهزية التقنية</h2>
-          <p className="muted">
-            كل رقم هنا مشتق داخل قاعدة البيانات من وقائع مسجّلة، لا من إدخال يدوي. الجاهزية التقنية وقبول العميل
-            حقلان منفصلان تمامًا: نجاح بروفة آلية لا يُترجم أبدًا إلى قبول عميل.
-          </p>
-        </div>
+            <Section
+        id="readiness"
+        title="تقرير الجاهزية التقنية"
+        description="كل رقم هنا مشتق داخل قاعدة البيانات من وقائع مسجّلة، لا من إدخال يدوي. الجاهزية التقنية وقبول العميل حقلان منفصلان تمامًا: نجاح بروفة آلية لا يُترجم أبدًا إلى قبول عميل."
+      >
         {!report ? (
           <p className="empty">لا يوجد تقرير جاهزية بعد. سجّل أول استيراد افتتاحي أو نقطة مطابقة لهذا المشروع.</p>
         ) : (
@@ -273,10 +270,12 @@ export default async function PilotPage({
             </div>
           </>
         )}
-      </section>
+      </Section>
 
-      <section id="approvals" className="card stack scroll-target" aria-labelledby="approvals-title">
-        <h2 id="approvals-title">بانتظار الاعتماد</h2>
+            <Section
+        id="approvals"
+        title="بانتظار الاعتماد"
+      >
         {pendingApprovals.length === 0 ? (
           <p className="empty">لا توجد عناصر تنتظر اعتمادًا.</p>
         ) : (
@@ -296,17 +295,13 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="import" className="card stack scroll-target" aria-labelledby="import-title">
-        <div>
-          <h2 id="import-title">الاستيراد الافتتاحي المضبوط</h2>
-          <p className="muted">
-            مسار واحد فقط: مسودة ← تحقق ← ترشيح للاعتماد ← اعتماد وترحيل. مُعِدّ الملف لا يعتمده.
-            الترحيل ينتج قيدًا متوازنًا عبر سجل الحسابات الدلالية القائم؛ لا تُكتب أرصدة مباشرة أبدًا،
-            والتصحيح بعد الترحيل يكون بالعكس المرتبط لا بالتعديل.
-          </p>
-        </div>
+            <Section
+        id="import"
+        title="الاستيراد الافتتاحي المضبوط"
+        description="مسار واحد فقط: مسودة ← تحقق ← ترشيح للاعتماد ← اعتماد وترحيل. مُعِدّ الملف لا يعتمده. الترحيل ينتج قيدًا متوازنًا عبر سجل الحسابات الدلالية القائم؛ لا تُكتب أرصدة مباشرة أبدًا، والتصحيح بعد الترحيل يكون بالعكس المرتبط لا بالتعديل."
+      >
 
         {imports.length === 0 ? (
           <p className="empty">لم يُسجَّل أي استيراد افتتاحي لهذا المشروع بعد.</p>
@@ -406,13 +401,13 @@ export default async function PilotPage({
             cashAccounts={cashAccounts.map((account) => ({ id: account.cash_account_id, name: account.name }))}
           />
         )}
-      </section>
+      </Section>
 
-      <section id="rows" className="card stack scroll-target" aria-labelledby="rows-title">
-        <div className="section-heading">
-          <h2 id="rows-title">سطور الملف ونتيجة كل سطر</h2>
-          <p className="muted">{rejectedRowCount} سطر مرفوض من {allRows.length} سطر مُقدَّم.</p>
-        </div>
+      <Section
+        id="rows"
+        title="سطور الملف ونتيجة كل سطر"
+        description={`${rejectedRowCount} سطر مرفوض من ${allRows.length} سطر مُقدَّم.`}
+      >
         <nav className="context-nav" aria-label="تصفية السطور">
           {ROW_FILTERS.map((filter) => (
             <Link
@@ -457,16 +452,13 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="reconciliation" className="card stack scroll-target" aria-labelledby="reconciliation-title">
-        <div>
-          <h2 id="reconciliation-title">نقاط المطابقة مع الأدلة الخارجية</h2>
-          <p className="muted">
-            القيمة الخارجية دليل يُسجَّل كما هو؛ القيمة المعتمدة يشتقها PostgreSQL من القيود المرحّلة.
-            الفرق عدد صحيح تام، والصفر يُعلن صراحة. لا يوجد دفتر ثانٍ.
-          </p>
-        </div>
+            <Section
+        id="reconciliation"
+        title="نقاط المطابقة مع الأدلة الخارجية"
+        description="القيمة الخارجية دليل يُسجَّل كما هو؛ القيمة المعتمدة يشتقها PostgreSQL من القيود المرحّلة. الفرق عدد صحيح تام، والصفر يُعلن صراحة. لا يوجد دفتر ثانٍ."
+      >
         {checkpoints.length === 0 ? (
           <p className="empty">لم تُسجَّل نقاط مطابقة بعد.</p>
         ) : (
@@ -516,10 +508,12 @@ export default async function PilotPage({
         ) : (
           <p className="muted">تسجيل نقاط المطابقة واعتمادها متاح لمالك المنظمة فقط.</p>
         )}
-      </section>
+      </Section>
 
-      <section id="exceptions" className="card stack scroll-target" aria-labelledby="exceptions-title">
-        <h2 id="exceptions-title">استثناءات الفروق</h2>
+            <Section
+        id="exceptions"
+        title="استثناءات الفروق"
+      >
         {exceptions.length === 0 ? (
           <p className="empty">لا توجد استثناءات مطابقة.</p>
         ) : (
@@ -551,16 +545,13 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="uat" className="card stack scroll-target" aria-labelledby="uat-title">
-        <div>
-          <h2 id="uat-title">اختبار قبول العميل</h2>
-          <p className="muted">
-            التنفيذ والقبول فعلان منفصلان بشخصين مختلفين. المهمة تبقى «بانتظار» ما لم يوجد دليل بشري حقيقي؛
-            لا شيء في النظام يحوّل نجاحًا آليًا إلى قبول عميل.
-          </p>
-        </div>
+            <Section
+        id="uat"
+        title="اختبار قبول العميل"
+        description="التنفيذ والقبول فعلان منفصلان بشخصين مختلفين. المهمة تبقى «بانتظار» ما لم يوجد دليل بشري حقيقي؛ لا شيء في النظام يحوّل نجاحًا آليًا إلى قبول عميل."
+      >
         {uatTasks.length === 0 ? (
           <p className="empty">لم تُسجَّل مهام اختبار قبول بعد.</p>
         ) : (
@@ -602,13 +593,13 @@ export default async function PilotPage({
         ) : (
           <p className="muted">إدارة مهام اختبار القبول متاحة لمالك المنظمة فقط.</p>
         )}
-      </section>
+      </Section>
 
-      <section id="rehearsals" className="card stack scroll-target" aria-labelledby="rehearsals-title">
-        <div>
-          <h2 id="rehearsals-title">البروفات التقنية</h2>
-          <p className="muted">بروفات مُنفَّذة على بيانات اختبار حتمية داخل خط التحقق. ليست تشغيلًا حقيقيًا ولا قبول عميل.</p>
-        </div>
+            <Section
+        id="rehearsals"
+        title="البروفات التقنية"
+        description="بروفات مُنفَّذة على بيانات اختبار حتمية داخل خط التحقق. ليست تشغيلًا حقيقيًا ولا قبول عميل."
+      >
         {rehearsals.length === 0 ? (
           <p className="empty">لم تُسجَّل بروفات لهذا المشروع.</p>
         ) : (
@@ -630,16 +621,13 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="access" className="card stack scroll-target" aria-labelledby="access-title">
-        <div>
-          <h2 id="access-title">الوصول والاسترداد</h2>
-          <p className="muted">
-            إلغاء العضوية يسري فورًا على مستوى قاعدة البيانات: العضو المُلغى يفقد القراءة والأوامر معًا،
-            ولا يمكن ترك المنظمة بلا مالك نشط واحد على الأقل.
-          </p>
-        </div>
+            <Section
+        id="access"
+        title="الوصول والاسترداد"
+        description="إلغاء العضوية يسري فورًا على مستوى قاعدة البيانات: العضو المُلغى يفقد القراءة والأوامر معًا، ولا يمكن ترك المنظمة بلا مالك نشط واحد على الأقل."
+      >
         {!isOwner ? (
           <p className="muted">إدارة الوصول متاحة لمالك المنظمة فقط.</p>
         ) : members.length === 0 ? (
@@ -670,7 +658,7 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

@@ -14,7 +14,7 @@ import {
 import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { EmptyState, SectionTabs } from '@/shared/ui';
+import { Section, EmptyState, SectionTabs } from '@/shared/ui';
 import { CapitalCallForm, ContributionForm } from './forms';
 
 export const dynamic = 'force-dynamic';
@@ -84,8 +84,9 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
         ]}
       />
 
-      <section className="card stack" aria-labelledby="funding-s1">
-        <h2 id="funding-s1">الموقف الرأسمالي للمشروع</h2>
+            <Section
+        title="الموقف الرأسمالي للمشروع"
+      >
         <div className="grid">
           <Metric label="الالتزام" value={formatMinorUnits(position?.committed_minor_units ?? '0', project.reporting_currency)} />
           <Metric label="المطلوب" value={formatMinorUnits(position?.called_minor_units ?? '0', project.reporting_currency)} />
@@ -110,10 +111,11 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           </table>
         </div>
         <p className="muted">هذه الأرقام مشتقة من السجلات المعتمدة ولا يمكن تعديلها يدويًا.</p>
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="funding-s2">
-        <h2 id="funding-s2">إصدار طلب رأس مال</h2>
+            <Section
+        title="إصدار طلب رأس مال"
+      >
         <CapitalCallForm
           organizationId={organizationId}
           projectId={projectId}
@@ -123,10 +125,11 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           commitments={commitments}
           serverNonce={capitalCallCommandNonce}
         />
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="funding-s3">
-        <h2 id="funding-s3">طلبات رأس المال</h2>
+            <Section
+        title="طلبات رأس المال"
+      >
         {calls.length === 0 ? (
           <p className="muted">لا توجد طلبات بعد.</p>
         ) : (
@@ -155,10 +158,11 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="funding-s4">
-        <h2 id="funding-s4">تسجيل مساهمة</h2>
+            <Section
+        title="تسجيل مساهمة"
+      >
         <ContributionForm
           organizationId={organizationId}
           projectId={projectId}
@@ -169,10 +173,11 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           participants={participants}
           serverNonce={contributionCommandNonce}
         />
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="funding-s5">
-        <h2 id="funding-s5">سجل المساهمات</h2>
+            <Section
+        title="سجل المساهمات"
+      >
         {contributions.length === 0 ? (
           <p className="muted">لا توجد مساهمات بعد.</p>
         ) : (
@@ -198,7 +203,7 @@ export default async function FundingPage({ params }: { params: Promise<{ projec
           </div>
         )}
         <p className="muted">تحتفظ كل مساهمة بالنسخة التي حكمتها وقت التسجيل.</p>
-      </section>
+      </Section>
     </section>
   );
 }

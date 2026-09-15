@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Section } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getCurrentMembership } from '@/features/finance/queries';
 import { getProject } from '@/features/projects/queries';
@@ -93,8 +94,10 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
       lifecycleState={project.lifecycle_state} />
     <p className="muted">حقائق تشغيلية عربية/RTL ثابتة فوق نموذج الدفعة. لا مبيعات ولا مشترين ولا مخزون مفترض ولا قيود مالية. <Link href={`/projects/${projectId}/livestock`}>العودة إلى المواقع والقطعان والأعداد</Link></p>
 
-    <section className="card stack" id="health" aria-labelledby="health-title">
-      <h2 id="health-title">الصحة والعلاجات والتطعيم</h2>
+        <Section
+      id="health"
+      title="الصحة والعلاجات والتطعيم"
+    >
       <details><summary>إضافة مرجع دواء أو لقاح</summary><MedicineProductForm {...context} commandNonce={newCommandNonce()} /></details>
       <details open><summary>تسجيل واقعة صحية</summary><HealthEventForm {...context} commandNonce={newCommandNonce()} cohorts={positive} animals={animals} products={products} /></details>
       <h3>مراجع المنتجات</h3>
@@ -108,10 +111,12 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
         </select></label><button type="submit">تطبيق المرشح</button>
       </form>
       <HealthLog all={health} filtered={filteredHealth} />
-    </section>
+    </Section>
 
-    <section className="card stack" id="animals" aria-labelledby="animals-title">
-      <h2 id="animals-title">الحيوانات المعرّفة اختياريًا</h2>
+        <Section
+      id="animals"
+      title="الحيوانات المعرّفة اختياريًا"
+    >
       <AnimalForm {...context} commandNonce={newCommandNonce()} cohorts={positive} />
       {animals.length === 0 ? <p className="muted">لا توجد هويات فردية. هذا طبيعي: الدفعة لا تتطلب سجلًا لكل رأس.</p> : <div className="responsive-grid">{animals.map((animal) => <article className="card" key={animal.id}>
         <h3>{animal.identifier_value}</h3>
@@ -119,10 +124,12 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
         <p>دفعة التعريف: {animal.cohort_reference}</p>
         <small className="muted">أثر التعريف على العدد: {animal.identification_quantity_effect} · {dateTime(animal.identified_at)}</small>
       </article>)}</div>}
-    </section>
+    </Section>
 
-    <section className="card stack" id="reproduction" aria-labelledby="reproduction-title">
-      <h2 id="reproduction-title">التكاثر</h2>
+        <Section
+      id="reproduction"
+      title="التكاثر"
+    >
       <ReproductionForm {...context} commandNonce={newCommandNonce()} cohorts={operational} animals={animals} />
       {reproduction.length === 0 ? <p className="muted">لا توجد وقائع تكاثر بعد.</p> : <ol className="stack">{reproduction.map((event) => <li key={event.id}>
         <strong>{REPRODUCTION_EVENT_LABEL[event.event_type]} · {event.cohort_reference}{event.subject_animal_identifier ? ` · ${event.subject_animal_identifier}` : ''}</strong>
@@ -130,10 +137,12 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
         {event.birth_quantity_effect ? <p className={event.affects_authoritative_quantity ? 'status' : 'muted'}>{BIRTH_QUANTITY_EFFECT_LABEL[event.birth_quantity_effect]}{event.observed_live_birth_count != null ? ` · حي: ${event.observed_live_birth_count}` : ''}{event.stillbirth_count != null ? ` · غير حي: ${event.stillbirth_count}` : ''}</p> : null}
         <small>{dateTime(event.effective_at)} · المنفذ: {event.performed_by_name}</small>
       </li>)}</ol>}
-    </section>
+    </Section>
 
-    <section className="card stack" id="feed" aria-labelledby="feed-title">
-      <h2 id="feed-title">التغذية</h2>
+        <Section
+      id="feed"
+      title="التغذية"
+    >
       <details><summary>إضافة صنف علف</summary><FeedItemForm {...context} commandNonce={newCommandNonce()} /></details>
       <FeedIssueForm {...context} commandNonce={newCommandNonce()} cohorts={positive} items={feedItems} />
       <h3>أصناف العلف</h3>
@@ -146,6 +155,6 @@ export default async function LivestockOperationsPage({ params, searchParams }: 
         <h4>{metric.cohort_reference}</h4>
         {metric.metric_status === 'AVAILABLE' ? <><p className="status">FCR = {metric.fcr}</p><p>{metric.feed_quantity_kg} كجم علف ÷ {metric.weight_gain_kg} كجم زيادة وزن</p></> : <p className="muted">{FCR_STATUS_LABEL[metric.metric_status] ?? 'غير متاح: الأدلة غير كافية'}</p>}
       </article>)}</div>}
-    </section>
+    </Section>
   </section>;
 }

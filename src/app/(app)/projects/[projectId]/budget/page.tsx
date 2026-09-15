@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Section } from '@/shared/ui';
 import { getProject } from '@/features/projects/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
@@ -111,8 +112,9 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         </div>
       </section>
 
-      <section className="card stack" aria-labelledby="budget-s1">
-        <h2 id="budget-s1">موازنات المشروع</h2>
+            <Section
+        title="موازنات المشروع"
+      >
         {budgets.length === 0 ? (
           <p className="muted">
             لا توجد موازنات بعد. أنشئ أول موازنة ثم اعتمدها؛ بعد الاعتماد يفرض السقف تلقائيًا
@@ -176,11 +178,12 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
       {approved.length > 0 && (
-        <section className="card stack" aria-labelledby="budget-s2">
-          <h2 id="budget-s2">الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)</h2>
+                <Section
+          title="الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="sr-only">جدول: الإصدار · المعالجة · السقف · الالتزامات · المدفوع · الفعلية المرحّلة · استثناءات معتمدة · المتبقي الفعلي · FAC للبند</caption>
@@ -223,12 +226,13 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             FAC للبند = الفعلية المرحّلة + المتبقي المعتمد للتنبؤ. تُفصل الفعلية والالتزامات
             والمتبقي كحقائق مستقلة؛ ولا يُخترع أي رقم توقعي آخر.
           </p>
-        </section>
+        </Section>
       )}
 
       {facRows.length > 0 && (
-        <section className="card stack" aria-labelledby="budget-s3">
-          <h2 id="budget-s3">التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
+                <Section
+          title="التوقع عند الإنجاز (FAC) على مستوى الموازنة"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="sr-only">جدول: الإصدار · إجمالي الموازنة · استثناءات معتمدة · الفعلية (Actual) · الالتزامات المفتوحة (PO) · المتبقي المعتمد للتنبؤ · FAC</caption>
@@ -262,18 +266,19 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             FAC = الفعلية + الالتزامات المفتوحة + المتبقي المعتمد للتنبؤ — التعريف المالي
             المرجعي بفصل مكوناته الثلاثة، لا صيغة max مختزلة.
           </p>
-        </section>
+        </Section>
       )}
 
-      <section className="card stack" aria-labelledby="budget-s4">
-        <h2 id="budget-s4">إنشاء مسودة موازنة</h2>
+            <Section
+        title="إنشاء مسودة موازنة"
+      >
         <BudgetForm
           organizationId={organizationId}
           projectId={projectId}
           currency={currency}
           commandNonce={budgetFormNonce}
         />
-      </section>
+      </Section>
     </section>
   );
 }

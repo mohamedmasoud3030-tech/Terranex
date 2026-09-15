@@ -1,5 +1,6 @@
 import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
+import { PermissionState, Section } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getOrganizations } from '@/features/organizations/queries';
@@ -182,11 +183,11 @@ export default async function IntakePage({
 
   if (!membership) {
     return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك لا تسمح بقراءة مسار إدخال هذا المشروع.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
+      <PermissionState
+        message="عضويتك لا تسمح بقراءة مسار إدخال هذا المشروع."
+        backHref={`/projects/${projectId}`}
+        backLabel="العودة للمشروع"
+      />
     );
   }
 
@@ -286,14 +287,12 @@ export default async function IntakePage({
         </nav>
       </header>
 
-      <section className="card stack" id="result" aria-labelledby="result-title">
-        <div className="topline">
-          <div>
-            <h2 id="result-title">نتيجة الجاهزية</h2>
-            <p>{readiness.verdictAr}</p>
-          </div>
-          <span className="status">{readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}</span>
-        </div>
+      <Section
+        id="result"
+        title="نتيجة الجاهزية"
+        description={readiness.verdictAr}
+        actions={<span className="status">{readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}</span>}
+      >
         <p className="error" role="status">{readiness.phase2ReasonAr}</p>
         {next && (
           <p>
@@ -315,7 +314,7 @@ export default async function IntakePage({
           </div>
         )}
         {!isOwner && <p className="muted">أوامر الإدخال المادية متاحة لمالك المنظمة فقط.</p>}
-      </section>
+      </Section>
 
       <section id="setup" className="stack scroll-target" aria-labelledby="setup-title">
         <div className="section-heading">

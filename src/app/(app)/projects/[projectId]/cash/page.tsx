@@ -1,5 +1,5 @@
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { SectionTabs } from '@/shared/ui';
+import { Section, SectionTabs } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { formatMinorUnits } from '@/shared/money';
@@ -94,8 +94,9 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         </div>
       </section>
 
-      <section className="card stack" aria-labelledby="cash-s1">
-        <h2 id="cash-s1">حسابات المشروع النقدية</h2>
+            <Section
+        title="حسابات المشروع النقدية"
+      >
         {accounts.length === 0 ? (
           <p className="muted">لا توجد حسابات نقدية بعد.</p>
         ) : (
@@ -126,10 +127,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             commandNonce={newCommandNonce()}
           />
         </details>
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="cash-s2">
-        <h2 id="cash-s2">إسناد مساهمات رأس المال إلى النقدية</h2>
+            <Section
+        title="إسناد مساهمات رأس المال إلى النقدية"
+      >
         {accounts.length === 0 ? (
           <p className="muted">أنشئ حسابًا نقديًا أولًا لربط المساهمات به.</p>
         ) : (
@@ -142,10 +144,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           />
         )}
         {!isOwner && <p className="muted">ترحيل الإسناد يتطلب صلاحية مالك المنظمة.</p>}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="cash-s3">
-        <h2 id="cash-s3">الدفعات</h2>
+            <Section
+        title="الدفعات"
+      >
         {payments.length === 0 ? (
           <p className="muted">لا توجد دفعات بعد. سجّل دفعة من صفحة التكاليف أو انتظر أول دفعة.</p>
         ) : (
@@ -198,10 +201,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             })}
           </details>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="cash-s4">
-        <h2 id="cash-s4">استيراد كشف الحساب البنكي</h2>
+            <Section
+        title="استيراد كشف الحساب البنكي"
+      >
         {accounts.length === 0 ? (
           <p className="muted">أنشئ حسابًا نقديًا أولًا لاستيراد كشف حسابه.</p>
         ) : (
@@ -212,10 +216,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             commandNonce={newCommandNonce()}
           />
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="cash-s5">
-        <h2 id="cash-s5">حركات كشف الحساب والمطابقة</h2>
+            <Section
+        title="حركات كشف الحساب والمطابقة"
+      >
         {lines.length === 0 ? (
           <p className="muted">لا توجد حركات بنكية مستوردة بعد. استيراد كشف الحساب لا ينشئ أي قيد محاسبي.</p>
         ) : (
@@ -266,10 +271,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           </div>
         )}
         <p className="muted">المطابقة تتم واحد-بواحد: دفعة واحدة مقابل سطر بنكي واحد بنفس الحساب والعملة والمبلغ (إشارة معاكسة).</p>
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="cash-s6">
-        <h2 id="cash-s6">سجل التدقيق</h2>
+            <Section
+        title="سجل التدقيق"
+      >
         {audit.length === 0 ? (
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (
@@ -291,7 +297,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

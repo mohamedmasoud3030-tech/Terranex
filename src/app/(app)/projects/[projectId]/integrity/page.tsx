@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { StatusBadge } from '@/shared/ui';
+import { Section, StatusBadge } from '@/shared/ui';
 import { RECORD_STATUS_LABEL, severityTone } from '@/features/projects/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { getCurrentMembership } from '@/features/finance/queries';
@@ -126,8 +126,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
       </section>
 
       {position ? (
-        <section className="card stack" aria-labelledby="integrity-s1">
-          <h2 id="integrity-s1">الوضع المالي الرسمي (من القيود المرحّلة فقط)</h2>
+                <Section
+          title="الوضع المالي الرسمي (من القيود المرحّلة فقط)"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="sr-only">جدول: النقدية · ذمم مفتوحة · إيراد معترف به · مصروفات مرحّلة · أعمال تحت التطوير · مستحقات مفتوحة · المدفوع · حجز ضمان قائم</caption>
@@ -160,11 +161,12 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">
             لا يوجد رقم «ربح» غامض: كل رقم يُشتق من القيود غير المعكوسة ويُفصل عن غيره.
           </p>
-        </section>
+        </Section>
       ) : null}
 
-      <section className="card stack" aria-labelledby="integrity-s2">
-        <h2 id="integrity-s2">إشارات نزاهة المشروع</h2>
+            <Section
+        title="إشارات نزاهة المشروع"
+      >
         {projectSignals.length === 0 ? (
           <p className="muted">لا توجد إشارات لهذا المشروع حاليًا.</p>
         ) : (
@@ -224,10 +226,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             </div>
           </>
         ) : null}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="integrity-s3">
-        <h2 id="integrity-s3">سياسات الاعتماد</h2>
+            <Section
+        title="سياسات الاعتماد"
+      >
         {policies.length === 0 ? (
           <p className="muted">
             لا توجد سياسات مخصصة؛ القواعد الأساسية (فصل الصلاحيات + حد المالك) تعمل دائمًا.
@@ -254,10 +257,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           </div>
         )}
         {isOwner ? <ApprovalPolicyForm organizationId={organizationId} commandNonce={newCommandNonce()} /> : null}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="integrity-s4">
-        <h2 id="integrity-s4">سجل الاستثناءات الموحد</h2>
+            <Section
+        title="سجل الاستثناءات الموحد"
+      >
         {exceptions.length === 0 ? (
           <p className="muted">لا توجد استثناءات مسجلة لهذا المشروع.</p>
         ) : (
@@ -313,10 +317,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             commandNonce={newCommandNonce()}
           />
         ) : null}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="integrity-s5">
-        <h2 id="integrity-s5">عقد العملة (سعر الصرف والتحويلات المحددة)</h2>
+            <Section
+        title="عقد العملة (سعر الصرف والتحويلات المحددة)"
+      >
         {snapshots.length === 0 ? (
           <p className="muted">لا توجد لقطات سعر صرف مسجلة بعد.</p>
         ) : (
@@ -376,10 +381,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             ) : null}
           </>
         ) : null}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="integrity-s6">
-        <h2 id="integrity-s6">التوحيد على مستوى المنظمة</h2>
+            <Section
+        title="التوحيد على مستوى المنظمة"
+      >
         {isOwner ? (
           <OrgReportingCurrencyForm
             organizationId={organizationId}
@@ -426,10 +432,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="integrity-s7">
-        <h2 id="integrity-s7">عقد المعالجة الضريبية</h2>
+            <Section
+        title="عقد المعالجة الضريبية"
+      >
         {taxRegistry.length === 0 ? (
           <p className="muted">لا توجد معالجات ضريبية مسجلة.</p>
         ) : (
@@ -454,7 +461,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           </div>
         )}
         {isOwner ? <TaxTreatmentForm organizationId={organizationId} commandNonce={newCommandNonce()} /> : null}
-      </section>
+      </Section>
     </section>
   );
 }

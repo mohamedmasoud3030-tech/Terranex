@@ -1,5 +1,5 @@
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { SectionTabs } from '@/shared/ui';
+import { Section, SectionTabs } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import {
@@ -58,8 +58,9 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
         ]}
       />
 
-      <section className="card stack" aria-labelledby="terms-s1">
-        <h2 id="terms-s1">الأطراف والمشاركون</h2>
+            <Section
+        title="الأطراف والمشاركون"
+      >
         {participants.length === 0 ? (
           <p className="muted">لم يُضف مستثمرون للمشروع بعد.</p>
         ) : (
@@ -85,11 +86,12 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
             )}
           </>
         )}
-      </section>
+      </Section>
 
       {activeVersion ? (
-        <section className="card stack" aria-labelledby="terms-s2">
-          <h2 id="terms-s2">الاتفاقية الحاكمة</h2>
+                <Section
+          title="الاتفاقية الحاكمة"
+        >
           <p><span className="status">نسخة {activeVersion.version_no} · مفعّلة</span></p>
           <p className="muted">
             سارية من {activeVersion.effective_date}. بصمة الشروط:{' '}
@@ -112,10 +114,11 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
           <p className="muted">
             هذه النسخة وشروط الالتزام غير قابلة للتعديل. مسار تعديل الاتفاقية وترحيل أثر التمويل مؤجل لمرحلة مستقلة؛ النسخة الحالية تظل الحاكمة.
           </p>
-        </section>
+        </Section>
       ) : (
-        <section className="card stack" aria-labelledby="terms-s3">
-          <h2 id="terms-s3">مسودة الاتفاقية</h2>
+                <Section
+          title="مسودة الاتفاقية"
+        >
           {participants.length === 0 ? (
             <p className="muted">أضف مستثمرًا واحدًا على الأقل قبل إنشاء مسودة الاتفاقية.</p>
           ) : (
@@ -144,7 +147,7 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
               </ul>
             </div>
           )}
-        </section>
+        </Section>
       )}
     </section>
   );

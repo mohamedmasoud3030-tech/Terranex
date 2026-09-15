@@ -19,7 +19,7 @@ import {
 } from '@/features/control/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { SectionTabs } from '@/shared/ui';
+import { Section, SectionTabs } from '@/shared/ui';
 import {
   AchieveMilestoneButton,
   ObligationScheduleForm,
@@ -165,8 +165,9 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         </div>
       </section>
 
-      <section className="card stack" aria-labelledby="costs-s1">
-        <h2 id="costs-s1">تسجيل التزام جديد</h2>
+            <Section
+        title="تسجيل التزام جديد"
+      >
         <ObligationForm
           organizationId={organizationId}
           projectId={projectId}
@@ -174,10 +175,11 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           parties={parties}
           commandNonce={newCommandNonce()}
         />
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="costs-s2">
-        <h2 id="costs-s2">التزامات المشروع</h2>
+            <Section
+        title="التزامات المشروع"
+      >
         {obligations.length === 0 ? (
           <p className="muted">لا توجد التزامات مسجلة بعد. سجّل أول التزام ثم اعتمده وادفعه من الحساب النقدي.</p>
         ) : (
@@ -360,10 +362,11 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="costs-s3">
-        <h2 id="costs-s3">إنجازات المشروع التعاقدية</h2>
+            <Section
+        title="إنجازات المشروع التعاقدية"
+      >
         {milestones.length === 0 ? (
           <p className="muted">لا توجد إنجازات مسجلة. تُستخدم لجدولة الدفعات وربط الإفراج عن الحجز.</p>
         ) : (
@@ -411,10 +414,11 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           projectId={projectId}
           commandNonce={newCommandNonce()}
         />
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="costs-s4">
-        <h2 id="costs-s4">الأثر المحاسبي ومصدر القيد</h2>
+            <Section
+        title="الأثر المحاسبي ومصدر القيد"
+      >
         {obligations.length === 0 ? (
           <p className="muted">لا توجد قيود بعد.</p>
         ) : (
@@ -435,10 +439,11 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             );
           })
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="costs-s5">
-        <h2 id="costs-s5">سجل التدقيق</h2>
+            <Section
+        title="سجل التدقيق"
+      >
         {audit.length === 0 ? (
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (
@@ -460,7 +465,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

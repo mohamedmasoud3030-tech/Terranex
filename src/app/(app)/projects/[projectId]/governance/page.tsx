@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Section } from '@/shared/ui';
 import { getProject } from '@/features/projects/queries';
 import { getProjectDecisions, getProjectRisks } from '@/features/governance/queries';
 import { getCurrentMembership } from '@/features/finance/queries';
@@ -78,13 +79,10 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
         </details>
       ) : <p className="muted">تسجيل القرارات المادية وحسم المخاطر مقصوران على مالك المنظمة وفق سلطة قاعدة البيانات.</p>}
 
-      <section className="card stack" aria-labelledby="open-risks-heading">
-        <div className="section-heading">
-          <div>
-            <h2 id="open-risks-heading">المخاطر المفتوحة</h2>
-            <p className="muted">المسؤول وتاريخ الاستحقاق ومصدر المعلومة محفوظة على Project boundary.</p>
-          </div>
-        </div>
+            <Section
+        title="المخاطر المفتوحة"
+        description="المسؤول وتاريخ الاستحقاق ومصدر المعلومة محفوظة على Project boundary."
+      >
         {openRisks.length === 0 ? (
           <p className="muted">لا توجد مخاطر مفتوحة مسجلة لهذا المشروع.</p>
         ) : (
@@ -116,15 +114,12 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="decisions-heading">
-        <div className="section-heading">
-          <div>
-            <h2 id="decisions-heading">سجل القرارات</h2>
-            <p className="muted">قرارات مادية مسجلة بالدليل، لا تُستبدل بتعديل صامت.</p>
-          </div>
-        </div>
+            <Section
+        title="سجل القرارات"
+        description="قرارات مادية مسجلة بالدليل، لا تُستبدل بتعديل صامت."
+      >
         {decisions.length === 0 ? (
           <p className="muted">لا توجد قرارات موثقة لهذا المشروع بعد.</p>
         ) : (
@@ -154,11 +149,12 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
       {resolvedRisks.length ? (
-        <section className="card stack" aria-labelledby="resolved-risks-heading">
-          <h2 id="resolved-risks-heading">مخاطر تم حسمها</h2>
+                <Section
+          title="مخاطر تم حسمها"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="sr-only">جدول: الخطر · النتيجة · دليل الحسم · وقت الحسم</caption>
@@ -177,7 +173,7 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
               </tbody>
             </table>
           </div>
-        </section>
+        </Section>
       ) : null}
     </section>
   );

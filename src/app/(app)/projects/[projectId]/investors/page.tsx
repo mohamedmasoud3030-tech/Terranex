@@ -1,5 +1,6 @@
 import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
+import { PermissionState, Section } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership } from '@/features/finance/queries';
@@ -20,11 +21,11 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
 
   if (!membership) {
     return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك الحالية لا تسمح بقراءة بيانات المشاركين لهذا المشروع.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
+      <PermissionState
+        message="عضويتك الحالية لا تسمح بقراءة بيانات المشاركين لهذا المشروع."
+        backHref={`/projects/${projectId}`}
+        backLabel="العودة للمشروع"
+      />
     );
   }
 
@@ -45,13 +46,10 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
         </span>
       </div>
 
-      <section className="card stack" aria-labelledby="investors-s1">
-        <div className="section-heading">
-          <div>
-            <h2 id="investors-s1">المشاركون المسجلون</h2>
-            <p className="muted">الهوية المسجلة لا تعني تلقائيًا ملكية أو entitlement أو حصة في الربح.</p>
-          </div>
-        </div>
+            <Section
+        title="المشاركون المسجلون"
+        description="الهوية المسجلة لا تعني تلقائيًا ملكية أو entitlement أو حصة في الربح."
+      >
         {participants.length === 0 ? (
           <p className="muted">لا يوجد مشاركون مسجلون لهذا المشروع.</p>
         ) : (
@@ -73,10 +71,11 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="investors-s2">
-        <h2 id="investors-s2">النسخة الاتفاقية الفعالة</h2>
+            <Section
+        title="النسخة الاتفاقية الفعالة"
+      >
         {activeVersion ? (
           <dl className="facts">
             <div><dt>الإصدار</dt><dd>v{activeVersion.version_no}</dd></div>
@@ -85,15 +84,16 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
             <div><dt>بصمة الشروط</dt><dd><code>{activeVersion.terms_hash}</code></dd></div>
           </dl>
         ) : (
-          <p className="muted">لا توجد نسخة اتفاقية ACTIVE مسجلة لهذا المشروع.</p>
+          <p className="muted">لا توجد نسخة اتفاقية سارية مسجلة لهذا المشروع.</p>
         )}
         <p className="muted">
           وجود اتفاقية فعالة لا يسمح للنظام بافتراض طريقة توزيع الأرباح أو تعريف الملكية. يجب أن تُحل قرارات الأعمال المفتوحة وتُربط بالمستندات الصحيحة قبل تفعيل هذه الأرقام.
         </p>
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="investors-s3">
-        <h2 id="investors-s3">ما يمكن نشره بأمان قبل R14</h2>
+            <Section
+        title="ما يمكن نشره بأمان قبل R14"
+      >
         <ul>
           <li>هوية المشارك والطرف القانوني المسجل.</li>
           <li>مرجع النسخة الاتفاقية الفعالة وبصمتها وتاريخ نفاذها.</li>
@@ -101,7 +101,7 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
           <li>تواريخ as-of وحالة حداثة البيانات في أي read model لاحق.</li>
         </ul>
         <p className="muted">أي حقل entitlement أو allocation أو distribution يظل غير فعال حتى R14.</p>
-      </section>
+      </Section>
     </section>
   );
 }

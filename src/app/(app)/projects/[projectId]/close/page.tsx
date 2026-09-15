@@ -21,7 +21,7 @@ import {
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 import { RECORD_STATUS_LABEL, recordStatusLabel } from '@/features/projects/labels';
-import { InPageTabs, StatusBadge } from '@/shared/ui';
+import { InPageTabs, Section, StatusBadge } from '@/shared/ui';
 import {
   ApproveCloseForm,
   ApproveCorrectionForm,
@@ -120,10 +120,12 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         تبقى آليات التخصيص والتوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.
       </div>
 
-      <section id="periods" className="card stack scroll-target" aria-labelledby="periods-title">
-        <h2 id="periods-title">الفترات المحاسبية</h2>
+            <Section
+        id="periods"
+        title="الفترات المحاسبية"
+      >
         {periods.length === 0 && (
-          <p className="muted">لا توجد فترات محاسبية بعد. أنشئ فترة OPEN لتبدأ.</p>
+          <p className="muted">لا توجد فترات محاسبية بعد. أنشئ فترة محاسبية مفتوحة لتبدأ.</p>
         )}
         {openPeriods.length > 0 && (
           <div className="stack">
@@ -163,10 +165,12 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
             disabled={!isOwner}
           />
         </details>
-      </section>
+      </Section>
 
-      <section id="snapshots" className="card stack scroll-target" aria-labelledby="snapshots-title">
-        <h2 id="snapshots-title">اللقطات المجمدة</h2>
+            <Section
+        id="snapshots"
+        title="اللقطات المجمدة"
+      >
         {snapshots.length === 0 && (
           <p className="muted">لا توجد لقطات معتمدة بعد.</p>
         )}
@@ -196,10 +200,12 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
             </table>
           </article>
         ))}
-      </section>
+      </Section>
 
-      <section id="corrections" className="card stack scroll-target" aria-labelledby="corrections-title">
-        <h2 id="corrections-title">طلبات التصحيح</h2>
+            <Section
+        id="corrections"
+        title="طلبات التصحيح"
+      >
         {corrections.length === 0 && (
           <p className="muted">لا توجد طلبات تصحيح.</p>
         )}
@@ -211,7 +217,7 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
             isOwner={isOwner}
           />
         ))}
-      </section>
+      </Section>
     </section>
   );
 }
