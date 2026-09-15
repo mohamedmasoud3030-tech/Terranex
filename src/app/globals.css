@@ -1563,13 +1563,14 @@ form.inline button { flex: 0 0 auto; }
 .auth-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   font-family: var(--font-display);
   font-size: 1.375rem;
   font-weight: 800;
   color: var(--on-brand-strong);
   letter-spacing: -0.01em;
 }
+.auth-logo { display: block; width: 46px; height: auto; }
 .auth-tagline {
   margin-block: 0;
   font-size: var(--fs-300);
@@ -1595,18 +1596,56 @@ form.inline button { flex: 0 0 auto; }
    dark panel exactly as they do on white. */
 .auth-verticals .sector-chip { background: var(--surface); }
 
+/* Task zone: the card is vertically centred; the attribution footer is the
+   last line of the page, pinned to the bottom edge of the column. */
 .auth-main {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
   padding: var(--sp-8) var(--sp-6);
+  min-height: 100vh;
 }
+.auth-main-inner { margin: auto; display: grid; gap: var(--sp-5); width: min(440px, 100%); }
 .auth-card {
-  width: min(440px, 100%);
+  width: 100%;
   box-shadow: var(--sh-3);
   padding: var(--sp-8);
+  border: 1px solid var(--line);
 }
 .auth-card h1 { font-size: 1.375rem; }
-.auth-card > a:last-child {
+.auth-card-brand { display: inline-flex; margin-block-end: var(--sp-1); }
+.auth-logo-sm { display: block; width: 40px; height: auto; }
+
+/* Form anatomy: explicit label row, icon-led control, full-width submit. */
+.auth-head { display: grid; gap: var(--sp-2); }
+.auth-form { gap: var(--sp-4); }
+.auth-field { display: grid; gap: var(--sp-2); }
+.auth-field-label {
+  font-size: var(--fs-300);
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.auth-control { position: relative; display: flex; align-items: center; }
+.auth-control svg {
+  position: absolute;
+  inset-inline-start: var(--sp-3);
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.auth-control input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--sp-3) var(--sp-4);
+  padding-inline-start: var(--sp-9);
+}
+.auth-submit {
+  width: 100%;
+  min-height: 48px;
+  font-size: var(--fs-400);
+  font-weight: 700;
+}
+.auth-alt-link {
   justify-self: start;
   font-size: var(--fs-300);
   font-weight: 700;
@@ -1616,11 +1655,26 @@ form.inline button { flex: 0 0 auto; }
   align-items: center;
 }
 
+/* Product attribution — the page's closing line, on both zones' shared paper. */
+.auth-footer {
+  text-align: center;
+  font-size: var(--fs-300);
+  color: var(--muted);
+  padding-block: var(--sp-3);
+}
+.auth-footer a {
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+.auth-footer a:hover { text-decoration: underline; }
+
 @media (max-width: 860px) {
   .auth-layout { grid-template-columns: minmax(0, 1fr); }
   .auth-aside { padding: var(--sp-6) var(--sp-5); align-items: start; }
   .auth-aside-inner { gap: var(--sp-3); }
   .auth-aside-copy { display: none; }
-  .auth-main { padding: var(--sp-5) var(--sp-4); }
-  .auth-card { padding: var(--sp-6); width: 100%; }
+  .auth-main { padding: var(--sp-5) var(--sp-4); min-height: 0; }
+  .auth-main-inner { width: 100%; }
+  .auth-card { padding: var(--sp-6); }
 }

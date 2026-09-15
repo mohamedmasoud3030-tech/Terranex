@@ -13,35 +13,39 @@ export function ForgotPasswordForm({ recoveryError = false }: ForgotPasswordForm
 
   return (
     <AuthShell>
-      <section className="card stack">
-        <div>
-          <h1>استعادة كلمة المرور</h1>
-          <p className="muted">أدخل بريدك الإلكتروني وسنرسل رابطًا آمنًا لإعادة تعيين كلمة المرور.</p>
-        </div>
+      <header className="auth-head">
+        <h1>استعادة كلمة المرور</h1>
+        <p className="muted">أدخل بريدك الإلكتروني وسنرسل رابطًا آمنًا لإعادة تعيين كلمة المرور.</p>
+      </header>
 
-        {recoveryError && (
-          <p className="error" role="alert">
-            الرابط غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.
-          </p>
-        )}
+      {recoveryError && (
+        <p className="error" role="alert">
+          الرابط غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.
+        </p>
+      )}
 
-        {state.sent ? (
-          <p role="status">
-            إذا كان البريد مسجلًا لدينا فستصلك رسالة تحتوي على رابط إعادة التعيين. تحقق من البريد والرسائل غير المرغوب فيها.
-          </p>
-        ) : (
-          <form action={action} className="stack" noValidate>
-            <label>
-              البريد الإلكتروني
+      {state.sent ? (
+        <p role="status">
+          إذا كان البريد مسجلًا لدينا فستصلك رسالة تحتوي على رابط إعادة التعيين. تحقق من البريد والرسائل غير المرغوب فيها.
+        </p>
+      ) : (
+        <form action={action} className="stack auth-form" noValidate>
+          <label className="auth-field">
+            <span className="auth-field-label">البريد الإلكتروني</span>
+            <span className="auth-control">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2.5" y="4.5" width="15" height="11" rx="1.5" />
+                <path d="m3.75 5.75 6.25 4.75 6.25-4.75" />
+              </svg>
               <input name="email" type="email" autoComplete="email" required />
-            </label>
-            {state.error && <p className="error" role="alert">{state.error}</p>}
-            <button disabled={pending}>{pending ? 'جارٍ الإرسال…' : 'إرسال رابط الاستعادة'}</button>
-          </form>
-        )}
+            </span>
+          </label>
+          {state.error && <p className="error" role="alert">{state.error}</p>}
+          <button className="auth-submit" disabled={pending}>{pending ? 'جارٍ الإرسال…' : 'إرسال رابط الاستعادة'}</button>
+        </form>
+      )}
 
-        <a href="/login">العودة إلى تسجيل الدخول</a>
-      </section>
+      <a className="auth-alt-link" href="/login">العودة إلى تسجيل الدخول</a>
     </AuthShell>
   );
 }

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { SECTOR_AR, SECTOR_KEYS, SECTOR_TONE_CLASS } from '@/features/workspace/sectors';
 import { SectorGlyph } from './sector';
@@ -11,6 +12,15 @@ import { SectorGlyph } from './sector';
  * testimonials, no counters, no marketing claims: this is the sign-in screen
  * of a financial system, and an unearned claim here is the fastest way to
  * lose the trust the rest of the interface is built to earn.
+ *
+ * The owner's real brand mark (gold on transparency, `public/logo.png`)
+ * crowns both zones: beside the wordmark on the dark panel and at the head
+ * of the task card. It is decorative in both places — the adjacent text
+ * carries the name, so the mark stays `alt=""`.
+ *
+ * The page closes with the product attribution: «إحدى منتجات Lena Digital»,
+ * linking to the Lena Digital platform. It sits under the card on every
+ * auth surface, on brand-coloured text, as the last line of the page.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -18,9 +28,14 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <aside className="auth-aside" aria-hidden="false">
         <div className="auth-aside-inner">
           <span className="auth-brand">
-            <svg width="30" height="30" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M2.2 12.6 8 2.6l5.8 10M2.2 12.6h11.6M4.4 12.6 8 6.4l3.6 6.2" />
-            </svg>
+            <Image
+              src="/logo.png"
+              alt=""
+              width={46}
+              height={45}
+              priority
+              className="auth-logo"
+            />
             تيرانكس
           </span>
           <p className="auth-tagline">نظام تشغيل الاستثمار</p>
@@ -40,7 +55,20 @@ export function AuthShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="auth-main">
-        <section className="card stack auth-card">{children}</section>
+        <div className="auth-main-inner">
+          <section className="card stack auth-card">
+            <span className="auth-card-brand" aria-hidden="true">
+              <Image src="/logo.png" alt="" width={40} height={39} className="auth-logo-sm" />
+            </span>
+            {children}
+          </section>
+          <footer className="auth-footer">
+            إحدى منتجات{' '}
+            <a href="https://lenadigital.vercel.app/en" target="_blank" rel="noopener noreferrer">
+              Lena Digital
+            </a>
+          </footer>
+        </div>
       </div>
     </main>
   );
