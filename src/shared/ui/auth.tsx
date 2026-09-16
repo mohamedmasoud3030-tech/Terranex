@@ -1,75 +1,42 @@
 import Image from 'next/image';
 import type { ReactNode } from 'react';
-import { SECTOR_AR, SECTOR_KEYS, SECTOR_TONE_CLASS } from '@/features/workspace/sectors';
-import { SectorGlyph } from './sector';
 
 /**
- * Auth / system-state shell (template T5).
+ * Auth / system-state shell (template T5, dark reference build).
  *
- * Two zones, RTL-ordered: the product identity on the leading (right) side,
- * the single task on the trailing side. The identity zone states what the
- * product is and which three verticals it operates — nothing else. No
- * testimonials, no counters, no marketing claims: this is the sign-in screen
- * of a financial system, and an unearned claim here is the fastest way to
- * lose the trust the rest of the interface is built to earn.
+ * A single centred column on deep navy: the full brand lockup (mark +
+ * wordmark + tagline, `public/logo-full.png`) crowns a hairline-bordered
+ * card that carries the one task of the screen — heading, fields, action.
+ * No side panel, no chips, no claims: the reference design keeps the
+ * sign-in surface a quiet, single-purpose moment, so the identity is the
+ * logo and nothing else.
  *
- * The owner's real brand mark (gold on transparency, `public/logo.png`)
- * crowns both zones: beside the wordmark on the dark panel and at the head
- * of the task card. It is decorative in both places — the adjacent text
- * carries the name, so the mark stays `alt=""`.
- *
- * The page closes with the product attribution: «إحدى منتجات Lena Digital»,
- * linking to the Lena Digital platform. It sits under the card on every
- * auth surface, on brand-coloured text, as the last line of the page.
+ * The card sits on the page background with only a 1px outline, the exact
+ * anatomy of the approved reference (outlined panel, dark inset fields,
+ * one full-width accent action). The page closes with the product
+ * attribution — «إحدى منتجات Lena Digital» — linking to the Lena Digital
+ * platform, pinned under the card as the last line of the page.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <main className="auth-layout">
-      <aside className="auth-aside" aria-hidden="false">
-        <div className="auth-aside-inner">
-          <span className="auth-brand">
-            <Image
-              src="/logo.png"
-              alt=""
-              width={46}
-              height={45}
-              priority
-              className="auth-logo"
-            />
-            تيرانكس
-          </span>
-          <p className="auth-tagline">نظام تشغيل الاستثمار</p>
-          <p className="auth-aside-copy">
-            مساحة تشغيل واحدة لإدارة الاستثمار في أصول حقيقية: دورة المشروع،
-            الأدلة، والدفتر المالي — من الالتزام حتى الإغلاق.
-          </p>
-          <ul className="auth-verticals" aria-label="القطاعات التي يغطيها النظام">
-            {SECTOR_KEYS.map((sector) => (
-              <li key={sector} className={`sector-chip ${SECTOR_TONE_CLASS[sector]}`}>
-                <SectorGlyph sector={sector} />
-                {SECTOR_AR[sector]}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </aside>
-
-      <div className="auth-main">
-        <div className="auth-main-inner">
-          <section className="card stack auth-card">
-            <span className="auth-card-brand" aria-hidden="true">
-              <Image src="/logo.png" alt="" width={40} height={39} className="auth-logo-sm" />
-            </span>
-            {children}
-          </section>
-          <footer className="auth-footer">
-            إحدى منتجات{' '}
-            <a href="https://lenadigital.vercel.app/en" target="_blank" rel="noopener noreferrer">
-              Lena Digital
-            </a>
-          </footer>
-        </div>
-      </div>
+      <section className="auth-card">
+        <Image
+          src="/logo-full.png"
+          alt="تيرانكس"
+          width={140}
+          height={144}
+          priority
+          className="auth-lockup"
+        />
+        {children}
+      </section>
+      <footer className="auth-footer">
+        إحدى منتجات{' '}
+        <a href="https://lenadigital.vercel.app/en" target="_blank" rel="noopener noreferrer">
+          Lena Digital
+        </a>
+      </footer>
     </main>
   );
 }

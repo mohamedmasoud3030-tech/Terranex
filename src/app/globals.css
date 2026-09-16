@@ -139,6 +139,27 @@
 
   --shell-w: 1080px;
   --shell-wide: 1360px;
+
+  /* Auth reference palette — the approved dark sign-in build (template T5).
+     Deep navy ground, hairline panel, dark inset fields, one light-blue
+     action. Scoped to .auth-layout; every value sampled from the approved
+     reference artwork, kept here so literals live only in this block. */
+  --auth-bg: #111629;
+  --auth-glow: rgba(96, 128, 210, 0.16);
+  --auth-field: #060b1e;
+  --auth-line: #373f54;
+  --auth-line-strong: #46506b;
+  --auth-ink: #f2f9ff;
+  --auth-ink-strong: #ffffff;
+  --auth-muted: #9fa6b8;
+  --auth-accent: #6ea0f0;
+  --auth-accent-ring: rgba(110, 160, 240, 0.18);
+  --auth-on-accent: #0b1c3a;
+  --auth-danger: #f2a0a0;
+  --auth-note: #e8c689;
+  --auth-link: #a9c4f5;
+  --auth-note-wash: rgba(232, 198, 137, 0.1);
+  --auth-note-edge: rgba(232, 198, 137, 0.35);
 }
 
 /* ------------------------------------------------------- 2. BASE & TYPE
@@ -1546,135 +1567,158 @@ form.inline button { flex: 0 0 auto; }
    ------------------------------------------------------------------------ */
 .auth-layout {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  background: var(--paper);
-}
-.auth-aside {
-  background:
-    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
-    linear-gradient(160deg, var(--brand) 0%, var(--brand-strong) 100%);
-  color: var(--on-brand);
-  display: flex;
-  align-items: center;
-  padding: var(--sp-10) var(--sp-8);
-}
-.auth-aside-inner { display: grid; gap: var(--sp-4); max-width: 34rem; }
-.auth-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-3);
-  font-family: var(--font-display);
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: var(--on-brand-strong);
-  letter-spacing: -0.01em;
-}
-.auth-logo { display: block; width: 46px; height: auto; }
-.auth-tagline {
-  margin-block: 0;
-  font-size: var(--fs-300);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--on-brand-faint);
-}
-.auth-aside-copy {
-  margin-block: 0;
-  color: var(--on-brand-muted);
-  line-height: 1.75;
-  max-width: 40ch;
-}
-.auth-verticals {
-  list-style: none;
-  margin: var(--sp-2) 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-/* Chips keep their own wash so the verticals stay distinguishable on the
-   dark panel exactly as they do on white. */
-.auth-verticals .sector-chip { background: var(--surface); }
-
-/* Task zone: the card is vertically centred; the attribution footer is the
-   last line of the page, pinned to the bottom edge of the column. */
-.auth-main {
   display: flex;
   flex-direction: column;
-  padding: var(--sp-8) var(--sp-6);
-  min-height: 100vh;
+  align-items: center;
+  padding: clamp(48px, 9vh, 100px) 16px 20px;
+  background:
+    radial-gradient(460px 380px at 0% 0%, var(--auth-glow), transparent 70%),
+    var(--auth-bg);
 }
-.auth-main-inner { margin: auto; display: grid; gap: var(--sp-5); width: min(440px, 100%); }
-.auth-card {
-  width: 100%;
-  box-shadow: var(--sh-3);
-  padding: var(--sp-8);
-  border: 1px solid var(--line);
-}
-.auth-card h1 { font-size: 1.375rem; }
-.auth-card-brand { display: inline-flex; margin-block-end: var(--sp-1); }
-.auth-logo-sm { display: block; width: 40px; height: auto; }
 
-/* Form anatomy: explicit label row, icon-led control, full-width submit. */
-.auth-head { display: grid; gap: var(--sp-2); }
-.auth-form { gap: var(--sp-4); }
-.auth-field { display: grid; gap: var(--sp-2); }
-.auth-field-label {
+/* Outlined panel on the page background — the reference keeps the card as a
+   hairline frame, not a filled surface. */
+.auth-card {
+  width: min(430px, 100%);
+  border: 1px solid var(--auth-line);
+  border-radius: 14px;
+  padding: 38px 32px 30px;
+  display: grid;
+  justify-items: stretch;
+  text-align: center;
+}
+.auth-lockup {
+  justify-self: center;
+  display: block;
+  width: 140px;
+  height: auto;
+  margin-block-end: 52px;
+}
+
+.auth-head {
+  display: grid;
+  gap: 10px;
+  margin-block-end: 26px;
+}
+.auth-card h1 {
+  margin: 0;
+  color: var(--auth-ink-strong);
+  font-size: 17px;
+  font-weight: 800;
+}
+.auth-sub {
+  margin: 0;
+  color: var(--auth-muted);
   font-size: var(--fs-300);
-  font-weight: 700;
-  color: var(--ink-2);
+  line-height: 1.8;
 }
-.auth-control { position: relative; display: flex; align-items: center; }
-.auth-control svg {
-  position: absolute;
-  inset-inline-start: var(--sp-3);
-  width: 18px;
-  height: 18px;
-  color: var(--muted);
-  pointer-events: none;
+
+/* Fields: dark insets with a hairline edge, labels above, RTL right-aligned. */
+.auth-form { display: grid; gap: 18px; }
+.auth-field { display: grid; gap: 8px; text-align: start; }
+.auth-label {
+  font-size: var(--fs-300);
+  font-weight: 600;
+  color: var(--auth-ink);
 }
-.auth-control input {
+.auth-field input {
   width: 100%;
   min-height: 48px;
-  padding: var(--sp-3) var(--sp-4);
-  padding-inline-start: var(--sp-9);
+  padding: 6px 14px;
+  background: var(--auth-field);
+  border: 1px solid var(--auth-line);
+  border-radius: 10px;
+  color: var(--auth-ink);
+  font-size: var(--fs-400);
+  caret-color: var(--auth-accent);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
+.auth-field input:hover { border-color: var(--auth-line-strong); }
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--auth-accent);
+  box-shadow: 0 0 0 3px var(--auth-accent-ring);
+}
+/* Keep the dark inset when the browser paints autofill. */
+.auth-field input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-field) inset;
+  -webkit-text-fill-color: var(--auth-ink);
+  caret-color: var(--auth-accent);
+}
+
+/* The single accent action: light blue field, deep navy label. */
 .auth-submit {
   width: 100%;
-  min-height: 48px;
+  min-height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: var(--auth-accent);
+  color: var(--auth-on-accent);
   font-size: var(--fs-400);
-  font-weight: 700;
+  font-weight: 800;
+  transition: filter 140ms ease, transform 140ms ease;
 }
-.auth-alt-link {
-  justify-self: start;
-  font-size: var(--fs-300);
-  font-weight: 700;
-  color: var(--brand);
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
+.auth-submit:hover { filter: brightness(1.06); }
+.auth-submit:active { transform: translateY(1px); }
+.auth-submit:disabled { filter: saturate(0.6) brightness(0.9); cursor: progress; }
+.auth-submit:focus-visible {
+  outline: 2px solid var(--auth-ink-strong);
+  outline-offset: 2px;
 }
 
-/* Product attribution — the page's closing line, on both zones' shared paper. */
-.auth-footer {
-  text-align: center;
+.auth-error {
+  margin: 0;
+  color: var(--auth-danger);
   font-size: var(--fs-300);
-  color: var(--muted);
-  padding-block: var(--sp-3);
+  line-height: 1.7;
+}
+.auth-note {
+  margin: 0;
+  color: var(--auth-note);
+  font-size: var(--fs-300);
+  line-height: 1.8;
+}
+.auth-banner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--auth-note-edge);
+  background: var(--auth-note-wash);
+  color: var(--auth-note);
+  font-size: var(--fs-300);
+  line-height: 1.7;
+}
+
+.auth-alt-link {
+  margin-block-start: 20px;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--auth-muted);
+  font-size: var(--fs-300);
+  font-weight: 600;
+  transition: color 140ms ease;
+}
+.auth-alt-link:hover,
+.auth-alt-link:focus-visible { color: var(--auth-ink); }
+
+/* Product attribution — the page's closing line, pinned under the card. */
+.auth-footer {
+  margin-block-start: auto;
+  padding-block: 20px 8px;
+  color: var(--auth-muted);
+  font-size: var(--fs-300);
+  text-align: center;
 }
 .auth-footer a {
-  color: var(--brand);
+  color: var(--auth-link);
   font-weight: 700;
   text-decoration: none;
 }
 .auth-footer a:hover { text-decoration: underline; }
 
-@media (max-width: 860px) {
-  .auth-layout { grid-template-columns: minmax(0, 1fr); }
-  .auth-aside { padding: var(--sp-6) var(--sp-5); align-items: start; }
-  .auth-aside-inner { gap: var(--sp-3); }
-  .auth-aside-copy { display: none; }
-  .auth-main { padding: var(--sp-5) var(--sp-4); min-height: 0; }
-  .auth-main-inner { width: 100%; }
-  .auth-card { padding: var(--sp-6); }
+@media (max-width: 560px) {
+  .auth-card { padding: 30px 22px 26px; }
+  .auth-lockup { width: 124px; margin-block-end: 40px; }
 }

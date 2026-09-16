@@ -15,32 +15,26 @@ export function ForgotPasswordForm({ recoveryError = false }: ForgotPasswordForm
     <AuthShell>
       <header className="auth-head">
         <h1>استعادة كلمة المرور</h1>
-        <p className="muted">أدخل بريدك الإلكتروني وسنرسل رابطًا آمنًا لإعادة تعيين كلمة المرور.</p>
+        <p className="auth-sub">أدخل بريدك الإلكتروني وسنرسل لك رابطًا آمنًا لإعادة التعيين.</p>
       </header>
 
       {recoveryError && (
-        <p className="error" role="alert">
+        <p className="auth-error" role="alert">
           الرابط غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.
         </p>
       )}
 
       {state.sent ? (
-        <p role="status">
+        <p className="auth-note" role="status">
           إذا كان البريد مسجلًا لدينا فستصلك رسالة تحتوي على رابط إعادة التعيين. تحقق من البريد والرسائل غير المرغوب فيها.
         </p>
       ) : (
-        <form action={action} className="stack auth-form" noValidate>
+        <form action={action} className="auth-form" noValidate>
           <label className="auth-field">
-            <span className="auth-field-label">البريد الإلكتروني</span>
-            <span className="auth-control">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="2.5" y="4.5" width="15" height="11" rx="1.5" />
-                <path d="m3.75 5.75 6.25 4.75 6.25-4.75" />
-              </svg>
-              <input name="email" type="email" autoComplete="email" required />
-            </span>
+            <span className="auth-label">البريد الإلكتروني</span>
+            <input name="email" type="email" autoComplete="email" required />
           </label>
-          {state.error && <p className="error" role="alert">{state.error}</p>}
+          {state.error && <p className="auth-error" role="alert">{state.error}</p>}
           <button className="auth-submit" disabled={pending}>{pending ? 'جارٍ الإرسال…' : 'إرسال رابط الاستعادة'}</button>
         </form>
       )}
