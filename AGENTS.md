@@ -30,6 +30,26 @@ Read these files completely before changing the product:
 
 No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
+## Project Agent Skills
+
+Terranex project skills live under .agents/skills and follow the Agent Skills SKILL.md format with progressive disclosure.
+
+- Load only the skill or skills whose frontmatter description matches the current task; do not preload the whole skill set.
+- Project skills are operational workflows, not product/business authority. AGENTS.md, canonical Terranex documents, ADRs, and OPEN_BUSINESS_DECISIONS take precedence.
+- External skill repositories are design evidence. Do not vendor generic copies beside the Terranex synthesis unless a later decision explicitly requires it.
+- Before adding, merging, or deleting a project skill, follow docs/agent-os/SKILL_DESIGN_STANDARD.md and update the gap analysis/source registry.
+
+Current project skills:
+
+| Skill | Trigger domain |
+| --- | --- |
+| terranex-architecture-decision | ADRs, system design, technology/data/API boundaries |
+| terranex-implementation-planning | Deterministic implementation plans and agent handoffs |
+| terranex-implementation | Runtime implementation, fixes, tests, migrations, dependencies |
+| terranex-code-review | Risk-routed diff/branch/PR review; review remains separate from fix |
+| terranex-database | PostgreSQL, migrations, RLS, tenant isolation, data/financial grain |
+| terranex-threat-model | Repository-grounded AppSec threat modeling for trust-boundary changes |
+
 ## Non-negotiable boundary
 
 - Do not refactor, port, or recreate legacy business logic by default.
