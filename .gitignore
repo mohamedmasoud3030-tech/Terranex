@@ -61,3 +61,6 @@ tests/.compiled/
 .cache/
 .parcel-cache/
 scripts/pglite-roundtrip.cjs
+
+# Local PGlite replay harness (dev only; see scripts/pglite-replay.mjs)
+scripts/pglite-replay.mjs
