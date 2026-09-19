@@ -4,6 +4,14 @@ import { getProjects } from '@/features/projects/queries';
 import { getPortfolios } from '@/features/portfolios/queries';
 import { getRegisteredAssets, getSectorPerformance } from '@/features/assets/queries';
 import { getIntegritySignals, getOrganizationConsolidation } from '@/features/control/queries';
+import { getSectorManagementResult } from '@/features/result/queries';
+import {
+  qualifiedResultViewFromRow,
+  presentQualifiedResult,
+  unclassifiedCaveatAr,
+  RESULT_TERM_AR,
+  type QualifiedResultView,
+} from '@/features/result/qualified-result';
 import { sectorLandingHref } from '@/features/workspace/nav';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
 import { formatMinorUnits } from '@/shared/money';
@@ -27,15 +35,29 @@ export default async function Home() {
       />
     );
   }
-  const [projects, portfolios, assets, sectorPerformance, consolidation, integritySignals] =
+  const [projects, portfolios, assets, sectorPerformance, sectorResultRows, consolidation, integritySignals] =
     await Promise.all([
       getProjects(org.id),
       getPortfolios(org.id),
       getRegisteredAssets(org.id),
       getSectorPerformance(org.id),
+      getSectorManagementResult(org.id),
       getOrganizationConsolidation(org.id),
       getIntegritySignals(org.id),
     ]);
+
+  const resultBySector = new Map<string, QualifiedResultView>();
+  const resultRowBySector = new Map(
+    sectorResultRows.map((row) => [`${row.sector}-${row.currency}`, row]),
+  );
+  let resultContractError: string | null = null;
+  for (const row of sectorResultRows) {
+    try {
+      resultBySector.set(`${row.sector}-${row.currency}`, qualifiedResultViewFromRow(row));
+    } catch (error) {
+      resultContractError = error instanceof Error ? error.message : String(error);
+    }
+  }
 
   const consolidated = consolidation.find((row) => row.level === 'CONSOLIDATED') ?? null;
   const canShowConsolidatedMoney =
@@ -117,10 +139,18 @@ export default async function Home() {
         <div className="section-heading">
           <div>
             <h2 id="sector-performance-heading">أداء القطاعات</h2>
-            <p className="muted">كل صف يحتفظ بعملته الأصلية؛ المصروفات تظهر منفصلة عن النتيجة المحققة.</p>
+            <p className="muted">
+              كل صف يحتفظ بعملته الأصلية. {RESULT_TERM_AR} تظهر بأساسها القطاعي وحالة تصنيف
+              تكلفتها؛ لا يُعرض رقم بلا أساس.
+            </p>
           </div>
           <Link className="button secondary" href="/assets">الأصول والأداء</Link>
         </div>
+        {resultContractError ? (
+          <div className="banner info">
+            تعذّر قراءة عقد النتيجة المؤهَّلة لأحد القطاعات، ولم نعرض رقمًا بديلًا: {resultContractError}
+          </div>
+        ) : null}
         {sectorPerformance.length === 0 ? (
           <p className="muted">لا توجد حقائق مالية قطاعية مسجلة بعد.</p>
         ) : (
@@ -133,29 +163,81 @@ export default async function Home() {
                   <th>الأصول</th>
                   <th>النقدية</th>
                   <th>الإيراد المعترف به</th>
-                  <th>تكلفة المبيعات</th>
-                  <th>المصروفات</th>
-                  <th>النتيجة المحققة*</th>
+                  <th>التكلفة المخصومة في النتيجة</th>
+                  <th>تكلفة تشغيل غير مُصنَّفة</th>
+                  <th>{RESULT_TERM_AR}</th>
                 </tr>
               </thead>
               <tbody>
-                {sectorPerformance.map((row) => (
-                  <tr key={`${row.sector}-${row.currency}`}>
-                    <td data-label="القطاع">{SECTOR_LABEL[row.sector] ?? row.sector}</td>
-                    <td data-label="المشاريع">{row.project_count}</td>
-                    <td data-label="الأصول">{row.asset_count}</td>
-                    <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                    <td data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
-                    <td data-label="تكلفة المبيعات">{formatMinorUnits(row.cost_of_sale_minor_units, row.currency)}</td>
-                    <td data-label="المصروفات">{formatMinorUnits(row.expense_posted_minor_units, row.currency)}</td>
-                    <td data-label="النتيجة المحققة*">{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
-                  </tr>
-                ))}
+                {sectorPerformance.map((row) => {
+                  const key = `${row.sector}-${row.currency}`;
+                  const sectorResult = resultBySector.get(key);
+                  const presentation = sectorResult ? presentQualifiedResult(sectorResult) : null;
+                  const caveat = sectorResult ? unclassifiedCaveatAr(sectorResult) : null;
+                  return (
+                    <tr key={key}>
+                      <td data-label="القطاع">{SECTOR_LABEL[row.sector] ?? row.sector}</td>
+                      <td data-label="المشاريع">{row.project_count}</td>
+                      <td data-label="الأصول">{row.asset_count}</td>
+                      <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                      <td data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
+                      <td data-label="التكلفة المخصومة في النتيجة">
+                        {sectorResult
+                          ? formatMinorUnits(
+                              resultRowBySector.get(key)?.result_deducted_cost_minor_units ?? '0',
+                              sectorResult.currency,
+                            )
+                          : '—'}
+                      </td>
+                      <td
+                        data-label="تكلفة تشغيل غير مُصنَّفة"
+                        className={
+                          sectorResult?.unclassifiedMinorUnits &&
+                          /^[1-9]/.test(sectorResult.unclassifiedMinorUnits)
+                            ? 'unclassified-cost'
+                            : undefined
+                        }
+                      >
+                        {sectorResult?.unclassifiedMinorUnits
+                          ? formatMinorUnits(sectorResult.unclassifiedMinorUnits, sectorResult.currency)
+                          : '—'}
+                      </td>
+                      <td data-label={RESULT_TERM_AR}>
+                        {presentation === null ? (
+                          <span className="muted">—</span>
+                        ) : presentation.kind === 'SUPPRESSED' ? (
+                          <>
+                            <strong className="result-suppressed">لا نعرض نتيجة</strong>
+                            <p className="muted">{presentation.reasonAr}</p>
+                            <p className="muted">{presentation.captionAr}</p>
+                          </>
+                        ) : (
+                          <>
+                            <strong className={presentation.tone === 'caution' ? 'result-caution' : undefined}>
+                              {presentation.amountText}
+                            </strong>
+                            <p className="muted">{presentation.captionAr}</p>
+                            {caveat ? <p className="unclassified-note">{caveat}</p> : null}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
-        <p className="muted">* النتيجة المحققة هنا = الإيراد المعترف به − تكلفة المبيعات وفق read model الحالي؛ المصروفات التشغيلية معروضة في عمود مستقل وليست مضمّنة في هذا الرقم.</p>
+        <p className="muted">
+          {RESULT_TERM_AR} مقياس إداري على أساس قطاعي معلن: العقار = نتيجة التصرفات المحققة +
+          الإيجار − التكلفة المنسوبة للأصل (عدا تكاليف البيع المخصومة داخل نتيجة التصرف) − المصروف
+          المُعلن؛ الزراعة والماشية = إيراد البيع − التكلفة المنسوبة للدورات أو القطعان − المصروف
+          المُعلن. ليست ربحًا ولا عائدًا للمستثمر، ولا تتضمن تقييمًا أو مضاعفات.
+        </p>
+        <p className="muted">
+          الرقم القديم «النتيجة المحققة» كان يخصم تكلفة المبيعات للعقار فقط، فيظهر إيراد الزراعة
+          والماشية وكأنه نتيجة صافية. أُزيل من المقارنة ولم يُعتمد عليه.
+        </p>
       </section>
 
       {integritySignals.length ? (
