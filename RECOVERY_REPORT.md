@@ -6,7 +6,9 @@
 **Date of evidence:** 2026-10-06
 **Working tree at close:** clean (`git status --short` empty, remote = local)
 
-Gates at tip: `tsc --noEmit` clean · `eslint .` exit 0 · **76 test files / 1104 tests passing** · `npm run build` clean · five design generators `--check`-current with zero writes · runtime harness **14 routes, all assertions passed**.
+Gates at tip: `tsc --noEmit` clean · `eslint .` exit 0 · **76 test files / 1104 tests passing** · `npm run build` clean · five design generators `--check`-current with zero writes · runtime harness **14 routes, all assertions passed** · CI `app` job **passed** on a clean clone.
+
+Database (added after the first draft, by execution rather than reading): **106/106 migrations replay cleanly on PostgreSQL 16.14**; **RLS posture measured from the catalog** — 163 `public` tables, 162 forced, **zero** reachable by `authenticated` without RLS. The DB **suites** could not run here (54 need `psql` client features, 42 are shell concurrency suites) and CI's `database` job is **red at `supabase/tests/19_s6_legacy_concurrency_window.sql`** — a failure **inherited from `main`**, since this branch changes zero files under `supabase/`. See §D and §I.
 
 ---
 
@@ -60,7 +62,7 @@ demo/real-estate-showcase-data ══ d5885d1                      (showcase fix
 | **A** correct + integrated | | H1 result truth + ADR-0034; the three `*ByCurrency` contracts; `src/shared/money/by-currency.ts`; the design layer (docs/public/ui/error+loading); `getProjectPosition` singleton semantics; the repaired `/overview /revenue /cash /costs /budget /funding /operations /integrity` surfaces |
 | **B** correct, not integrated | | PR #176's branch as a *branch* (work integrated by content); S5 allocation/distribution readers — **no `/allocation` or `/distribution` route exists**, so `DistributionCapacity` and friends are unreachable by any user; `s5_rule_sets_read` |
 | **C** correct, incomplete | | `/close` — `ClosedPeriodCard` still receives `gates` and `exceptions` props that are never rendered (§D); intake `drafts` and `draftVersions` locals indicate a dropped drafts view |
-| **D** implemented, insufficiently verified | | all 106 migrations / 112 DB suites — **`npm run db:test` cannot run in this environment** (no `psql`/`pg_dump`/`docker`), so DB claims are "unverified by execution"; `scripts/ui-preview/snapshot.mjs` (needs chromium, absent) |
+| **D** implemented, insufficiently verified | | **54 SQL suites + 42 shell suites** of the DB layer — unrunnable here (they need the `psql` client: `\gset`/`:'var'` interpolation and competing concurrent sessions). All 106 migrations *are* verified by execution, and the RLS posture is verified by execution; the suites are not. Also `scripts/ui-preview/snapshot.mjs` (needs chromium, absent) |
 | **E** duplicated | | the three functional-duplicate scalar readers (`getProjectCapitalPosition`, `getProjectOperatingResult`, and the position scalar path) — now removed as TS readers; their **views are retained deliberately** |
 | **F** obsolete | | five superseded legacy copies of the costs command forms; 12 dead imports; the superseded "current baseline" figures in six audit documents |
 | **G** incorrect | | the class-G pattern: summing `*_minor_units` rows that each carry their own currency, then formatting the total with `project.reporting_currency`; the two invalid-singleton readers; three manufactured-money surfaces |
@@ -91,7 +93,23 @@ The legacy defect summed rows of different currencies and stamped the total with
 
 **Correct and verified by execution:** the repaired page surfaces (runtime harness, 14 routes); the roll-up primitive (`tests/money-by-currency.test.ts`); the singleton contracts (`tests/financial-singleton-contracts.test.ts`, 11 tests); the currency-safety page contract (`tests/currency-safe-pages.test.ts`, now 42 tests).
 
-**Correct but verified only by static analysis:** all SQL view definitions. `npm run db:test` cannot run here — no `psql`, `pg_dump`, or `docker`. Every database claim in this report is marked **unverified by execution**.
+**Database layer — partially verified by execution, and one inherited CI failure.** `npm run db:test` cannot run here (no `psql`, `pg_dump`, or `docker`; `apt` is unavailable to this unprivileged user). I therefore stood up a real **PostgreSQL 16.14** server from the `@embedded-postgres/linux-x64` npm package and replayed `scripts/db-test.sh`'s sequence using a Node client instead of `psql`:
+
+- **All 106 migrations applied cleanly, in filename order, on a fresh cluster: 106/106.** The Supabase shim applied first. This is execution evidence, not a reading of SQL.
+- **Row-level security posture, measured against `pg_class` / `pg_policies`, not counted by grep:** 163 tables in `public`; **162 have `relforcerowsecurity`**; **zero tables are reachable by the `authenticated` role without RLS enabled**; of the 161 tables reachable by `authenticated`, **all 161 have at least one policy**. The one table without `force` (`s6_command_receipts`) is *fully closed* to client roles — `has_table_privilege('authenticated', …, 'select')` is `false`, and it has no policies at all. Exactly two tables are unreachable by `authenticated`: `s6_command_receipts` and `bank_statement_reconciliation_allocations`.
+
+**What that execution does *not* cover — stated plainly.** The harness could not run **54 SQL suites that use psql client features** (`\gset` / `\set` / `:'var'` interpolation) and **42 shell concurrency suites** that need `psql` to open competing sessions. I deliberately did **not** write a psql emulator: a half-faithful emulator is a guessing machine, and a wrong result would be worse than a known gap. Of the pure-SQL suites, 13 passed; 2 failed *only* because their fixture-seeding predecessors were among the skipped suites — I verified the ordering (`19_s5_distribution_capacity_fixture.sql` precedes `19_s6_legacy_concurrency_window.sql`, and CI **passed** `19_s5`), so neither local failure is evidence of a product defect. **SQL view definitions remain verified only by reading**, and no claim here should be read as "the DB suite passes" — it has never passed in this session.
+
+**The CI run is the strongest independent evidence, and it is not green.** The `app` job **passed** on a clean clone (`npm run lint`, `npm run test`, `route-review --check`, `npm run build`, `npm run typecheck`) — independent confirmation of every gate in this report. The `database` job **failed** at `supabase/tests/19_s6_legacy_concurrency_window.sql` with:
+
+```
+ERROR:  S6 OPEN period does not cover the S2 contribution concurrency date
+CONTEXT:  PL/pgSQL function inline_code_block line 43 at RAISE
+```
+
+**That failure is inherited, not introduced here: my commits touch zero files under `supabase/`** (`git diff 5156a51 HEAD --name-only -- supabase/` is empty), and `main`'s last green CI run was **2026-08-17** — before the H1 migrations landed. The failure was always there; CI simply had not run since August. Root cause is **undetermined**: it is a fixture shim that widens an OPEN accounting period, and its own guard fires, meaning the `update … set end_date = greatest(end_date, v_required_end)` did not make the period cover the contribution date. Because `db-test.sh` is `set -euo pipefail`, it **fast-fails**, so every suite after #19 is unexecuted — more failures may be hidden behind it. Diagnosing it needs `psql`, and it is out of scope for this PR.
+
+**Reliability caveat on my own harness:** my first two harness runs produced a long list of "failures" that were entirely my own regex missing psql meta-commands, and a shim failure caused by `create role` not being idempotent across runs on one cluster (roles are cluster-wide; CI gets a fresh container). Both were harness defects, not product defects. They are recorded here because a harness that silently mislabels product defects is exactly the failure mode this recovery exists to prevent.
 
 **Three surfaces were still inventing money, and are now repaired** (commit `3b0bfd3`) — this was the finding of the final sweep, and it is worth stating plainly because all three produced *plausible* numbers rather than errors:
 
@@ -133,7 +151,7 @@ These are reported as **Class C** work, not silently tidied away.
 
 **A harness error that looked like a product bug.** `/tmp/verify-runtime.py` initially failed. The product was never wrong: the harness's normaliser **strips** `٬` (the Arabic thousands separator), so its expected literals had to be the separator-stripped forms (`9400000.00`, `12000.000`, `12545000.00`). Scale is now additionally pinned by regexes (OMR 3 decimals, EGP 2 decimals). The correct response was to fix the harness, never the pages.
 
-**DB suites: 112, none executed here.** Report as *unverified by execution*, never "passes".
+**DB suites: 112 — executed? Partly, and never as a whole.** All 106 **migrations** replay cleanly (verified by execution on PostgreSQL 16.14), and the **RLS posture** was measured from the live catalog. But 54 SQL suites need `psql` client features and all 42 shell concurrency suites need `psql` itself, so **the suite has never run end-to-end in this session** — do not write "the DB suite passes". CI's `database` job fast-fails at `19_s6_legacy_concurrency_window.sql`, which is **inherited from `main`** (my commits change zero files under `supabase/`), so everything after #19 is unexecuted and may hide further failures.
 
 ---
 
@@ -146,11 +164,11 @@ There is **no interview-claim document in the repository** — the only `intervi
 | Arabic RTL interface | `src/app/layout.tsx` has `lang="ar" dir="rtl"` | **VERIFIED** | none |
 | Currency-safe money handling | `src/shared/money/by-currency.ts` + 8 repaired surfaces + 42 contract tests + runtime harness | **VERIFIED** | none |
 | No silent cross-currency aggregation | `formatMinorUnits` never called on a mixed total in `src/`; no `parseFloat(`/`Number(` on money; structural primitive | **VERIFIED** | none |
-| Row-level security on every table | every table is forced to RLS — **51 distinct tables** by a static `alter table … force row level security`, plus **25 migrations** that iterate a table array with `execute format('alter table public.%I force row level security', t)`; 73 policy expressions reference `is_active_member(organization_id)` | **PARTIALLY VERIFIED** | static only — `db:test` cannot run here; coverage is asserted by reading 106 migrations, not by executing them |
+| Row-level security on every table | **Verified by execution on PostgreSQL 16.14**: 163 `public` tables, 162 with `relforcerowsecurity`; **zero** reachable by `authenticated` without RLS; all 161 reachable tables have ≥1 policy; the single non-`force` table (`s6_command_receipts`) is fully revoked from client roles; 73 policy expressions reference `is_active_member(organization_id)` | **VERIFIED** | The earlier static figure in this report (51 forced tables + 25 dynamic loops) measured *statements in migrations*, not table state; the executed measurement is authoritative and the claim as written in the docs ("row level security on every table") is correct |
 | "1095 tests passing" (as written in `AI_PROJECT_STATUS.md`) | was accurate at the time of the pre-cleanup run | **PARTIALLY VERIFIED** | corrected to the current figure; counts drift |
 | 99 migrations / 108 db suites (as written in the audit docs) | actual: **106 migrations / 112 db suites** | **FALSE-MISLEADING as a current claim** | historical banners added; superseded figures re-labelled |
 | 74 files / 1061 tests (as written in `AI_PROJECT_ASSESSMENT.md`) | actual: 76 / 1104 | **FALSE-MISLEADING as a current claim** | corrected |
-| Database correctness | no DB execution possible in this environment | **UNSUPPORTED here** | must be stated as unverified by execution |
+| Database correctness | migrations: 106/106 replayed on PostgreSQL 16.14; RLS: measured from `pg_class`/`pg_policies`; suites: 54 + 42 not runnable; CI `database` job red at `19_s6_legacy_concurrency_window.sql` | **PARTIALLY VERIFIED** | must be stated as *partially* verified: "migrations replay and RLS posture verified by execution; the suite does not pass and one failure is inherited from `main`" |
 | S5 allocation/distribution capability | readers exist, **no `/allocation` or `/distribution` route** | **UNSUPPORTED as a user-facing feature** | Class B — do not present as delivered |
 
 **No claim was rewritten to sound better.** Where a claim was wrong, the *document* was corrected toward the code and the historical figures were preserved behind a banner, not deleted.
@@ -177,7 +195,7 @@ Every deletion in this recovery is evidence-justified. Nothing was removed becau
 
 ## I. Remaining Risks
 
-1. **Database correctness is unverified by execution.** 106 migrations and 112 suites, including all RLS policy claims, are static-analysis-only in this environment. This is the single largest unclosed verification gap and it is a *limitation of the environment*, not a known defect. It needs a Postgres-capable runner.
+1. **Database suites are not verified end-to-end, and CI is red on `database`.** Migrations replay cleanly (106/106) and the RLS posture is measured, but 54 SQL suites and 42 shell suites could not run without `psql`. **More importantly, the `database` CI job fails at `supabase/tests/19_s6_legacy_concurrency_window.sql` — inherited from `main`, undiagnosed, and it fast-fails the job, so everything after #19 is unexecuted.** This is the largest open item on the whole recovery. It is *not* caused by this PR, but merging does not fix it either: a Postgres-capable runner plus diagnostic work is needed.
 2. **`project_financial_position_read` and `project_operating_result_read` are reporting-currency slice views.** Correct per their SQL contract, but silently exclude other-currency facts. The per-currency contracts exist and `/integrity` discloses the scope; the views themselves have not been re-grained (the S6 gates consume their current grain).
 3. **Class-C dropped UI:** the close-run gates/exceptions UI (`gates`/`exceptions` props on `ClosedPeriodCard`) and the intake drafts view (`drafts`, `draftVersions`). Whether these are wanted is a product decision.
 4. **S5 has no route.** Allocation/distribution is built but unreachable by any user (Class B).
