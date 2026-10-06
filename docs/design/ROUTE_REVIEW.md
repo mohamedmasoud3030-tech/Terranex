@@ -22,7 +22,7 @@ has drifted from the code is worse than no count at all.
 | `/assets` | 271 | 1 | 1 | 0 | 2 | 0 | 0 | 2 | 0 | ✓ | ✓ |
 | `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
 | `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
-| `/` (home) | 327 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/` (home) | 333 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
 | `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
 | `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
@@ -34,7 +34,7 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/costs` | 510 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/funding` | 232 | 3 | 3 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/governance` | 181 | 3 | 3 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/intake` | 786 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/intake` | 791 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/integrity` | 487 | 9 | 9 | 0 | 7 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
@@ -43,7 +43,7 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/overview` | 222 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 161 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/pilot` | 665 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
-| `/projects/[projectId]/procurement` | 137 | 4 | 4 | 0 | 6 | 0 | 0 | 10 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/procurement` | 152 | 4 | 4 | 0 | 6 | 0 | 0 | 10 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/revenue` | 287 | 6 | 6 | 1 | 6 | 1 | 2 | 6 | 5 | ✓ | ✓ |
 | `/projects/[projectId]/statements` | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
 | `/projects/[projectId]/terms` | 155 | 1 | 1 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
