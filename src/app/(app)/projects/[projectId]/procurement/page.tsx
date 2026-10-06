@@ -94,7 +94,22 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
         const lines = orderLineMap.get(order.id) ?? [];
         const commitment = commitmentMap.get(order.id);
         return <article className="card stack" key={order.id}><header className="topline"><div><h3>{order.internal_reference}</h3><p className="muted">{order.supplier_name ?? '—'} · {order.commercial_reference ?? 'أمر قديم دون شروط مالية'} · {formatDate(order.expected_delivery_date)}</p></div><span className="status">{formatDocumentState(order.status)}</span></header>
-          {order.currency && <div className="metrics-grid"><article><span className="muted">المطلوب تجاريًا</span><strong>{formatMinorUnits(order.commercial_total_minor_units, order.currency)}</strong></article><article><span className="muted">المفوتر المعتمد</span><strong>{formatMinorUnits(commitment?.invoiced_minor_units ?? '0', order.currency)}</strong></article><article><span className="muted">التزام متبقٍ</span><strong>{formatMinorUnits(commitment?.remaining_commitment_minor_units ?? order.commercial_total_minor_units, order.currency)}</strong></article></div>}
+          {order.currency && (
+            // `project_procurement_commitments_read` emits a row only for an
+            // APPROVED order with at least one line (`where o.status =
+            // 'APPROVED'`, inner join on the lines), so a missing commitment
+            // means "no purchase commitment has been recognised yet" — for a
+            // DRAFT or SUBMITTED order. Substituting `0.00` for invoiced and
+            // the commercial total for the remainder would assert a recognised
+            // commitment that does not exist; the two cells stay unnamed
+            // instead. The commercial total is a property of the order itself
+            // and is always shown.
+            <div className="metrics-grid">
+              <article><span className="muted">المطلوب تجاريًا</span><strong>{formatMinorUnits(order.commercial_total_minor_units, order.currency)}</strong></article>
+              <article><span className="muted">المفوتر المعتمد</span><strong>{commitment ? formatMinorUnits(commitment.invoiced_minor_units, order.currency) : '—'}</strong></article>
+              <article><span className="muted">التزام متبقٍ</span><strong>{commitment ? formatMinorUnits(commitment.remaining_commitment_minor_units, order.currency) : '—'}</strong></article>
+            </div>
+          )}
           <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: الصنف · المطلوب · المستلم · المتبقي للاستلام · سعر الوحدة · إجمالي السطر</caption><thead><tr><th scope="col">الصنف</th><th scope="col">المطلوب</th><th scope="col">المستلم</th><th scope="col" className="num">المتبقي للاستلام</th><th scope="col" className="num">سعر الوحدة</th><th scope="col">إجمالي السطر</th></tr></thead><tbody>{lines.map((line) => { const state = receivingMap.get(line.id); return <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td data-label="المطلوب">{state?.ordered_quantity ?? line.quantity} {line.unit}</td><td data-label="المستلم">{state?.received_quantity ?? '0'} {line.unit}</td><td className="num" data-label="المتبقي للاستلام">{state?.remaining_quantity ?? line.quantity} {line.unit}</td><td className="num" data-label="سعر الوحدة">{line.unit_price_minor_units && line.currency ? formatMinorUnits(line.unit_price_minor_units, line.currency) : '—'}</td><td data-label="إجمالي السطر">{line.line_amount_minor_units && line.currency ? formatMinorUnits(line.line_amount_minor_units, line.currency) : '—'}</td></tr>; })}</tbody></table></div>
           <div><strong>ملفات الأمر/العقد</strong>{evidenceList(orderEvidence.get(order.id) ?? [])}</div>
           <details><summary>إرفاق أمر شراء/عقد أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="PURCHASE_ORDER" subjectId={order.id} evidence={evidence} serverNonce={newCommandNonce()} /></details>

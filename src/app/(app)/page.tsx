@@ -237,12 +237,18 @@ export default async function Home() {
                       <td className="num" data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
                       <td className="num" data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
                       <td className="num" data-label="التكلفة المخصومة في النتيجة">
-                        {sectorResult
-                          ? formatMinorUnits(
-                              resultRowBySector.get(key)?.result_deducted_cost_minor_units ?? '0',
-                              sectorResult.currency,
-                            )
-                          : '—'}
+                        {(() => {
+                          // `sectorResult` and this row come from the same
+                          // `sectorResultRows` list under the same
+                          // `sector:currency` key, so the lookup cannot miss
+                          // while `sectorResult` is set. If it ever does, the
+                          // answer is "not available", never `0.00`: a
+                          // manufactured zero would read as "nothing was
+                          // deducted from the result".
+                          const deducted = resultRowBySector.get(key)?.result_deducted_cost_minor_units;
+                          if (!sectorResult || deducted === undefined) return '—';
+                          return formatMinorUnits(deducted, sectorResult.currency);
+                        })()}
                       </td>
                       <td
                         className={

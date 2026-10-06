@@ -207,7 +207,12 @@ export default async function IntakePage({
   const approvedBudgets = budgets.filter((budget) => budget.status === 'APPROVED');
   const acquiredAssets = assets.filter((asset) => Boolean(asset.acquisition_id));
   const eligibleParties = parties.filter((party) => !participants.some((participant) => participant.party_id === party.id));
-  const money = (value: string | null | undefined) => formatMinorUnits(value ?? '0', project.reporting_currency);
+  // S7 intake amounts are denominated in the project's reporting currency and
+  // the contract carries no per-row currency, so that label is correct here.
+  // A missing amount is NOT zero: manufacturing `0.00` would assert "the
+  // variance is zero" when the value is simply unknown, so absence stays absence.
+  const money = (value: string | null | undefined) =>
+    value === null || value === undefined ? '—' : formatMinorUnits(value, project.reporting_currency);
 
   const snapshot = buildIntakeSnapshot({
     organizationName: organizations.find((org) => org.id === organizationId)?.name ?? null,

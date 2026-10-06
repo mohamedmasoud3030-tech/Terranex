@@ -151,6 +151,67 @@ describe('project money surfaces use the currency-safe roll-up', () => {
   });
 });
 
+/**
+ * The three surfaces repaired after the first currency sweep. Each one took a
+ * different route to the same lie — inventing a number where the data had none:
+ * a missing variance became `0.00`, a missing sector row became `0.00`, and a
+ * purchase order with no recognised commitment became "invoiced 0.00 / whole
+ * order still outstanding".
+ *
+ * The assertion is scoped to `*_minor_units` on purpose. These pages legitimately
+ * use `?? '0'` for quantities and counts (`received_quantity`, row counts) and
+ * `?? null` for an absent variance; the defect is manufacturing a *money* value,
+ * and only that is forbidden here.
+ */
+const NO_MANUFACTURED_MONEY_PAGES = [
+  'src/app/(app)/page.tsx',
+  'src/app/(app)/projects/[projectId]/intake/page.tsx',
+  'src/app/(app)/projects/[projectId]/procurement/page.tsx',
+];
+
+describe('no surface invents a money value the data does not contain', () => {
+  it.each(NO_MANUFACTURED_MONEY_PAGES)('%s never defaults money to zero', (path) => {
+    const source = page(path);
+    expect(source).not.toMatch(/_minor_units\s*\?\?\s*'0'/);
+  });
+
+  it.each(NO_MANUFACTURED_MONEY_PAGES)(
+    '%s never substitutes one money amount for another',
+    (path) => {
+      // `a_minor_units ?? b_minor_units` presents b's figure as a's answer.
+      // `/procurement` did this by falling back to the commercial total when no
+      // commitment row existed.
+      const source = page(path);
+      expect(source).not.toMatch(/_minor_units\s*\?\?\s*[A-Za-z_][\w.?]*_minor_units/);
+    },
+  );
+
+  it('intake keeps an absent variance absent rather than printing a zero', () => {
+    const intake = page(NO_MANUFACTURED_MONEY_PAGES[1]);
+    // The helper's contract: unknown stays '—', and the currency label is the
+    // project's because the S7 intake contract carries no per-row currency.
+    expect(intake).toMatch(/value === null \|\| value === undefined \? '—'/);
+    expect(intake).toMatch(/formatMinorUnits\(value, project\.reporting_currency\)/);
+    expect(intake).not.toMatch(/formatMinorUnits\(value \?\? '0'/);
+  });
+
+  it('the home sector table shows no deducted cost when the row is missing', () => {
+    const home = page(NO_MANUFACTURED_MONEY_PAGES[0]);
+    expect(home).toMatch(/const deducted = resultRowBySector\.get\(key\)\?\.result_deducted_cost_minor_units/);
+    expect(home).toMatch(/if \(!sectorResult \|\| deducted === undefined\) return '—'/);
+  });
+
+  it('procurement only reports commitment figures for an order that has one', () => {
+    const procurement = page(NO_MANUFACTURED_MONEY_PAGES[2]);
+    // `project_procurement_commitments_read` emits a row only for an APPROVED
+    // order with lines, so the absent case is "not committed yet" and must not
+    // be rendered as a figure.
+    expect(procurement).toMatch(/commitment \? formatMinorUnits\(commitment\.invoiced_minor_units/);
+    expect(procurement).toMatch(/commitment \? formatMinorUnits\(commitment\.remaining_commitment_minor_units/);
+    expect(procurement).not.toMatch(/commitment\?\.(invoiced|remaining_commitment)_minor_units/);
+  });
+});
+
 describe('the funding page reads capital through the per-currency contract', () => {
   it.each(CAPITAL_CONTRACT_PAGES)('%s consumes the capital contract, not a raw scalar', (path) => {
     const source = page(path);
