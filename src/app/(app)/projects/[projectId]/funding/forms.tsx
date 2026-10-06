@@ -57,9 +57,9 @@ export function CapitalCallForm({
       </label>
       <p className="muted">أدخل المبلغ المطلوب في {currency}. اترك المستثمر فارغًا إذا لم يشمله هذا الطلب.</p>
       <div className="table-wrap">
-        <table>
+        <table><caption className="sr-only">جدول: المستثمر · المبلغ المطلوب · الالتزام</caption>
           <thead>
-            <tr><th>المستثمر</th><th>المبلغ المطلوب ({currency})</th><th>الالتزام</th></tr>
+            <tr><th scope="col">المستثمر</th><th scope="col" className="num">المبلغ المطلوب ({currency})</th><th scope="col" className="num">الالتزام</th></tr>
           </thead>
           <tbody>
             {participants.map((participant) => {
@@ -68,7 +68,7 @@ export function CapitalCallForm({
               return (
                 <tr key={participant.id}>
                   <td>{participant.parties.legal_name}</td>
-                  <td>
+                  <td className="num">
                     <input
                       type="text"
                       inputMode="decimal"
@@ -78,7 +78,7 @@ export function CapitalCallForm({
                     />
                     <input type="hidden" name="participantId" value={participant.id} />
                   </td>
-                  <td>{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                  <td className="num">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                 </tr>
               );
             })}

@@ -1,8 +1,9 @@
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { SectionTabs } from '@/shared/ui';
+import { Section, SectionTabs } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { totalsByCurrency, presentRollup } from '@/shared/money/by-currency';
 import { newCommandNonce } from '@/shared/idempotency';
 import {
   getAuditEvents,
@@ -44,7 +45,15 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
   const accountName = new Map(accounts.map((account) => [account.cash_account_id, account.name]));
   const obligationDescription = new Map(obligations.map((obligation) => [obligation.obligation_id, obligation.description]));
 
-  const totalCash = accounts.reduce((sum, account) => sum + BigInt(account.balance_minor_units), 0n);
+  // Cash accounts post in their own currency, so the book balance is stated per
+  // currency. Summing the accounts and labelling the result with the project's
+  // reporting currency is the defect this replaces: 100,000,000.00 EGP plus
+  // 5,000,000.000 OMR used to surface as a single `105,000,000`.
+  const totalCash = totalsByCurrency(
+    accounts,
+    (account) => account.currency,
+    (account) => account.balance_minor_units,
+  );
   const unreconciledCount = lines.filter((line) => !line.is_reconciled).length;
   const reconciledCount = lines.length - unreconciledCount;
 
@@ -67,6 +76,8 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         title="النقدية والبنك"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <SectionTabs
         label="التكاليف والنقدية"
@@ -78,9 +89,15 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
 
       <section className="grid">
         <div className="card">
-          <p className="muted">إجمالي النقدية الدفترية</p>
-          <strong>{formatMinorUnits(totalCash, project.reporting_currency)}</strong>
-          <p className="muted">مشتق من القيود المرحلة فقط</p>
+          <p className="muted">النقدية الدفترية</p>
+          {totalCash.totals.length === 0 ? (
+            <strong>—</strong>
+          ) : (
+            totalCash.totals.map((total) => (
+              <strong className="num" key={total.currency}>{presentRollup(total)}</strong>
+            ))
+          )}
+          <p className="muted">مشتق من القيود المرحلة فقط؛ كل حساب بعملته ولا تُجمع العملات</p>
         </div>
         <div className="card">
           <p className="muted">حركات بنكية غير مطابقة</p>
@@ -92,21 +109,23 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>حسابات المشروع النقدية</h2>
+            <Section
+        title="حسابات المشروع النقدية"
+      >
         {accounts.length === 0 ? (
           <p className="muted">لا توجد حسابات نقدية بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الحساب · الرصيد الدفتري · آخر ترحيل</caption>
               <thead>
-                <tr><th>الحساب</th><th>الرصيد الدفتري</th><th>آخر ترحيل</th></tr>
+                <tr><th scope="col">الحساب</th><th scope="col" className="num">الرصيد الدفتري</th><th scope="col">آخر ترحيل</th></tr>
               </thead>
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.cash_account_id}>
                     <td data-label="الحساب">{account.name}</td>
-                    <td data-label="الرصيد الدفتري">{formatMinorUnits(account.balance_minor_units, account.currency)}</td>
+                    <td className="num" data-label="الرصيد الدفتري">{formatMinorUnits(account.balance_minor_units, account.currency)}</td>
                     <td data-label="آخر ترحيل">{account.last_posting_date ? new Date(account.last_posting_date).toLocaleString('ar-EG') : '—'}</td>
                   </tr>
                 ))}
@@ -123,10 +142,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             commandNonce={newCommandNonce()}
           />
         </details>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>إسناد مساهمات رأس المال إلى النقدية</h2>
+            <Section
+        title="إسناد مساهمات رأس المال إلى النقدية"
+      >
         {accounts.length === 0 ? (
           <p className="muted">أنشئ حسابًا نقديًا أولًا لربط المساهمات به.</p>
         ) : (
@@ -139,25 +159,27 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           />
         )}
         {!isOwner && <p className="muted">ترحيل الإسناد يتطلب صلاحية مالك المنظمة.</p>}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>الدفعات</h2>
+            <Section
+        title="الدفعات"
+      >
         {payments.length === 0 ? (
           <p className="muted">لا توجد دفعات بعد. سجّل دفعة من صفحة التكاليف أو انتظر أول دفعة.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · الالتزام · الحساب · المبلغ · الحالة · الإجراءات</caption>
               <thead>
-                <tr><th>التاريخ</th><th>الالتزام</th><th>الحساب</th><th>المبلغ</th><th>الحالة</th><th>الإجراءات</th></tr>
+                <tr><th scope="col">التاريخ</th><th scope="col" className="num">الالتزام</th><th scope="col">الحساب</th><th scope="col" className="num">المبلغ</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th></tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.payment_id}>
                     <td data-label="التاريخ">{payment.payment_date}</td>
-                    <td data-label="الالتزام">{obligationDescription.get(payment.obligation_id) ?? '—'}</td>
+                    <td className="num" data-label="الالتزام">{obligationDescription.get(payment.obligation_id) ?? '—'}</td>
                     <td data-label="الحساب">{accountName.get(payment.cash_account_id) ?? '—'}</td>
-                    <td data-label="المبلغ">{formatMinorUnits(payment.amount_minor_units, payment.currency)}</td>
+                    <td className="num" data-label="المبلغ">{formatMinorUnits(payment.amount_minor_units, payment.currency)}</td>
                     <td data-label="الحالة">
                       <span className="status">
                         {payment.is_reversed ? 'معكوسة' : payment.is_reconciled ? 'مطابقة' : 'غير مطابقة'}
@@ -194,10 +216,11 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             })}
           </details>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>استيراد كشف الحساب البنكي</h2>
+            <Section
+        title="استيراد كشف الحساب البنكي"
+      >
         {accounts.length === 0 ? (
           <p className="muted">أنشئ حسابًا نقديًا أولًا لاستيراد كشف حسابه.</p>
         ) : (
@@ -208,19 +231,21 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             commandNonce={newCommandNonce()}
           />
         )}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>حركات كشف الحساب والمطابقة</h2>
+            <Section
+        title="حركات كشف الحساب والمطابقة"
+      >
         {lines.length === 0 ? (
           <p className="muted">لا توجد حركات بنكية مستوردة بعد. استيراد كشف الحساب لا ينشئ أي قيد محاسبي.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · المرجع · الوصف · المبلغ · الحساب · الحالة · الإجراءات</caption>
               <thead>
                 <tr>
-                  <th>التاريخ</th><th>المرجع</th><th>الوصف</th><th>المبلغ</th>
-                  <th>الحساب</th><th>الحالة</th><th>الإجراءات</th>
+                  <th scope="col">التاريخ</th><th scope="col">المرجع</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th>
+                  <th scope="col">الحساب</th><th scope="col">الحالة</th><th scope="col">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,7 +254,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
                     <td data-label="التاريخ">{line.transaction_date}</td>
                     <td data-label="المرجع">{line.provider_reference ?? '—'}</td>
                     <td data-label="الوصف">{line.description}</td>
-                    <td data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
+                    <td className="num" data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
                     <td data-label="الحساب">{accountName.get(line.cash_account_id) ?? '—'}</td>
                     <td data-label="الحالة">
                       <span className="status">{line.is_reconciled ? 'مطابقة' : 'غير مطابقة'}</span>
@@ -261,17 +286,19 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
           </div>
         )}
         <p className="muted">المطابقة تتم واحد-بواحد: دفعة واحدة مقابل سطر بنكي واحد بنفس الحساب والعملة والمبلغ (إشارة معاكسة).</p>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>سجل التدقيق</h2>
+            <Section
+        title="سجل التدقيق"
+      >
         {audit.length === 0 ? (
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الحدث · الوقت · التفاصيل</caption>
               <thead>
-                <tr><th>الحدث</th><th>الوقت</th><th>التفاصيل</th></tr>
+                <tr><th scope="col">الحدث</th><th scope="col">الوقت</th><th scope="col">التفاصيل</th></tr>
               </thead>
               <tbody>
                 {audit.map((event) => (
@@ -285,7 +312,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

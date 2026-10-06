@@ -18,6 +18,7 @@ const page = read('src/app/(app)/projects/[projectId]/agriculture/page.tsx');
 const nav = read('src/features/workspace/nav.tsx');
 const loading = read('src/app/(app)/projects/[projectId]/agriculture/loading.tsx');
 const error = read('src/app/(app)/projects/[projectId]/agriculture/error.tsx');
+const routeError = read('src/shared/ui/route-error.tsx');
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 describe('GF-019 application validation and Arabic errors', () => {
@@ -183,7 +184,13 @@ describe('GF-019 Arabic RTL result UX', () => {
     expect(nav).toContain("label: 'النتائج والإغلاق'");
     expect(nav).toContain('/agriculture#results-closeout');
     expect(loading).toContain('role="status"');
-    expect(error).toContain('role="alert"');
+    // The boundary delegates its markup to the shared RouteError body, so the
+    // alert semantics live there now. Assert the whole chain rather than one
+    // link: this route wires the component up, and the component announces
+    // itself. Asserting only this file would pass on a boundary that renders
+    // nothing at all.
+    expect(error).toContain("from '@/shared/ui/route-error'");
+    expect(routeError).toContain('role="alert"');
     expect(page).toContain('overview-kpis');
     expect(page).toContain('table-wrap');
   });

@@ -1,14 +1,15 @@
 'use client';
 
+import { RouteError } from '@/shared/ui/route-error';
+
 export default function AssetsError({ reset }: { reset: () => void }) {
   return (
-    <section className="card stack">
-      <h1>تعذر عرض سجل الأصول</h1>
-      <p className="muted">
-        حدث خطأ أثناء تحميل الأصول وأداء القطاعات. لم تُعرض تفاصيل تقنية، ولم يتغيّر
-        أي سجل — هذه الصفحة للقراءة فقط.
-      </p>
-      <button type="button" onClick={() => reset()}>إعادة المحاولة</button>
-    </section>
+    <RouteError
+      surface="سجل الأصول"
+      detail="حدث خطأ أثناء تحميل الأصول وأداء القطاعات. هذه الصفحة للقراءة فقط ولا تُجري أي كتابة."
+      reset={reset}
+      backHref="/"
+      backLabel="العودة إلى اللوحة الرئيسية"
+    />
   );
 }

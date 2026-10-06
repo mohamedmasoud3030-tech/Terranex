@@ -1,5 +1,16 @@
 # AI Project Assessment — Terranex
 
+> **⚠️ Superseded — a dated snapshot, not current status.**
+>
+> Everything below was measured on `arena/01a0112b-terranex` on **2026-08-17**.
+> The figures are left as they were recorded and are **not** current. The
+> "54 Vitest files / 720 tests" figure in particular is now **76 files / 1095
+> tests**, and the assessment predates R14, ADR 0034 and the H1 per-currency
+> contracts entirely.
+>
+> Current baseline: see `README.md` and the recovery report. Database behaviour
+> remains unverified by execution in this environment (no `psql`/`docker`).
+
 **Date:** 2026-08-17
 **Branch:** `arena/01a0112b-terranex` (base: `main` @ `59809c77cdb3efc6acb536b61a69f5a905b42abb`)
 **Author:** autonomous product/engineering review (Arena Agent Mode)

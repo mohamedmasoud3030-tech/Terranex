@@ -1,5 +1,13 @@
 # أوامر Terranex المؤكدة من المستودع
 
+> **ℹ️ Command reference — counts are dated.**
+>
+> The commands themselves are still the supported entry points (verify against
+> `package.json`, which is authoritative). Any test/file counts quoted in the
+> baseline sections were recorded on an earlier snapshot; the current tree has
+> **76 Vitest files / 1095 tests** and **37 app routes**. `npm run db:test`
+> cannot run in every environment (it needs `psql`/`docker`).
+
 **تاريخ التحقق:** 2026-08-17
 **Commit:** `9488588f0c6fd1984a1c09769af480f85905c661`
 

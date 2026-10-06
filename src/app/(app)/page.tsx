@@ -16,7 +16,16 @@ import { sectorLandingHref } from '@/features/workspace/nav';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { SEVERITY_LABEL, severityTone } from '@/features/projects/labels';
-import { EmptyState, PageHeader, Section, Stat, StatGrid, StatusBadge } from '@/shared/ui';
+import {
+  EmptyState,
+  Figure,
+  PageHeader,
+  SectorChip,
+  Section,
+  Stat,
+  StatGrid,
+  StatusBadge,
+} from '@/shared/ui';
 
 const FX_STATUS_AR: Record<string, string> = {
   CONSOLIDATED_AT_RATE: 'مجمّع بسعر صرف مسجل',
@@ -24,6 +33,18 @@ const FX_STATUS_AR: Record<string, string> = {
   NO_REPORTING_CURRENCY: 'لم تُحدد عملة تقرير للمنظمة',
 };
 
+/**
+ * Executive home. Decision order, not decoration order:
+ *   1. what the organization holds (stat grid)
+ *   2. what needs the owner's attention (integrity signals — raised above the
+ *      money because an unattended exception invalidates the money)
+ *   3. the consolidated financial position, with its FX basis stated
+ *   4. sector performance, each row in its own currency
+ *   5. the projects themselves
+ *
+ * Every figure keeps its basis visible. No total is shown without saying what
+ * it was computed from and in which currency.
+ */
 export default async function Home() {
   const { organization: org } = await getActiveOrganization();
   if (!org) {
@@ -68,7 +89,7 @@ export default async function Home() {
   const criticalSignals = integritySignals.filter((signal) => signal.severity === 'CRITICAL');
 
   return (
-    <section className="stack">
+    <section className="stack-lg">
       <PageHeader
         eyebrow={org.name}
         title="لوحة الإدارة التنفيذية"
@@ -93,59 +114,86 @@ export default async function Home() {
         />
       </StatGrid>
 
-      {consolidated ? (
-        <section className="card stack" aria-labelledby="consolidated-heading">
-          <div className="section-heading">
-            <div>
-              <h2 id="consolidated-heading">الموقف المالي على مستوى المنظمة</h2>
-              <p className="muted">
-                {FX_STATUS_AR[consolidated.fx_status] ?? consolidated.fx_status}
-                {reportingCurrency ? ` · عملة التقرير ${reportingCurrency}` : ''}
-              </p>
-            </div>
+      {/* Attention before money: an unresolved exception means the figures
+          below may not be trustworthy yet. */}
+      {integritySignals.length ? (
+        <Section
+          title="يحتاج انتباهك — إشارات السلامة والاستثناءات"
+          description="إشارات رقابية ناتجة من read models المالية، وليست تنبؤات."
+        >
+          <div className="milestones">
+            {integritySignals.slice(0, 8).map((signal) => (
+              <div className="milestone" key={`${signal.signal_code}-${signal.project_id ?? 'org'}-${signal.currency ?? 'none'}`}>
+                <div>
+                  <strong>{signal.signal_label_ar}</strong>
+                  <p className="muted">
+                    <code>{signal.signal_code}</code>
+                    {signal.currency ? ` · ${signal.currency}` : ''}
+                  </p>
+                </div>
+                <div>
+                  <StatusBadge tone={severityTone(signal.severity)}>
+                    {SEVERITY_LABEL[signal.severity] ?? signal.severity}
+                  </StatusBadge>
+                  <p>{signal.subject_count} موضوع</p>
+                </div>
+              </div>
+            ))}
           </div>
+          {integritySignals.length > 8 ? (
+            <p className="muted">
+              معروض أول 8 إشارات من {integritySignals.length}.{' '}
+              <Link href="/projects">افتح المشروع المعني لعرض كل الإشارات</Link>.
+            </p>
+          ) : null}
+        </Section>
+      ) : null}
+
+      {consolidated ? (
+        <Section
+          title="الموقف المالي على مستوى المنظمة"
+          description={`${FX_STATUS_AR[consolidated.fx_status] ?? consolidated.fx_status}${
+            reportingCurrency ? ` · عملة التقرير ${reportingCurrency}` : ''
+          }`}
+        >
           {canShowConsolidatedMoney && reportingCurrency ? (
             <div className="overview-kpis">
-              <div className="overview-kpi">
-                <span>النقدية</span>
-                <strong>{consolidated.converted_cash_balance_minor_units === null ? '—' : formatMinorUnits(consolidated.converted_cash_balance_minor_units, reportingCurrency)}</strong>
-                <small>بعد التحويل المعتمد</small>
-              </div>
-              <div className="overview-kpi">
-                <span>الموردون / الالتزامات المفتوحة</span>
-                <strong>{consolidated.converted_payable_open_minor_units === null ? '—' : formatMinorUnits(consolidated.converted_payable_open_minor_units, reportingCurrency)}</strong>
-                <small>{consolidated.overdue_obligations} التزامات متأخرة</small>
-              </div>
-              <div className="overview-kpi">
-                <span>المدفوع</span>
-                <strong>{consolidated.converted_paid_minor_units === null ? '—' : formatMinorUnits(consolidated.converted_paid_minor_units, reportingCurrency)}</strong>
-                <small>إجمالي مدفوع محوّل</small>
-              </div>
-              <div className="overview-kpi">
-                <span>مشاريع داخلة في التجميع</span>
-                <strong>{consolidated.project_count}</strong>
-                <small>من حقيقة المشروع إلى المنظمة</small>
-              </div>
+              <Figure
+                basis="النقدية"
+                value={consolidated.converted_cash_balance_minor_units === null ? '—' : formatMinorUnits(consolidated.converted_cash_balance_minor_units, reportingCurrency)}
+                asOf="بعد التحويل المعتمد"
+              />
+              <Figure
+                basis="الموردون / الالتزامات المفتوحة"
+                value={consolidated.converted_payable_open_minor_units === null ? '—' : formatMinorUnits(consolidated.converted_payable_open_minor_units, reportingCurrency)}
+                asOf={`${consolidated.overdue_obligations} التزامات متأخرة`}
+                negative={consolidated.overdue_obligations > 0}
+              />
+              <Figure
+                basis="المدفوع"
+                value={consolidated.converted_paid_minor_units === null ? '—' : formatMinorUnits(consolidated.converted_paid_minor_units, reportingCurrency)}
+                asOf="إجمالي مدفوع محوّل"
+              />
+              <Figure
+                basis="مشاريع داخلة في التجميع"
+                value={consolidated.project_count}
+                asOf="من حقيقة المشروع إلى المنظمة"
+              />
             </div>
           ) : (
             <div className="banner info">
               لا نعرض إجماليًا نقديًا موحدًا حتى تتوفر عملة تقرير وسعر صرف صالح لكل مشروع مطلوب تحويله. التفاصيل حسب العملة والقطاع ظاهرة أدناه.
             </div>
           )}
-        </section>
+        </Section>
       ) : null}
 
-      <section className="card stack" aria-labelledby="sector-performance-heading">
-        <div className="section-heading">
-          <div>
-            <h2 id="sector-performance-heading">أداء القطاعات</h2>
-            <p className="muted">
-              كل صف يحتفظ بعملته الأصلية. {RESULT_TERM_AR} تظهر بأساسها القطاعي وحالة تصنيف
-              تكلفتها؛ لا يُعرض رقم بلا أساس.
-            </p>
-          </div>
-          <Link className="button secondary" href="/assets">الأصول والأداء</Link>
-        </div>
+      <Section
+        id="sector-performance-heading"
+        title="أداء القطاعات"
+        description={`كل صف يحتفظ بعملته الأصلية. ${RESULT_TERM_AR} تظهر بأساسها القطاعي وحالة تصنيف تكلفتها؛ لا يُعرض رقم بلا أساس.`}
+        actions={<Link className="button secondary sm" href="/assets">الأصول والأداء</Link>}
+      >
         {resultContractError ? (
           <div className="banner info">
             تعذّر قراءة عقد النتيجة المؤهَّلة لأحد القطاعات، ولم نعرض رقمًا بديلًا: {resultContractError}
@@ -156,16 +204,19 @@ export default async function Home() {
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">
+                أداء القطاعات: عدد المشاريع والأصول والنقدية والإيراد المعترف به وتكلفة المبيعات والمصروفات والنتيجة المحققة، لكل قطاع بعملته الأصلية
+              </caption>
               <thead>
                 <tr>
-                  <th>القطاع</th>
-                  <th>المشاريع</th>
-                  <th>الأصول</th>
-                  <th>النقدية</th>
-                  <th>الإيراد المعترف به</th>
-                  <th>التكلفة المخصومة في النتيجة</th>
-                  <th>تكلفة تشغيل غير مُصنَّفة</th>
-                  <th>{RESULT_TERM_AR}</th>
+                  <th scope="col">القطاع</th>
+                  <th scope="col" className="num">المشاريع</th>
+                  <th scope="col" className="num">الأصول</th>
+                  <th scope="col" className="num">النقدية</th>
+                  <th scope="col" className="num">الإيراد المعترف به</th>
+                  <th scope="col" className="num">التكلفة المخصومة في النتيجة</th>
+                  <th scope="col" className="num">تكلفة تشغيل غير مُصنَّفة</th>
+                  <th scope="col" className="num">{RESULT_TERM_AR}</th>
                 </tr>
               </thead>
               <tbody>
@@ -176,12 +227,16 @@ export default async function Home() {
                   const caveat = sectorResult ? unclassifiedCaveatAr(sectorResult) : null;
                   return (
                     <tr key={key}>
-                      <td data-label="القطاع">{SECTOR_LABEL[row.sector] ?? row.sector}</td>
-                      <td data-label="المشاريع">{row.project_count}</td>
-                      <td data-label="الأصول">{row.asset_count}</td>
-                      <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                      <td data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
-                      <td data-label="التكلفة المخصومة في النتيجة">
+                      <td data-label="القطاع">
+                        <SectorChip sector={row.sector} label={SECTOR_LABEL[row.sector] ?? row.sector} />
+                        <br />
+                        <small className="muted">{row.currency}</small>
+                      </td>
+                      <td className="num" data-label="المشاريع">{row.project_count}</td>
+                      <td className="num" data-label="الأصول">{row.asset_count}</td>
+                      <td className="num" data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                      <td className="num" data-label="الإيراد المعترف به">{formatMinorUnits(row.revenue_recognized_minor_units, row.currency)}</td>
+                      <td className="num" data-label="التكلفة المخصومة في النتيجة">
                         {sectorResult
                           ? formatMinorUnits(
                               resultRowBySector.get(key)?.result_deducted_cost_minor_units ?? '0',
@@ -190,19 +245,19 @@ export default async function Home() {
                           : '—'}
                       </td>
                       <td
-                        data-label="تكلفة تشغيل غير مُصنَّفة"
                         className={
                           sectorResult?.unclassifiedMinorUnits &&
                           /^[1-9]/.test(sectorResult.unclassifiedMinorUnits)
-                            ? 'unclassified-cost'
-                            : undefined
+                            ? 'num unclassified-cost'
+                            : 'num'
                         }
+                        data-label="تكلفة تشغيل غير مُصنَّفة"
                       >
                         {sectorResult?.unclassifiedMinorUnits
                           ? formatMinorUnits(sectorResult.unclassifiedMinorUnits, sectorResult.currency)
                           : '—'}
                       </td>
-                      <td data-label={RESULT_TERM_AR}>
+                      <td className="num" data-label={RESULT_TERM_AR}>
                         {presentation === null ? (
                           <span className="muted">—</span>
                         ) : presentation.kind === 'SUPPRESSED' ? (
@@ -238,32 +293,7 @@ export default async function Home() {
           الرقم القديم «النتيجة المحققة» كان يخصم تكلفة المبيعات للعقار فقط، فيظهر إيراد الزراعة
           والماشية وكأنه نتيجة صافية. أُزيل من المقارنة ولم يُعتمد عليه.
         </p>
-      </section>
-
-      {integritySignals.length ? (
-        <section className="card stack" aria-labelledby="integrity-heading">
-          <div className="section-heading">
-            <div>
-              <h2 id="integrity-heading">إشارات السلامة والاستثناءات</h2>
-              <p className="muted">إشارات رقابية ناتجة من read models المالية، وليست تنبؤات.</p>
-            </div>
-          </div>
-          <div className="milestones">
-            {integritySignals.slice(0, 8).map((signal) => (
-              <div className="milestone" key={`${signal.signal_code}-${signal.project_id ?? 'org'}-${signal.currency ?? 'none'}`}>
-                <div>
-                  <strong>{signal.signal_label_ar}</strong>
-                  <p className="muted">{signal.signal_code}</p>
-                </div>
-                <div>
-                  <StatusBadge tone={severityTone(signal.severity)}>{SEVERITY_LABEL[signal.severity] ?? signal.severity}</StatusBadge>
-                  <p>{signal.subject_count} موضوع</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      </Section>
 
       <Section
         title="المشاريع الاستثمارية"
@@ -283,7 +313,8 @@ export default async function Home() {
                 <Link href={sectorLandingHref(project.sector, project.id)}>
                   <strong>{project.name}</strong>
                   <span className="muted">{project.internal_reference || 'بدون مرجع داخلي'}</span>
-                  <StatusBadge>{SECTOR_LABEL[project.sector] ?? project.sector} · {project.reporting_currency}</StatusBadge>
+                  <SectorChip sector={project.sector} label={SECTOR_LABEL[project.sector] ?? project.sector} />
+                  <span className="status">{project.reporting_currency}</span>
                 </Link>
               </li>
             ))}

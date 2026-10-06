@@ -223,7 +223,7 @@ export function RemoveProjectForm({
   return (
     <details>
       <summary>إزالة المشروع من المحفظة</summary>
-      <form action={action} className="stack" style={{ marginTop: 10 }}>
+      <form action={action} className="stack">
         <input type="hidden" name="organizationId" value={organizationId} />
         <input type="hidden" name="portfolioId" value={portfolioId} />
         <input type="hidden" name="projectId" value={projectId} />
@@ -262,7 +262,7 @@ export function MoveProjectForm({
   return (
     <details>
       <summary>نقل المشروع إلى محفظة أخرى</summary>
-      <form action={action} className="stack" style={{ marginTop: 10 }}>
+      <form action={action} className="stack">
         <input type="hidden" name="organizationId" value={organizationId} />
         <input type="hidden" name="projectId" value={projectId} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />

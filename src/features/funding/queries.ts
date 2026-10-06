@@ -47,14 +47,22 @@ export type Contribution = {
   occurred_on: string;
   created_at: string;
 };
-export type ProjectCapitalPosition = {
-  project_id: string;
-  currency: string;
-  committed_minor_units: string;
-  called_minor_units: string;
-  contributed_minor_units: string;
-  receivable_minor_units: string;
-};
+// `ProjectCapitalPosition` and its reader `getProjectCapitalPosition` were
+// removed here. The view they read, `project_capital_position_read`, is derived
+// from `project_capital_position`, which sums `partner_capital_position` rows
+// with no `currency` in the GROUP BY and then labels the total with
+// `investment_projects.reporting_currency`. A project whose capital is
+// committed in two currencies therefore read back as one figure in a currency
+// the underlying facts may never have used — the defect ADR 0034 exists to
+// prevent.
+//
+// `getProjectCapitalByCurrency` (in `features/finance/queries.ts`) plus
+// `features/funding/project-capital.ts` are the authoritative capital read
+// path, and every surface now uses them. The database object is NOT dropped:
+// the S6 `PARTNER_CAPITAL_ROLLFORWARD` gate still calls it, so removing it
+// needs a migration and a real PostgreSQL run (see the residual-risk note in
+// the recovery report). Removing the TypeScript accessor means no
+// server-rendered surface can reach it in the meantime.
 export type PartnerCapitalPosition = {
   participant_id: string;
   agreement_version_id: string;
@@ -134,15 +142,6 @@ export async function getContributions(projectId: string): Promise<Contribution[
     .eq('project_id', projectId).order('occurred_on', { ascending: false });
   if (error) throwOperatorQuery(error);
   return data as Contribution[];
-}
-
-export async function getProjectCapitalPosition(projectId: string): Promise<ProjectCapitalPosition | null> {
-  const s = await createClient();
-  const { data, error } = await s.from('project_capital_position_read')
-    .select('project_id,currency,committed_minor_units,called_minor_units,contributed_minor_units,receivable_minor_units')
-    .eq('project_id', projectId).maybeSingle();
-  if (error) throwOperatorQuery(error);
-  return data as ProjectCapitalPosition | null;
 }
 
 export async function getPartnerCapitalPositions(versionId: string): Promise<PartnerCapitalPosition[]> {

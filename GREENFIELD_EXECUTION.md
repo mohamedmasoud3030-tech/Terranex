@@ -1,5 +1,12 @@
 # Greenfield Execution Status
 
+> **⚠️ Historical execution log — GF progression, not current status.**
+>
+> This log records the Greenfield tranches in order ("GF-012 baseline: 190
+> tests", "228 tests across 15 files", …). Each figure belongs to the step
+> that recorded it and is **not** current: the tree now has **76 Vitest files
+> / 1095 tests**. Kept as history; not rewritten.
+
 **Updated:** 2026-08-15
 **Canonical branch:** `main`
 **Strategy:** Product-first, Egypt-first, thin vertical slices

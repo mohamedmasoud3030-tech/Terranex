@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership } from '@/features/finance/queries';
@@ -20,8 +19,8 @@ import {
 } from '@/features/close/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
-import { RECORD_STATUS_LABEL } from '@/features/projects/labels';
-import { InPageTabs, StatusBadge } from '@/shared/ui';
+import { RECORD_STATUS_LABEL, recordStatusLabel } from '@/features/projects/labels';
+import { InPageTabs, Section, StatusBadge } from '@/shared/ui';
 import {
   ApproveCloseForm,
   ApproveCorrectionForm,
@@ -30,7 +29,6 @@ import {
   ExecuteCorrectionForm,
   PrepareCloseForm,
   ReopenForm,
-  RequestCorrectionForm,
   RequestExceptionForm,
 } from './forms';
 
@@ -103,12 +101,13 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         title="الإغلاق المالي"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="تنقل الإغلاق"
         items={[
-          { href: '#periods', label: 'الفترات' },
-          { href: '#close', label: 'الإغلاق' },
+          { href: '#periods', label: 'الفترات وبوابات الإغلاق' },
           { href: '#snapshots', label: 'اللقطات' },
           { href: '#corrections', label: 'التصحيح' },
         ]}
@@ -119,10 +118,12 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
         تبقى آليات التخصيص والتوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.
       </div>
 
-      <section id="periods" className="card stack scroll-target">
-        <h2>الفترات المحاسبية</h2>
+            <Section
+        id="periods"
+        title="الفترات المحاسبية"
+      >
         {periods.length === 0 && (
-          <p className="muted">لا توجد فترات محاسبية بعد. أنشئ فترة OPEN لتبدأ.</p>
+          <p className="muted">لا توجد فترات محاسبية بعد. أنشئ فترة محاسبية مفتوحة لتبدأ.</p>
         )}
         {openPeriods.length > 0 && (
           <div className="stack">
@@ -162,10 +163,12 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
             disabled={!isOwner}
           />
         </details>
-      </section>
+      </Section>
 
-      <section id="snapshots" className="card stack scroll-target">
-        <h2>اللقطات المجمدة</h2>
+            <Section
+        id="snapshots"
+        title="اللقطات المجمدة"
+      >
         {snapshots.length === 0 && (
           <p className="muted">لا توجد لقطات معتمدة بعد.</p>
         )}
@@ -185,19 +188,22 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
               <div><dt>تاريخ القطع</dt><dd>{date(snapshot.source_cutoff_date)}</dd></div>
             </dl>
             <table className="table-stackable">
-              <thead><tr><th>البند</th><th>القيمة</th></tr></thead>
+              <caption className="sr-only">جدول: البند · القيمة</caption>
+              <thead><tr><th scope="col">البند</th><th scope="col" className="num">القيمة</th></tr></thead>
               <tbody>
                 {snapshotTotals(snapshot).map(([label, value]) => (
-                  <tr key={label}><td data-label="البند">{label}</td><td data-label="القيمة">{value}</td></tr>
+                  <tr key={label}><td data-label="البند">{label}</td><td className="num" data-label="القيمة">{value}</td></tr>
                 ))}
               </tbody>
             </table>
           </article>
         ))}
-      </section>
+      </Section>
 
-      <section id="corrections" className="card stack scroll-target">
-        <h2>طلبات التصحيح</h2>
+            <Section
+        id="corrections"
+        title="طلبات التصحيح"
+      >
         {corrections.length === 0 && (
           <p className="muted">لا توجد طلبات تصحيح.</p>
         )}
@@ -209,7 +215,7 @@ export default async function ClosePage({ params }: { params: Promise<{ projectI
             isOwner={isOwner}
           />
         ))}
-      </section>
+      </Section>
     </section>
   );
 }
@@ -317,12 +323,13 @@ function PreparedRunCard({
         <strong>بوابات:</strong> {run.passing_gates} اجتياز / {run.failing_gates} فشل / {run.exception_gates} استثناء معتمد / {run.not_applicable_gates} لا ينطبق
       </p>
       <table className="table-stackable">
-        <thead><tr><th>البوابة</th><th>النتيجة</th><th>التفاصيل</th><th>إجراء</th></tr></thead>
+              <caption className="sr-only">جدول: البوابة · النتيجة · التفاصيل · إجراء</caption>
+        <thead><tr><th scope="col">البوابة</th><th scope="col" className="num">النتيجة</th><th scope="col">التفاصيل</th><th scope="col">إجراء</th></tr></thead>
         <tbody>
           {gates.map((gate) => (
             <tr key={gate.gate_id}>
               <td data-label="البوابة">{gateLabelAr(gate.gate_code)}</td>
-              <td data-label="النتيجة"><span className="status">{gateResultLabelAr(gate.result)}</span></td>
+              <td className="num" data-label="النتيجة"><span className="status">{gateResultLabelAr(gate.result)}</span></td>
               <td data-label="التفاصيل">{gate.detail}</td>
               <td data-label="إجراء">
                 {gate.result === 'FAIL' && isOwner && (
@@ -351,7 +358,7 @@ function PreparedRunCard({
           <ul>
             {exceptions.map((exc) => (
               <li key={exc.exception_id}>
-                <strong>{gateLabelAr(exc.gate_code)}</strong>: {exc.reason} ({exc.status}) — مرجع: {exc.evidence_reference}
+                <strong>{gateLabelAr(exc.gate_code)}</strong>: {exc.reason} ({recordStatusLabel(exc.status)}) — مرجع: {exc.evidence_reference}
               </li>
             ))}
           </ul>

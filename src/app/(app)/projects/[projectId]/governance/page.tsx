@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Section } from '@/shared/ui';
 import { getProject } from '@/features/projects/queries';
 import { getProjectDecisions, getProjectRisks } from '@/features/governance/queries';
 import { getCurrentMembership } from '@/features/finance/queries';
@@ -78,26 +79,24 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
         </details>
       ) : <p className="muted">تسجيل القرارات المادية وحسم المخاطر مقصوران على مالك المنظمة وفق سلطة قاعدة البيانات.</p>}
 
-      <section className="card stack" aria-labelledby="open-risks-heading">
-        <div className="section-heading">
-          <div>
-            <h2 id="open-risks-heading">المخاطر المفتوحة</h2>
-            <p className="muted">المسؤول وتاريخ الاستحقاق ومصدر المعلومة محفوظة على Project boundary.</p>
-          </div>
-        </div>
+            <Section
+        title="المخاطر المفتوحة"
+        description="المسؤول وتاريخ الاستحقاق ومصدر المعلومة محفوظة على Project boundary."
+      >
         {openRisks.length === 0 ? (
           <p className="muted">لا توجد مخاطر مفتوحة مسجلة لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطورة · الخطر · الوصف · المسؤول · الاستحقاق · المصدر</caption>
               <thead>
                 <tr>
-                  <th>الخطورة</th>
-                  <th>الخطر</th>
-                  <th>الوصف</th>
-                  <th>المسؤول</th>
-                  <th>الاستحقاق</th>
-                  <th>المصدر</th>
+                  <th scope="col">الخطورة</th>
+                  <th scope="col">الخطر</th>
+                  <th scope="col">الوصف</th>
+                  <th scope="col">المسؤول</th>
+                  <th scope="col">الاستحقاق</th>
+                  <th scope="col">المصدر</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,27 +114,25 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack" aria-labelledby="decisions-heading">
-        <div className="section-heading">
-          <div>
-            <h2 id="decisions-heading">سجل القرارات</h2>
-            <p className="muted">قرارات مادية مسجلة بالدليل، لا تُستبدل بتعديل صامت.</p>
-          </div>
-        </div>
+            <Section
+        title="سجل القرارات"
+        description="قرارات مادية مسجلة بالدليل، لا تُستبدل بتعديل صامت."
+      >
         {decisions.length === 0 ? (
           <p className="muted">لا توجد قرارات موثقة لهذا المشروع بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: التاريخ · القرار · النص · المبرر · الدليل</caption>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>القرار</th>
-                  <th>النص</th>
-                  <th>المبرر</th>
-                  <th>الدليل</th>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">القرار</th>
+                  <th scope="col">النص</th>
+                  <th scope="col">المبرر</th>
+                  <th scope="col">الدليل</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,21 +149,23 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
       {resolvedRisks.length ? (
-        <section className="card stack" aria-labelledby="resolved-risks-heading">
-          <h2 id="resolved-risks-heading">مخاطر تم حسمها</h2>
+                <Section
+          title="مخاطر تم حسمها"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطر · النتيجة · دليل الحسم · وقت الحسم</caption>
               <thead>
-                <tr><th>الخطر</th><th>النتيجة</th><th>دليل الحسم</th><th>وقت الحسم</th></tr>
+                <tr><th scope="col">الخطر</th><th scope="col" className="num">النتيجة</th><th scope="col">دليل الحسم</th><th scope="col">وقت الحسم</th></tr>
               </thead>
               <tbody>
                 {resolvedRisks.map((risk) => (
                   <tr key={risk.risk_item_id}>
                     <td data-label="الخطر">{risk.title}</td>
-                    <td data-label="النتيجة">{risk.resolution_outcome ?? '—'}</td>
+                    <td className="num" data-label="النتيجة">{risk.resolution_outcome ?? '—'}</td>
                     <td data-label="دليل الحسم">{risk.resolution_evidence_reference ?? '—'}</td>
                     <td data-label="وقت الحسم">{risk.resolved_at ?? '—'}</td>
                   </tr>
@@ -174,7 +173,7 @@ export default async function GovernancePage({ params }: { params: Promise<{ pro
               </tbody>
             </table>
           </div>
-        </section>
+        </Section>
       ) : null}
     </section>
   );

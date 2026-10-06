@@ -1,20 +1,15 @@
 'use client';
 
-type PilotErrorProps = Readonly<{
-  error: Error & { digest?: string };
-  reset: () => void;
-}>;
+import { RouteError } from '@/shared/ui/route-error';
 
-export default function PilotError({ reset }: PilotErrorProps) {
+export default function PilotError({ reset }: { reset: () => void }) {
   return (
-    <section className="card stack" role="alert">
-      <h1>تعذر تحميل لوحة التشغيل التجريبي</h1>
-      <p className="error">
-        لم نعرض مجاميع رقابة أو فروق مطابقة قديمة بدلًا من البيانات الحالية. تحقق من الاتصال والصلاحية ثم أعد المحاولة.
-      </p>
-      <button type="button" onClick={reset}>
-        إعادة المحاولة
-      </button>
-    </section>
+    <RouteError
+      surface="لوحة التشغيل التجريبي"
+      detail="حدث خطأ أثناء قراءة مجاميع الرقابة وفروق المطابقة."
+      reset={reset}
+      backHref="/projects"
+      backLabel="العودة إلى المشاريع"
+    />
   );
 }

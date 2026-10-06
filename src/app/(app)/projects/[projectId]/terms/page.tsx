@@ -1,5 +1,5 @@
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { SectionTabs } from '@/shared/ui';
+import { Section, SectionTabs } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import {
@@ -47,6 +47,8 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
         title="الشروط والاتفاقية"
         subtitle={project.name}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <SectionTabs
         label="رأس المال"
@@ -56,8 +58,9 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
         ]}
       />
 
-      <section className="card stack">
-        <h2>الأطراف والمشاركون</h2>
+            <Section
+        title="الأطراف والمشاركون"
+      >
         {participants.length === 0 ? (
           <p className="muted">لم يُضف مستثمرون للمشروع بعد.</p>
         ) : (
@@ -83,11 +86,12 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
             )}
           </>
         )}
-      </section>
+      </Section>
 
       {activeVersion ? (
-        <section className="card stack">
-          <h2>الاتفاقية الحاكمة</h2>
+                <Section
+          title="الاتفاقية الحاكمة"
+        >
           <p><span className="status">نسخة {activeVersion.version_no} · مفعّلة</span></p>
           <p className="muted">
             سارية من {activeVersion.effective_date}. بصمة الشروط:{' '}
@@ -95,12 +99,13 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
           </p>
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>المشارك</th><th>الالتزام</th></tr></thead>
+              <caption className="sr-only">جدول: المشارك · الالتزام</caption>
+              <thead><tr><th scope="col">المشارك</th><th scope="col" className="num">الالتزام</th></tr></thead>
               <tbody>
                 {commitments.map((commitment) => (
                   <tr key={commitment.id}>
                     <td data-label="المشارك">{participantName.get(commitment.participant_id) ?? '—'}</td>
-                    <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                    <td className="num" data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -109,10 +114,11 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
           <p className="muted">
             هذه النسخة وشروط الالتزام غير قابلة للتعديل. مسار تعديل الاتفاقية وترحيل أثر التمويل مؤجل لمرحلة مستقلة؛ النسخة الحالية تظل الحاكمة.
           </p>
-        </section>
+        </Section>
       ) : (
-        <section className="card stack">
-          <h2>مسودة الاتفاقية</h2>
+                <Section
+          title="مسودة الاتفاقية"
+        >
           {participants.length === 0 ? (
             <p className="muted">أضف مستثمرًا واحدًا على الأقل قبل إنشاء مسودة الاتفاقية.</p>
           ) : (
@@ -141,7 +147,7 @@ export default async function TermsPage({ params }: { params: Promise<{ projectI
               </ul>
             </div>
           )}
-        </section>
+        </Section>
       )}
     </section>
   );

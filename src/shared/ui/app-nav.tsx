@@ -33,7 +33,7 @@ export function AppNav({ tools }: { tools: ReactNode }) {
       <details className="app-more app-nav-mobile">
         <summary aria-label="فتح القائمة">القائمة</summary>
         <div className="app-more-panel">
-          <nav className="app-nav" aria-label="التنقل الرئيسي (جوال)" style={{ display: 'grid' }}>
+          <nav className="app-nav app-nav-stack" aria-label="التنقل الرئيسي (جوال)">
             {links}
           </nav>
           {tools}

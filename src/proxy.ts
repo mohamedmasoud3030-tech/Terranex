@@ -51,6 +51,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // /api/health is a public liveness probe with no tenant data; it must stay
-  // reachable without a session.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health).*)'],
+  // reachable without a session. The brand lockups (logo.png mark,
+  // logo-full.png lockup) are public brand assets shown on the sign-in
+  // screen itself, requested before any session exists — both directly and
+  // as the /_next/image upstream fetch, which would otherwise inherit this
+  // redirect and break the mark on all three auth pages.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|logo(?:-full)?\\.png).*)'],
 };

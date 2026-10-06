@@ -1,9 +1,13 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
+import {
+  totalsByCurrency,
+  presentRollup,
+  type CurrencyRollupResult,
+} from '@/shared/money/by-currency';
 import {
   getAuditEvents,
   getCashAccountPositions,
@@ -19,7 +23,7 @@ import {
 } from '@/features/control/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { SectionTabs } from '@/shared/ui';
+import { Section, SectionTabs } from '@/shared/ui';
 import {
   AchieveMilestoneButton,
   ObligationScheduleForm,
@@ -70,6 +74,24 @@ function stateLabel(obligation: {
   return { label: 'معتمد', tone: 'open' };
 }
 
+/**
+ * One line per currency, each carrying its own currency. A metric with no rows
+ * renders an explicit absence rather than a manufactured zero, and there is
+ * deliberately no branch that combines two currencies into one line.
+ */
+function rollupLines(result: CurrencyRollupResult) {
+  if (result.totals.length === 0) return <strong>—</strong>;
+  return (
+    <>
+      {result.totals.map((total) => (
+        <strong className="num" key={total.currency}>
+          {presentRollup(total)}
+        </strong>
+      ))}
+    </>
+  );
+}
+
 export default async function CostsPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const project = await getProject(projectId);
@@ -91,12 +113,19 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
   const partyName = new Map(parties.map((party) => [party.id, party.legal_name]));
   const dueByObligation = new Map(dueRows.map((row) => [row.obligation_id, row]));
 
-  const overdueTotal = agingRows
-    .filter((row) => row.aging_bucket.startsWith('OVERDUE'))
-    .reduce((sum, row) => sum + BigInt(row.overdue_outstanding_minor_units), 0n);
-  const retentionHeld = agingRows.reduce(
-    (sum, row) => sum + BigInt(row.retention_held_minor_units),
-    0n,
+  // `cost_obligation_aging_read` returns one row per (currency, aging bucket),
+  // so these totals are partitioned by currency rather than summed: a project
+  // can hold authorized payables in more than one currency, and there is no FX
+  // contract that would let them be added.
+  const overdueTotal = totalsByCurrency(
+    agingRows.filter((row) => row.aging_bucket.startsWith('OVERDUE')),
+    (row) => row.currency,
+    (row) => row.overdue_outstanding_minor_units,
+  );
+  const retentionHeld = totalsByCurrency(
+    agingRows,
+    (row) => row.currency,
+    (row) => row.retention_held_minor_units,
   );
   const disputedCount = dueRows.filter((row) => row.is_disputed).length;
 
@@ -109,14 +138,23 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
   }
   const audit = await getAuditEvents(obligations.map((obligation) => obligation.obligation_id));
 
-  const totalAmount = obligations.reduce((sum, o) => sum + BigInt(o.amount_minor_units), 0n);
-  const totalPaid = obligations.reduce(
-    (sum, o) => sum + (o.status === 'DRAFT' ? 0n : BigInt(o.paid_minor_units)),
-    0n,
+  // Obligations are posted in a currency of their own, so each total below is
+  // one figure per currency. Rows that do not participate are filtered out
+  // rather than contributing an invented zero.
+  const totalAmount = totalsByCurrency(
+    obligations,
+    (o) => o.currency,
+    (o) => o.amount_minor_units,
   );
-  const outstanding = obligations.reduce(
-    (sum, o) => sum + (o.status === 'DRAFT' || o.is_reversed ? 0n : BigInt(o.outstanding_minor_units)),
-    0n,
+  const totalPaid = totalsByCurrency(
+    obligations.filter((o) => o.status !== 'DRAFT'),
+    (o) => o.currency,
+    (o) => o.paid_minor_units,
+  );
+  const outstanding = totalsByCurrency(
+    obligations.filter((o) => o.status !== 'DRAFT' && !o.is_reversed),
+    (o) => o.currency,
+    (o) => o.outstanding_minor_units,
   );
 
   return (
@@ -127,6 +165,8 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         title="التكاليف والنقدية"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <SectionTabs
         label="التكاليف والنقدية"
@@ -139,23 +179,23 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
       <section className="grid">
         <div className="card">
           <p className="muted">إجمالي الالتزامات</p>
-          <strong>{formatMinorUnits(totalAmount, project.reporting_currency)}</strong>
+          {rollupLines(totalAmount)}
         </div>
         <div className="card">
           <p className="muted">المسدد</p>
-          <strong>{formatMinorUnits(totalPaid, project.reporting_currency)}</strong>
+          {rollupLines(totalPaid)}
         </div>
         <div className="card">
           <p className="muted">المتبقي المستحق</p>
-          <strong>{formatMinorUnits(outstanding, project.reporting_currency)}</strong>
+          {rollupLines(outstanding)}
         </div>
         <div className="card">
           <p className="muted">المتأخر عن الاستحقاق</p>
-          <strong>{formatMinorUnits(overdueTotal, project.reporting_currency)}</strong>
+          {rollupLines(overdueTotal)}
         </div>
         <div className="card">
           <p className="muted">حجز ضمان قائم</p>
-          <strong>{formatMinorUnits(retentionHeld, project.reporting_currency)}</strong>
+          {rollupLines(retentionHeld)}
         </div>
         <div className="card">
           <p className="muted">التزامات متنازع عليها</p>
@@ -163,8 +203,9 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>تسجيل التزام جديد</h2>
+            <Section
+        title="تسجيل التزام جديد"
+      >
         <ObligationForm
           organizationId={organizationId}
           projectId={projectId}
@@ -172,25 +213,27 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           parties={parties}
           commandNonce={newCommandNonce()}
         />
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>التزامات المشروع</h2>
+            <Section
+        title="التزامات المشروع"
+      >
         {obligations.length === 0 ? (
           <p className="muted">لا توجد التزامات مسجلة بعد. سجّل أول التزام ثم اعتمده وادفعه من الحساب النقدي.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المورد · الوصف · المعالجة · المبلغ · المتبقي · الاستحقاق · الحالة · الإجراءات</caption>
               <thead>
                 <tr>
-                  <th>المورد</th>
-                  <th>الوصف</th>
-                  <th>المعالجة</th>
-                  <th>المبلغ</th>
-                  <th>المتبقي</th>
-                  <th>الاستحقاق</th>
-                  <th>الحالة</th>
-                  <th>الإجراءات</th>
+                  <th scope="col">المورد</th>
+                  <th scope="col">الوصف</th>
+                  <th scope="col">المعالجة</th>
+                  <th scope="col" className="num">المبلغ</th>
+                  <th scope="col" className="num">المتبقي</th>
+                  <th scope="col">الاستحقاق</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,10 +245,10 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                       <td data-label="المورد">{partyName.get(obligation.party_id) ?? '—'}</td>
                       <td data-label="الوصف">{obligation.description}</td>
                       <td data-label="المعالجة">{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
-                      <td data-label="المبلغ">{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
-                      <td data-label="المتبقي">{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
+                      <td className="num" data-label="المبلغ">{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
+                      <td className="num" data-label="المتبقي">{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
                       <td data-label="الاستحقاق">
-                        <div className="stack" style={{ gap: 4 }}>
+                        <div className="stack-xxs">
                           {due ? (
                             <>
                               <span className="status">{AGING_LABEL[due.aging_bucket] ?? due.aging_bucket}</span>
@@ -222,7 +265,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                       </td>
                       <td data-label="الحالة"><span className="status">{state.label}</span></td>
                       <td data-label="الإجراءات">
-                        <div className="stack" style={{ gap: 8 }}>
+                        <div className="stack-xs">
                           {obligation.status === 'DRAFT' && isOwner && obligation.authorization_batch_id === null && (
                             <AuthorizeObligationButton
                               organizationId={organizationId}
@@ -357,24 +400,26 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>إنجازات المشروع التعاقدية</h2>
+            <Section
+        title="إنجازات المشروع التعاقدية"
+      >
         {milestones.length === 0 ? (
           <p className="muted">لا توجد إنجازات مسجلة. تُستخدم لجدولة الدفعات وربط الإفراج عن الحجز.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الرمز · الوصف · التاريخ المخطط · الحالة · تاريخ الإنجاز · بنود جدولة مرتبطة · الإجراء</caption>
               <thead>
                 <tr>
-                  <th>الرمز</th>
-                  <th>الوصف</th>
-                  <th>التاريخ المخطط</th>
-                  <th>الحالة</th>
-                  <th>تاريخ الإنجاز</th>
-                  <th>بنود جدولة مرتبطة</th>
-                  <th>الإجراء</th>
+                  <th scope="col">الرمز</th>
+                  <th scope="col">الوصف</th>
+                  <th scope="col">التاريخ المخطط</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col">تاريخ الإنجاز</th>
+                  <th scope="col">بنود جدولة مرتبطة</th>
+                  <th scope="col">الإجراء</th>
                 </tr>
               </thead>
               <tbody>
@@ -407,10 +452,11 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
           projectId={projectId}
           commandNonce={newCommandNonce()}
         />
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>الأثر المحاسبي ومصدر القيد</h2>
+            <Section
+        title="الأثر المحاسبي ومصدر القيد"
+      >
         {obligations.length === 0 ? (
           <p className="muted">لا توجد قيود بعد.</p>
         ) : (
@@ -431,17 +477,19 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             );
           })
         )}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>سجل التدقيق</h2>
+            <Section
+        title="سجل التدقيق"
+      >
         {audit.length === 0 ? (
           <p className="muted">لا توجد أحداث بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الحدث · الوقت · التفاصيل</caption>
               <thead>
-                <tr><th>الحدث</th><th>الوقت</th><th>التفاصيل</th></tr>
+                <tr><th scope="col">الحدث</th><th scope="col">الوقت</th><th scope="col">التفاصيل</th></tr>
               </thead>
               <tbody>
                 {audit.map((event) => (
@@ -455,7 +503,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

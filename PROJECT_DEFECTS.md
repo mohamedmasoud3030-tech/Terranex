@@ -1,5 +1,13 @@
 # Project Defect Register
 
+> **⚠️ Historical defect register — dated entries, not current status.**
+>
+> Entries below are recorded against the baseline SHAs and CI runs named in
+> each line (August 2026, 53–54 Vitest files). They are **not** updated as the
+> repository moves: the current tree has **76 Vitest files / 1095 tests**.
+> A defect listed here may already be fixed in the source — verify against the
+> code before acting on it.
+
 This register contains confirmed defects only. Unverified areas are listed separately and are not defects until evidence confirms them.
 
 ## Baseline — 2026-08-17

@@ -99,20 +99,21 @@ export function StageOpeningImportForm({
 
       <div className="table-wrap">
         <table>
+              <caption className="sr-only">جدول: الترميز المعتمد · الطرف · الحساب النقدي · مدين (وحدات صغرى) · دائن (وحدات صغرى) · الوصف</caption>
           <thead>
             <tr>
-              <th>الترميز المعتمد</th>
-              <th>الطرف</th>
-              <th>الحساب النقدي</th>
-              <th>مدين (وحدات صغرى)</th>
-              <th>دائن (وحدات صغرى)</th>
-              <th>الوصف</th>
+              <th scope="col" className="num">الترميز المعتمد</th>
+              <th scope="col">الطرف</th>
+              <th scope="col">الحساب النقدي</th>
+              <th scope="col">مدين (وحدات صغرى)</th>
+              <th scope="col">دائن (وحدات صغرى)</th>
+              <th scope="col">الوصف</th>
             </tr>
           </thead>
           <tbody>
             {OPENING_ROW_SLOTS.map((slot) => (
               <tr key={slot}>
-                <td>
+                <td className="num">
                   <select name="mappingCode" defaultValue="" aria-label={`ترميز السطر ${slot + 1}`}>
                     <option value="">— لا يُدرج —</option>
                     {mappingCodes.map((mapping) => (

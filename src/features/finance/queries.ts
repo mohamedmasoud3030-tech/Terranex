@@ -126,12 +126,29 @@ export type AuditEvent = {
   created_at: string;
 };
 
+/**
+ * The signed-in user's own membership in an organization.
+ *
+ * The `membership_read` policy is `is_active_member(organization_id)`, so an
+ * authenticated member can read EVERY active membership row of the organization
+ * — that is deliberate, because `getOrganizationMembers` needs exactly that.
+ * This reader, by contrast, answers "who am I in this org", so it must filter to
+ * the caller. Without the `user_id` filter it selected all active members and
+ * then asserted there was exactly one: `.maybeSingle()` makes PostgREST answer
+ * `406 PGRST116` as soon as an organization has a second member, which broke
+ * every page that gates on role. The filter makes the singleton assumption true
+ * rather than merely hoping for it — `memberships` is `unique(organization_id,
+ * user_id)`, so one row is now guaranteed by the database.
+ */
 export async function getCurrentMembership(organizationId: string): Promise<{ user_id: string; role: string } | null> {
   const s = await createClient();
+  const { data: { user } } = await s.auth.getUser();
+  if (!user) return null;
   const { data, error } = await s
     .from('memberships')
     .select('user_id,role')
     .eq('organization_id', organizationId)
+    .eq('user_id', user.id)
     .eq('status', 'ACTIVE')
     .maybeSingle();
   if (error) throwOperatorQuery(error);

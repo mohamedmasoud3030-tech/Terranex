@@ -96,15 +96,15 @@ export function AgreementDraftForm({
       </label>
       <p className="muted">أدخل الالتزام بالمبلغ المعتاد في {currency}، ويمكن استخدام خانتين عشريتين.</p>
       <div className="table-wrap">
-        <table>
+        <table><caption className="sr-only">جدول: المستثمر · الالتزام</caption>
           <thead>
-            <tr><th>المستثمر</th><th>الالتزام ({currency})</th></tr>
+            <tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام ({currency})</th></tr>
           </thead>
           <tbody>
             {participants.map((participant) => (
               <tr key={participant.id}>
                 <td>{participant.parties.legal_name}</td>
-                <td>
+                <td className="num">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -136,7 +136,7 @@ export function ActivateVersionButton({
 }) {
   const [state, action, pending] = useActionState(activateAgreementVersion, { error: undefined });
   return (
-    <form action={action} style={{ display: 'inline' }}>
+    <form action={action} className="form-inline">
       <input type="hidden" name="organizationId" value={organizationId} />
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="versionId" value={versionId} />
