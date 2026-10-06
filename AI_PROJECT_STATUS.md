@@ -10,8 +10,10 @@
 >
 > Current verified baseline (2026-10-06, working branch
 > `arena/4c002d8d-terranex`, base `main` @ `5156a51`):
-> `tsc --noEmit` clean · `eslint .` clean · **76 Vitest files / 1095 tests
-> passing** · `npm run build` clean, **37 app routes** · the five design
+> `tsc --noEmit` clean · `eslint .` clean · **76 Vitest files / 1104 tests
+> passing** · `npm run build` clean, **33 route surfaces** (`page.tsx`; counted
+> with `find src/app -name page.tsx | wc -l` and cross-checked against the count
+> `scripts/route-review.mjs` measures at generation time) · the five design
 > generators `--check`-current.
 >
 > The database suites (`npm run db:test`) still **cannot** be executed here — no
