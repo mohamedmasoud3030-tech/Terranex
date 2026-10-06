@@ -270,7 +270,18 @@ describe('R8 page renders reasons, not fabricated zeros', () => {
 
   it('states plainly that the page owns nothing and writes nothing', () => {
     expect(page).toContain('للقراءة فقط');
-    expect(page).not.toMatch(/<form|action=\{/);
+    // How this page could write: a <form> element, a server action bound to a
+    // form, or a Supabase write call.
+    //
+    // Import statements are stripped first because the path
+    // '@/features/assets/queries' contains the literal substring `action={`.
+    // The action pattern is also anchored to a JSX attribute position, so
+    // `EmptyState`'s `action` prop — a call-to-action slot that renders a
+    // link — is not mistaken for a server action binding.
+    const body = page.replace(/^import[\s\S]*?from\s+'[^']*';$/gm, '');
+    expect(body).not.toMatch(/<form/);
+    expect(body).not.toMatch(/(?<!<EmptyState[\s\S]{0,200})action=\{/);
+    expect(body).not.toMatch(/\.(insert|update|upsert|delete|rpc)\(/);
   });
 
   it('offers honest empty states for both sections', () => {

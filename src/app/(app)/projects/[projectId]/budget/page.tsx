@@ -1,8 +1,13 @@
 import { notFound } from 'next/navigation';
+import { Section } from '@/shared/ui';
 import { getProject } from '@/features/projects/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { formatMinorUnits } from '@/shared/money';
+import {
+  totalsByCurrency,
+  presentRollup,
+  type CurrencyRollupResult,
+} from '@/shared/money/by-currency';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
   getBudgetConsumption,
@@ -26,6 +31,24 @@ const STATUS_LABEL: Record<string, string> = {
   APPROVED: 'معتمدة',
   SUPERSEDED: 'مستبدلة',
 };
+
+/**
+ * One line per currency, each carrying its own currency. A ceiling with no
+ * consumption rows renders an explicit absence rather than a manufactured zero,
+ * and nothing here can place two currencies on the same line.
+ */
+function rollupLines(result: CurrencyRollupResult) {
+  if (result.totals.length === 0) return <strong>—</strong>;
+  return (
+    <>
+      {result.totals.map((total) => (
+        <strong className="num" key={total.currency}>
+          {presentRollup(total)}
+        </strong>
+      ))}
+    </>
+  );
+}
 
 function consumptionByLine(
   consumption: BudgetConsumption[],
@@ -56,29 +79,29 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
   const approved = budgets.filter((b) => b.status === 'APPROVED');
   const drafts = budgets.filter((b) => b.status === 'DRAFT');
 
-  const planExpense = approved.reduce(
-    (sum, b) => sum + consumption
-      .filter((c) => c.budget_id === b.budget_id && c.cost_treatment === 'EXPENSE')
-      .reduce((s, c) => s + BigInt(c.budget_minor_units), 0n),
-    0n,
+  // `budget_consumption_read` carries its own currency, so a budget ceiling is
+  // one figure per currency. These are partitioned rather than summed, and no
+  // row is ever stamped with the project's reporting currency.
+  const approvedIds = new Set(approved.map((b) => b.budget_id));
+  const approvedConsumption = consumption.filter((c) => approvedIds.has(c.budget_id));
+  const expenseConsumption = approvedConsumption.filter((c) => c.cost_treatment === 'EXPENSE');
+  const wipConsumption = approvedConsumption.filter((c) => c.cost_treatment === 'CAPITALIZABLE_WIP');
+
+  const planExpense = totalsByCurrency(
+    expenseConsumption,
+    (c) => c.currency,
+    (c) => c.budget_minor_units,
   );
-  const planWip = approved.reduce(
-    (sum, b) => sum + consumption
-      .filter((c) => c.budget_id === b.budget_id && c.cost_treatment === 'CAPITALIZABLE_WIP')
-      .reduce((s, c) => s + BigInt(c.budget_minor_units), 0n),
-    0n,
+  const planWip = totalsByCurrency(wipConsumption, (c) => c.currency, (c) => c.budget_minor_units);
+  const committedExpense = totalsByCurrency(
+    expenseConsumption,
+    (c) => c.currency,
+    (c) => c.committed_obligations_minor_units,
   );
-  const committedExpense = approved.reduce(
-    (sum, b) => sum + consumption
-      .filter((c) => c.budget_id === b.budget_id && c.cost_treatment === 'EXPENSE')
-      .reduce((s, c) => s + BigInt(c.committed_obligations_minor_units), 0n),
-    0n,
-  );
-  const committedWip = approved.reduce(
-    (sum, b) => sum + consumption
-      .filter((c) => c.budget_id === b.budget_id && c.cost_treatment === 'CAPITALIZABLE_WIP')
-      .reduce((s, c) => s + BigInt(c.committed_obligations_minor_units), 0n),
-    0n,
+  const committedWip = totalsByCurrency(
+    wipConsumption,
+    (c) => c.currency,
+    (c) => c.committed_obligations_minor_units,
   );
 
   return (
@@ -95,24 +118,25 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
       <section className="grid">
         <div className="card">
           <p className="muted">سقف المصروفات المعتمد</p>
-          <strong>{formatMinorUnits(planExpense, currency)}</strong>
+          {rollupLines(planExpense)}
         </div>
         <div className="card">
           <p className="muted">سقف الأعمال تحت التطوير</p>
-          <strong>{formatMinorUnits(planWip, currency)}</strong>
+          {rollupLines(planWip)}
         </div>
         <div className="card">
           <p className="muted">الالتزامات المسجلة (مصروف)</p>
-          <strong>{formatMinorUnits(committedExpense, currency)}</strong>
+          {rollupLines(committedExpense)}
         </div>
         <div className="card">
           <p className="muted">الالتزامات المسجلة (تطوير)</p>
-          <strong>{formatMinorUnits(committedWip, currency)}</strong>
+          {rollupLines(committedWip)}
         </div>
       </section>
 
-      <section className="card stack">
-        <h2>موازنات المشروع</h2>
+            <Section
+        title="موازنات المشروع"
+      >
         {budgets.length === 0 ? (
           <p className="muted">
             لا توجد موازنات بعد. أنشئ أول موازنة ثم اعتمدها؛ بعد الاعتماد يفرض السقف تلقائيًا
@@ -121,13 +145,14 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الفترة · النوع / الإصدار · الحالة · الإجمالي · الإجراءات</caption>
               <thead>
                 <tr>
-                  <th>الفترة</th>
-                  <th>النوع / الإصدار</th>
-                  <th>الحالة</th>
-                  <th>الإجمالي</th>
-                  <th>الإجراءات</th>
+                  <th scope="col">الفترة</th>
+                  <th scope="col">النوع / الإصدار</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col" className="num">الإجمالي</th>
+                  <th scope="col">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,9 +165,9 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                       {budget.budget_type === 'ORIGINAL' ? 'أصلية' : 'مراجعة'} · إصدار {budget.version}
                     </td>
                     <td data-label="الحالة"><span className="status">{STATUS_LABEL[budget.status] ?? budget.status}</span></td>
-                    <td data-label="الإجمالي">{formatMoney(budget.total_budget_minor_units, currency)}</td>
+                    <td className="num" data-label="الإجمالي">{formatMoney(budget.total_budget_minor_units, budget.currency)}</td>
                     <td data-label="الإجراءات">
-                      <div className="stack" style={{ gap: 8 }}>
+                      <div className="stack-xs">
                         {budget.status === 'DRAFT' && isOwner && (
                           <>
                             <ApproveBudgetButton
@@ -175,24 +200,26 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
       {approved.length > 0 && (
-        <section className="card stack">
-          <h2>الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)</h2>
+                <Section
+          title="الاستهلاك مقابل السقوف (النسخ المعتمدة فقط)"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الإصدار · المعالجة · السقف · الالتزامات · المدفوع · الفعلية المرحّلة · استثناءات معتمدة · المتبقي الفعلي · FAC للبند</caption>
               <thead>
                 <tr>
-                  <th>الإصدار</th>
-                  <th>المعالجة</th>
-                  <th>السقف</th>
-                  <th>الالتزامات</th>
-                  <th>المدفوع</th>
-                  <th>الفعلية المرحّلة</th>
-                  <th>استثناءات معتمدة</th>
-                  <th>المتبقي الفعلي</th>
-                  <th>FAC للبند</th>
+                  <th scope="col">الإصدار</th>
+                  <th scope="col">المعالجة</th>
+                  <th scope="col">السقف</th>
+                  <th scope="col" className="num">الالتزامات</th>
+                  <th scope="col" className="num">المدفوع</th>
+                  <th scope="col" className="num">الفعلية المرحّلة</th>
+                  <th scope="col" className="num">استثناءات معتمدة</th>
+                  <th scope="col" className="num">المتبقي الفعلي</th>
+                  <th scope="col" className="num">FAC للبند</th>
                 </tr>
               </thead>
               <tbody>
@@ -204,13 +231,13 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
                     <tr key={`${line.budget_id}-${line.cost_treatment}`}>
                       <td data-label="الإصدار">{line.version}</td>
                       <td data-label="المعالجة">{budgetLineTreatmentLabel(line.cost_treatment)}</td>
-                      <td data-label="السقف">{formatMoney(line.budget_minor_units, currency)}</td>
-                      <td data-label="الالتزامات">{formatMoney(line.committed_obligations_minor_units, currency)}</td>
-                      <td data-label="المدفوع">{formatMoney(line.paid_minor_units, currency)}</td>
-                      <td data-label="الفعلية المرحّلة">{formatMoney(line.actual_minor_units, currency)}</td>
-                      <td data-label="استثناءات معتمدة">{formatMoney(line.approved_exception_minor_units, currency)}</td>
-                      <td data-label="المتبقي الفعلي">{formatMoney(line.effective_remaining_minor_units, currency)}</td>
-                      <td data-label="FAC للبند">{formatMoney(line.fac_minor_units, currency)}</td>
+                      <td data-label="السقف">{formatMoney(line.budget_minor_units, line.currency)}</td>
+                      <td className="num" data-label="الالتزامات">{formatMoney(line.committed_obligations_minor_units, line.currency)}</td>
+                      <td className="num" data-label="المدفوع">{formatMoney(line.paid_minor_units, line.currency)}</td>
+                      <td className="num" data-label="الفعلية المرحّلة">{formatMoney(line.actual_minor_units, line.currency)}</td>
+                      <td className="num" data-label="استثناءات معتمدة">{formatMoney(line.approved_exception_minor_units, line.currency)}</td>
+                      <td className="num" data-label="المتبقي الفعلي">{formatMoney(line.effective_remaining_minor_units, line.currency)}</td>
+                      <td className="num" data-label="FAC للبند">{formatMoney(line.fac_minor_units, line.currency)}</td>
                     </tr>
                   ));
                 })}
@@ -221,35 +248,37 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             FAC للبند = الفعلية المرحّلة + المتبقي المعتمد للتنبؤ. تُفصل الفعلية والالتزامات
             والمتبقي كحقائق مستقلة؛ ولا يُخترع أي رقم توقعي آخر.
           </p>
-        </section>
+        </Section>
       )}
 
       {facRows.length > 0 && (
-        <section className="card stack">
-          <h2>التوقع عند الإنجاز (FAC) على مستوى الموازنة</h2>
+                <Section
+          title="التوقع عند الإنجاز (FAC) على مستوى الموازنة"
+        >
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الإصدار · إجمالي الموازنة · استثناءات معتمدة · الفعلية (Actual) · الالتزامات المفتوحة (PO) · المتبقي المعتمد للتنبؤ · FAC</caption>
               <thead>
                 <tr>
-                  <th>الإصدار</th>
-                  <th>إجمالي الموازنة</th>
-                  <th>استثناءات معتمدة</th>
-                  <th>الفعلية (Actual)</th>
-                  <th>الالتزامات المفتوحة (PO)</th>
-                  <th>المتبقي المعتمد للتنبؤ</th>
-                  <th>FAC</th>
+                  <th scope="col">الإصدار</th>
+                  <th scope="col">إجمالي الموازنة</th>
+                  <th scope="col" className="num">استثناءات معتمدة</th>
+                  <th scope="col" className="num">الفعلية (Actual)</th>
+                  <th scope="col" className="num">الالتزامات المفتوحة (PO)</th>
+                  <th scope="col" className="num">المتبقي المعتمد للتنبؤ</th>
+                  <th scope="col" className="num">FAC</th>
                 </tr>
               </thead>
               <tbody>
                 {facRows.map((fac) => (
                   <tr key={fac.budget_id}>
                     <td data-label="الإصدار">{fac.version}</td>
-                    <td data-label="إجمالي الموازنة">{formatMoney(fac.budget_total_minor_units, currency)}</td>
-                    <td data-label="استثناءات معتمدة">{formatMoney(fac.approved_exception_total_minor_units, currency)}</td>
-                    <td data-label="الفعلية (Actual)">{formatMoney(fac.actual_total_minor_units, currency)}</td>
-                    <td data-label="الالتزامات المفتوحة (PO)">{formatMoney(fac.open_commitment_minor_units, currency)}</td>
-                    <td data-label="المتبقي المعتمد للتنبؤ">{formatMoney(fac.approved_forecast_remainder_minor_units, currency)}</td>
-                    <td data-label="FAC">{formatMoney(fac.fac_minor_units, currency)}</td>
+                    <td data-label="إجمالي الموازنة">{formatMoney(fac.budget_total_minor_units, fac.currency)}</td>
+                    <td className="num" data-label="استثناءات معتمدة">{formatMoney(fac.approved_exception_total_minor_units, fac.currency)}</td>
+                    <td className="num" data-label="الفعلية (Actual)">{formatMoney(fac.actual_total_minor_units, fac.currency)}</td>
+                    <td className="num" data-label="الالتزامات المفتوحة (PO)">{formatMoney(fac.open_commitment_minor_units, fac.currency)}</td>
+                    <td className="num" data-label="المتبقي المعتمد للتنبؤ">{formatMoney(fac.approved_forecast_remainder_minor_units, fac.currency)}</td>
+                    <td className="num" data-label="FAC">{formatMoney(fac.fac_minor_units, fac.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -259,18 +288,19 @@ export default async function BudgetPage({ params }: { params: Promise<{ project
             FAC = الفعلية + الالتزامات المفتوحة + المتبقي المعتمد للتنبؤ — التعريف المالي
             المرجعي بفصل مكوناته الثلاثة، لا صيغة max مختزلة.
           </p>
-        </section>
+        </Section>
       )}
 
-      <section className="card stack">
-        <h2>إنشاء مسودة موازنة</h2>
+            <Section
+        title="إنشاء مسودة موازنة"
+      >
         <BudgetForm
           organizationId={organizationId}
           projectId={projectId}
           currency={currency}
           commandNonce={budgetFormNonce}
         />
-      </section>
+      </Section>
     </section>
   );
 }

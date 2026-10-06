@@ -1,14 +1,22 @@
+import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership, getCashAccountPositions, getObligationPositions } from '@/features/finance/queries';
-import { getProjectCapitalPosition } from '@/features/funding/queries';
+import {
+  getCurrentMembership,
+  getProjectCashByCurrency,
+  getProjectCapitalByCurrency,
+  getObligationPositions,
+} from '@/features/finance/queries';
+import { buildProjectCapitalView, presentCapitalAmount } from '@/features/funding/project-capital';
 import { getPropertyWorkspaces, getRealEstateProfile } from '@/features/real-estate/queries';
 import { getRealizedResults } from '@/features/revenue/queries';
 import { getAccountingPeriods, getCloseRuns } from '@/features/close/queries';
 import { getPilotAcceptanceReport } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { totalsByCurrency, presentRollup } from '@/shared/money/by-currency';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
+import { Section } from '@/shared/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,13 +44,11 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
   if (project.sector === 'LIVESTOCK') redirect(`/projects/${projectId}/livestock`);
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
-  const money = (value: string | number | bigint | null | undefined) =>
-    value === null || value === undefined ? '—' : formatMinorUnits(value, currency);
 
-  const [membership, position, cashAccounts, obligations, assets, profile, results, periods, closeRuns, report] = await Promise.all([
+  const [membership, capitalRows, cashByCurrency, obligations, assets, profile, results, periods, closeRuns, report] = await Promise.all([
     getCurrentMembership(organizationId),
-    getProjectCapitalPosition(projectId),
-    getCashAccountPositions(projectId),
+    getProjectCapitalByCurrency(projectId),
+    getProjectCashByCurrency(projectId),
     getObligationPositions(projectId),
     getPropertyWorkspaces(projectId),
     getRealEstateProfile(projectId),
@@ -56,12 +62,26 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
     return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة نظرة المشروع العامة." />;
   }
 
-  const totalCash = cashAccounts.reduce((sum, account) => sum + BigInt(account.balance_minor_units), 0n);
-  const supplierPayable = obligations
-    .filter((obligation) => !obligation.is_reversed && obligation.status === 'AUTHORIZED')
-    .reduce((sum, obligation) => sum + BigInt(obligation.outstanding_minor_units), 0n);
-  const recognizedRevenue = results.reduce((sum, result) => sum + BigInt(result.recognized_revenue_minor_units), 0n);
-  const realizedResult = results.reduce((sum, result) => sum + BigInt(result.realized_result_minor_units), 0n);
+  // Capital, cash, payables and disposal results are each partitioned by the
+  // currency the fact was posted in. No figure on this page is summed across
+  // currencies: there is no FX contract in Terranex, so a combined number would
+  // be invented rather than approximated. See `shared/money/by-currency.ts`.
+  const capital = buildProjectCapitalView(capitalRows);
+  const supplierPayable = totalsByCurrency(
+    obligations.filter((obligation) => !obligation.is_reversed && obligation.status === 'AUTHORIZED'),
+    (obligation) => obligation.currency,
+    (obligation) => obligation.outstanding_minor_units,
+  );
+  const recognizedRevenue = totalsByCurrency(
+    results,
+    (result) => result.currency,
+    (result) => result.recognized_revenue_minor_units,
+  );
+  const realizedResult = totalsByCurrency(
+    results,
+    (result) => result.currency,
+    (result) => result.realized_result_minor_units,
+  );
 
   const openPeriod = periods.find((period) => period.status === 'OPEN') ?? null;
   const closedPeriods = periods.filter((period) => period.status === 'CLOSED');
@@ -77,7 +97,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
   const developing = assets.filter((asset) => asset.operational_state === 'DEVELOPING' || asset.operational_state === 'HELD').length;
 
   return (
-    <section className="stack">
+    <section className="stack-lg">
       <WorkspaceChrome
         projectId={projectId}
         active="overview"
@@ -94,49 +114,104 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
         </div>
       )}
 
-      <section className="card stack">
-        <h2>الوضع المالي</h2>
-        <div className="overview-kpis">
-          <article className="overview-kpi"><span>رأس المال الملتزم</span><strong>{money(position?.committed_minor_units)}</strong><small>واقعة تمويل مسجلة؛ لا تعني ملكية أو حصة ربح</small></article>
-          <article className="overview-kpi"><span>رأس المال المساهم به</span><strong>{money(position?.contributed_minor_units)}</strong><small>مساهمات مسجلة؛ لا تُستخدم كأساس entitlement</small></article>
-          <article className="overview-kpi"><span>المتبقي استلامه</span><strong>{money(position?.receivable_minor_units)}</strong><small>وفق وقائع التمويل المسجلة فقط</small></article>
-          <article className="overview-kpi"><span>النقدية الحالية</span><strong>{formatMinorUnits(totalCash, currency)}</strong><small>مجموع أرصدة الحسابات النقدية</small></article>
-          <article className="overview-kpi"><span>التزامات غير مسددة</span><strong>{formatMinorUnits(supplierPayable, currency)}</strong><small>مستحقات موردين معتمدة وغير مسددة</small></article>
-        </div>
-      </section>
+      <Section title="الوضع المالي" description="كل مبلغ من قراءة رسمية واحدة؛ لا يُجمع رقم عبر عملات مختلفة.">
+        {capital.hasCapitalStructure ? (
+          capital.positions.map((p) => (
+            <div className="overview-kpis" key={`capital-${p.currency}`}>
+              <article className="overview-kpi"><span>رأس المال الملتزم — {p.currency}</span><strong className="num">{presentCapitalAmount(p.committed)}</strong><small>واقعة تمويل مسجلة؛ لا تعني ملكية أو حصة ربح</small></article>
+              <article className="overview-kpi"><span>رأس المال المساهم به — {p.currency}</span><strong className="num">{presentCapitalAmount(p.contributed)}</strong><small>مساهمات مسجلة؛ لا تُستخدم كأساس entitlement</small></article>
+              <article className="overview-kpi"><span>المتبقي استلامه — {p.currency}</span><strong className="num">{presentCapitalAmount(p.receivable)}</strong><small>وفق وقائع التمويل المسجلة فقط</small></article>
+            </div>
+          ))
+        ) : (
+          <p className="muted">لا يوجد هيكل رأسمالي مسجّل لهذا المشروع؛ لا نعرض صفرًا مفترضًا.</p>
+        )}
 
-      <section className="card stack">
-        <h2>الإيراد والنتيجة التشغيلية</h2>
         <div className="overview-kpis">
-          <article className="overview-kpi"><span>إيراد البيع المعترف به</span><strong>{formatMinorUnits(recognizedRevenue, currency)}</strong><small>عبر قيود الاعتراف المتوازنة فقط</small></article>
-          <article className="overview-kpi"><span>النتيجة المحققة من التصرفات</span><strong>{formatMinorUnits(realizedResult, currency)}</strong><small>{results.length} تصرف معترف به · ليست حصة مستثمر</small></article>
+          {cashByCurrency.length === 0 ? (
+            <article className="overview-kpi"><span>النقدية الحالية</span><strong className="num">—</strong><small>لا توجد حسابات نقدية مسجلة؛ لا نعرض صفرًا مفترضًا</small></article>
+          ) : (
+            cashByCurrency.map((cash) => (
+              <article className="overview-kpi" key={`cash-${cash.currency}`}>
+                <span>النقدية الحالية — {cash.currency}</span>
+                <strong className="num">{formatMinorUnits(cash.cash_balance_minor_units, cash.currency)}</strong>
+                <small>{cash.account_count} حساب · كل حساب بعملته؛ لا تُجمع</small>
+              </article>
+            ))
+          )}
+          {supplierPayable.totals.length === 0 ? (
+            <article className="overview-kpi"><span>التزامات غير مسددة</span><strong className="num">—</strong><small>لا توجد التزامات موردين معتمدة وغير مسددة</small></article>
+          ) : (
+            supplierPayable.totals.map((total) => (
+              <article
+                className={`overview-kpi${total.minorUnits > 0n ? ' negative' : ''}`}
+                key={`payable-${total.currency}`}
+              >
+                <span>التزامات غير مسددة — {total.currency || 'بلا عملة'}</span>
+                <strong className="num">{presentRollup(total)}</strong>
+                <small>{total.rowCount} التزام · مستحقات موردين معتمدة وغير مسددة</small>
+              </article>
+            ))
+          )}
         </div>
-        <div className="banner info">تخصيص النتيجة على المستثمرين أو تحديد النقدية القابلة للتوزيع غير معروض هنا حتى تُحسم BD-006 وBD-008 في R14.</div>
-      </section>
+        {supplierPayable.unparseableRowCount > 0 ? (
+          <p className="muted">
+            استُبعد {supplierPayable.unparseableRowCount} صف لم يكن مبلغه عددًا صحيحًا؛ لم يُحوَّل إلى صفر.
+          </p>
+        ) : null}
+      </Section>
 
-      <section className="card stack">
-        <h2>الأصول العقارية</h2>
+      <Section title="الإيراد والنتيجة التشغيلية" description="الاعتراف من قيود متوازنة فقط.">
         <div className="overview-kpis">
-          <article className="overview-kpi"><span>عدد الأصول</span><strong>{assets.length}</strong><small>{disposed} مُتصرَّف بها · {developing} قيد التشغيل</small></article>
-          <article className="overview-kpi"><span>الأصول قيد التشغيل</span><strong>{assets.length - disposed}</strong><small>لم تُبع بعد</small></article>
+          {recognizedRevenue.totals.length === 0 ? (
+            <article className="overview-kpi"><span>إيراد البيع المعترف به</span><strong className="num">—</strong><small>لا يوجد اعتراف مسجل؛ لا نعرض صفرًا</small></article>
+          ) : (
+            recognizedRevenue.totals.map((total) => (
+              <article className="overview-kpi" key={`revenue-${total.currency}`}>
+                <span>إيراد البيع المعترف به — {total.currency || 'بلا عملة'}</span>
+                <strong className="num">{presentRollup(total)}</strong>
+                <small>{total.rowCount} اعتراف · عبر قيود الاعتراف المتوازنة فقط</small>
+              </article>
+            ))
+          )}
+          {realizedResult.totals.length === 0 ? (
+            <article className="overview-kpi"><span>النتيجة المحققة من التصرفات</span><strong className="num">—</strong><small>لا يوجد تصرف عقاري معترف به</small></article>
+          ) : (
+            realizedResult.totals.map((total) => (
+              <article className="overview-kpi" key={`result-${total.currency}`}>
+                <span>النتيجة المحققة من التصرفات — {total.currency || 'بلا عملة'}</span>
+                <strong className="num">{presentRollup(total)}</strong>
+                <small>{total.rowCount} تصرف معترف به · نتيجة تصرف عقاري؛ ليست حصة مستثمر</small>
+              </article>
+            ))
+          )}
+        </div>
+        <div className="banner info">
+          <strong>غير محدد بسياسة معتمدة</strong> — تخصيص النتيجة على المستثمرين أو تحديد النقدية القابلة للتوزيع غير معروض هنا حتى تُحسم BD-006 وBD-008 في R14. لا يُعرض صفر ولا تقدير بديل.
+        </div>
+      </Section>
+
+      <Section title="الأصول العقارية" description="الأصل الاقتصادي منفصل عن المشروع والقطعة والعقد والدفع.">
+        <div className="overview-kpis">
+          <article className="overview-kpi"><span>عدد الأصول</span><strong className="num">{assets.length}</strong><small>{disposed} مُتصرَّف بها · {developing} قيد التشغيل</small></article>
+          <article className="overview-kpi"><span>الأصول قيد التشغيل</span><strong className="num">{assets.length - disposed}</strong><small>لم تُبع بعد</small></article>
         </div>
         {assets.length === 0 ? <p className="muted">لا توجد أصول عقارية مسجّلة بعد.</p> : (
-          <div className="table-wrap"><table className="table-stackable"><thead><tr><th>الأصل</th><th>الحالة</th><th>الاستراتيجية</th></tr></thead><tbody>
+          <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">الأصول العقارية: الاسم والحالة التشغيلية والاستراتيجية</caption><thead><tr><th scope="col">الأصل</th><th scope="col">الحالة</th><th scope="col">الاستراتيجية</th></tr></thead><tbody>
             {assets.map((asset) => <tr key={asset.property_asset_id}><td data-label="الأصل">{asset.name}</td><td data-label="الحالة"><span className="status">{ASSET_STATE[asset.operational_state] ?? asset.operational_state}</span></td><td data-label="الاستراتيجية">{asset.strategy ?? '—'}</td></tr>)}
           </tbody></table></div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>الفترة المحاسبية والإغلاق</h2>
+      <Section title="الفترة المحاسبية والإغلاق" description="حالة الإغلاق وبواباته كما هي مسجلة الآن.">
         <div className="overview-kpis">
           <article className="overview-kpi"><span>الفترة الحالية</span><strong>{openPeriod ? `${d(openPeriod.start_date)} → ${d(openPeriod.end_date)}` : 'لا توجد فترة مفتوحة'}</strong><small>{openPeriod ? PERIOD_STATUS[openPeriod.status] : 'أنشئ فترة OPEN'}</small></article>
-          <article className="overview-kpi"><span>آخر فترة مغلقة</span><strong>{lastClosed ? `${d(lastClosed.start_date)} → ${d(lastClosed.end_date)}` : 'لا توجد'}</strong><small>{activeCloseRun ? `آخر إغلاق: ${activeCloseRun.status}` : 'لا يوجد إغلاق'}</small></article>
+          <article className="overview-kpi"><span>آخر فترة مغلقة</span><strong>{lastClosed ? `${d(lastClosed.start_date)} → ${d(lastClosed.end_date)}` : 'لا توجد'}</strong><small>{activeCloseRun ? `آخر إغلاق: ${recordStatusLabel(activeCloseRun.status)}` : 'لا يوجد إغلاق'}</small></article>
           <article className="overview-kpi"><span>نقاط مطابقة موقّعة</span><strong>{report?.reconciliation_checkpoints ?? 0}</strong><small>فروق غير صفرية: {report?.reconciliation_non_zero_variances ?? 0}</small></article>
           <article className="overview-kpi"><span>مجاميع الرقابة الافتتاحية</span><strong>{report?.opening_control_totals_match == null ? '—' : report.opening_control_totals_match ? 'مطابقة' : 'غير مطابقة'}</strong><small>استيرادات مرحلة: {report?.posted_opening_imports ?? 0}</small></article>
         </div>
         <p className="muted">الانتقال إلى <Link href={`/projects/${projectId}/close`}>الإغلاق المالي</Link> · <Link href={`/projects/${projectId}/pilot`}>الاستيراد والمطابقة</Link></p>
-      </section>
+      </Section>
 
       <p className="muted">
         لإدخال بيانات مشروع حقيقي عبر المسار الموجّه: <Link href={`/projects/${projectId}/intake`}>إدخال مشروع حقيقي</Link>

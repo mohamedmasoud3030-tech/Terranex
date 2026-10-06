@@ -12,10 +12,11 @@ import {
   getUnreconciledPositiveStatementLines,
 } from '@/features/revenue/queries';
 import { formatMinorUnits } from '@/shared/money';
+import { totalsByCurrency, presentRollup } from '@/shared/money/by-currency';
 import { getCashAccountPositions } from '@/features/finance/queries';
 import { getPropertyWorkspaces } from '@/features/real-estate/queries';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
-import { InPageTabs } from '@/shared/ui';
+import { Section, InPageTabs } from '@/shared/ui';
 import { newCommandNonce } from '@/shared/idempotency';
 import { RentalCollectionForm, RentalRecognitionForm, RentalReconciliationForm } from './rental-forms';
 
@@ -37,7 +38,6 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
   if (!project) notFound();
   const organizationId = project.organization_id;
   const currency = project.reporting_currency;
-  const money = (value: string | number | bigint | null | undefined) => formatMinorUnits(value ?? '0', currency);
 
   const [membership, dispositions, results, collections, parties, unreconciledLines, assets, cashAccounts, rentals, rentalCollections] = await Promise.all([
     getCurrentMembership(organizationId),
@@ -59,11 +59,25 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
   const partyName = new Map(parties.map((party) => [party.id, party.legal_name]));
   const assetName = new Map(assets.map((asset) => [asset.property_asset_id, asset.name]));
   const cashName = new Map(cashAccounts.map((account) => [account.cash_account_id, account.name]));
-  const recognizedRevenue = results.reduce((sum, result) => sum + BigInt(result.recognized_revenue_minor_units), 0n);
-  const realizedResult = results.reduce((sum, result) => sum + BigInt(result.realized_result_minor_units), 0n);
-  const totalCollected = collections
-    .filter((collection) => collection.journal_batch_id)
-    .reduce((sum, collection) => sum + BigInt(collection.amount_minor_units), 0n);
+  // Summary totals are partitioned by the currency the fact was posted in.
+  // There is no FX contract in Terranex, so a single headline number across
+  // currencies would be fabricated, not approximated. Each figure below is
+  // therefore rendered once per currency, with its own currency attached.
+  const recognizedRevenue = totalsByCurrency(
+    results,
+    (result) => result.currency,
+    (result) => result.recognized_revenue_minor_units,
+  );
+  const realizedResult = totalsByCurrency(
+    results,
+    (result) => result.currency,
+    (result) => result.realized_result_minor_units,
+  );
+  const totalCollected = totalsByCurrency(
+    collections.filter((collection) => collection.journal_batch_id),
+    (collection) => collection.currency,
+    (collection) => collection.amount_minor_units,
+  );
 
   return (
     <section className="stack">
@@ -73,60 +87,102 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
         title="الإيراد والبيع"
         subtitle={`${project.name} · ${currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="تنقل الإيراد"
         items={[
           { href: '#dispositions', label: 'التصرفات' },
+          // The rental section only renders for real-estate projects, so its
+          // tab is conditional on exactly the same test — a tab that links to
+          // a section the page will not render is a dead link.
+          ...(project.sector === 'REAL_ESTATE'
+            ? [{ href: '#rentals', label: 'الإيجار' }]
+            : []),
           { href: '#result', label: 'النتيجة المحققة' },
           { href: '#collections', label: 'التحصيل' },
           { href: '#bank', label: 'المطابقة البنكية' },
         ]}
       />
 
-      <section className="card stack">
-        <h2>ملخص الإيراد</h2>
+            <Section
+        title="ملخص الإيراد"
+      >
         <div className="overview-kpis">
-          <article className="overview-kpi">
-            <span>إيراد البيع المعترف به</span>
-            <strong>{money(recognizedRevenue)}</strong>
-            <small>عبر قيود الاعتراف المتوازنة فقط</small>
-          </article>
-          <article className="overview-kpi negative">
-            <span>النتيجة المحققة</span>
-            <strong>{money(realizedResult)}</strong>
-            <small>{results.length} تصرف معترف به</small>
-          </article>
-          <article className="overview-kpi">
-            <span>النقد المحصل من المبيعات</span>
-            <strong>{money(totalCollected)}</strong>
-            <small>وقائع تحصيل مرحّلة</small>
-          </article>
+          {recognizedRevenue.totals.length === 0 ? (
+            <article className="overview-kpi">
+              <span>إيراد البيع المعترف به</span>
+              <strong>—</strong>
+              <small>لا يوجد اعتراف مسجل؛ لا نعرض صفرًا</small>
+            </article>
+          ) : (
+            recognizedRevenue.totals.map((total) => (
+              <article className="overview-kpi" key={`revenue-${total.currency}`}>
+                <span>إيراد البيع المعترف به — {total.currency || 'بلا عملة'}</span>
+                <strong>{presentRollup(total)}</strong>
+                <small>{total.rowCount} اعتراف · عبر قيود الاعتراف المتوازنة فقط</small>
+              </article>
+            ))
+          )}
+          {realizedResult.totals.length === 0 ? (
+            <article className="overview-kpi">
+              <span>النتيجة المحققة</span>
+              <strong>—</strong>
+              <small>لا يوجد تصرف عقاري معترف به</small>
+            </article>
+          ) : (
+            realizedResult.totals.map((total) => (
+              <article className="overview-kpi negative" key={`result-${total.currency}`}>
+                <span>النتيجة المحققة — {total.currency || 'بلا عملة'}</span>
+                <strong>{presentRollup(total)}</strong>
+                <small>{total.rowCount} تصرف معترف به · نتيجة تصرف عقاري؛ ليست حصة مستثمر</small>
+              </article>
+            ))
+          )}
+          {totalCollected.totals.length === 0 ? (
+            <article className="overview-kpi">
+              <span>النقد المحصل من المبيعات</span>
+              <strong>—</strong>
+              <small>لا توجد وقائع تحصيل مرحّلة</small>
+            </article>
+          ) : (
+            totalCollected.totals.map((total) => (
+              <article className="overview-kpi" key={`collected-${total.currency}`}>
+                <span>النقد المحصل من المبيعات — {total.currency || 'بلا عملة'}</span>
+                <strong>{presentRollup(total)}</strong>
+                <small>{total.rowCount} تحصيل مرحّل</small>
+              </article>
+            ))
+          )}
           <article className="overview-kpi">
             <span>سطور بنكية موجبة غير مطابقة</span>
             <strong>{unreconciledLines.length}</strong>
             <small>مرشحة لمطابقة تحصيلات</small>
           </article>
         </div>
-      </section>
+      </Section>
 
-      {project.sector === 'REAL_ESTATE' ? <section id="rentals" className="stack scroll-target">
-        <div className="section-heading"><div><h2>إيراد الإيجار</h2><p className="muted">اعتراف ← ذمة مدينة ← تحصيل ← مطابقة بنكية، مع بقاء كل مرحلة واقعة مستقلة.</p></div></div>
+      {project.sector === 'REAL_ESTATE' ? <section id="rentals" className="stack scroll-target" aria-labelledby="rentals-title">
+        <div className="section-heading"><div><h2 id="rentals-title">إيراد الإيجار</h2><p className="muted">اعتراف ← ذمة مدينة ← تحصيل ← مطابقة بنكية، مع بقاء كل مرحلة واقعة مستقلة.</p></div></div>
         {membership.role === 'OWNER' ? <details className="card" open={rentals.length === 0}><summary>الاعتراف بإيراد إيجار</summary><RentalRecognitionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} currency={currency} assets={assets} parties={parties}/></details> : <p className="muted">أوامر الإيجار المالية متاحة لمالك المنظمة وفق سلطة قاعدة البيانات.</p>}
         <section className="card stack">
-          {rentals.length === 0 ? <p className="empty">لا توجد اعترافات إيجار مرحلة.</p> : <div className="table-wrap"><table className="table-stackable"><thead><tr><th>العقد / الفترة</th><th>الأصل / المستأجر</th><th>المعترف</th><th>المحصل</th><th>الذمة المتبقية</th><th>الحالة / الإجراء</th></tr></thead><tbody>{rentals.map(r=><tr key={r.recognition_id}><td data-label="العقد / الفترة">{r.contract_reference}<br/><small>{d(r.rental_period_start)} — {d(r.rental_period_end)}</small></td><td data-label="الأصل / المستأجر">{assetName.get(r.property_asset_id)??r.property_asset_id}<br/><small>{partyName.get(r.tenant_party_id)??r.tenant_party_id}</small></td><td data-label="المعترف">{formatMinorUnits(r.recognized_amount_minor_units,r.currency)}</td><td data-label="المحصل">{formatMinorUnits(r.collected_minor_units,r.currency)}</td><td data-label="الذمة المتبقية">{formatMinorUnits(r.outstanding_receivable_minor_units,r.currency)}</td><td data-label="الحالة / الإجراء">{r.is_reversed?<span className="status">معكوس</span>:BigInt(r.outstanding_receivable_minor_units)===0n?<span className="status">محصل بالكامل</span>:membership.role==='OWNER'?<details><summary>تحصيل</summary><RentalCollectionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} recognition={r} cashAccounts={cashAccounts}/></details>:<span className="muted">مستحق</span>}</td></tr>)}</tbody></table></div>}
+          {rentals.length === 0 ? <p className="empty">لا توجد اعترافات إيجار مرحلة.</p> : <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: العقد / الفترة · الأصل / المستأجر · المعترف · المحصل · الذمة المتبقية · الحالة / الإجراء</caption><thead><tr><th scope="col">العقد / الفترة</th><th scope="col">الأصل / المستأجر</th><th scope="col">المعترف</th><th scope="col">المحصل</th><th scope="col" className="num">الذمة المتبقية</th><th scope="col">الحالة / الإجراء</th></tr></thead><tbody>{rentals.map(r=><tr key={r.recognition_id}><td data-label="العقد / الفترة">{r.contract_reference}<br/><small>{d(r.rental_period_start)} — {d(r.rental_period_end)}</small></td><td data-label="الأصل / المستأجر">{assetName.get(r.property_asset_id)??r.property_asset_id}<br/><small>{partyName.get(r.tenant_party_id)??r.tenant_party_id}</small></td><td data-label="المعترف">{formatMinorUnits(r.recognized_amount_minor_units,r.currency)}</td><td data-label="المحصل">{formatMinorUnits(r.collected_minor_units,r.currency)}</td><td className="num" data-label="الذمة المتبقية">{formatMinorUnits(r.outstanding_receivable_minor_units,r.currency)}</td><td data-label="الحالة / الإجراء">{r.is_reversed?<span className="status">معكوس</span>:BigInt(r.outstanding_receivable_minor_units)===0n?<span className="status">محصل بالكامل</span>:membership.role==='OWNER'?<details><summary>تحصيل</summary><RentalCollectionForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} recognition={r} cashAccounts={cashAccounts}/></details>:<span className="muted">مستحق</span>}</td></tr>)}</tbody></table></div>}
         </section>
-        <section className="card stack"><h3>تحصيلات الإيجار والمطابقة</h3>{rentalCollections.length===0?<p className="muted">لا توجد تحصيلات إيجار.</p>:<div className="table-wrap"><table className="table-stackable"><thead><tr><th>التاريخ</th><th>المبلغ</th><th>الحساب</th><th>الدليل</th><th>المطابقة</th></tr></thead><tbody>{rentalCollections.map(c=><tr key={c.collection_id}><td data-label="التاريخ">{d(c.collection_date)}</td><td data-label="المبلغ">{formatMinorUnits(c.amount_minor_units,c.currency)}</td><td data-label="الحساب">{cashName.get(c.cash_account_id)??c.cash_account_id}</td><td data-label="الدليل">{c.evidence_reference}</td><td data-label="المطابقة">{c.is_reversed?<span className="status">معكوس</span>:membership.role==='OWNER'?<RentalReconciliationForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} collection={c} statementLines={unreconciledLines}/>:c.is_reconciled?<span className="status">مطابق بنكيًا</span>:<span className="muted">غير مطابق</span>}</td></tr>)}</tbody></table></div>}</section>
+        <Section title="تحصيلات الإيجار والمطابقة" headingLevel={3}>{rentalCollections.length===0?<p className="muted">لا توجد تحصيلات إيجار.</p>:<div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: التاريخ · المبلغ · الحساب · الدليل · المطابقة</caption><thead><tr><th scope="col">التاريخ</th><th scope="col" className="num">المبلغ</th><th scope="col">الحساب</th><th scope="col">الدليل</th><th scope="col">المطابقة</th></tr></thead><tbody>{rentalCollections.map(c=><tr key={c.collection_id}><td data-label="التاريخ">{d(c.collection_date)}</td><td className="num" data-label="المبلغ">{formatMinorUnits(c.amount_minor_units,c.currency)}</td><td data-label="الحساب">{cashName.get(c.cash_account_id)??c.cash_account_id}</td><td data-label="الدليل">{c.evidence_reference}</td><td data-label="المطابقة">{c.is_reversed?<span className="status">معكوس</span>:membership.role==='OWNER'?<RentalReconciliationForm organizationId={organizationId} projectId={projectId} commandNonce={newCommandNonce()} collection={c} statementLines={unreconciledLines}/>:c.is_reconciled?<span className="status">مطابق بنكيًا</span>:<span className="muted">غير مطابق</span>}</td></tr>)}</tbody></table></div>}</Section>
       </section> : null}
 
-      <section id="dispositions" className="card stack scroll-target">
-        <h2>التصرفات</h2>
+            <Section
+        id="dispositions"
+        title="التصرفات"
+      >
         {dispositions.length === 0 ? (
           <p className="muted">لا توجد اتفاقيات تصرف مسجّلة بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>اتفاقية التصرف</th><th>المشتري</th><th>الحالة</th><th>المتحصّل المتفق عليه</th><th>تاريخ الاتفاق</th></tr></thead>
+              <caption className="sr-only">جدول: اتفاقية التصرف · المشتري · الحالة · المتحصّل المتفق عليه · تاريخ الاتفاق</caption>
+              <thead><tr><th scope="col">اتفاقية التصرف</th><th scope="col">المشتري</th><th scope="col">الحالة</th><th scope="col">المتحصّل المتفق عليه</th><th scope="col">تاريخ الاتفاق</th></tr></thead>
               <tbody>
                 {dispositions.map((disposition) => (
                   <tr key={disposition.disposition_id}>
@@ -142,46 +198,52 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
           </div>
         )}
         <p className="muted">تسجيل تصرف جديد، اعتماد، انتقال سيطرة واعتراف البيع من <Link href={`/projects/${projectId}/operations`}>الأصول العقارية</Link>.</p>
-      </section>
+      </Section>
 
-      <section id="result" className="card stack scroll-target">
-        <h2>النتيجة المحققة</h2>
+            <Section
+        id="result"
+        title="النتيجة المحققة"
+      >
         {results.length === 0 ? (
           <p className="empty">لا توجد نتيجة محققة بعد. تظهر فقط بعد قيد اعتراف متوازن.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>الأصل</th><th>التاريخ</th><th>الإيراد</th><th>التكلفة الملغاة</th><th>تكاليف البيع</th><th>النتيجة المحققة</th></tr></thead>
+              <caption className="sr-only">جدول: الأصل · التاريخ · الإيراد · التكلفة الملغاة · تكاليف البيع · النتيجة المحققة</caption>
+              <thead><tr><th scope="col">الأصل</th><th scope="col">التاريخ</th><th scope="col" className="num">الإيراد</th><th scope="col" className="num">التكلفة الملغاة</th><th scope="col">تكاليف البيع</th><th scope="col" className="num">النتيجة المحققة</th></tr></thead>
               <tbody>
                 {results.map((result) => (
                   <tr key={result.recognition_id}>
                     <td data-label="الأصل">{assetName.get(result.property_asset_id) || 'أصل عقاري'}</td>
                     <td data-label="التاريخ">{d(result.recognition_date)}</td>
-                    <td data-label="الإيراد">{formatMinorUnits(result.recognized_revenue_minor_units, result.currency)}</td>
-                    <td data-label="التكلفة الملغاة">{formatMinorUnits(result.carrying_cost_derecognized_minor_units, result.currency)}</td>
+                    <td className="num" data-label="الإيراد">{formatMinorUnits(result.recognized_revenue_minor_units, result.currency)}</td>
+                    <td className="num" data-label="التكلفة الملغاة">{formatMinorUnits(result.carrying_cost_derecognized_minor_units, result.currency)}</td>
                     <td data-label="تكاليف البيع">{formatMinorUnits(result.selling_costs_minor_units, result.currency)}</td>
-                    <td data-label="النتيجة المحققة"><strong>{formatMinorUnits(result.realized_result_minor_units, result.currency)}</strong></td>
+                    <td className="num" data-label="النتيجة المحققة"><strong>{formatMinorUnits(result.realized_result_minor_units, result.currency)}</strong></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="collections" className="card stack scroll-target">
-        <h2>سجل التحصيل</h2>
+            <Section
+        id="collections"
+        title="سجل التحصيل"
+      >
         {collections.length === 0 ? (
           <p className="muted">لا توجد تحصيلات مسجّلة بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>التاريخ</th><th>المبلغ</th><th>الحساب النقدي</th><th>الدليل</th><th>المطابقة</th></tr></thead>
+              <caption className="sr-only">جدول: التاريخ · المبلغ · الحساب النقدي · الدليل · المطابقة</caption>
+              <thead><tr><th scope="col">التاريخ</th><th scope="col" className="num">المبلغ</th><th scope="col">الحساب النقدي</th><th scope="col">الدليل</th><th scope="col">المطابقة</th></tr></thead>
               <tbody>
                 {collections.map((collection) => (
                   <tr key={collection.collection_id}>
                     <td data-label="التاريخ">{d(collection.collection_date)}</td>
-                    <td data-label="المبلغ">{formatMinorUnits(collection.amount_minor_units, collection.currency)}</td>
+                    <td className="num" data-label="المبلغ">{formatMinorUnits(collection.amount_minor_units, collection.currency)}</td>
                     <td data-label="الحساب النقدي">{collection.cash_account_id}</td>
                     <td data-label="الدليل">{collection.evidence_reference}</td>
                     <td data-label="المطابقة">{collection.is_reconciled ? <span className="status">مطابق بنكيًا</span> : <span className="muted">غير مطابق</span>}</td>
@@ -191,22 +253,25 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="bank" className="card stack scroll-target">
-        <h2>المطابقة البنكية للتحصيلات</h2>
+            <Section
+        id="bank"
+        title="المطابقة البنكية للتحصيلات"
+      >
         {unreconciledLines.length === 0 ? (
           <p className="muted">لا توجد سطور بنكية موجبة غير مطابقة.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>التاريخ</th><th>الوصف</th><th>المبلغ</th><th>مرجع المزود</th></tr></thead>
+              <caption className="sr-only">جدول: التاريخ · الوصف · المبلغ · مرجع المزود</caption>
+              <thead><tr><th scope="col">التاريخ</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th><th scope="col">مرجع المزود</th></tr></thead>
               <tbody>
                 {unreconciledLines.map((line) => (
                   <tr key={line.line_id}>
                     <td data-label="التاريخ">{d(line.transaction_date)}</td>
                     <td data-label="الوصف">{line.description}</td>
-                    <td data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
+                    <td className="num" data-label="المبلغ">{formatMinorUnits(line.amount_minor_units, line.currency)}</td>
                     <td data-label="مرجع المزود">{line.provider_reference}</td>
                   </tr>
                 ))}
@@ -215,7 +280,7 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
           </div>
         )}
         <p className="muted">مطابقة التحصيلات وسطور البنك تتم من <Link href={`/projects/${projectId}/operations`}>الأصول العقارية</Link> و<Link href={`/projects/${projectId}/cash`}>النقدية والبنك</Link>.</p>
-      </section>
+      </Section>
     </section>
   );
 }

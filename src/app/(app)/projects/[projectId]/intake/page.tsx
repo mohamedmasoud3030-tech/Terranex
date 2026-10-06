@@ -1,6 +1,7 @@
+import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
+import { PermissionState, Section } from '@/shared/ui';
 import { notFound } from 'next/navigation';
-import type { ReactNode } from 'react';
 import { getOrganizations } from '@/features/organizations/queries';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership, getCashAccountPositions, getStatementLines, getUnpostedContributions } from '@/features/finance/queries';
@@ -42,7 +43,7 @@ import type { ConditionalSectionCode } from '@/features/intake/schema';
 import type { IntakeSection, SectionStatus } from '@/features/intake/readiness';
 import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
-import { CreatePartyForm, AddParticipantForm, AgreementDraftForm, ActivateVersionButton } from '../terms/forms';
+import { CreatePartyForm, AddParticipantForm, AgreementDraftForm } from '../terms/forms';
 import { CapitalCallForm, ContributionForm } from '../funding/forms';
 import { CashAccountForm, BankImportForm } from '../cash/forms';
 import { ProfileForm, AssetForm, ParcelForm, AcquisitionForm, BudgetForm, ApprovalButton } from '../operations/forms';
@@ -181,11 +182,11 @@ export default async function IntakePage({
 
   if (!membership) {
     return (
-      <section className="card">
-        <h1>غير مصرح</h1>
-        <p className="error">عضويتك لا تسمح بقراءة مسار إدخال هذا المشروع.</p>
-        <Link className="button" href={`/projects/${projectId}`}>العودة للمشروع</Link>
-      </section>
+      <PermissionState
+        message="عضويتك لا تسمح بقراءة مسار إدخال هذا المشروع."
+        backHref={`/projects/${projectId}`}
+        backLabel="العودة للمشروع"
+      />
     );
   }
 
@@ -206,7 +207,12 @@ export default async function IntakePage({
   const approvedBudgets = budgets.filter((budget) => budget.status === 'APPROVED');
   const acquiredAssets = assets.filter((asset) => Boolean(asset.acquisition_id));
   const eligibleParties = parties.filter((party) => !participants.some((participant) => participant.party_id === party.id));
-  const money = (value: string | null | undefined) => formatMinorUnits(value ?? '0', project.reporting_currency);
+  // S7 intake amounts are denominated in the project's reporting currency and
+  // the contract carries no per-row currency, so that label is correct here.
+  // A missing amount is NOT zero: manufacturing `0.00` would assert "the
+  // variance is zero" when the value is simply unknown, so absence stays absence.
+  const money = (value: string | null | undefined) =>
+    value === null || value === undefined ? '—' : formatMinorUnits(value, project.reporting_currency);
 
   const snapshot = buildIntakeSnapshot({
     organizationName: organizations.find((org) => org.id === organizationId)?.name ?? null,
@@ -265,7 +271,7 @@ export default async function IntakePage({
     <section className="stack">
       <header className="project-context card">
         <div>
-          <Link className="muted" href={`/projects/${projectId}`}>← مساحة المشروع</Link>
+          <Link className="back-link" href={`/projects/${projectId}`}>→ مساحة المشروع</Link>
           <h1>إدخال المشروع الحقيقي</h1>
           <p className="muted">{project.name} · {project.reporting_currency} · مسار موجّه بالعربية، دون نموذج قاعدة بيانات.</p>
         </div>
@@ -285,14 +291,12 @@ export default async function IntakePage({
         </nav>
       </header>
 
-      <section className="card stack" id="result">
-        <div className="topline">
-          <div>
-            <h2>نتيجة الجاهزية</h2>
-            <p>{readiness.verdictAr}</p>
-          </div>
-          <span className="status">{readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}</span>
-        </div>
+      <Section
+        id="result"
+        title="نتيجة الجاهزية"
+        description={readiness.verdictAr}
+        actions={<span className="status">{readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}</span>}
+      >
         <p className="error" role="status">{readiness.phase2ReasonAr}</p>
         {next && (
           <p>
@@ -314,12 +318,12 @@ export default async function IntakePage({
           </div>
         )}
         {!isOwner && <p className="muted">أوامر الإدخال المادية متاحة لمالك المنظمة فقط.</p>}
-      </section>
+      </Section>
 
-      <section id="setup" className="stack scroll-target">
+      <section id="setup" className="stack scroll-target" aria-labelledby="setup-title">
         <div className="section-heading">
           <div>
-            <h2>إعداد المشروع</h2>
+            <h2 id="setup-title">إعداد المشروع</h2>
             <p className="muted">المنظمة والمشروع وتاريخ التجميد. عملة المشروع: جنيه مصري (EGP). القطاع يُحدد عند الإنشاء: عقارات أو زراعة أو ثروة حيوانية.</p>
           </div>
         </div>
@@ -346,10 +350,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="investors" className="stack scroll-target">
+      <section id="investors" className="stack scroll-target" aria-labelledby="investors-title">
         <div className="section-heading">
           <div>
-            <h2>المستثمرون والشروط</h2>
+            <h2 id="investors-title">المستثمرون والشروط</h2>
             <p className="muted">طرف واحد لكل شخص أو جهة. الالتزام ليس ملكية، والملكية ليست مساهمة.</p>
           </div>
         </div>
@@ -404,14 +408,15 @@ export default async function IntakePage({
           ) : (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المستثمر</th><th>الالتزام</th></tr></thead>
+              <caption className="sr-only">جدول: المستثمر · الالتزام</caption>
+                <thead><tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام</th></tr></thead>
                 <tbody>
                   {commitments.map((commitment) => {
                     const name = participants.find((participant) => participant.id === commitment.participant_id)?.parties.legal_name;
                     return (
                       <tr key={commitment.id}>
                         <td data-label="المستثمر">{name ?? '—'}</td>
-                        <td data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                        <td className="num" data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
                       </tr>
                     );
                   })}
@@ -422,10 +427,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="capital" className="stack scroll-target">
+      <section id="capital" className="stack scroll-target" aria-labelledby="capital-title">
         <div className="section-heading">
           <div>
-            <h2>تاريخ رأس المال</h2>
+            <h2 id="capital-title">تاريخ رأس المال</h2>
             <p className="muted">اختياري إن لم توجد طلبات أو مساهمات قبل التجميد. مسار واحد لكل أثر نقدي.</p>
           </div>
         </div>
@@ -478,10 +483,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="cash" className="stack scroll-target">
+      <section id="cash" className="stack scroll-target" aria-labelledby="cash-title">
         <div className="section-heading">
           <div>
-            <h2>البنك والنقدية</h2>
+            <h2 id="cash-title">البنك والنقدية</h2>
             <p className="muted">الرصيد الدفتري يُشتق من القيود فقط. رقم الحساب البنكي دليل خارجي.</p>
           </div>
         </div>
@@ -534,10 +539,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="property" className="stack scroll-target">
+      <section id="property" className="stack scroll-target" aria-labelledby="property-title">
         <div className="section-heading">
           <div>
-            <h2>العقار</h2>
+            <h2 id="property-title">العقار</h2>
             <p className="muted">الاستراتيجية والأصل والقطعة منفصلة عن العقد والدفع.</p>
           </div>
         </div>
@@ -606,10 +611,10 @@ export default async function IntakePage({
         )}
       </section>
 
-      <section id="opening" className="stack scroll-target">
+      <section id="opening" className="stack scroll-target" aria-labelledby="opening-title">
         <div className="section-heading">
           <div>
-            <h2>المركز الافتتاحي</h2>
+            <h2 id="opening-title">المركز الافتتاحي</h2>
             <p className="muted">ستة ترميزات فقط. أي رصيد لا يناسبها فجوة نمذجة، لا اجتهاد.</p>
           </div>
         </div>
@@ -627,7 +632,7 @@ export default async function IntakePage({
         <SectionCard item={byCode.get('DS09_OPENING_BALANCES')!}>
           {latestImport && (
             <p>
-              {latestImport.source_file_name} · {latestImport.status} ·
+              {latestImport.source_file_name} · {recordStatusLabel(latestImport.status)} ·
               مقبول {latestImport.accepted_row_count} / مرفوض {latestImport.rejected_row_count} ·
               فرق المدين {money(latestImport.debit_variance_minor_units)} ·
               فرق الدائن {money(latestImport.credit_variance_minor_units)}
@@ -651,14 +656,14 @@ export default async function IntakePage({
           </details>
           {gaps.length > 0 && (
             <div className="table-wrap">
-              <table className="table-stackable">
-                <thead><tr><th>المصدر</th><th>الوصف</th><th>المبلغ</th><th>الحالة</th><th></th></tr></thead>
+              <table className="table-stackable"><caption className="sr-only">جدول: المصدر · الوصف · المبلغ · الحالة</caption>
+                <thead><tr><th scope="col">المصدر</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th><th scope="col">الحالة</th><th scope="col"></th></tr></thead>
                 <tbody>
                   {gaps.map((gap) => (
                     <tr key={gap.gap_id}>
                       <td data-label="المصدر">{gap.source_reference}</td>
                       <td data-label="الوصف">{gap.description}<br /><span className="muted">{gap.why_unmappable}</span></td>
-                      <td data-label="المبلغ">{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
+                      <td className="num" data-label="المبلغ">{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
                       <td data-label="الحالة">{gap.status === 'OPEN' ? 'مفتوحة' : 'مقبولة تجاريًا'}</td>
                       <td data-label="">
                         {gap.status === 'OPEN' && isOwner && (
@@ -686,10 +691,10 @@ export default async function IntakePage({
         </SectionCard>
       </section>
 
-      <section id="validation" className="stack scroll-target">
+      <section id="validation" className="stack scroll-target" aria-labelledby="validation-title">
         <div className="section-heading">
           <div>
-            <h2>التحقق والمطابقة</h2>
+            <h2 id="validation-title">التحقق والمطابقة</h2>
             <p className="muted">مسودة → تحقق → ترشيح → اعتماد وترحيل → مطابقة بفرق صفر. المعدّ لا يعتمد.</p>
           </div>
         </div>
@@ -738,7 +743,8 @@ export default async function IntakePage({
           {evidenceItems.length > 0 && (
             <div className="table-wrap">
               <table className="table-stackable">
-                <thead><tr><th>المعرّف</th><th>الحقيقة</th><th>موقع العميل</th></tr></thead>
+              <caption className="sr-only">جدول: المعرّف · الحقيقة · موقع العميل</caption>
+                <thead><tr><th scope="col">المعرّف</th><th scope="col">الحقيقة</th><th scope="col">موقع العميل</th></tr></thead>
                 <tbody>
                   {evidenceItems.map((item) => (
                     <tr key={item.evidence_item_id}>

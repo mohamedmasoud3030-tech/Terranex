@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Section } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { getCurrentMembership, getCashAccountPositions, getPaymentProposals } from '@/features/finance/queries';
@@ -74,27 +75,42 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
       subtitle="طلب شراء ← أمر تجاري ← استلام ← فاتورة مورد ← مستحق ← دفع ← مطابقة بنكية"
       internalReference={project.internal_reference} sector={project.sector} />
 
-    <section className="card stack"><div className="section-heading"><div><h2>الموردون والأطراف المالية</h2><p className="muted">ملف المورد تشغيلي؛ الهوية المالية هي Party المشتركة مع Finance Core.</p></div><span className="status">{suppliers.length} مورد</span></div>
-      {suppliers.length === 0 ? <p className="muted">لا يوجد موردون بعد.</p> : <div className="table-wrap"><table className="table-stackable"><thead><tr><th>المورد</th><th>الطرف المالي</th><th>شروط السداد</th><th>الحالة</th></tr></thead><tbody>{suppliers.map((supplier) => <tr key={supplier.id}><td data-label="المورد">{supplier.name}</td><td data-label="الطرف المالي">{supplier.party_name ?? (canApprove ? <LinkSupplierPartyForm organizationId={organizationId} projectId={projectId} supplierId={supplier.id} parties={parties} serverNonce={newCommandNonce()} /> : 'غير مربوط')}</td><td data-label="شروط السداد">{supplier.payment_terms ?? '—'}</td><td data-label="الحالة">{formatSupplierStatus(supplier.status)}</td></tr>)}</tbody></table></div>}
+    <Section title="الموردون والأطراف المالية" description="ملف المورد تشغيلي؛ الهوية المالية هي Party المشتركة مع Finance Core." actions={<span className="status">{suppliers.length} مورد</span>}>
+      {suppliers.length === 0 ? <p className="muted">لا يوجد موردون بعد.</p> : <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: المورد · الطرف المالي · شروط السداد · الحالة</caption><thead><tr><th scope="col">المورد</th><th scope="col">الطرف المالي</th><th scope="col">شروط السداد</th><th scope="col">الحالة</th></tr></thead><tbody>{suppliers.map((supplier) => <tr key={supplier.id}><td data-label="المورد">{supplier.name}</td><td data-label="الطرف المالي">{supplier.party_name ?? (canApprove ? <LinkSupplierPartyForm organizationId={organizationId} projectId={projectId} supplierId={supplier.id} parties={parties} serverNonce={newCommandNonce()} /> : 'غير مربوط')}</td><td data-label="شروط السداد">{supplier.payment_terms ?? '—'}</td><td data-label="الحالة">{formatSupplierStatus(supplier.status)}</td></tr>)}</tbody></table></div>}
       <details><summary>تسجيل مورد جديد</summary><SupplierForm organizationId={organizationId} projectId={projectId} parties={parties} serverNonce={newCommandNonce()} /></details>
-    </section>
+    </Section>
 
-    <section className="card stack"><div className="section-heading"><div><h2>طلبات الشراء</h2><p className="muted">احتياج تشغيلي مستقل عن الالتزام والدفع.</p></div><span className="status">{requests.length} طلب</span></div>
+    <Section title="طلبات الشراء" description="احتياج تشغيلي مستقل عن الالتزام والدفع." actions={<span className="status">{requests.length} طلب</span>}>
       {requests.map((request) => <article className="card stack" key={request.id}><header className="topline"><h3>{request.internal_reference}</h3><span className="status">{formatDocumentState(request.status)}</span></header>
-        <div className="table-wrap"><table className="table-stackable"><thead><tr><th>الصنف</th><th>الكمية</th><th>الوحدة</th></tr></thead><tbody>{(requestLineMap.get(request.id) ?? []).map((line) => <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td data-label="الكمية">{line.quantity}</td><td data-label="الوحدة">{line.unit}</td></tr>)}</tbody></table></div>
+        <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: الصنف · الكمية · الوحدة</caption><thead><tr><th scope="col">الصنف</th><th scope="col">الكمية</th><th scope="col">الوحدة</th></tr></thead><tbody>{(requestLineMap.get(request.id) ?? []).map((line) => <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td data-label="الكمية">{line.quantity}</td><td data-label="الوحدة">{line.unit}</td></tr>)}</tbody></table></div>
         {request.status === 'DRAFT' && <SubmitRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />}
         {request.status === 'SUBMITTED' && canApprove && <ApproveRequestAction organizationId={organizationId} projectId={projectId} requestId={request.id} serverNonce={newCommandNonce()} />}
       </article>)}
       <details><summary>إنشاء طلب شراء</summary><PurchaseRequestForm organizationId={organizationId} projectId={projectId} serverNonce={newCommandNonce()} /></details>
-    </section>
+    </Section>
 
-    <section className="card stack"><div className="section-heading"><div><h2>أوامر الشراء التجارية والالتزامات</h2><p className="muted">الاعتماد ينشئ التزام شراء غير مرحّل؛ لا يسجل مصروفًا أو مستحقًا أو نقدية.</p></div><span className="status">{orders.length} أمر</span></div>
+    <Section title="أوامر الشراء التجارية والالتزامات" description="الاعتماد ينشئ التزام شراء غير مرحّل؛ لا يسجل مصروفًا أو مستحقًا أو نقدية." actions={<span className="status">{orders.length} أمر</span>}>
       {orders.map((order) => {
         const lines = orderLineMap.get(order.id) ?? [];
         const commitment = commitmentMap.get(order.id);
         return <article className="card stack" key={order.id}><header className="topline"><div><h3>{order.internal_reference}</h3><p className="muted">{order.supplier_name ?? '—'} · {order.commercial_reference ?? 'أمر قديم دون شروط مالية'} · {formatDate(order.expected_delivery_date)}</p></div><span className="status">{formatDocumentState(order.status)}</span></header>
-          {order.currency && <div className="metrics-grid"><article><span className="muted">المطلوب تجاريًا</span><strong>{formatMinorUnits(order.commercial_total_minor_units, order.currency)}</strong></article><article><span className="muted">المفوتر المعتمد</span><strong>{formatMinorUnits(commitment?.invoiced_minor_units ?? '0', order.currency)}</strong></article><article><span className="muted">التزام متبقٍ</span><strong>{formatMinorUnits(commitment?.remaining_commitment_minor_units ?? order.commercial_total_minor_units, order.currency)}</strong></article></div>}
-          <div className="table-wrap"><table className="table-stackable"><thead><tr><th>الصنف</th><th>المطلوب</th><th>المستلم</th><th>المتبقي للاستلام</th><th>سعر الوحدة</th><th>إجمالي السطر</th></tr></thead><tbody>{lines.map((line) => { const state = receivingMap.get(line.id); return <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td data-label="المطلوب">{state?.ordered_quantity ?? line.quantity} {line.unit}</td><td data-label="المستلم">{state?.received_quantity ?? '0'} {line.unit}</td><td data-label="المتبقي للاستلام">{state?.remaining_quantity ?? line.quantity} {line.unit}</td><td data-label="سعر الوحدة">{line.unit_price_minor_units && line.currency ? formatMinorUnits(line.unit_price_minor_units, line.currency) : '—'}</td><td data-label="إجمالي السطر">{line.line_amount_minor_units && line.currency ? formatMinorUnits(line.line_amount_minor_units, line.currency) : '—'}</td></tr>; })}</tbody></table></div>
+          {order.currency && (
+            // `project_procurement_commitments_read` emits a row only for an
+            // APPROVED order with at least one line (`where o.status =
+            // 'APPROVED'`, inner join on the lines), so a missing commitment
+            // means "no purchase commitment has been recognised yet" — for a
+            // DRAFT or SUBMITTED order. Substituting `0.00` for invoiced and
+            // the commercial total for the remainder would assert a recognised
+            // commitment that does not exist; the two cells stay unnamed
+            // instead. The commercial total is a property of the order itself
+            // and is always shown.
+            <div className="metrics-grid">
+              <article><span className="muted">المطلوب تجاريًا</span><strong>{formatMinorUnits(order.commercial_total_minor_units, order.currency)}</strong></article>
+              <article><span className="muted">المفوتر المعتمد</span><strong>{commitment ? formatMinorUnits(commitment.invoiced_minor_units, order.currency) : '—'}</strong></article>
+              <article><span className="muted">التزام متبقٍ</span><strong>{commitment ? formatMinorUnits(commitment.remaining_commitment_minor_units, order.currency) : '—'}</strong></article>
+            </div>
+          )}
+          <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: الصنف · المطلوب · المستلم · المتبقي للاستلام · سعر الوحدة · إجمالي السطر</caption><thead><tr><th scope="col">الصنف</th><th scope="col">المطلوب</th><th scope="col">المستلم</th><th scope="col" className="num">المتبقي للاستلام</th><th scope="col" className="num">سعر الوحدة</th><th scope="col">إجمالي السطر</th></tr></thead><tbody>{lines.map((line) => { const state = receivingMap.get(line.id); return <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td data-label="المطلوب">{state?.ordered_quantity ?? line.quantity} {line.unit}</td><td data-label="المستلم">{state?.received_quantity ?? '0'} {line.unit}</td><td className="num" data-label="المتبقي للاستلام">{state?.remaining_quantity ?? line.quantity} {line.unit}</td><td className="num" data-label="سعر الوحدة">{line.unit_price_minor_units && line.currency ? formatMinorUnits(line.unit_price_minor_units, line.currency) : '—'}</td><td data-label="إجمالي السطر">{line.line_amount_minor_units && line.currency ? formatMinorUnits(line.line_amount_minor_units, line.currency) : '—'}</td></tr>; })}</tbody></table></div>
           <div><strong>ملفات الأمر/العقد</strong>{evidenceList(orderEvidence.get(order.id) ?? [])}</div>
           <details><summary>إرفاق أمر شراء/عقد أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="PURCHASE_ORDER" subjectId={order.id} evidence={evidence} serverNonce={newCommandNonce()} /></details>
           {order.status === 'DRAFT' && <SubmitOrderAction organizationId={organizationId} projectId={projectId} orderId={order.id} serverNonce={newCommandNonce()} />}
@@ -103,16 +119,16 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
         </article>;
       })}
       <details><summary>إنشاء أمر شراء تجاري</summary><PurchaseOrderForm organizationId={organizationId} projectId={projectId} suppliers={suppliers} requests={requests} currency={project.reporting_currency} serverNonce={newCommandNonce()} /></details>
-    </section>
+    </Section>
 
-    <section className="card stack"><div className="section-heading"><div><h2>الاستلام</h2><p className="muted">حقيقة كمية ثابتة؛ لا تعني فاتورة معتمدة ولا دفعًا.</p></div><span className="status">{receipts.length} استلام</span></div>
+    <Section title="الاستلام" description="حقيقة كمية ثابتة؛ لا تعني فاتورة معتمدة ولا دفعًا." actions={<span className="status">{receipts.length} استلام</span>}>
       {receipts.map((receipt) => <article className="card stack" key={receipt.id}><header className="topline"><h3>{receipt.purchase_order_reference}</h3><span>{formatDate(receipt.received_at)}</span></header><p className="muted">مرجع الدليل: {receipt.evidence_reference}</p><ul>{(receiptLineMap.get(receipt.id) ?? []).map((line) => <li key={line.id}>{line.item_description}: {line.quantity_received} {line.unit}</li>)}</ul>{evidenceList(receiptEvidence.get(receipt.id) ?? [])}<details><summary>إرفاق دليل الاستلام أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="RECEIPT" subjectId={receipt.id} evidence={evidence} serverNonce={newCommandNonce()} /></details></article>)}
-    </section>
+    </Section>
 
-    <section className="card stack"><div className="section-heading"><div><h2>فواتير الموردين والمستحقات</h2><p className="muted">الاعتماد يرحّل المستحق في Finance Core. الدفع والمطابقة البنكية حالتان منفصلتان.</p></div><span className="status">{invoices.length} فاتورة</span></div>
+    <Section title="فواتير الموردين والمستحقات" description="الاعتماد يرحّل المستحق في Finance Core. الدفع والمطابقة البنكية حالتان منفصلتان." actions={<span className="status">{invoices.length} فاتورة</span>}>
       {invoices.length === 0 ? <p className="muted">لا توجد فواتير موردين بعد. سجّل الفاتورة من أمر مستلم أعلاه.</p> : invoices.map((invoice) => <article className="card stack" key={invoice.id}><header className="topline"><div><h3>{invoice.invoice_reference} — {invoice.supplier_name}</h3><p className="muted">أمر {invoice.purchase_order_reference} · {formatDate(invoice.invoice_date)} · دليل {invoice.evidence_reference}</p></div><span className="status">{formatDocumentState(invoice.status)}</span></header>
         <div className="metrics-grid"><article><span className="muted">قيمة الفاتورة</span><strong>{formatMinorUnits(invoice.invoice_total_minor_units, invoice.currency)}</strong></article><article><span className="muted">مدفوع</span><strong>{formatMinorUnits(invoice.paid_minor_units, invoice.currency)}</strong><small>{formatPaymentState(invoice.payment_state)}</small></article><article><span className="muted">متبقي مستحق</span><strong>{formatMinorUnits(invoice.outstanding_minor_units, invoice.currency)}</strong></article><article><span className="muted">المطابقة البنكية</span><strong>{formatReconciliationState(invoice.reconciliation_state)}</strong><small>{formatMinorUnits(invoice.reconciled_minor_units, invoice.currency)}</small></article></div>
-        <div className="table-wrap"><table className="table-stackable"><thead><tr><th>الصنف</th><th>كمية الفاتورة</th><th>سعر الوحدة</th><th>المبلغ</th></tr></thead><tbody>{(invoiceLineMap.get(invoice.id) ?? []).map((line) => <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td data-label="كمية الفاتورة">{line.quantity_invoiced} {line.unit}</td><td data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td><td data-label="المبلغ">{formatMinorUnits(line.line_amount_minor_units, line.currency)}</td></tr>)}</tbody></table></div>
+        <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: الصنف · كمية الفاتورة · سعر الوحدة · المبلغ</caption><thead><tr><th scope="col">الصنف</th><th scope="col" className="num">كمية الفاتورة</th><th scope="col" className="num">سعر الوحدة</th><th scope="col" className="num">المبلغ</th></tr></thead><tbody>{(invoiceLineMap.get(invoice.id) ?? []).map((line) => <tr key={line.id}><td data-label="الصنف">{line.item_description}</td><td className="num" data-label="كمية الفاتورة">{line.quantity_invoiced} {line.unit}</td><td className="num" data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, line.currency)}</td><td className="num" data-label="المبلغ">{formatMinorUnits(line.line_amount_minor_units, line.currency)}</td></tr>)}</tbody></table></div>
         <div><strong>ملف فاتورة المورد</strong>{evidenceList(invoiceEvidence.get(invoice.id) ?? [])}</div>
         <details><summary>إرفاق فاتورة المورد أو إصدار جديد</summary><ProcurementEvidenceForm organizationId={organizationId} projectId={projectId} subject="SUPPLIER_INVOICE" subjectId={invoice.id} evidence={evidence} serverNonce={newCommandNonce()} /></details>
         {invoice.status === 'SUBMITTED' && canApprove && <ApproveInvoiceAction organizationId={organizationId} projectId={projectId} invoiceId={invoice.id} serverNonce={newCommandNonce()} />}
@@ -128,8 +144,8 @@ export default async function ProcurementPage({ params }: { params: Promise<{ pr
         {invoice.paid_minor_units !== '0' && invoice.reconciliation_state !== 'RECONCILED' && <p className="muted">تم الدفع لكنه لم يطابق بنكيًا بالكامل. <Link href={`/projects/${projectId}/cash`}>افتح النقدية والمطابقة ←</Link></p>}
         {invoice.reconciliation_state === 'RECONCILED' && <p className="status">تمت المطابقة البنكية عبر آلية Finance Core المشتركة.</p>}
       </article>)}
-    </section>
+    </Section>
 
-    <section className="card stack"><h3>حدود محاسبية واضحة</h3><p className="muted">أمر الشراء ≠ الاستلام ≠ فاتورة المورد ≠ المستحق ≠ الدفع ≠ المطابقة البنكية. لا ضريبة آلية ولا تقييم مخزون ولا دفتر موازٍ. التصحيح المالي بعكس القيد وإعادة الترحيل من مساحة التكاليف/النقدية.</p><p><Link href={`/projects/${projectId}/cash`}>النقدية والمطابقة البنكية ←</Link> · <Link href={`/projects/${projectId}/costs`}>المستحقات والقيود ←</Link></p></section>
+    <Section title="حدود محاسبية واضحة" description="أمر الشراء ≠ الاستلام ≠ فاتورة المورد ≠ المستحق ≠ الدفع ≠ المطابقة البنكية. لا ضريبة آلية ولا تقييم مخزون ولا دفتر موازٍ. التصحيح المالي بعكس القيد وإعادة الترحيل من مساحة التكاليف/النقدية." headingLevel={3}><p><Link href={`/projects/${projectId}/cash`}>النقدية والمطابقة البنكية ←</Link> · <Link href={`/projects/${projectId}/costs`}>المستحقات والقيود ←</Link></p></Section>
   </section>;
 }

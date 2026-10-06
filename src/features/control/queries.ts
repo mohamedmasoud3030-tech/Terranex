@@ -313,6 +313,29 @@ export async function getIntegritySignals(organizationId: string): Promise<Integ
   return (data ?? []) as IntegritySignal[];
 }
 
+/**
+ * The project's official financial position — one row per project, by
+ * construction.
+ *
+ * CARDINALITY IS GENUINE. In `project_financial_position_read` the driving
+ * table is `investment_projects p` (primary key) and every CTE is joined with
+ * `on <cte>.project_id = p.id and <cte>.currency = p.reporting_currency`, each
+ * matching at most one row of its (project, currency) grouping. Filtering by
+ * `project_id` therefore returns exactly one row, so `.maybeSingle()` is the
+ * honest model here and must not be turned into an array to satisfy a rule.
+ *
+ * CURRENCY SCOPE IS THE REAL LIMITATION. Those joins mean the view reports the
+ * REPORTING-CURRENCY SLICE of the project and silently excludes facts posted in
+ * any other currency; the CTEs' per-currency grouping is discarded by the join,
+ * and `coalesce(...,0)` then renders the excluded amounts as zero. This is the
+ * same shape as `project_operating_result_read`, and it is a recorded defect in
+ * the SQL contract — not something a caller can repair, because re-deriving the
+ * missing facts in React is exactly what the architecture forbids. The
+ * per-currency contracts (`project_cash_by_currency_read`,
+ * `project_capital_by_currency_read`, `project_result_by_currency_read`) are the
+ * authoritative per-currency answers; this view answers the narrower
+ * reporting-currency question. Callers must not present it as complete.
+ */
 export async function getProjectPosition(projectId: string): Promise<ProjectPosition | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -321,7 +344,7 @@ export async function getProjectPosition(projectId: string): Promise<ProjectPosi
     .eq('project_id', projectId)
     .maybeSingle();
   if (error) throwOperatorQuery(error);
-  return data as ProjectPosition | null;
+  return (data ?? null) as ProjectPosition | null;
 }
 
 export async function getPortfolioRollup(portfolioId: string): Promise<PortfolioRollup[]> {

@@ -1,5 +1,12 @@
 # Terranex — Pre-Owner Independent Evidence Audit
 
+> **⚠️ Historical audit — anchored to a specific baseline.**
+>
+> Measured at `origin/main@350c60b` (105 SQL/shell database tests). The
+> repository has moved well beyond that SHA, including the H1 per-currency
+> contracts and the recovery merge; the tree now has **106 migrations** and
+> **112 database suites**. Findings and decisions are preserved unrewritten.
+
 **Audit date:** 2026-08-16  
 **Audited baseline:** `origin/main@350c60b05c839a0a522e92128b3cc87d6fda37d6`  
 **Audit type:** adversarial evidence, runtime, database, finance, professional-completeness, and external-authority review  

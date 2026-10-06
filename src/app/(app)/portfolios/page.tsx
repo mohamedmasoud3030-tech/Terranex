@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PageHeader } from '@/shared/ui';
+import { EmptyState, PageHeader } from '@/shared/ui';
 import { getActiveOrganization } from '@/features/organizations/context';
 import {
   getOrganizationActiveMemberships,
@@ -16,11 +16,11 @@ export default async function PortfoliosPage() {
   const { organization: org } = await getActiveOrganization();
   if (!org) {
     return (
-      <section className="card stack">
-        <h1>لنبدأ بإنشاء منظمتك</h1>
-        <p className="muted">المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك.</p>
-        <Link className="button" href="/onboarding">إنشاء منظمة</Link>
-      </section>
+      <EmptyState
+        title="لنبدأ بإنشاء منظمتك"
+        description="المنظمة هي الحدود الآمنة لبيانات الاستثمار الخاصة بفريقك."
+        action={<Link className="button" href="/onboarding">إنشاء منظمة</Link>}
+      />
     );
   }
   const portfolios = await getPortfolios(org.id);
@@ -31,7 +31,7 @@ export default async function PortfoliosPage() {
   }
 
   return (
-    <section className="stack">
+    <section className="stack-lg">
       <PageHeader
         eyebrow={org.name}
         title="المحافظ الاستثمارية"
@@ -40,29 +40,30 @@ export default async function PortfoliosPage() {
       />
 
       {portfolios.length === 0 ? (
-        <section className="card stack empty">
-          <h2>لا توجد محافظ بعد</h2>
-          <p className="muted">
-            أنشئ أول محفظة لتنظيم مشاريع المنظمة تحت إطار إداري واحد. لن نعرض أرقامًا
-            مجمعة أو بيانات تجريبية.
-          </p>
-          <Link className="button" href="/portfolios/new">إنشاء أول محفظة</Link>
-        </section>
+        <EmptyState
+          title="لا توجد محافظ بعد"
+          description="أنشئ أول محفظة لتنظيم مشاريع المنظمة تحت إطار إداري واحد. لن نعرض أرقامًا مجمعة أو بيانات تجريبية."
+          action={<Link className="button" href="/portfolios/new">إنشاء أول محفظة</Link>}
+        />
       ) : (
-        <div className="grid">
+        <ul className="grid card-list" aria-label="قائمة المحافظ">
           {portfolios.map((pf) => (
-            <Link key={pf.id} href={`/portfolios/${pf.id}`} className="project">
-              <strong>{pf.name}</strong>
-              <p className="muted">{pf.description || 'بدون غرض إداري مسجل'}</p>
-              <span className={PORTFOLIO_STATUS_BADGE_CLASS[pf.status]}>
-                {PORTFOLIO_STATUS_LABEL[pf.status]}
-              </span>
-              <span className="status">
-                {countByPortfolio.get(pf.id) ?? 0} مشروع مُسند
-              </span>
-            </Link>
+            <li key={pf.id}>
+              <Link href={`/portfolios/${pf.id}`} className="project no-sector">
+                <strong>{pf.name}</strong>
+                <div className="badge-row">
+                  <span className={PORTFOLIO_STATUS_BADGE_CLASS[pf.status]}>
+                    {PORTFOLIO_STATUS_LABEL[pf.status]}
+                  </span>
+                  <span className="status">
+                    {countByPortfolio.get(pf.id) ?? 0} مشروع مُسند
+                  </span>
+                </div>
+                <p className="muted">{pf.description || 'بدون غرض إداري مسجل'}</p>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );

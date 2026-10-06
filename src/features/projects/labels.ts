@@ -35,7 +35,23 @@ export function severityTone(severity: string): BadgeTone {
   return 'info';
 }
 
-/** Generic Arabic labels for common record statuses across the finance workspace. */
+/**
+ * Arabic labels for the record-status codes the schema actually permits.
+ *
+ * Every key below is a value from a CHECK constraint in supabase/migrations,
+ * not an invented state:
+ *   memberships.status                 ACTIVE | INACTIVE
+ *   property_controls.status           PENDING | PASSED | FAILED | EXPIRED
+ *   close_runs.status                  PREPARED | APPROVED | REJECTED
+ *   close_run_exceptions.status        PENDING | APPROVED | REJECTED
+ *   agreement_versions.status          DRAFT | ACTIVE | SUPERSEDED
+ *   s7_opening_imports.status          DRAFT | VALIDATED | READY_FOR_APPROVAL
+ *                                      | APPROVED | POSTED | REJECTED | FAILED
+ * plus the finance workspace codes already labelled here.
+ *
+ * Codes that appear in more than one domain take the wording that is true in
+ * all of them; a caller needing a domain-specific phrasing passes its own.
+ */
 export const RECORD_STATUS_LABEL: Record<string, string> = {
   OPEN: 'مفتوح',
   RESOLVED: 'مُعالج',
@@ -50,4 +66,33 @@ export const RECORD_STATUS_LABEL: Record<string, string> = {
   DRAFT: 'مسودة',
   POSTED: 'مُرحّل',
   REVERSED: 'معكوس',
+  PASSED: 'ناجح',
+  FAILED: 'فاشل',
+  EXPIRED: 'منتهي الصلاحية',
+  SUPERSEDED: 'مُستبدَل',
+  PREPARED: 'مُعدّ',
+  VALIDATED: 'مُتحقَّق منه',
+  READY_FOR_APPROVAL: 'جاهز للاعتماد',
 };
+
+/**
+ * Renders a status code in Arabic, falling back to the raw code rather than
+ * to a guess. An untranslated code reaching the UI is a defect; a visible raw
+ * code is at least honest, and this fallback keeps it from becoming a blank
+ * or a wrong label.
+ */
+export function recordStatusLabel(code: string | null | undefined): string {
+  if (!code) return '—';
+  return RECORD_STATUS_LABEL[code] ?? code;
+}
+
+/** Membership roles. The schema permits exactly OWNER and MEMBER. */
+export const ROLE_LABEL: Record<string, string> = {
+  OWNER: 'مالك المنظمة',
+  MEMBER: 'عضو',
+};
+
+export function roleLabel(role: string | null | undefined): string {
+  if (!role) return '—';
+  return ROLE_LABEL[role] ?? role;
+}

@@ -4,7 +4,6 @@ import { getParties } from '@/features/funding/queries';
 import {
   COHORT_STATE_LABEL,
   DISPOSAL_METHOD_LABEL,
-  LIVESTOCK_COST_CATEGORY_LABEL,
   MORTALITY_CAUSE_LABEL,
   OPERATION_TYPE_LABEL,
   ORIGIN_LABEL,
@@ -17,7 +16,6 @@ import {
   WEIGHT_CONFIDENCE_LABEL,
   WEIGHT_MEANING_LABEL,
   WEIGHT_METHOD_LABEL,
-  formatLivestockCostCategory,
   formatMetricStatus,
   formatSaleControlState,
   movementChangeLabel,
@@ -30,8 +28,6 @@ import {
   type HerdRead,
   type LivestockCohortIssueRead,
   type LivestockCohortResultRead,
-  type LivestockCostAttributionRead,
-  type LivestockCostSourceRead,
   type LivestockPurchaseLineRead,
   type LivestockPurchaseRead,
   type LivestockSaleCollectionRead,
@@ -64,7 +60,7 @@ import {
 } from '@/features/livestock/queries';
 import { getProject } from '@/features/projects/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
-import { InPageTabs } from '@/shared/ui';
+import { InPageTabs, Section } from '@/shared/ui';
 import { newCommandNonce } from '@/features/livestock/idempotency';
 import {
   ActivateForm,
@@ -570,11 +566,11 @@ function CohortResults({ results }: Readonly<{ results: readonly LivestockCohort
           <th scope="col">الدفعة</th>
           <th scope="col">العدد الحي غير المباع</th>
           <th scope="col">الكمية المباعة</th>
-          <th scope="col">الإيراد المعترف به</th>
+          <th className="num" scope="col">الإيراد المعترف به</th>
           <th scope="col">النقد المحصَّل</th>
-          <th scope="col">التكلفة التشغيلية المُحمَّلة</th>
-          <th scope="col">النتيجة التشغيلية حتى الآن</th>
-          <th scope="col">حالة تكلفة البضاعة</th>
+          <th className="num" scope="col">التكلفة التشغيلية المُحمَّلة</th>
+          <th className="num" scope="col">النتيجة التشغيلية حتى الآن</th>
+          <th className="num" scope="col">حالة تكلفة البضاعة</th>
         </tr>
       </thead>
       <tbody>
@@ -714,49 +710,50 @@ export default async function LivestockPage({
         title="الثروة الحيوانية"
         subtitle={`${project.name} · المواقع والقطعان`}
         internalReference={project.internal_reference}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="أقسام الثروة الحيوانية"
         items={[
+          { href: '#setup', label: 'التهيئة' },
           { href: '#sites', label: 'المواقع' },
           { href: '#herds', label: 'القطعان' },
           { href: '#batches', label: 'الدفعات' },
+          { href: '#location', label: 'الموقع الحالي' },
           { href: '#movements', label: 'الحركات' },
           { href: '#headcount', label: 'الأعداد' },
           { href: '#births', label: 'الولادات' },
           { href: '#deaths', label: 'النفوق' },
           { href: '#split', label: 'التقسيم' },
           { href: '#merge', label: 'الدمج' },
+          { href: '#count-flow', label: 'حركة العدد' },
+          { href: '#lineage', label: 'سلسلة التقسيم' },
           { href: '#weights', label: 'الأوزان' },
         ]}
       />
       <p className="muted">
         المواقع والقطعان والدفعات · تتبع جماعي قابل للعد دون افتراض سجل فردي لكل حيوان.
       </p>
-      <section className="card stack scroll-target" id="setup">
-        <h2>تهيئة القطاع</h2>
+      <Section id="setup" title="تهيئة القطاع">
         <ProfileForm {...context} commandNonce={newCommandNonce()} />
-      </section>
-      <section className="card stack scroll-target" id="sites">
-        <h2>مواقع التشغيل</h2>
+      </Section>
+      <Section id="sites" title="مواقع التشغيل">
         <SiteForm {...context} commandNonce={newCommandNonce()} />
         <Sites sites={sites} />
-      </section>
-      <section className="card stack scroll-target" id="herds">
-        <h2>القطعان (المجموعات الإدارية)</h2>
+      </Section>
+      <Section id="herds" title="القطعان (المجموعات الإدارية)">
         <HerdForm {...context} commandNonce={newCommandNonce()} />
         <Herds herds={herds} />
-      </section>
-      <section className="card stack scroll-target" id="batches">
-        <h2>الدفعات الحيوانية القابلة للعد</h2>
+      </Section>
+      <Section id="batches" title="الدفعات الحيوانية القابلة للعد">
         <CohortForm {...context} herds={herds} sites={sites} commandNonce={newCommandNonce()} />
         <Cohorts {...context} cohorts={cohorts} timeline={timeline} />
-      </section>
-      <section className="card stack scroll-target" id="location">
-        <h2>الموقع الحالي</h2>
-        <p className="muted">
-          الموقع الحالي المشتق لكل دفعة، ومنه تُسجَّل حركة النقل. الوضع الافتتاحي يظل ثابتًا في بطاقة الدفعة.
-        </p>
+      </Section>
+      <Section
+        id="location"
+        title="الموقع الحالي"
+        description="الموقع الحالي المشتق لكل دفعة، ومنه تُسجَّل حركة النقل. الوضع الافتتاحي يظل ثابتًا في بطاقة الدفعة."
+      >
         <CurrentPlacements
           placements={placements}
           sites={sites}
@@ -765,25 +762,20 @@ export default async function LivestockPage({
           projectId={projectId}
           operationalCohortIds={operationalCohortIds}
         />
-      </section>
-      <section className="card stack scroll-target" id="movements">
-        <h2>سجل الحركات</h2>
+      </Section>
+      <Section id="movements" title="سجل الحركات">
         <Movements movements={movements} />
-      </section>
-      <section className="card stack scroll-target" id="headcount">
-        <h2>الرصيد العددي الحالي</h2>
+      </Section>
+      <Section id="headcount" title="الرصيد العددي الحالي">
         <QuantityRollforward rows={quantities} />
-      </section>
-      <section className="card stack scroll-target" id="births">
-        <h2>تسجيل ولادات</h2>
+      </Section>
+      <Section id="births" title="تسجيل ولادات">
         <BirthForm {...context} commandNonce={newCommandNonce()} cohorts={operationalActiveCohorts} />
-      </section>
-      <section className="card stack scroll-target" id="deaths">
-        <h2>تسجيل نفوق</h2>
+      </Section>
+      <Section id="deaths" title="تسجيل نفوق">
         <MortalityForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
-      </section>
-      <section className="card stack scroll-target" id="split">
-        <h2>تقسيم دفعة</h2>
+      </Section>
+      <Section id="split" title="تقسيم دفعة">
         <SplitForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -791,9 +783,8 @@ export default async function LivestockPage({
           herds={herds}
           sites={sites}
         />
-      </section>
-      <section className="card stack scroll-target" id="merge">
-        <h2>دمج دفعات</h2>
+      </Section>
+      <Section id="merge" title="دمج دفعات">
         <MergeForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -801,25 +792,20 @@ export default async function LivestockPage({
           herds={herds}
           sites={sites}
         />
-      </section>
-      <section className="card stack scroll-target" id="count-flow">
-        <h2>حركة العدد</h2>
+      </Section>
+      <Section id="count-flow" title="حركة العدد">
         <QuantityEvents events={quantityEvents} />
-      </section>
-      <section className="card stack scroll-target" id="lineage">
-        <h2>سلسلة التقسيم والدمج</h2>
+      </Section>
+      <Section id="lineage" title="سلسلة التقسيم والدمج">
         <Lineage lineage={lineage} />
-      </section>
-      <section className="card stack scroll-target" id="weights">
-        <h2>تسجيل وزن</h2>
+      </Section>
+      <Section id="weights" title="تسجيل وزن">
         <WeightEventForm {...context} commandNonce={newCommandNonce()} cohorts={positiveQuantityCohorts} />
-      </section>
-      <section className="card stack">
-        <h2>سجل الأوزان</h2>
+      </Section>
+      <Section title="سجل الأوزان">
         <WeightLog events={weightEvents} />
-      </section>
-      <section className="card stack">
-        <h2>المشتريات والإضافات</h2>
+      </Section>
+      <Section title="المشتريات والإضافات">
         <PurchaseForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -827,9 +813,8 @@ export default async function LivestockPage({
           parties={partyOptions}
         />
         <Purchases purchases={purchases} lines={purchaseLines} />
-      </section>
-      <section className="card stack">
-        <h2>المبيعات</h2>
+      </Section>
+      <Section title="المبيعات">
         <SaleForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -838,26 +823,22 @@ export default async function LivestockPage({
           currency={project.reporting_currency}
         />
         <Sales sales={sales} lines={saleLines} collections={collections} />
-      </section>
-      <section className="card stack">
-        <h2>اعتماد البيع</h2>
+      </Section>
+      <Section title="اعتماد البيع">
         <SaleApprovalForm {...context} commandNonce={newCommandNonce()} sales={draftSales} />
-      </section>
-      <section className="card stack">
-        <h2>نقل السيطرة والاعتراف بالإيراد</h2>
+      </Section>
+      <Section title="نقل السيطرة والاعتراف بالإيراد">
         <SaleRecognitionForm {...context} commandNonce={newCommandNonce()} sales={approvedSales} />
-      </section>
-      <section className="card stack">
-        <h2>التحصيل</h2>
+      </Section>
+      <Section title="التحصيل">
         <SaleCollectionForm
           {...context}
           commandNonce={newCommandNonce()}
           sales={collectableSales}
           cashAccounts={cashAccountOptions}
         />
-      </section>
-      <section className="card stack">
-        <h2>الربحية — تحميل التكلفة التشغيلية</h2>
+      </Section>
+      <Section title="الربحية — تحميل التكلفة التشغيلية">
         <CostAttributionForm
           {...context}
           commandNonce={newCommandNonce()}
@@ -869,17 +850,15 @@ export default async function LivestockPage({
           commandNonce={newCommandNonce()}
           attributions={activeAttributions}
         />
-      </section>
-      <section className="card stack">
-        <h2>الربحية — نتيجة الدفعة</h2>
+      </Section>
+      <Section title="الربحية — نتيجة الدفعة">
         <CohortResults results={results} />
-      </section>
-      <section className="card stack">
-        <h2>الإقفال</h2>
+      </Section>
+      <Section title="الإقفال">
         <CloseoutForm {...context} commandNonce={newCommandNonce()} cohorts={cohorts} />
         <h3>استثناءات السلامة المفتوحة</h3>
         <CohortIssues issues={issues} />
-      </section>
+      </Section>
       <aside className="banner">
         <strong>حدود هذه المرحلة:</strong> لا حيوانات فردية أو RFID أو صحة أو علاج أو فترات حظر أو تحصين أو علف أو دورة تكاثر. الدورة التجارية (شراء، بيع، تحصيل، ربحية، إقفال تقني) تعمل على الدفعة باستخدام النواة المالية المشتركة. لا تكلفة بضاعة مباعة ولا تقييم أصل حيوي ولا قيد IAS 41؛ الأعداد أرصدة تشغيلية مشتقة من أحداث ثابتة، وليست تقييمًا للمخزون ولا أثرًا محاسبيًا.
       </aside>

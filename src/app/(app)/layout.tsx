@@ -5,6 +5,7 @@ import { signOut } from '@/features/auth/actions';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { OrganizationSwitcher } from '@/features/organizations/switcher';
 import { AppNav } from '@/shared/ui/app-nav';
+import { BrandMark } from '@/shared/ui/sector';
 
 /**
  * AppShell: authentication gate + one-row top bar + `main#content` landmark.
@@ -27,7 +28,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="shell">
       <a className="skip-link" href="#content">تخطي إلى المحتوى</a>
       <header className="app-topbar">
-        <Link href="/" className="brand">تيرانكس</Link>
+        <Link href="/" className="brand" aria-label="تيرانكس — الصفحة الرئيسية">
+          <BrandMark />
+          تيرانكس
+        </Link>
         <AppNav tools={tools} />
       </header>
       <main id="content">{children}</main>

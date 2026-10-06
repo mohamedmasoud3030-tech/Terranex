@@ -35,7 +35,7 @@ export function PageHeader({
       <div className="page-header-main">
         {backHref ? (
           <Link className="muted back-link" href={backHref}>
-            ← {backLabel ?? 'رجوع'}
+            → {backLabel ?? 'رجوع'}
           </Link>
         ) : null}
         {eyebrow ? <p className="muted eyebrow">{eyebrow}</p> : null}
@@ -180,16 +180,26 @@ export function Banner({
   );
 }
 
+/**
+ * An absent thing, stated as a fact with the next step next to it.
+ *
+ * `headingLevel` matters: most empty states sit *inside* a section that already
+ * owns an `<h2>`, so defaulting to `h2` would put two `<h2>`s at the same level
+ * in the outline and a screen reader's heading list would read a section as its
+ * own child. Pass `3` for the in-section case.
+ */
 export function EmptyState({
   title,
   description,
   action,
   compact = false,
+  headingLevel = 2,
 }: {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
   compact?: boolean;
+  headingLevel?: 2 | 3;
 }) {
   if (compact) {
     return (
@@ -202,9 +212,10 @@ export function EmptyState({
       </div>
     );
   }
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
   return (
     <section className="card stack empty">
-      <h2>{title}</h2>
+      <Heading>{title}</Heading>
       {description ? <p className="muted">{description}</p> : null}
       {action ? <div className="page-actions center">{action}</div> : null}
     </section>
@@ -287,18 +298,61 @@ export function InPageTabs({ items, label }: { items: { href: string; label: str
 }
 
 /* ----------------------------------------------------------------------- */
-/* Key-value                                                                */
+/* Sector identity                                                          */
 /* ----------------------------------------------------------------------- */
 
-export function KeyValueList({ items }: { items: { label: ReactNode; value: ReactNode }[] }) {
+import { SECTOR_TONE_CLASS, SectorGlyph } from './sector';
+import { SECTOR_AR, isSectorKey } from '@/features/workspace/sectors';
+import type { WorkspaceSector } from '@/features/workspace/nav';
+
+export { SECTOR_AR };
+
+/**
+ * The vertical a record belongs to. Replaces a generic status pill for
+ * sector, so an operator scanning a list can tell real estate from
+ * agriculture from livestock without reading every label.
+ */
+export function SectorChip({
+  sector,
+  label,
+}: {
+  sector: WorkspaceSector;
+  label?: string;
+}) {
+  const known = isSectorKey(sector);
   return (
-    <dl className="facts">
-      {items.map((item, index) => (
-        <div key={index}>
-          <dt>{item.label}</dt>
-          <dd>{item.value}</dd>
-        </div>
-      ))}
-    </dl>
+    <span className={`sector-chip ${known ? SECTOR_TONE_CLASS[sector] : 'badge-neutral'}`}>
+      {known ? <SectorGlyph sector={sector} /> : null}
+      {label ?? (known ? SECTOR_AR[sector] : sector)}
+    </span>
+  );
+}
+
+/* ----------------------------------------------------------------------- */
+/* Figures                                                                  */
+/* ----------------------------------------------------------------------- */
+
+/**
+ * Every balance is a number *plus* its basis. `asOf` and `basis` keep the
+ * figure honest: an operator must never have to guess when a total was true
+ * or what it was computed from.
+ */
+export function Figure({
+  value,
+  asOf,
+  basis,
+  negative,
+}: {
+  value: ReactNode;
+  asOf?: ReactNode;
+  basis?: ReactNode;
+  negative?: boolean;
+}) {
+  return (
+    <div className={`overview-kpi${negative ? ' negative' : ''}`}>
+      {basis ? <span>{basis}</span> : null}
+      <strong className="num">{value}</strong>
+      {asOf ? <small className="as-of">{asOf}</small> : null}
+    </div>
   );
 }

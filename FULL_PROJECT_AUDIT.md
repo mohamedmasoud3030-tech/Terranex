@@ -1,5 +1,17 @@
 # التدقيق المستقل الكامل لمشروع Terranex
 
+> **⚠️ Historical snapshot — not current status.**
+>
+> This audit was measured when the repository had **52 Vitest files / 714
+> tests** and **106 database verification files**. Those counts are preserved
+> as history and are **not** current: the working tree now carries **76 Vitest
+> files / 1095 tests** across 106 migrations and 112 database suites. The
+> document also predates R14, ADR 0034 and the H1 per-currency contracts.
+>
+> Its engineering findings (AUD-01…AUD-n) are deliberately left unrewritten;
+> read them as a dated assessment, not as an open defect list. For present
+> status read `README.md`.
+
 **تاريخ التدقيق:** 2026-08-17
 **النسخة المدققة:** `243f7f09026d0cd8a793048cce03bbbaa1577081`
 **قاعدة runtime قبل وثائق الاكتشاف:** `9488588f0c6fd1984a1c09769af480f85905c661`

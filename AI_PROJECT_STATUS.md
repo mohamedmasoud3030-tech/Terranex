@@ -1,7 +1,32 @@
-# AI Project Status — Terranex (live)
+# AI Project Status — Terranex (historical snapshot)
 
-**Last updated:** 2026-08-18
-**Branch:** `main`
+> **⚠️ Superseded — this is not the current status.**
+>
+> This file records the state of `main` at `59809c7` on **2026-08-18**. It
+> predates R14, ADR 0034 (qualified management operating result), the H1
+> per-currency contracts, the interface/design-system layer, and the recovery
+> merge. Its measurements are preserved as history and have **not** been
+> rewritten.
+>
+> Current verified baseline (2026-10-06, working branch
+> `arena/4c002d8d-terranex`, base `main` @ `5156a51`):
+> `tsc --noEmit` clean · `eslint .` clean · **76 Vitest files / 1104 tests
+> passing** · `npm run build` clean, **33 route surfaces** (`page.tsx`; counted
+> with `find src/app -name page.tsx | wc -l` and cross-checked against the count
+> `scripts/route-review.mjs` measures at generation time) · the five design
+> generators `--check`-current.
+>
+> The database suites (`npm run db:test`) still **cannot** be executed here — no
+> `psql`, `pg_dump` or `docker` is available in this sandbox — so **no claim in
+> this repository about database behaviour is verified by execution**. The DB
+> figures below are historical and must not be read as current evidence. The SQL
+> statements made in this round are reasoned from `supabase/migrations/*.sql`
+> source and are labelled as such in the recovery report.
+>
+> For present status read `README.md` and `docs/ROADMAP_R0_R17.md`.
+
+**Recorded:** 2026-08-18
+**Branch:** `main` (at the time)
 **Evidence labels:** VERIFIED COMPLETE · IMPLEMENTED BUT NOT VERIFIED · BLOCKED BY OWNER/EXTERNAL ACTION · NOT STARTED
 
 ## Baseline verification (run on this branch, before any change)

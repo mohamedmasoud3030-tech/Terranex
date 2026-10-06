@@ -87,6 +87,17 @@ export type Distribution = {
   settlement_status: 'PREPARED' | 'APPROVED' | 'PARTIALLY_PAID' | 'PAID' | 'REVERSED';
 };
 
+/**
+ * One currency's distribution capacity.
+ *
+ * `s5_distribution_capacity_read` groups `journal_lines` by
+ * `(organization_id, project_id, currency)`, so it returns one row per
+ * project+currency. The reader used to call `.maybeSingle()` against it, which
+ * makes PostgREST answer `406 PGRST116` as soon as a project holds a second
+ * currency — the same invalid singleton that was removed from the project
+ * position reader. A capacity figure is only meaningful with the currency it is
+ * stated in, so the grain is kept and no total across currencies is exposed.
+ */
 export type DistributionCapacity = {
   organization_id: string;
   project_id: string;
@@ -153,14 +164,14 @@ export const getDistributions = (projectId: string) => many<Distribution>(
   'prepared_at',
 );
 
-export async function getDistributionCapacity(projectId: string): Promise<DistributionCapacity | null> {
+export async function getDistributionCapacity(projectId: string): Promise<DistributionCapacity[]> {
   const s = await createClient();
   const { data, error } = await s.from('s5_distribution_capacity_read')
     .select('organization_id,project_id,currency,cash_minor_units,supplier_payable_minor_units,distribution_payable_minor_units,technical_capacity_bridge_minor_units')
     .eq('project_id', projectId)
-    .maybeSingle();
+    .order('currency');
   if (error) throwOperatorQuery(error);
-  return data as DistributionCapacity | null;
+  return (data ?? []) as DistributionCapacity[];
 }
 
 export const getPartnerCapitalStatement = (projectId: string) => many<PartnerCapitalStatement>(

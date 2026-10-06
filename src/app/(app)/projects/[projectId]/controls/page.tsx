@@ -1,3 +1,5 @@
+import { recordStatusLabel, roleLabel } from '@/features/projects/labels';
+import { Section } from '@/shared/ui';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
@@ -7,7 +9,7 @@ import {
   getPilotAcceptanceReport,
   getReconciliationCheckpoints,
 } from '@/features/pilot/queries';
-import { WorkspaceChrome, ForbiddenCard, memberDisplayLabel } from '@/features/workspace/chrome';
+import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +33,9 @@ function Gate({
     <div className={`gate ${satisfied ? 'pass satisfied-row' : 'fail not-row'}`}>
       <div>
         <strong>{label}</strong>
-        {note ? <div className="muted" style={{ fontSize: '.82rem' }}>{note}</div> : null}
+        {note ? <div className="muted hint-sm">{note}</div> : null}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="flex-center-xs">
         <span>{satisfied ? 'محقق' : 'غير محقق'}</span>
         <span className={satisfied ? 'gate-dot satisfied' : 'gate-dot not'} aria-hidden />
       </div>
@@ -73,10 +75,13 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
         title="الرقابة والجاهزية"
         subtitle={`${project.name} · ${project.reporting_currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
 
-      <section className="card stack">
-        <h2>دوري في المشروع</h2>
+            <Section
+        title="دوري في المشروع"
+      >
         <p>
           <span className={isOwner ? 'role-badge owner' : 'role-badge'}>
             {isOwner ? 'مالك المنظمة (OWNER)' : 'عضو (MEMBER)'}
@@ -87,13 +92,12 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
             ? 'أنت مالك المنظمة: يمكنك تنفيذ الموافقات الحصرية للمالك (اعتماد الفترات، استيراد مفتوح، استثناءات مطابقة، إلغاء وصول). تبقى آليات التخصيص والتوزيع محجوبة حتى تُعتمد سياسة الشركة المستهدفة.'
             : 'أنت عضو: يمكنك تنفيذ الإجراءات التشغيلية العادية، لكن لا يمكنك تنفيذ الموافقات الحصرية للمالك. العزل بين المنظمات محفوظ عبر أذونات الصفوف.'}
         </p>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>الجاهزية التقنية</h2>
-        <p className="muted">
-          تُشتق من وقائع مسجّلة داخل قاعدة البيانات عبر قراءات رسمية. نجاح هذه البوابات لا يعني أبدًا قبولًا بشريًا.
-        </p>
+            <Section
+        title="الجاهزية التقنية"
+        description="تُشتق من وقائع مسجّلة داخل قاعدة البيانات عبر قراءات رسمية. نجاح هذه البوابات لا يعني أبدًا قبولًا بشريًا."
+      >
         <div className="panel-grid">
           <div className="panel">
             <h3>السلامة المالية</h3>
@@ -114,10 +118,11 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
             <Gate label="بروفة إلغاء الوصول" satisfied={report?.access_revocation_result === 'PASS'} note={report?.access_revocation_result ?? 'لم تُنفَّذ'} />
           </div>
         </div>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>أدلة العالم الحقيقي</h2>
+            <Section
+        title="أدلة العالم الحقيقي"
+      >
         <div className="banner" role="note">
           البيانات التجريبية (مثل DEMO-RE-2026-001) بيانات اصطناعية للمعاينة والتدريب والتحقق. لا تُحتسب أبدًا
           كدليل عميل حقيقي ولا تُغلق أي بوابة مرحلَة ثانية أو ثالثة. لا تتحقق هذه البوابات إلا بدليل مصدري حقيقي
@@ -143,22 +148,24 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
             <Gate label="أسابيع تشغيل مدفوعة" satisfied={false} note="أسبوع تشغيل تجريبي مدفوع واحد على الأقل" />
           </div>
         </div>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>أعضاء المنظمة والوصول</h2>
+            <Section
+        title="أعضاء المنظمة والوصول"
+      >
         {members.length === 0 ? (
           <p className="muted">لا توجد عضوية إضافية معروضة (متاح للمالك).</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>العضو</th><th>الدور</th><th>الحالة</th></tr></thead>
+              <caption className="sr-only">جدول: العضو · الدور · الحالة</caption>
+              <thead><tr><th scope="col">العضو</th><th scope="col">الدور</th><th scope="col">الحالة</th></tr></thead>
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>
                     <td data-label="العضو">{member.user_id}</td>
-                    <td data-label="الدور">{member.role}</td>
-                    <td data-label="الحالة">{member.status}</td>
+                    <td data-label="الدور">{roleLabel(member.role)}</td>
+                    <td data-label="الحالة">{recordStatusLabel(member.status)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -169,7 +176,7 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
           إدارة الوصول وإلغاؤه من <Link href={`/projects/${projectId}/pilot`}>الاستيراد والمطابقة → الوصول</Link>.
           رقابة الصفوف (RLS) مفروضة على مستوى المنظمة؛ لا يمكن لأي عضو قراءة سجلات منظمة أخرى.
         </p>
-      </section>
+      </Section>
     </section>
   );
 }

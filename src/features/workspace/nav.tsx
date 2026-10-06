@@ -105,6 +105,105 @@ export const LIVESTOCK_SECTION_IDS = [
   GOVERNANCE_SECTION.id,
 ];
 
+/**
+ * Explicit group membership per sector.
+ *
+ * Membership is declared, never derived by exclusion: `sectionsFor` returns
+ * the sector's finance sections *inside* its own list, so "everything not
+ * claimed by another group" would put all of them in the sector group and
+ * duplicate them elsewhere. Each id below appears in exactly one group.
+ *
+ * Grouping is a presentation of `sectionsFor()`. `sectionGroupsFor` asserts
+ * that invariant at runtime and returns the canonical section objects, so a
+ * group can never change a label, an href, or which sections a sector may
+ * reach. Guarded by tests/workspace-nav-grouping.test.ts.
+ */
+type GroupSpec = { id: string; label: string; members: ReadonlyArray<WorkspaceSection> };
+
+const GROUP_SPECS: ReadonlyArray<GroupSpec> = [
+  {
+    id: 'overview',
+    label: 'نظرة عامة',
+    members: ['overview'],
+  },
+  {
+    id: 'sector',
+    label: 'التشغيل',
+    members: [
+      'property',
+      'agriculture',
+      'land-assets',
+      'field-activities',
+      'field-inputs',
+      'harvest-inventory',
+      'agriculture-sales',
+      'agriculture-results',
+      'livestock',
+      'livestock-operations',
+    ],
+  },
+  {
+    id: 'money',
+    label: 'المال',
+    members: ['capital', 'costs-cash', 'revenue', 'close'],
+  },
+  {
+    id: 'transparency',
+    label: 'الشفافية والاستيراد',
+    members: ['statements', 'opening'],
+  },
+  {
+    id: 'control',
+    label: 'الرقابة والحوكمة',
+    members: ['controls', 'procurement', 'budget', 'integrity', 'governance'],
+  },
+];
+
+const GROUP_LABEL_OVERRIDE: Record<WorkspaceSector, Record<string, string>> = {
+  REAL_ESTATE: { overview: 'نظرة عامة', sector: 'الأصول العقارية' },
+  AGRICULTURE: { sector: 'مساحة الزراعة' },
+  LIVESTOCK: { sector: 'مساحة الثروة الحيوانية' },
+};
+
+export type WorkspaceSectionGroup = {
+  id: string;
+  label: string;
+  sections: ReadonlyArray<SectionDef>;
+};
+
+export function sectionGroupsFor(sector: WorkspaceSector): ReadonlyArray<WorkspaceSectionGroup> {
+  const allowed = sectionsFor(sector);
+  const resolve = (id: WorkspaceSection) => allowed.find((section) => section.id === id);
+
+  return GROUP_SPECS.map((spec) => ({
+    id: spec.id,
+    label: GROUP_LABEL_OVERRIDE[sector][spec.id] ?? spec.label,
+    sections: spec.members
+      .map(resolve)
+      .filter((section): section is SectionDef => Boolean(section)),
+  })).filter((group) => group.sections.length > 0);
+}
+
+/** Every section must be claimed by exactly one group, for every sector. A
+ * section in two groups renders twice; in none, it disappears. */
+export function assertSectionGroupingIsExact(sector: WorkspaceSector): void {
+  const allowed = sectionsFor(sector).map((section) => section.id);
+  const grouped = sectionGroupsFor(sector).flatMap((group) =>
+    group.sections.map((section) => section.id),
+  );
+  const missing = allowed.filter((id) => !grouped.includes(id));
+  const duplicated = grouped.filter((id, index) => grouped.indexOf(id) !== index);
+  const invented = grouped.filter((id) => !allowed.includes(id));
+  if (missing.length || duplicated.length || invented.length) {
+    throw new Error(
+      `workspace nav grouping is not exact for ${sector}: ` +
+        `missing=${missing.join(',') || '-'} ` +
+        `duplicated=${duplicated.join(',') || '-'} ` +
+        `invented=${invented.join(',') || '-'}`,
+    );
+  }
+}
+
 export function sectionsFor(sector: WorkspaceSector): ReadonlyArray<SectionDef> {
   const shared = [PROCUREMENT_SECTION, ...FINANCE_CONTROL_SECTIONS, GOVERNANCE_SECTION];
   if (sector === 'AGRICULTURE') return [...AGRICULTURE_SECTIONS, ...shared];
@@ -128,6 +227,50 @@ export function sectorLandingHref(sector: WorkspaceSector, projectId: string): s
   if (sector === 'AGRICULTURE') return `/projects/${projectId}/agriculture`;
   if (sector === 'LIVESTOCK') return `/projects/${projectId}/livestock`;
   return `/projects/${projectId}/operations`;
+}
+
+/**
+ * Grouped workspace navigation. Each group is its own scrollable strip with a
+ * visible name, so the operator can locate a section by concern (sector work,
+ * money, transparency, control) instead of scanning one undifferentiated row.
+ * Falls back to the flat strip when a section is active but ungrouped.
+ */
+export function WorkspaceNavGrouped({
+  projectId,
+  active,
+  sector,
+}: {
+  projectId: string;
+  active: WorkspaceSection;
+  sector: WorkspaceSector;
+}) {
+  const groups = sectionGroupsFor(sector);
+  return (
+    <div className="workspace-nav-grouped">
+      {groups.map((group) => (
+        <nav key={group.id} className="workspace-nav-group" aria-label={group.label}>
+          <span className="workspace-nav-group-label">{group.label}</span>
+          <div className="workspace-nav tab-strip">
+            {group.sections.map((section) => {
+              const current = section.id === active;
+              return (
+                <Link
+                  key={section.id}
+                  href={section.href(projectId)}
+                  aria-current={current ? 'page' : undefined}
+                  title={section.description}
+                  className={current ? 'workspace-nav-item current' : 'workspace-nav-item'}
+                >
+                  <strong>{section.label}</strong>
+                  <span>{section.description}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      ))}
+    </div>
+  );
 }
 
 export function WorkspaceNav({

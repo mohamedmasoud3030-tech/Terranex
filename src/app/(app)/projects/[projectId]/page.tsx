@@ -9,9 +9,11 @@ import { buildProjectCapitalView } from '@/features/funding/project-capital';
 import { CapitalPanel } from '@/features/funding/capital-panel';
 import { getAccountingPeriods } from '@/features/close/queries';
 import { formatMinorUnits } from '@/shared/money';
-import { WorkspaceNav, sectorLandingHref, sectionsFor } from '@/features/workspace/nav';
-import { PROJECT_LIFECYCLE_LABEL, SECTOR_LABEL, projectLifecycleTone } from '@/features/projects/labels';
-import { Banner, Section, Stat, StatGrid, StatusBadge } from '@/shared/ui';
+import { WorkspaceNavGrouped, sectorLandingHref, sectionsFor } from '@/features/workspace/nav';
+import { SECTOR_LABEL } from '@/features/agriculture/labels';
+import { PROJECT_LIFECYCLE_LABEL, projectLifecycleTone } from '@/features/projects/labels';
+import { Banner, Section, SectorChip, Stat, StatGrid, StatusBadge } from '@/shared/ui';
+import { SECTOR_THEME_CLASS } from '@/shared/ui/sector';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,15 +51,15 @@ export default async function ProjectShell({
 
   return (
     <section className="stack">
-      <header className="project-context card page-header">
+      <header className={`project-context card page-header ${SECTOR_THEME_CLASS[sector]}`.trim()}>
         <div className="page-header-main">
-          <Link className="muted back-link" href="/projects">← المشاريع</Link>
+          <Link className="back-link" href="/projects">→ المشاريع</Link>
           <div className="page-title-row">
             <h1>{project.name}</h1>
+            <SectorChip sector={sector} label={SECTOR_LABEL[sector] ?? sector} />
             <StatusBadge tone={projectLifecycleTone(project.lifecycle_state)}>
               {PROJECT_LIFECYCLE_LABEL[project.lifecycle_state] ?? project.lifecycle_state}
             </StatusBadge>
-            <StatusBadge>{SECTOR_LABEL[sector] ?? sector}</StatusBadge>
           </div>
           <p className="muted page-description">
             {currency}
@@ -81,27 +83,11 @@ export default async function ProjectShell({
         <Banner tone="warning" role="alert">عضويتك الحالية لا تسمح بالوصول الكامل لهذا المشروع.</Banner>
       )}
 
-      <WorkspaceNav projectId={projectId} active="overview" sector={sector} />
+      <div className={SECTOR_THEME_CLASS[sector]}>
+        <WorkspaceNavGrouped projectId={projectId} active="overview" sector={sector} />
+      </div>
 
       <StatGrid label="الموقف الحالي للمشروع">
-        <Stat
-          label="رأس المال المساهم به"
-          value={formatMinorUnits(position?.contributed_minor_units ?? '0', currency)}
-          hint="من القراءة الرسمية للموقف الرأسمالي"
-          href={`/projects/${projectId}/funding`}
-        />
-        <Stat
-          label="النقدية الحالية"
-          value={formatMinorUnits(totalCash, currency)}
-          hint="مجموع أرصدة الحسابات النقدية"
-          href={`/projects/${projectId}/cash`}
-        />
-        <Stat
-          label="النتيجة المحققة"
-          value={formatMinorUnits(realizedResult, currency)}
-          hint="من قيود الاعتراف المتوازنة"
-          href={`/projects/${projectId}/revenue`}
-        />
         <Stat
           label="الفترة المحاسبية"
           value={
@@ -118,12 +104,11 @@ export default async function ProjectShell({
 
       <ResultPanel view={result} />
 
-      <section className="card stack">
-        <div className="topline">
-          <h2>مساحة عمل المشروع</h2>
-          <Link className="button" href={sectorLandingHref(sector, projectId)}>دخول مساحة القطاع</Link>
-        </div>
-        <p>{project.description || 'لم يُضف وصف للمشروع بعد.'}</p>
+      <Section
+        title="مساحة عمل المشروع"
+        description={project.description || 'لم يُضف وصف للمشروع بعد.'}
+        actions={<Link className="button" href={sectorLandingHref(sector, projectId)}>دخول مساحة القطاع</Link>}
+      >
         <div className="overview-kpis">
           {cashByCurrency.length === 0 ? (
             <article className="overview-kpi">
@@ -156,7 +141,7 @@ export default async function ProjectShell({
             <small>{openPeriod ? openPeriod.status : 'أنشئ فترة من الإغلاق المالي'}</small>
           </article>
         </div>
-      </section>
+      </Section>
 
       <Section title="أقسام مساحة العمل" description="كل قسم يعرض حقائقه المسجلة فقط؛ ابدأ من القسم المناسب لمهمتك.">
         <ul className="link-list" aria-label="أقسام مساحة العمل">

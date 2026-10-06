@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Section } from '@/shared/ui';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
@@ -9,7 +10,7 @@ export default async function IntakeStartPage() {
   const { organization } = await getActiveOrganization();
   if (!organization) {
     return (
-      <section className="card stack" style={{ maxWidth: 680 }}>
+      <section className="card stack shell-form-lg">
         <h1>إدخال أول مشروع حقيقي</h1>
         <p>ابدأ بالمنظمة. عملة المشاريع: جنيه مصري (EGP). القطاعات المدعومة: عقارات، زراعة، ثروة حيوانية.</p>
         <p className="muted">لا نعرض بيانات تجريبية. المسار يستخدم أوامر المنتج الحالية فقط.</p>
@@ -28,11 +29,12 @@ export default async function IntakeStartPage() {
         <p className="muted">مسار موجّه: الإعداد → الأطراف والاتفاقية → رأس المال → البنك → حقائق القطاع → المركز الافتتاحي → التحقق.</p>
       </div>
       {projects.length === 0 ? (
-        <section className="card stack">
-          <h2>لا يوجد مشروع بعد</h2>
+                <Section
+          title="لا يوجد مشروع بعد"
+        >
           <p>أنشئ مشروعًا بقطاعه المحدد (عقارات، زراعة، أو ثروة حيوانية) ضمن نطاق التشغيل التجريبي المتفق عليه.</p>
           <Link className="button" href="/projects/new">إنشاء أول مشروع</Link>
-        </section>
+        </Section>
       ) : (
         <div className="grid">
           {projects.map((project) => (

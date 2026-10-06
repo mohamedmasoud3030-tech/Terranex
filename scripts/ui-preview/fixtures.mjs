@@ -102,12 +102,167 @@ const populated = {
   sector_performance_read: [
     { organization_id: ORG, sector: 'REAL_ESTATE', currency: 'EGP', org_reporting_currency: 'EGP', project_count: 1, asset_count: 2, fx_status: 'SAME_CURRENCY', fx_rate_snapshot_id: null, fx_rate_date: null, cash_balance_minor_units: '1254500000', revenue_recognized_minor_units: '0', cost_of_sale_minor_units: '0', expense_posted_minor_units: '0', wip_posted_minor_units: '850000000', contributions_received_minor_units: '1500000000', receivable_open_minor_units: '0', payable_open_minor_units: '550000000', realized_result_minor_units: '0', converted_cash_balance_minor_units: '1254500000', converted_revenue_recognized_minor_units: '0', converted_contributions_received_minor_units: '1500000000', converted_realized_result_minor_units: '0' },
   ],
+  // -------------------------------------------------------------------------
+  // H1 qualified-result and by-currency read models (ADR 0034).
+  //
+  // These were absent from this harness after the H1 tranche landed, so every
+  // H1 consumer — the project brief's Capital and Result panels, the project
+  // position summary, and the Home sector table — silently rendered its empty
+  // state here. The interface looked finished while the domain contract was
+  // never exercised in a browser.
+  //
+  // The real-estate project deliberately holds TWO currencies, and they differ
+  // in minor-unit scale (EGP has 2 decimals, OMR has 3). That is the exact
+  // shape of the defect the per-currency contracts exist to prevent:
+  // 12,545,000.00 EGP and 5,000,000.000 OMR must never surface as one figure.
+  // `unclassified_eligible_minor_units` is non-zero so the "not yet classified"
+  // disclosure is visible too, not just present in CSS.
+  // -------------------------------------------------------------------------
+  project_cash_by_currency_read: [
+    { organization_id: ORG, project_id: RE, currency: 'EGP', account_count: 2, cash_balance_minor_units: '1254500000', posted_line_count: 34, currency_mismatch_line_count: 0, has_active_posted_movement: true },
+    { organization_id: ORG, project_id: RE, currency: 'OMR', account_count: 1, cash_balance_minor_units: '5000000000', posted_line_count: 6, currency_mismatch_line_count: 1, has_active_posted_movement: true },
+    { organization_id: ORG, project_id: AG, currency: 'EGP', account_count: 1, cash_balance_minor_units: '240000000', posted_line_count: 12, currency_mismatch_line_count: 0, has_active_posted_movement: true },
+    { organization_id: ORG, project_id: LS, currency: 'EGP', account_count: 1, cash_balance_minor_units: '88000000', posted_line_count: 8, currency_mismatch_line_count: 0, has_active_posted_movement: false },
+  ],
+  project_capital_by_currency_read: [
+    { organization_id: ORG, project_id: RE, currency: 'EGP', committed_minor_units: '150000000000', called_minor_units: '150000000000', contributed_minor_units: '150000000000', receivable_minor_units: '0', uncalled_minor_units: '0', call_line_count: 3 },
+    { organization_id: ORG, project_id: RE, currency: 'USD', committed_minor_units: '20000000', called_minor_units: '10000000', contributed_minor_units: '10000000', receivable_minor_units: '10000000', uncalled_minor_units: '10000000', call_line_count: 2 },
+    { organization_id: ORG, project_id: AG, currency: 'EGP', committed_minor_units: '40000000000', called_minor_units: '25000000000', contributed_minor_units: '25000000000', receivable_minor_units: '15000000000', uncalled_minor_units: '15000000000', call_line_count: 2 },
+  ],
+  project_result_by_currency_read: [
+    {
+      project_id: RE, organization_id: ORG, sector: 'REAL_ESTATE', currency: 'EGP',
+      result_basis: 'REAL_ESTATE_DISPOSAL_AND_RENTAL',
+      cost_classification_status: 'PARTIAL',
+      evidence_status: 'COMPLETE',
+      management_result: {
+        amount_minor_units: '480000000', currency: 'EGP',
+        basis: 'REAL_ESTATE_DISPOSAL_AND_RENTAL',
+        cost_classification_status: 'PARTIAL', evidence_status: 'COMPLETE',
+        policy_availability: ['BD-006', 'BD-008'], as_of: '2026-09-01',
+      },
+      sale_revenue_minor_units: '900000000', rental_revenue_minor_units: '150000000',
+      cogs_derecognized_minor_units: '420000000', realized_disposal_minor_units: '500000000',
+      selling_costs_minor_units: '20000000', attributed_operating_cost_minor_units: '520000000',
+      selling_cost_attributed_minor_units: '20000000', project_overhead_minor_units: '120000000',
+      excluded_from_result_minor_units: '20000000', unclassified_eligible_minor_units: '35000000',
+      expense_outside_classification_scope_minor_units: '0',
+      result_revenue_minor_units: '1050000000', result_deducted_cost_minor_units: '570000000',
+      evidence_evidenced_count: 4, evidence_subject_count: 4, as_of: '2026-09-01',
+    },
+    {
+      project_id: RE, organization_id: ORG, sector: 'REAL_ESTATE', currency: 'OMR',
+      result_basis: 'REAL_ESTATE_DISPOSAL_AND_RENTAL',
+      cost_classification_status: 'COMPLETE',
+      evidence_status: 'COMPLETE',
+      management_result: {
+        amount_minor_units: '185000000', currency: 'OMR',
+        basis: 'REAL_ESTATE_DISPOSAL_AND_RENTAL',
+        cost_classification_status: 'COMPLETE', evidence_status: 'COMPLETE',
+        policy_availability: ['BD-006', 'BD-008'], as_of: '2026-09-01',
+      },
+      sale_revenue_minor_units: '400000000', rental_revenue_minor_units: '0',
+      cogs_derecognized_minor_units: '200000000', realized_disposal_minor_units: '200000000',
+      selling_costs_minor_units: '15000000', attributed_operating_cost_minor_units: '215000000',
+      selling_cost_attributed_minor_units: '15000000', project_overhead_minor_units: '0',
+      excluded_from_result_minor_units: '0', unclassified_eligible_minor_units: '0',
+      expense_outside_classification_scope_minor_units: '0',
+      result_revenue_minor_units: '400000000', result_deducted_cost_minor_units: '215000000',
+      evidence_evidenced_count: 2, evidence_subject_count: 2, as_of: '2026-09-01',
+    },
+    {
+      project_id: AG, organization_id: ORG, sector: 'AGRICULTURE', currency: 'EGP',
+      result_basis: 'AGRICULTURE_ENTERPRISE_OPERATING',
+      cost_classification_status: 'PARTIAL',
+      evidence_status: 'PARTIAL',
+      management_result: {
+        amount_minor_units: '62000000', currency: 'EGP',
+        basis: 'AGRICULTURE_ENTERPRISE_OPERATING',
+        cost_classification_status: 'PARTIAL', evidence_status: 'PARTIAL',
+        policy_availability: ['BD-006', 'BD-008'], as_of: '2026-09-01',
+      },
+      sale_revenue_minor_units: '210000000', rental_revenue_minor_units: '0',
+      cogs_derecognized_minor_units: '0', realized_disposal_minor_units: '0',
+      selling_costs_minor_units: '0', attributed_operating_cost_minor_units: '148000000',
+      selling_cost_attributed_minor_units: '0', project_overhead_minor_units: '0',
+      excluded_from_result_minor_units: '0', unclassified_eligible_minor_units: '9000000',
+      expense_outside_classification_scope_minor_units: '0',
+      result_revenue_minor_units: '210000000', result_deducted_cost_minor_units: '148000000',
+      evidence_evidenced_count: 3, evidence_subject_count: 5, as_of: '2026-09-01',
+    },
+  ],
+  sector_management_result_read: [
+    {
+      organization_id: ORG, sector: 'REAL_ESTATE', currency: 'EGP', project_count: 1,
+      result_basis: 'REAL_ESTATE_DISPOSAL_AND_RENTAL',
+      cost_classification_status: 'PARTIAL', evidence_status: 'COMPLETE',
+      management_result: {
+        amount_minor_units: '480000000', currency: 'EGP',
+        basis: 'REAL_ESTATE_DISPOSAL_AND_RENTAL',
+        cost_classification_status: 'PARTIAL', evidence_status: 'COMPLETE',
+        policy_availability: ['BD-006', 'BD-008'], as_of: '2026-09-01',
+      },
+      sale_revenue_minor_units: '900000000', rental_revenue_minor_units: '150000000',
+      realized_disposal_minor_units: '500000000', selling_costs_minor_units: '20000000',
+      attributed_operating_cost_minor_units: '520000000',
+      selling_cost_attributed_minor_units: '20000000', project_overhead_minor_units: '120000000',
+      excluded_from_result_minor_units: '20000000', unclassified_eligible_minor_units: '35000000',
+      expense_outside_classification_scope_minor_units: '0',
+      result_deducted_cost_minor_units: '570000000',
+      evidence_evidenced_count: 4, evidence_subject_count: 4, as_of: '2026-09-01',
+    },
+    {
+      organization_id: ORG, sector: 'AGRICULTURE', currency: 'EGP', project_count: 1,
+      result_basis: 'AGRICULTURE_ENTERPRISE_OPERATING',
+      cost_classification_status: 'PARTIAL', evidence_status: 'PARTIAL',
+      management_result: {
+        amount_minor_units: '62000000', currency: 'EGP',
+        basis: 'AGRICULTURE_ENTERPRISE_OPERATING',
+        cost_classification_status: 'PARTIAL', evidence_status: 'PARTIAL',
+        policy_availability: ['BD-006', 'BD-008'], as_of: '2026-09-01',
+      },
+      sale_revenue_minor_units: '210000000', rental_revenue_minor_units: '0',
+      realized_disposal_minor_units: '0', selling_costs_minor_units: '0',
+      attributed_operating_cost_minor_units: '148000000',
+      selling_cost_attributed_minor_units: '0', project_overhead_minor_units: '0',
+      excluded_from_result_minor_units: '0', unclassified_eligible_minor_units: '9000000',
+      expense_outside_classification_scope_minor_units: '0',
+      result_deducted_cost_minor_units: '148000000',
+      evidence_evidenced_count: 3, evidence_subject_count: 5, as_of: '2026-09-01',
+    },
+  ],
   organization_financial_consolidation_read: [
     { organization_id: ORG, level: 'CONSOLIDATED', currency: null, org_reporting_currency: 'EGP', project_count: 3, cash_balance_minor_units: '1254500000', receivable_open_minor_units: '0', revenue_recognized_minor_units: '0', cost_of_sale_minor_units: '0', expense_posted_minor_units: '0', wip_posted_minor_units: '850000000', contributions_received_minor_units: '1500000000', payable_open_minor_units: '550000000', paid_minor_units: '300000000', retention_held_minor_units: '0', disputed_obligations: 0, overdue_obligations: 1, fx_status: 'CONSOLIDATED_AT_RATE', converted_cash_balance_minor_units: '1254500000', converted_payable_open_minor_units: '550000000', converted_paid_minor_units: '300000000' },
   ],
   financial_integrity_signals_read: [
     { organization_id: ORG, project_id: RE, signal_code: 'OBLIGATION_OVERDUE', signal_label_ar: 'التزامات متأخرة السداد', severity: 'WARNING', subject_count: 1, amount_minor_units: '550000000', currency: 'EGP' },
     { organization_id: ORG, project_id: RE, signal_code: 'BANK_LINES_UNRECONCILED', signal_label_ar: 'سطور بنكية غير مطابقة', severity: 'CRITICAL', subject_count: 3, amount_minor_units: null, currency: 'EGP' },
+  ],
+  // --- Cost control, per currency -----------------------------------------
+  // `property_cost_control_read` unions budget lines and cost items into `keys`
+  // keyed by (organization, project, asset, parcel, phase, category, currency),
+  // so a category that has both an EGP obligation and an OMR obligation is TWO
+  // rows. That is the shape that makes the `/operations` summary unsafe if it
+  // reduces the rows into one scalar, so the fixture must contain it.
+  property_cost_control_read: [
+    { organization_id: ORG, project_id: RE, property_asset_id: 'pa1', parcel_id: null, phase_id: null, cost_category: 'CONSTRUCTION', currency: 'EGP', budget_minor_units: '900000000', committed_minor_units: '600000000', actual_minor_units: '350000000', variance_minor_units: '550000000' },
+    { organization_id: ORG, project_id: RE, property_asset_id: 'pa1', parcel_id: null, phase_id: null, cost_category: 'CONSTRUCTION', currency: 'OMR', budget_minor_units: '12000000', committed_minor_units: '8000000', actual_minor_units: '4000000', variance_minor_units: '8000000' },
+    { organization_id: ORG, project_id: RE, property_asset_id: 'pa1', parcel_id: null, phase_id: null, cost_category: 'DESIGN', currency: 'EGP', budget_minor_units: '40000000', committed_minor_units: '40000000', actual_minor_units: '40000000', variance_minor_units: '0' },
+  ],
+  property_cost_drilldown_read: [
+    { property_cost_item_id: 'pci1', organization_id: ORG, project_id: RE, property_asset_id: 'pa1', parcel_id: null, phase_id: null, cost_category: 'CONSTRUCTION', policy_reference: 'POL-CONST-01', obligation_id: 'ob1', description: 'أعمال خرسانة — المقاول الرئيسي', cost_treatment: 'CAPITALIZABLE_WIP', obligation_status: 'AUTHORIZED', obligation_minor_units: '600000000', currency: 'EGP', committed_minor_units: '600000000', actual_minor_units: '350000000', originating_batch_id: 'jb1', is_reversed: false, authorized_at: '2026-05-10T09:00:00.000Z', classified_at: '2026-05-12T09:00:00.000Z' },
+    { property_cost_item_id: 'pci2', organization_id: ORG, project_id: RE, property_asset_id: 'pa1', parcel_id: null, phase_id: null, cost_category: 'CONSTRUCTION', policy_reference: 'POL-CONST-01', obligation_id: 'ob2', description: 'توريد حديد — أمر شراء خارجي', cost_treatment: 'CAPITALIZABLE_WIP', obligation_status: 'AUTHORIZED', obligation_minor_units: '8000000', currency: 'OMR', committed_minor_units: '8000000', actual_minor_units: '4000000', originating_batch_id: 'jb2', is_reversed: false, authorized_at: '2026-06-02T09:00:00.000Z', classified_at: '2026-06-03T09:00:00.000Z' },
+  ],
+  // --- Official project position ------------------------------------------
+  // One row per project: the view is driven by `investment_projects` and joins
+  // each CTE on `currency = reporting_currency`, so the row is the reporting
+  // currency's slice. A second currency here would contradict the contract.
+  project_financial_position_read: [
+    { project_id: RE, organization_id: ORG, project_name: 'مشروع النخيل السكني', sector: 'REAL_ESTATE', currency: 'EGP', cash_balance_minor_units: '1254500000', receivable_open_minor_units: '0', revenue_recognized_minor_units: '0', cost_of_sale_minor_units: '0', expense_posted_minor_units: '0', wip_posted_minor_units: '850000000', contributions_received_minor_units: '1500000000', payable_open_minor_units: '550000000', paid_minor_units: '300000000', retention_held_minor_units: '0', retention_declared_minor_units: '0', disputed_obligations: 0, overdue_obligations: 1, overdue_outstanding_minor_units: '550000000', budget_expense_minor_units: '0', budget_wip_minor_units: '900000000', committed_expense_minor_units: '0', committed_wip_minor_units: '600000000', available_expense_minor_units: '0', available_wip_minor_units: '300000000' },
+  ],
+  // --- Approval exception registry ----------------------------------------
+  approval_exception_registry_read: [
+    { exception_id: 'ex1', organization_id: ORG, project_id: RE, domain: 'PROCUREMENT_TOLERANCE', subject_type: 'supplier_invoice', subject_id: 'inv1', exception_kind: 'PRICE_TOLERANCE_EXCEEDED', amount_minor_units: '1250000', currency: 'EGP', status: 'OPEN', opened_by: USER, opened_at: '2026-08-20T09:00:00.000Z', decided_by: null, decided_at: null, reason: 'تجاوز سعر الفاتورة حد التسامح المعتمد.', severity: 'MEDIUM', owner_id: USER, due_date: '2026-09-20', replaces_exception_id: null },
   ],
   s7_pilot_acceptance_report_read: [
     { project_id: RE, organization_id: ORG, reporting_currency: 'EGP', posted_opening_imports: 1, opening_import_rejected_rows: 0, opening_control_totals_match: true, reconciliation_checkpoints: 2, reconciliation_non_zero_variances: 0, reconciliation_max_abs_variance_minor_units: '0', unresolved_exceptions: 0, unresolved_critical_exceptions: 0, unreconciled_bank_statement_lines: 3, unbalanced_journal_batches: 0, end_to_end_result: 'PASS', backup_restore_result: 'NOT_RUN', access_revocation_result: 'PASS', uat_total_tasks: 0, uat_accepted_tasks: 0, uat_rejected_tasks: 0, human_uat_status: 'NOT_STARTED' },

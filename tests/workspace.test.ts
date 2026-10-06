@@ -96,13 +96,31 @@ describe('frontend never hard-codes the demo financial truth', () => {
   for (const page of pages) {
     const source = readFileSync(page, 'utf8');
     it(`${page} derives figures from canonical read models`, () => {
-      // Canonical read-model readers. The per-currency contracts added by the
-      // Project Brief slices belong here: they are the authoritative read path,
-      // and the older project-grain readers remain for the surfaces that still
-      // legitimately consume them.
+      // Canonical read-model readers. The per-currency contracts are the
+      // authoritative path for money.
+      //
+      // Every entry here is a reader that keeps the grain of its own contract:
+      // `getCashAccountPositions` and `getRealizedResults` are the legacy
+      // account- and disposal-grain readers that already carry a per-row
+      // currency, `getPilotAcceptanceReport` is non-money acceptance evidence,
+      // the three `*ByCurrency` readers partition by the currency OF THE FACTS,
+      // and `getProjectPosition` is the project-grain reporting-currency
+      // position (one row per project by primary-key driving table).
       expect(source).toMatch(
-        /getProjectCapitalPosition|getCashAccountPositions|getRealizedResults|getPilotAcceptanceReport|getProjectCashByCurrency|getProjectCapitalByCurrency|getProjectResultByCurrency/,
+        /getCashAccountPositions|getRealizedResults|getPilotAcceptanceReport|getProjectCashByCurrency|getProjectCapitalByCurrency|getProjectResultByCurrency|getProjectPosition/,
       );
+      // `getProjectCapitalPosition` is deliberately NOT in the list above. It
+      // read a view that summed partner capital with no currency in the
+      // GROUP BY and stamped the total with the project's reporting currency,
+      // so it passed this check while answering the wrong question. It has been
+      // deleted; a page that reintroduces it must fail here rather than look
+      // canonical.
+      expect(source).not.toMatch(/getProjectCapitalPosition/);
+      // Same reasoning for the project-grain result reader: its view filters
+      // every currency-aware CTE to the reporting currency, so it silently
+      // drops other-currency facts. The reader is deleted and the view is
+      // retained only for the Home roll-up and the S6/H1 gates.
+      expect(source).not.toMatch(/getProjectOperatingResult/);
     });
     for (const minor of demoMinorUnits) {
       it(`${page} does not embed the demo minor-unit literal ${minor}`, () => {

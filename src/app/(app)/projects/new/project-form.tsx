@@ -33,7 +33,7 @@ export default function NewProjectForm({ organizationId, commandNonce }: NewProj
   );
 
   return (
-    <section className="card stack" style={{ maxWidth: 720 }}>
+    <section className="card stack shell-reading">
       <div>
         <h1>مشروع استثماري جديد</h1>
         <p className="muted">اختر القطاع أولًا؛ الحالة والعملة محددتان مبدئيًا: مسودة، جنيه مصري.</p>
@@ -54,7 +54,7 @@ export default function NewProjectForm({ organizationId, commandNonce }: NewProj
                   onChange={() => setSector(value)}
                   required
                 />
-                <span style={{ marginInlineStart: 8 }}>{SECTOR_LABEL[value]}</span>
+                <span className="ms-2">{SECTOR_LABEL[value]}</span>
               </label>
             ))}
           </div>

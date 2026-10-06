@@ -18,9 +18,9 @@ export default async function NewPortfolioPage() {
   }));
 
   return (
-    <section className="card stack" style={{ maxWidth: 640 }}>
+    <section className="card stack shell-form">
       <div>
-        <Link className="muted" href="/portfolios">← المحافظ الاستثمارية</Link>
+        <Link className="back-link" href="/portfolios">→ المحافظ الاستثمارية</Link>
         <h1>إنشاء محفظة استثمارية</h1>
         <p className="muted">
           تُنشأ المحفظة بحالة «مسودة»، ولا تُسند إليها المشاريع إلا بعد تنشيطها. المحفظة

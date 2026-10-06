@@ -66,7 +66,8 @@ export function ConfigureRulesForm({
       </label>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>المستثمر</th><th>وزن التخصيص المستقل</th></tr></thead>
+              <caption className="sr-only">جدول: المستثمر · وزن التخصيص المستقل</caption>
+          <thead><tr><th scope="col">المستثمر</th><th scope="col">وزن التخصيص المستقل</th></tr></thead>
           <tbody>
             {participants.map((participant) => (
               <tr key={participant.partyId}>

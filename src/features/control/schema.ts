@@ -5,10 +5,6 @@ import { isValidMajorMoney, parseSignedMajorUnitsToMinor } from '@/shared/money'
 // (parsed exactly to minor units in the actions layer); every command
 // carries an idempotency key.
 
-const moneyAmount = z
-  .string({ error: 'أدخل مبلغًا صحيحًا' })
-  .trim()
-  .refine((value) => isValidMajorMoney(value, 'EGP'), 'أدخل مبلغًا موجبًا بحد أقصى خانتين عشريتين');
 
 // Retention may legitimately be zero; negative values are rejected. The
 // decimal scale follows the actual currency (OMR has 3 minor digits).

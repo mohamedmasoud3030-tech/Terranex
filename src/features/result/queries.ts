@@ -7,37 +7,20 @@ import { throwOperatorQuery } from '@/shared/supabase/errors';
 // Do not read the amount out of it here: parse it with
 // `src/features/result/qualified-result.ts`, which is the only sanctioned path
 // to displayable amount text.
-
-export type ProjectOperatingResultRow = {
-  project_id: string;
-  organization_id: string;
-  sector: 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK';
-  currency: string;
-  result_basis: string;
-  cost_classification_status: string;
-  evidence_status: string;
-  /** The qualified result object. Parse it; do not destructure it. */
-  management_result: unknown;
-  sale_revenue_minor_units: string;
-  rental_revenue_minor_units: string;
-  cogs_derecognized_minor_units: string;
-  realized_disposal_minor_units: string;
-  selling_costs_minor_units: string;
-  attributed_operating_cost_minor_units: string;
-  selling_cost_attributed_minor_units: string;
-  project_overhead_minor_units: string;
-  excluded_from_result_minor_units: string;
-  unclassified_eligible_minor_units: string;
-  expense_outside_classification_scope_minor_units: string;
-  /** DEDUCTION: cost actually subtracted in the result arithmetic. Distinct from
-   *  the attributed classification bucket — a Real Estate SELLING cost is
-   *  classified once but deducted zero times, because its economic effect is
-   *  already inside the sector realized disposal result. */
-  result_deducted_cost_minor_units: string;
-  evidence_evidenced_count: number;
-  evidence_subject_count: number;
-  as_of: string;
-};
+//
+// REMOVED: `getProjectOperatingResult()` and its `ProjectOperatingResultRow`
+// type. It read `project_operating_result_read` — the Home-grain contract whose
+// `components` CTE filters every currency-aware CTE with
+// `and <cte>.currency = p.reporting_currency`, so facts in any other currency
+// are not aggregated and not disclosed. That view is deliberately RETAINED: the
+// H1 design keeps it authoritative for the Home roll-up
+// (`sector_management_result_read`) and for the S6/H1 gates that consume its
+// project grain, and `docs/decisions/0034` records the currency assumption as a
+// known follow-up. What was dead was the TypeScript reader: it had zero
+// production consumers once the Project Brief moved to
+// `getProjectResultByCurrency`, so leaving it in place would have kept a second,
+// currency-lossy path to a "project result" reachable from application code.
+// No SQL migration drops the view.
 
 export type SectorManagementResultRow = {
   organization_id: string;
@@ -107,16 +90,6 @@ export type ProjectResultByCurrencyRow = {
   as_of: string;
 };
 
-const PROJECT_RESULT_COLUMNS =
-  'project_id,organization_id,sector,currency,result_basis,cost_classification_status,' +
-  'evidence_status,management_result,sale_revenue_minor_units,rental_revenue_minor_units,' +
-  'cogs_derecognized_minor_units,realized_disposal_minor_units,selling_costs_minor_units,' +
-  'attributed_operating_cost_minor_units,selling_cost_attributed_minor_units,' +
-  'project_overhead_minor_units,excluded_from_result_minor_units,' +
-  'unclassified_eligible_minor_units,expense_outside_classification_scope_minor_units,' +
-  'result_deducted_cost_minor_units,' +
-  'evidence_evidenced_count,evidence_subject_count,as_of';
-
 const PROJECT_RESULT_BY_CURRENCY_COLUMNS =
   'project_id,organization_id,sector,currency,result_basis,cost_classification_status,' +
   'evidence_status,management_result,sale_revenue_minor_units,rental_revenue_minor_units,' +
@@ -148,21 +121,6 @@ export async function getProjectResultByCurrency(
     .order('currency');
   if (error) throwOperatorQuery(error);
   return (data ?? []) as unknown as ProjectResultByCurrencyRow[];
-}
-
-export async function getProjectOperatingResult(
-  organizationId: string,
-  projectId: string,
-): Promise<ProjectOperatingResultRow | null> {
-  const s = await createClient();
-  const { data, error } = await s
-    .from('project_operating_result_read')
-    .select(PROJECT_RESULT_COLUMNS)
-    .eq('organization_id', organizationId)
-    .eq('project_id', projectId)
-    .maybeSingle();
-  if (error) throwOperatorQuery(error);
-  return (data ?? null) as unknown as ProjectOperatingResultRow | null;
 }
 
 export async function getSectorManagementResult(

@@ -1,5 +1,13 @@
 # معمارية Terranex الحالية
 
+> **ℹ️ Architecture description — current, with one dated caveat.**
+>
+> The layering below still describes the implementation. Note that the money
+> contract has since been made explicit: per-currency read models plus
+> `src/shared/money/by-currency.ts` are the only sanctioned way to total money,
+> and no page may stamp a mixed figure with a project's reporting currency.
+> See `docs/decisions/0034_*` and the recovery report.
+
 **النطاق المفحوص:** `HEAD 9488588f0c6fd1984a1c09769af480f85905c661` بتاريخ 2026-08-17.
 **حالة العبارات:** «مؤكد» يعني شوهد في الكود/الم migration/الاختبار أو في build فعلي. «غير معروف» يعني يحتاج بيئة حقيقية أو قرارًا خارج المستودع.
 

@@ -19,6 +19,8 @@ import {
 import type { PortfolioStatus } from '@/features/portfolios/schema';
 import { memberDisplayLabel } from '@/features/workspace/chrome';
 import { sectorLandingHref } from '@/features/workspace/nav';
+import { isSectorKey } from '@/features/workspace/sectors';
+import { Figure, SectorChip, Section, Stat, StatGrid } from '@/shared/ui';
 import { newCommandNonce } from '@/shared/idempotency';
 import {
   AssignProjectForm,
@@ -79,125 +81,145 @@ export default async function PortfolioDetailPage({
   const isReadOnly = portfolio.status === 'ARCHIVED';
 
   return (
-    <section className="stack">
-      <header className="project-context card">
-        <div>
-          <Link className="muted" href="/portfolios">← المحافظ الاستثمارية</Link>
-          <h1>{portfolio.name}</h1>
-          <p className="muted">
+    <section className="stack-lg">
+      <header className="project-context card page-header">
+        <div className="page-header-main">
+          <Link className="back-link" href="/portfolios">→ المحافظ الاستثمارية</Link>
+          <div className="page-title-row">
+            <h1>{portfolio.name}</h1>
+            <StatusBadge status={portfolio.status} />
+          </div>
+          <p className="muted page-description">
             {org?.name} · محفظة إدارية للمشاريع المستقلة
+            {portfolio.description ? ` · ${portfolio.description}` : ''}
           </p>
-        </div>
-        <div className="topline">
-          <StatusBadge status={portfolio.status} />
         </div>
       </header>
 
-      {portfolio.description ? (
-        <section className="card stack">
-          <h2>الغرض الإداري</h2>
-          <p>{portfolio.description}</p>
-        </section>
-      ) : null}
+      {/* Management context before financials: who owns this, and how many
+          independent projects it currently frames. */}
+      <StatGrid label="بيانات إدارة المحفظة">
+        <Stat label="المشاريع المُسندة حاليًا" value={activeMemberships.length} hint="كل مشروع مستقل بدفتره" />
+        <Stat label="الحالة" value={PORTFOLIO_STATUS_LABEL[portfolio.status]} hint={isReadOnly ? 'للقراءة فقط' : 'قابلة للتعديل'} />
+        <Stat label="المدير المسؤول" value={managerLabel ?? 'غير محدد'} hint="من بيانات العضوية الحالية" />
+        <Stat label="آخر تحديث" value={formatDate(portfolio.updated_at)} hint={`أُنشئت ${formatDate(portfolio.created_at)}`} />
+      </StatGrid>
 
-      <section className="card stack">
-        <div className="section-heading">
-          <h2>التجميع المالي للمحفظة</h2>
-          <p className="muted">
-            مجموع حقائق المشاريع المستقلة فقط — المحفظة ليست دفتر أستاذ ثانٍ،
-            ولا تُجمع الأرقام أبدًا عبر عملات مختلفة.
-          </p>
-        </div>
+      <Section
+        title="التجميع المالي للمحفظة"
+        description="مجموع حقائق المشاريع المستقلة فقط — المحفظة ليست دفتر أستاذ ثانٍ، ولا تُجمع الأرقام أبدًا عبر عملات مختلفة."
+      >
         {rollup.length === 0 ? (
           <p className="muted">لا توجد مشاريع مرتبطة حاليًا بهذه المحفظة.</p>
         ) : (
-          <div className="table-wrap">
-            <table className="table-stackable">
-              <thead>
-                <tr>
-                  <th>العملة</th>
-                  <th>المشاريع</th>
-                  <th>النقدية</th>
-                  <th>مستحقات مفتوحة</th>
-                  <th>المدفوع</th>
-                  <th>حجز ضمان</th>
-                  <th>النتيجة المحققة</th>
-                  <th>التزامات PO مفتوحة</th>
-                  <th>FAC</th>
-                  <th>نزاعات / متأخرات</th>
-                  <th>استثناءات مفتوحة</th>
-                  <th>تركّز النقدية</th>
-                  <th>حالة التحويل</th>
-                  <th>النقدية بعملة التقارير</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rollup.map((row) => (
-                  <tr key={row.currency}>
-                    <td data-label="العملة">{row.currency}</td>
-                    <td data-label="المشاريع">{row.project_count}</td>
-                    <td data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
-                    <td data-label="مستحقات مفتوحة">{formatMinorUnits(row.payable_open_minor_units, row.currency)}</td>
-                    <td data-label="المدفوع">{formatMinorUnits(row.paid_minor_units, row.currency)}</td>
-                    <td data-label="حجز ضمان">{formatMinorUnits(row.retention_held_minor_units, row.currency)}</td>
-                    <td data-label="النتيجة المحققة">{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
-                    <td data-label="التزامات PO مفتوحة">{formatMinorUnits(row.open_commitment_minor_units, row.currency)}</td>
-                    <td data-label="FAC">{formatMinorUnits(row.fac_minor_units, row.currency)}</td>
-                    <td data-label="نزاعات / متأخرات">{row.disputed_obligations} / {row.overdue_obligations}</td>
-                    <td data-label="استثناءات مفتوحة">{row.open_exception_count}</td>
-                    <td data-label="تركّز النقدية">{row.cash_concentration_ratio ?? '—'}</td>
-                    <td data-label="حالة التحويل">{row.fx_status}</td>
-                    <td data-label="النقدية بعملة التقارير">
-                      {row.converted_cash_balance_minor_units && row.org_reporting_currency
-                        ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency)
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* The four figures an owner actually decides on, per currency.
+                Everything else stays one disclosure away. */}
+            {rollup.map((row) => (
+              <div key={row.currency} className="stack">
+                <p className="eyebrow">عملة {row.currency} · {row.project_count} مشروع</p>
+                <div className="overview-kpis">
+                  <Figure basis="النقدية" value={formatMinorUnits(row.cash_balance_minor_units, row.currency)} />
+                  <Figure
+                    basis="مستحقات مفتوحة"
+                    value={formatMinorUnits(row.payable_open_minor_units, row.currency)}
+                    negative={row.overdue_obligations > 0}
+                    asOf={`${row.overdue_obligations} متأخرة · ${row.disputed_obligations} متنازع عليها`}
+                  />
+                  <Figure basis="النتيجة المحققة" value={formatMinorUnits(row.realized_result_minor_units, row.currency)} />
+                  <Figure
+                    basis="استثناءات مفتوحة"
+                    value={row.open_exception_count}
+                    negative={row.open_exception_count > 0}
+                    asOf={row.open_exception_count > 0 ? 'تحتاج معالجة' : 'لا استثناءات مسجلة'}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <Section
+              headingLevel={3}
+              collapsible
+              title="التفصيل الكامل لكل عملة"
+              description="حجز الضمان، الالتزامات المفتوحة، FAC، تركّز النقدية، وحالة التحويل"
+            >
+              <div className="table-wrap">
+                <table className="table-stackable">
+                  <caption className="sr-only">
+                    التجميع المالي للمحفظة لكل عملة: المشاريع والنقدية والمستحقات والمدفوع وحجز الضمان والنتيجة المحققة والالتزامات المفتوحة
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">العملة</th>
+                      <th scope="col" className="num">المشاريع</th>
+                      <th scope="col" className="num">النقدية</th>
+                      <th scope="col" className="num">مستحقات مفتوحة</th>
+                      <th scope="col" className="num">المدفوع</th>
+                      <th scope="col" className="num">حجز ضمان</th>
+                      <th scope="col" className="num">النتيجة المحققة</th>
+                      <th scope="col" className="num">التزامات PO مفتوحة</th>
+                      <th scope="col" className="num">FAC</th>
+                      <th scope="col" className="num">نزاعات / متأخرات</th>
+                      <th scope="col" className="num">استثناءات مفتوحة</th>
+                      <th scope="col" className="num">تركّز النقدية</th>
+                      <th scope="col">حالة التحويل</th>
+                      <th scope="col" className="num">النقدية بعملة التقارير</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rollup.map((row) => (
+                      <tr key={row.currency}>
+                        <td data-label="العملة">{row.currency}</td>
+                        <td className="num" data-label="المشاريع">{row.project_count}</td>
+                        <td className="num" data-label="النقدية">{formatMinorUnits(row.cash_balance_minor_units, row.currency)}</td>
+                        <td className="num" data-label="مستحقات مفتوحة">{formatMinorUnits(row.payable_open_minor_units, row.currency)}</td>
+                        <td className="num" data-label="المدفوع">{formatMinorUnits(row.paid_minor_units, row.currency)}</td>
+                        <td className="num" data-label="حجز ضمان">{formatMinorUnits(row.retention_held_minor_units, row.currency)}</td>
+                        <td className="num" data-label="النتيجة المحققة">{formatMinorUnits(row.realized_result_minor_units, row.currency)}</td>
+                        <td className="num" data-label="التزامات PO مفتوحة">{formatMinorUnits(row.open_commitment_minor_units, row.currency)}</td>
+                        <td className="num" data-label="FAC">{formatMinorUnits(row.fac_minor_units, row.currency)}</td>
+                        <td className="num" data-label="نزاعات / متأخرات">{row.disputed_obligations} / {row.overdue_obligations}</td>
+                        <td className="num" data-label="استثناءات مفتوحة">{row.open_exception_count}</td>
+                        <td className="num" data-label="تركّز النقدية">{row.cash_concentration_ratio ?? '—'}</td>
+                        <td data-label="حالة التحويل">{row.fx_status}</td>
+                        <td className="num" data-label="النقدية بعملة التقارير">
+                          {row.converted_cash_balance_minor_units && row.org_reporting_currency
+                            ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency)
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          </>
         )}
         {rollup.some((row) => row.sector_exposure) ? (
-          <details className="stack">
-            <summary>التعرض القطاعي</summary>
-            <ul>
+          <Section
+            headingLevel={3}
+            collapsible
+            title="التعرض القطاعي"
+            description="توزيع المشاريع والنقدية على القطاعات، داخل كل عملة على حدة"
+          >
+            <ul className="stack">
               {rollup.flatMap((row) =>
                 Object.entries(row.sector_exposure ?? {}).map(([sector, stats]) => (
-                  <li key={`${row.currency}-${sector}`}>
-                    {sector}: {stats.project_count} مشروع ·
-                    نقدية {formatMinorUnits(stats.cash_balance_minor_units, row.currency)}
+                  <li key={`${row.currency}-${sector}`} className="badge-row">
+                    {isSectorKey(sector) ? (
+                      <SectorChip sector={sector} label={SECTOR_LABEL[sector] ?? sector} />
+                    ) : (
+                      <span className="status">{sector}</span>
+                    )}
+                    <span className="muted">{stats.project_count} مشروع</span>
+                    <span>نقدية {formatMinorUnits(stats.cash_balance_minor_units, row.currency)}</span>
                   </li>
                 )),
               )}
             </ul>
-          </details>
+          </Section>
         ) : null}
-      </section>
-
-      <section className="card stack">
-        <div className="section-heading">
-          <h2>بيانات الإدارة</h2>
-        </div>
-        <dl className="facts">
-          <div>
-            <dt>الحالة</dt>
-            <dd><StatusBadge status={portfolio.status} /></dd>
-          </div>
-          <div>
-            <dt>المدير المسؤول</dt>
-            <dd>{managerLabel ?? 'غير محدد'}</dd>
-          </div>
-          <div>
-            <dt>تاريخ الإنشاء</dt>
-            <dd>{formatDate(portfolio.created_at)}</dd>
-          </div>
-          <div>
-            <dt>آخر تحديث</dt>
-            <dd>{formatDate(portfolio.updated_at)}</dd>
-          </div>
-        </dl>
-      </section>
+      </Section>
 
       <section className="panel-grid">
         <div className="panel">
@@ -265,27 +287,24 @@ export default async function PortfolioDetailPage({
         ) : null}
       </section>
 
-      <section className="card stack">
-        <div className="section-heading">
-          <h2>المشاريع المُسندة</h2>
-        </div>
-        <p className="muted">
-          كل مشروع يحتفظ بهويته وقطاعه وقيوده ودورة حياته. الإسناد يحدد المحفظة
-          الإدارية الأم فقط، ولا ينقل ملكية أو أموالًا أو نتائج بين المشاريع.
-        </p>
+      <Section
+        title="المشاريع المُسندة"
+        description="كل مشروع يحتفظ بهويته وقطاعه وقيوده ودورة حياته. الإسناد يحدد المحفظة الإدارية الأم فقط، ولا ينقل ملكية أو أموالًا أو نتائج بين المشاريع."
+      >
 
         {activeMemberships.length === 0 ? (
           <p className="muted empty">لا توجد مشاريع مُسندة إلى هذه المحفظة بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">المشاريع المُسندة إلى المحفظة مع القطاع والمرجع الداخلي وتاريخ الإسناد</caption>
               <thead>
                 <tr>
-                  <th>المشروع</th>
-                  <th>القطاع</th>
-                  <th>المرجع الداخلي</th>
-                  <th>تاريخ الإسناد</th>
-                  <th>إجراءات</th>
+                  <th scope="col">المشروع</th>
+                  <th scope="col">القطاع</th>
+                  <th scope="col">المرجع الداخلي</th>
+                  <th scope="col">تاريخ الإسناد</th>
+                  <th scope="col">إجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -296,11 +315,17 @@ export default async function PortfolioDetailPage({
                         <strong>{m.project_name}</strong>
                       </Link>
                     </td>
-                    <td data-label="القطاع">{SECTOR_LABEL[m.project_sector as keyof typeof SECTOR_LABEL] ?? m.project_sector}</td>
-                    <td data-label="المرجع الداخلي">{m.project_internal_reference || '—'}</td>
+                    <td data-label="القطاع">
+                      {isSectorKey(m.project_sector) ? (
+                        <SectorChip sector={m.project_sector} label={SECTOR_LABEL[m.project_sector] ?? m.project_sector} />
+                      ) : (
+                        <span className="status">{m.project_sector}</span>
+                      )}
+                    </td>
+                    <td data-label="المرجع الداخلي">{m.project_internal_reference ? <code>{m.project_internal_reference}</code> : '—'}</td>
                     <td data-label="تاريخ الإسناد">{formatDate(m.assigned_at)}</td>
                     <td data-label="إجراءات">
-                      <div className="stack" style={{ gap: 8 }}>
+                      <div className="stack-xs">
                         <RemoveProjectForm
                           organizationId={portfolio.organization_id}
                           portfolioId={portfolioId}
@@ -323,7 +348,7 @@ export default async function PortfolioDetailPage({
         )}
 
         {portfolio.status === 'ACTIVE' ? (
-          <div className="panel" style={{ marginTop: 12 }}>
+          <div className="panel">
             <h3>إسناد مشروع إلى المحفظة</h3>
             <AssignProjectForm
               organizationId={portfolio.organization_id}
@@ -342,19 +367,19 @@ export default async function PortfolioDetailPage({
               : 'لا يمكن إسناد مشاريع إلى محفظة مؤرشفة.'}
           </p>
         )}
-      </section>
+      </Section>
 
       {pastMemberships.length > 0 ? (
-        <section className="card stack">
-          <h2>سجل الإسنادات السابقة</h2>
+        <Section collapsible title="سجل الإسنادات السابقة" description="العضوية محفوظة كتاريخ إلحاقي ولا تُحذف أبدًا">
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">الإسنادات السابقة: المشروع وتاريخ الإسناد وتاريخ الإزالة والسبب</caption>
               <thead>
                 <tr>
-                  <th>المشروع</th>
-                  <th>أُسند في</th>
-                  <th>أُزيل في</th>
-                  <th>سبب الإزالة</th>
+                  <th scope="col">المشروع</th>
+                  <th scope="col">أُسند في</th>
+                  <th scope="col">أُزيل في</th>
+                  <th scope="col">سبب الإزالة</th>
                 </tr>
               </thead>
               <tbody>
@@ -369,11 +394,10 @@ export default async function PortfolioDetailPage({
               </tbody>
             </table>
           </div>
-        </section>
+        </Section>
       ) : null}
 
-      <section className="card stack">
-        <h2>سجل حالات المحفظة</h2>
+      <Section collapsible title="سجل حالات المحفظة" description="كل تغيير حالة محفوظ مع سببه وتاريخه">
         {statusHistory.length === 0 ? (
           <p className="muted empty">لا يوجد سجل حالات بعد.</p>
         ) : (
@@ -383,7 +407,7 @@ export default async function PortfolioDetailPage({
                 <div>
                   <strong>
                     {h.previous_status
-                      ? `${PORTFOLIO_STATUS_LABEL[h.previous_status]} ← ${PORTFOLIO_STATUS_LABEL[h.new_status]}`
+                      ? `${PORTFOLIO_STATUS_LABEL[h.previous_status]} → ${PORTFOLIO_STATUS_LABEL[h.new_status]}`
                       : `الحالة الابتدائية: ${PORTFOLIO_STATUS_LABEL[h.new_status]}`}
                   </strong>
                   {h.reason ? <p className="muted">{h.reason}</p> : null}
@@ -393,7 +417,7 @@ export default async function PortfolioDetailPage({
             ))}
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

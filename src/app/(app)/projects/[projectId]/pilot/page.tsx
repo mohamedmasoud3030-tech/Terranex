@@ -19,7 +19,7 @@ import {
 } from '@/features/pilot/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { WorkspaceChrome, ForbiddenCard, memberDisplayLabel } from '@/features/workspace/chrome';
-import { InPageTabs } from '@/shared/ui';
+import { InPageTabs, Section } from '@/shared/ui';
 import {
   AcceptUatTaskForm,
   ApproveOpeningImportForm,
@@ -207,6 +207,8 @@ export default async function PilotPage({
         title="الاستيراد والمطابقة"
         subtitle={`${project.name} · ${currency}`}
         internalReference={project.internal_reference}
+        sector={project.sector}
+        lifecycleState={project.lifecycle_state}
       />
       <InPageTabs
         label="تنقل التشغيل التجريبي"
@@ -229,14 +231,11 @@ export default async function PilotPage({
         </p>
       )}
 
-      <section id="readiness" className="card stack scroll-target">
-        <div>
-          <h2>تقرير الجاهزية التقنية</h2>
-          <p className="muted">
-            كل رقم هنا مشتق داخل قاعدة البيانات من وقائع مسجّلة، لا من إدخال يدوي. الجاهزية التقنية وقبول العميل
-            حقلان منفصلان تمامًا: نجاح بروفة آلية لا يُترجم أبدًا إلى قبول عميل.
-          </p>
-        </div>
+            <Section
+        id="readiness"
+        title="تقرير الجاهزية التقنية"
+        description="كل رقم هنا مشتق داخل قاعدة البيانات من وقائع مسجّلة، لا من إدخال يدوي. الجاهزية التقنية وقبول العميل حقلان منفصلان تمامًا: نجاح بروفة آلية لا يُترجم أبدًا إلى قبول عميل."
+      >
         {!report ? (
           <p className="empty">لا يوجد تقرير جاهزية بعد. سجّل أول استيراد افتتاحي أو نقطة مطابقة لهذا المشروع.</p>
         ) : (
@@ -271,16 +270,18 @@ export default async function PilotPage({
             </div>
           </>
         )}
-      </section>
+      </Section>
 
-      <section id="approvals" className="card stack scroll-target">
-        <h2>بانتظار الاعتماد</h2>
+            <Section
+        id="approvals"
+        title="بانتظار الاعتماد"
+      >
         {pendingApprovals.length === 0 ? (
           <p className="empty">لا توجد عناصر تنتظر اعتمادًا.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
-              <thead><tr><th>النوع</th><th>العنصر</th><th>منذ</th><th></th></tr></thead>
+            <table className="table-stackable"><caption className="sr-only">جدول: النوع · العنصر · منذ</caption>
+              <thead><tr><th scope="col">النوع</th><th scope="col">العنصر</th><th scope="col">منذ</th><th scope="col"></th></tr></thead>
               <tbody>
                 {pendingApprovals.map((item) => (
                   <tr key={`${item.kind}-${item.label}-${item.since}`}>
@@ -294,28 +295,25 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="import" className="card stack scroll-target">
-        <div>
-          <h2>الاستيراد الافتتاحي المضبوط</h2>
-          <p className="muted">
-            مسار واحد فقط: مسودة ← تحقق ← ترشيح للاعتماد ← اعتماد وترحيل. مُعِدّ الملف لا يعتمده.
-            الترحيل ينتج قيدًا متوازنًا عبر سجل الحسابات الدلالية القائم؛ لا تُكتب أرصدة مباشرة أبدًا،
-            والتصحيح بعد الترحيل يكون بالعكس المرتبط لا بالتعديل.
-          </p>
-        </div>
+            <Section
+        id="import"
+        title="الاستيراد الافتتاحي المضبوط"
+        description="مسار واحد فقط: مسودة ← تحقق ← ترشيح للاعتماد ← اعتماد وترحيل. مُعِدّ الملف لا يعتمده. الترحيل ينتج قيدًا متوازنًا عبر سجل الحسابات الدلالية القائم؛ لا تُكتب أرصدة مباشرة أبدًا، والتصحيح بعد الترحيل يكون بالعكس المرتبط لا بالتعديل."
+      >
 
         {imports.length === 0 ? (
           <p className="empty">لم يُسجَّل أي استيراد افتتاحي لهذا المشروع بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الملف · الحالة · البصمة · سطور مقبولة/مرفوضة · مدين محسوب · دائن محسوب · فرق المدين · فرق الدائن · أعدّه · اعتمده · تاريخ الترحيل · القيد</caption>
               <thead>
                 <tr>
-                  <th>الملف</th><th>الحالة</th><th>البصمة</th><th>سطور مقبولة/مرفوضة</th>
-                  <th>مدين محسوب</th><th>دائن محسوب</th><th>فرق المدين</th><th>فرق الدائن</th>
-                  <th>أعدّه</th><th>اعتمده</th><th>تاريخ الترحيل</th><th>القيد</th>
+                  <th scope="col">الملف</th><th scope="col">الحالة</th><th scope="col">البصمة</th><th scope="col">سطور مقبولة/مرفوضة</th>
+                  <th scope="col">مدين محسوب</th><th scope="col">دائن محسوب</th><th scope="col">فرق المدين</th><th scope="col">فرق الدائن</th>
+                  <th scope="col">أعدّه</th><th scope="col">اعتمده</th><th scope="col">تاريخ الترحيل</th><th scope="col">القيد</th>
                 </tr>
               </thead>
               <tbody>
@@ -403,13 +401,13 @@ export default async function PilotPage({
             cashAccounts={cashAccounts.map((account) => ({ id: account.cash_account_id, name: account.name }))}
           />
         )}
-      </section>
+      </Section>
 
-      <section id="rows" className="card stack scroll-target">
-        <div className="section-heading">
-          <h2>سطور الملف ونتيجة كل سطر</h2>
-          <p className="muted">{rejectedRowCount} سطر مرفوض من {allRows.length} سطر مُقدَّم.</p>
-        </div>
+      <Section
+        id="rows"
+        title="سطور الملف ونتيجة كل سطر"
+        description={`${rejectedRowCount} سطر مرفوض من ${allRows.length} سطر مُقدَّم.`}
+      >
         <nav className="context-nav" aria-label="تصفية السطور">
           {ROW_FILTERS.map((filter) => (
             <Link
@@ -431,8 +429,9 @@ export default async function PilotPage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: # · الترميز · الطرف · مدين · دائن · الوصف · النتيجة · سبب الرفض</caption>
               <thead>
-                <tr><th>#</th><th>الترميز</th><th>الطرف</th><th>مدين</th><th>دائن</th><th>الوصف</th><th>النتيجة</th><th>سبب الرفض</th></tr>
+                <tr><th scope="col">#</th><th scope="col">الترميز</th><th scope="col">الطرف</th><th scope="col">مدين</th><th scope="col">دائن</th><th scope="col">الوصف</th><th scope="col" className="num">النتيجة</th><th scope="col">سبب الرفض</th></tr>
               </thead>
               <tbody>
                 {filteredRows.map((row) => (
@@ -443,7 +442,7 @@ export default async function PilotPage({
                     <td data-label="مدين">{money(row.debit_minor_units)}</td>
                     <td data-label="دائن">{money(row.credit_minor_units)}</td>
                     <td data-label="الوصف">{row.description}</td>
-                    <td data-label="النتيجة"><span className="status">{ROW_STATUS_AR[row.status] ?? row.status}</span></td>
+                    <td className="num" data-label="النتيجة"><span className="status">{ROW_STATUS_AR[row.status] ?? row.status}</span></td>
                     <td data-label="سبب الرفض" className={row.reject_reason ? 'error' : undefined}>
                       {row.reject_reason ? REJECT_REASON_AR[row.reject_reason] ?? row.reject_reason : '—'}
                     </td>
@@ -453,25 +452,22 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="reconciliation" className="card stack scroll-target">
-        <div>
-          <h2>نقاط المطابقة مع الأدلة الخارجية</h2>
-          <p className="muted">
-            القيمة الخارجية دليل يُسجَّل كما هو؛ القيمة المعتمدة يشتقها PostgreSQL من القيود المرحّلة.
-            الفرق عدد صحيح تام، والصفر يُعلن صراحة. لا يوجد دفتر ثانٍ.
-          </p>
-        </div>
+            <Section
+        id="reconciliation"
+        title="نقاط المطابقة مع الأدلة الخارجية"
+        description="القيمة الخارجية دليل يُسجَّل كما هو؛ القيمة المعتمدة يشتقها PostgreSQL من القيود المرحّلة. الفرق عدد صحيح تام، والصفر يُعلن صراحة. لا يوجد دفتر ثانٍ."
+      >
         {checkpoints.length === 0 ? (
           <p className="empty">لم تُسجَّل نقاط مطابقة بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: نقطة المطابقة · حتى تاريخ · الخارجي · Terranex · الفرق · الحالة · الاستثناءات المفتوحة · أعمدة الإجراء</caption>
               <thead>
                 <tr>
-                  <th>النقطة</th><th>حتى تاريخ</th><th>خارجي</th><th>Terranex</th><th>الفرق</th>
-                  <th>الحالة</th><th>استثناءات مفتوحة</th><th>سجّلها</th><th>اعتمدها</th><th>الدليل</th><th></th>
+                  <th scope="col">النقطة</th><th scope="col">حتى تاريخ</th><th scope="col">خارجي</th><th scope="col">Terranex</th><th scope="col">الفرق</th>
+                  <th scope="col">الحالة</th><th scope="col">استثناءات مفتوحة</th><th scope="col">سجّلها</th><th scope="col">اعتمدها</th><th scope="col">الدليل</th><th scope="col"></th>
                 </tr>
               </thead>
               <tbody>
@@ -512,17 +508,19 @@ export default async function PilotPage({
         ) : (
           <p className="muted">تسجيل نقاط المطابقة واعتمادها متاح لمالك المنظمة فقط.</p>
         )}
-      </section>
+      </Section>
 
-      <section id="exceptions" className="card stack scroll-target">
-        <h2>استثناءات الفروق</h2>
+            <Section
+        id="exceptions"
+        title="استثناءات الفروق"
+      >
         {exceptions.length === 0 ? (
           <p className="empty">لا توجد استثناءات مطابقة.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: الاستثناء · حتى تاريخ · الفرق · الخطورة · المالك · الحالة · البيان · المعالجة</caption>
               <thead>
-                <tr><th>النقطة</th><th>حتى تاريخ</th><th>الفرق</th><th>الخطورة</th><th>المالك</th><th>الحالة</th><th>البيان</th><th>المعالجة</th><th></th></tr>
+                <tr><th scope="col">النقطة</th><th scope="col">حتى تاريخ</th><th scope="col">الفرق</th><th scope="col">الخطورة</th><th scope="col">المالك</th><th scope="col">الحالة</th><th scope="col">البيان</th><th scope="col">المعالجة</th><th scope="col"></th></tr>
               </thead>
               <tbody>
                 {exceptions.map((row) => (
@@ -547,30 +545,27 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="uat" className="card stack scroll-target">
-        <div>
-          <h2>اختبار قبول العميل</h2>
-          <p className="muted">
-            التنفيذ والقبول فعلان منفصلان بشخصين مختلفين. المهمة تبقى «بانتظار» ما لم يوجد دليل بشري حقيقي؛
-            لا شيء في النظام يحوّل نجاحًا آليًا إلى قبول عميل.
-          </p>
-        </div>
+            <Section
+        id="uat"
+        title="اختبار قبول العميل"
+        description="التنفيذ والقبول فعلان منفصلان بشخصين مختلفين. المهمة تبقى «بانتظار» ما لم يوجد دليل بشري حقيقي؛ لا شيء في النظام يحوّل نجاحًا آليًا إلى قبول عميل."
+      >
         {uatTasks.length === 0 ? (
           <p className="empty">لم تُسجَّل مهام اختبار قبول بعد.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
+            <table className="table-stackable"><caption className="sr-only">جدول: رمز حالة الاختبار · العنوان · النتيجة المتوقعة · الحالة · أعمدة الإجراء · الدليل · ملاحظات</caption>
               <thead>
-                <tr><th>الرمز</th><th>العنوان</th><th>النتيجة المتوقعة</th><th>الحالة</th><th>نفّذها</th><th>راجعها</th><th>الدليل</th><th>ملاحظات</th><th></th></tr>
+                <tr><th scope="col">الرمز</th><th scope="col">العنوان</th><th scope="col" className="num">النتيجة المتوقعة</th><th scope="col">الحالة</th><th scope="col">نفّذها</th><th scope="col">راجعها</th><th scope="col">الدليل</th><th scope="col">ملاحظات</th><th scope="col"></th></tr>
               </thead>
               <tbody>
                 {uatTasks.map((row) => (
                   <tr key={row.task_id}>
                     <td data-label="الرمز">{row.task_code}</td>
                     <td data-label="العنوان">{row.title}</td>
-                    <td data-label="النتيجة المتوقعة">{row.expected_outcome}</td>
+                    <td className="num" data-label="النتيجة المتوقعة">{row.expected_outcome}</td>
                     <td data-label="الحالة"><span className="status">{UAT_STATUS_AR[row.status] ?? row.status}</span></td>
                     <td data-label="نفّذها">{row.executed_by ? `${row.executed_by.slice(0, 8)}… · ${dt(row.executed_at)}` : '—'}</td>
                     <td data-label="راجعها">{row.reviewed_by ? `${row.reviewed_by.slice(0, 8)}… · ${dt(row.reviewed_at)}` : '—'}</td>
@@ -598,19 +593,20 @@ export default async function PilotPage({
         ) : (
           <p className="muted">إدارة مهام اختبار القبول متاحة لمالك المنظمة فقط.</p>
         )}
-      </section>
+      </Section>
 
-      <section id="rehearsals" className="card stack scroll-target">
-        <div>
-          <h2>البروفات التقنية</h2>
-          <p className="muted">بروفات مُنفَّذة على بيانات اختبار حتمية داخل خط التحقق. ليست تشغيلًا حقيقيًا ولا قبول عميل.</p>
-        </div>
+            <Section
+        id="rehearsals"
+        title="البروفات التقنية"
+        description="بروفات مُنفَّذة على بيانات اختبار حتمية داخل خط التحقق. ليست تشغيلًا حقيقيًا ولا قبول عميل."
+      >
         {rehearsals.length === 0 ? (
           <p className="empty">لم تُسجَّل بروفات لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <thead><tr><th>البروفة</th><th>النتيجة</th><th>البيان</th><th>نفّذها</th><th>التاريخ</th></tr></thead>
+              <caption className="sr-only">جدول: البروفة · النتيجة · البيان · نفّذها · التاريخ</caption>
+              <thead><tr><th scope="col">البروفة</th><th scope="col" className="num">النتيجة</th><th scope="col">البيان</th><th scope="col">نفّذها</th><th scope="col">التاريخ</th></tr></thead>
               <tbody>
                 {rehearsals.map((row) => (
                   <tr key={row.rehearsal_id}>
@@ -625,24 +621,21 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section id="access" className="card stack scroll-target">
-        <div>
-          <h2>الوصول والاسترداد</h2>
-          <p className="muted">
-            إلغاء العضوية يسري فورًا على مستوى قاعدة البيانات: العضو المُلغى يفقد القراءة والأوامر معًا،
-            ولا يمكن ترك المنظمة بلا مالك نشط واحد على الأقل.
-          </p>
-        </div>
+            <Section
+        id="access"
+        title="الوصول والاسترداد"
+        description="إلغاء العضوية يسري فورًا على مستوى قاعدة البيانات: العضو المُلغى يفقد القراءة والأوامر معًا، ولا يمكن ترك المنظمة بلا مالك نشط واحد على الأقل."
+      >
         {!isOwner ? (
           <p className="muted">إدارة الوصول متاحة لمالك المنظمة فقط.</p>
         ) : members.length === 0 ? (
           <p className="empty">لا توجد عضويات في هذه المنظمة.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table-stackable">
-              <thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الوصول</th><th>منذ</th><th></th></tr></thead>
+            <table className="table-stackable"><caption className="sr-only">جدول: المستخدم · الدور · الحالة · الوصول · منذ</caption>
+              <thead><tr><th scope="col">المستخدم</th><th scope="col">الدور</th><th scope="col">الحالة</th><th scope="col">الوصول</th><th scope="col">منذ</th><th scope="col"></th></tr></thead>
               <tbody>
                 {members.map((member) => (
                   <tr key={member.membership_id}>
@@ -665,7 +658,7 @@ export default async function PilotPage({
             </table>
           </div>
         )}
-      </section>
+      </Section>
     </section>
   );
 }

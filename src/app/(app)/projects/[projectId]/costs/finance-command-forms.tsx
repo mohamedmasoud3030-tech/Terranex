@@ -55,12 +55,12 @@ export function ObligationForm({
         تاريخ المعاملة
         <input type="date" name="transactionDate" required />
       </label>
-      <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-        <legend style={{ fontWeight: 700 }}>المعالجة المحاسبية (اخترها صراحة)</legend>
-        <label style={{ fontWeight: 400 }}>
+      <fieldset>
+        <legend>المعالجة المحاسبية (اخترها صراحة)</legend>
+        <label>
           <input type="radio" name="costTreatment" value="EXPENSE" defaultChecked /> مصروف (يُحمّل على نتائج المشروع)
         </label>
-        <label style={{ fontWeight: 400 }}>
+        <label>
           <input type="radio" name="costTreatment" value="CAPITALIZABLE_WIP" /> أعمال تحت التطوير (يُرسمل في أصول المشروع)
         </label>
       </fieldset>

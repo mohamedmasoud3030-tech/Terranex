@@ -2,9 +2,10 @@ import { notFound } from 'next/navigation';
 import { getProject } from '@/features/projects/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { StatusBadge } from '@/shared/ui';
+import { Section, StatusBadge } from '@/shared/ui';
 import { RECORD_STATUS_LABEL, severityTone } from '@/features/projects/labels';
 import { formatMinorUnits } from '@/shared/money';
+import { isRenderableCurrency } from '@/shared/money/by-currency';
 import { getCurrentMembership } from '@/features/finance/queries';
 import {
   getApprovalExceptions,
@@ -31,6 +32,22 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * مبلغ صف يُعرض بعملته المسجّلة فقط.
+ *
+ * كانت هذه الصفحة تعرض صفوفًا بلا عملة معلنة موسومةً بعملة المشروع
+ * (`signal.currency ?? project.reporting_currency`)، وهو ما يجعل مبلغًا معلومًا
+ * يبدو وكأنه مقوّم بعملة لم تُسجَّل له. الأمان هنا بنيوي: غياب عملة الصف تعني
+ * غياب الوحدة، فلا يُستعار شيء ولا يُخترع رقم.
+ */
+function moneyCell(amount: string | null, rowCurrency: string | null): string {
+  if (!amount) return '—';
+  // لا توجد عملة مفترضة: مبلغ بلا عملة معلنة لا يُنسب إلى عملة المشروع.
+  if (!rowCurrency) return '— (مبلغ بلا عملة معلنة)';
+  if (!isRenderableCurrency(rowCurrency)) return `— (${amount} بعملة غير مدعومة: ${rowCurrency})`;
+  return formatMinorUnits(amount, rowCurrency);
+}
+
 const SEVERITY_LABEL: Record<string, { label: string; className: string }> = {
   CRITICAL: { label: 'حرج', className: 'severity-critical' },
   WARNING: { label: 'تنبيه', className: 'severity-warning' },
@@ -51,7 +68,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
   const project = await getProject(projectId);
   if (!project) notFound();
   const organizationId = project.organization_id;
-  const currency = project.reporting_currency;
+  // عملة تقارير المشروع تبقى للعرض السياقي فقط (ترويسة الصفحة). كل مبلغ قادم
+  // من قراءة مالية يحمل عملته الخاصة ولا يُوسم بعملة المشروع.
+  const reportingCurrency = project.reporting_currency;
 
   const [
     membership,
@@ -101,7 +120,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         projectId={projectId}
         active="integrity"
         title="مركز النزاهة المالية"
-        subtitle={`${project.name} · ${currency}`}
+        subtitle={`${project.name} · ${reportingCurrency}`}
         internalReference={project.internal_reference}
         sector={project.sector}
       />
@@ -126,32 +145,37 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
       </section>
 
       {position ? (
-        <section className="card stack">
-          <h2>الوضع المالي الرسمي (من القيود المرحّلة فقط)</h2>
+                <Section
+          title="الوضع المالي الرسمي (من القيود المرحّلة فقط)"
+          description={`نطاق هذا الجدول عملة تقارير المشروع (${position.currency}) فقط: العرض يجمع القيود المُرحّلة المقومة بها ويستبعد ما رُحّل بعملة أخرى. للأرقام لكل عملة على حدة استخدم ملخصات النقدية ورأس المال والنتيجة.`}
+        >
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: العملة · النقدية · ذمم مفتوحة · إيراد معترف به · مصروفات مرحّلة · أعمال تحت التطوير · مستحقات مفتوحة · المدفوع · حجز ضمان قائم</caption>
               <thead>
                 <tr>
-                  <th>النقدية</th>
-                  <th>ذمم مفتوحة</th>
-                  <th>إيراد معترف به</th>
-                  <th>مصروفات مرحّلة</th>
-                  <th>أعمال تحت التطوير</th>
-                  <th>مستحقات مفتوحة</th>
-                  <th>المدفوع</th>
-                  <th>حجز ضمان قائم</th>
+                  <th scope="col">العملة</th>
+                  <th scope="col" className="num">النقدية</th>
+                  <th scope="col" className="num">ذمم مفتوحة</th>
+                  <th scope="col" className="num">إيراد معترف به</th>
+                  <th scope="col">مصروفات مرحّلة</th>
+                  <th scope="col">أعمال تحت التطوير</th>
+                  <th scope="col" className="num">مستحقات مفتوحة</th>
+                  <th scope="col" className="num">المدفوع</th>
+                  <th scope="col" className="num">حجز ضمان قائم</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td data-label="النقدية">{formatMinorUnits(position.cash_balance_minor_units, currency)}</td>
-                  <td data-label="ذمم مفتوحة">{formatMinorUnits(position.receivable_open_minor_units, currency)}</td>
-                  <td data-label="إيراد معترف به">{formatMinorUnits(position.revenue_recognized_minor_units, currency)}</td>
-                  <td data-label="مصروفات مرحّلة">{formatMinorUnits(position.expense_posted_minor_units, currency)}</td>
-                  <td data-label="أعمال تحت التطوير">{formatMinorUnits(position.wip_posted_minor_units, currency)}</td>
-                  <td data-label="مستحقات مفتوحة">{formatMinorUnits(position.payable_open_minor_units, currency)}</td>
-                  <td data-label="المدفوع">{formatMinorUnits(position.paid_minor_units, currency)}</td>
-                  <td data-label="حجز ضمان قائم">{formatMinorUnits(position.retention_held_minor_units, currency)}</td>
+                  <td data-label="العملة"><strong>{position.currency}</strong></td>
+                  <td className="num" data-label="النقدية">{moneyCell(position.cash_balance_minor_units, position.currency)}</td>
+                  <td className="num" data-label="ذمم مفتوحة">{moneyCell(position.receivable_open_minor_units, position.currency)}</td>
+                  <td className="num" data-label="إيراد معترف به">{moneyCell(position.revenue_recognized_minor_units, position.currency)}</td>
+                  <td data-label="مصروفات مرحّلة">{moneyCell(position.expense_posted_minor_units, position.currency)}</td>
+                  <td data-label="أعمال تحت التطوير">{moneyCell(position.wip_posted_minor_units, position.currency)}</td>
+                  <td className="num" data-label="مستحقات مفتوحة">{moneyCell(position.payable_open_minor_units, position.currency)}</td>
+                  <td className="num" data-label="المدفوع">{moneyCell(position.paid_minor_units, position.currency)}</td>
+                  <td className="num" data-label="حجز ضمان قائم">{moneyCell(position.retention_held_minor_units, position.currency)}</td>
                 </tr>
               </tbody>
             </table>
@@ -159,22 +183,26 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           <p className="muted">
             لا يوجد رقم «ربح» غامض: كل رقم يُشتق من القيود غير المعكوسة ويُفصل عن غيره.
           </p>
-        </section>
-      ) : null}
+        </Section>
+      ) : (
+        <p className="muted">لا يوجد وضع مالي مرحّل مسجّل لهذا المشروع حتى الآن.</p>
+      )}
 
-      <section className="card stack">
-        <h2>إشارات نزاهة المشروع</h2>
+            <Section
+        title="إشارات نزاهة المشروع"
+      >
         {projectSignals.length === 0 ? (
           <p className="muted">لا توجد إشارات لهذا المشروع حاليًا.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطورة · الإشارة · العدد · المبلغ</caption>
               <thead>
                 <tr>
-                  <th>الخطورة</th>
-                  <th>الإشارة</th>
-                  <th>العدد</th>
-                  <th>المبلغ</th>
+                  <th scope="col">الخطورة</th>
+                  <th scope="col">الإشارة</th>
+                  <th scope="col">العدد</th>
+                  <th scope="col" className="num">المبلغ</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,10 +213,8 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                       <td data-label="الخطورة"><span className={`status ${severity.className}`}>{severity.label}</span></td>
                       <td data-label="الإشارة">{signal.signal_label_ar}</td>
                       <td data-label="العدد">{signal.subject_count}</td>
-                      <td data-label="المبلغ">
-                        {signal.amount_minor_units
-                          ? formatMinorUnits(signal.amount_minor_units, signal.currency ?? currency)
-                          : '—'}
+                      <td className="num" data-label="المبلغ">
+                        {moneyCell(signal.amount_minor_units, signal.currency)}
                       </td>
                     </tr>
                   );
@@ -202,8 +228,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             <h3>إشارات على مستوى المنظمة</h3>
             <div className="table-wrap">
               <table className="table-stackable">
+              <caption className="sr-only">جدول: الخطورة · الإشارة · العدد</caption>
                 <thead>
-                  <tr><th>الخطورة</th><th>الإشارة</th><th>العدد</th></tr>
+                  <tr><th scope="col">الخطورة</th><th scope="col">الإشارة</th><th scope="col">العدد</th></tr>
                 </thead>
                 <tbody>
                   {orgSignals.map((signal) => {
@@ -221,10 +248,11 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             </div>
           </>
         ) : null}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>سياسات الاعتماد</h2>
+            <Section
+        title="سياسات الاعتماد"
+      >
         {policies.length === 0 ? (
           <p className="muted">
             لا توجد سياسات مخصصة؛ القواعد الأساسية (فصل الصلاحيات + حد المالك) تعمل دائمًا.
@@ -232,8 +260,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المجال · الحد · العملة · يتطلب مستندًا · مفعّلة</caption>
               <thead>
-                <tr><th>المجال</th><th>الحد</th><th>العملة</th><th>يتطلب مستندًا</th><th>مفعّلة</th></tr>
+                <tr><th scope="col">المجال</th><th scope="col">الحد</th><th scope="col">العملة</th><th scope="col">يتطلب مستندًا</th><th scope="col">مفعّلة</th></tr>
               </thead>
               <tbody>
                 {policies.map((policy) => (
@@ -250,17 +279,19 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           </div>
         )}
         {isOwner ? <ApprovalPolicyForm organizationId={organizationId} commandNonce={newCommandNonce()} /> : null}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>سجل الاستثناءات الموحد</h2>
+            <Section
+        title="سجل الاستثناءات الموحد"
+      >
         {exceptions.length === 0 ? (
           <p className="muted">لا توجد استثناءات مسجلة لهذا المشروع.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المجال · النوع · الخطورة · الاستحقاق · الحالة · المبلغ · السبب · القرار</caption>
               <thead>
-                <tr><th>المجال</th><th>النوع</th><th>الخطورة</th><th>الاستحقاق</th><th>الحالة</th><th>المبلغ</th><th>السبب</th><th>القرار</th></tr>
+                <tr><th scope="col">المجال</th><th scope="col">النوع</th><th scope="col">الخطورة</th><th scope="col">الاستحقاق</th><th scope="col">الحالة</th><th scope="col" className="num">المبلغ</th><th scope="col">السبب</th><th scope="col">القرار</th></tr>
               </thead>
               <tbody>
                 {exceptions.map((exception) => (
@@ -270,10 +301,8 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                     <td data-label="الخطورة"><StatusBadge tone={severityTone(exception.severity)}>{SEVERITY_LABEL[exception.severity]?.label ?? exception.severity}</StatusBadge></td>
                     <td data-label="الاستحقاق">{exception.due_date ?? '—'}</td>
                     <td data-label="الحالة"><StatusBadge tone={exception.status === 'OPEN' ? 'warning' : 'neutral'}>{RECORD_STATUS_LABEL[exception.status] ?? exception.status}</StatusBadge></td>
-                    <td data-label="المبلغ">
-                      {exception.amount_minor_units
-                        ? formatMinorUnits(exception.amount_minor_units, exception.currency ?? currency)
-                        : '—'}
+                    <td className="num" data-label="المبلغ">
+                      {moneyCell(exception.amount_minor_units, exception.currency)}
                     </td>
                     <td data-label="السبب">{exception.reason}</td>
                     <td data-label="القرار">
@@ -308,17 +337,19 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             commandNonce={newCommandNonce()}
           />
         ) : null}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>عقد العملة (سعر الصرف والتحويلات المحددة)</h2>
+            <Section
+        title="عقد العملة (سعر الصرف والتحويلات المحددة)"
+      >
         {snapshots.length === 0 ? (
           <p className="muted">لا توجد لقطات سعر صرف مسجلة بعد.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الزوج · الكسر · التاريخ · المصدر</caption>
               <thead>
-                <tr><th>الزوج</th><th>الكسر</th><th>التاريخ</th><th>المصدر</th></tr>
+                <tr><th scope="col">الزوج</th><th scope="col">الكسر</th><th scope="col">التاريخ</th><th scope="col">المصدر</th></tr>
               </thead>
               <tbody>
                 {snapshots.map((snapshot) => (
@@ -336,8 +367,9 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         {conversions.length > 0 ? (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المصدر · الناتج · الغرض · التاريخ</caption>
               <thead>
-                <tr><th>المصدر</th><th>الناتج</th><th>الغرض</th><th>التاريخ</th></tr>
+                <tr><th scope="col">المصدر</th><th scope="col">الناتج</th><th scope="col">الغرض</th><th scope="col">التاريخ</th></tr>
               </thead>
               <tbody>
                 {conversions.map((conversion) => (
@@ -369,10 +401,12 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             ) : null}
           </>
         ) : null}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>التوحيد على مستوى المنظمة</h2>
+            <Section
+        title="التوحيد على مستوى المنظمة"
+        description="صف «حسب العملة» يخص عملة واحدة كما سُجلت. صف «موحد» لا يحمل جمعًا أصليًا مختلطًا: أعمدة المبالغ الأصلية تظل فارغة إلا إذا كانت المنظمة بلا عملة تقارير ولها عملة وقائع واحدة، والتحويل لا يظهر إلا في عمود «النقدية المحولة» بعد تحويل فعلي بسعر مسجّل. لذلك لا يُوسم أي مبلغ مختلط بعملة."
+      >
         {isOwner ? (
           <OrgReportingCurrencyForm
             organizationId={organizationId}
@@ -385,16 +419,17 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: المستوى · العملة · المشاريع · النقدية · المدفوع · المستحقات · حالة التحويل · النقدية المحولة</caption>
               <thead>
                 <tr>
-                  <th>المستوى</th>
-                  <th>العملة</th>
-                  <th>المشاريع</th>
-                  <th>النقدية</th>
-                  <th>المدفوع</th>
-                  <th>المستحقات</th>
-                  <th>حالة التحويل</th>
-                  <th>النقدية المحولة</th>
+                  <th scope="col">المستوى</th>
+                  <th scope="col">العملة</th>
+                  <th scope="col">المشاريع</th>
+                  <th scope="col" className="num">النقدية</th>
+                  <th scope="col" className="num">المدفوع</th>
+                  <th scope="col" className="num">المستحقات</th>
+                  <th scope="col">حالة التحويل</th>
+                  <th scope="col" className="num">النقدية المحولة</th>
                 </tr>
               </thead>
               <tbody>
@@ -403,14 +438,12 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
                     <td data-label="المستوى">{row.level === 'CONSOLIDATED' ? 'موحد' : 'حسب العملة'}</td>
                     <td data-label="العملة">{row.currency ?? '—'}</td>
                     <td data-label="المشاريع">{row.project_count}</td>
-                    <td data-label="النقدية">{row.cash_balance_minor_units ? formatMinorUnits(row.cash_balance_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td data-label="المدفوع">{row.paid_minor_units ? formatMinorUnits(row.paid_minor_units, row.currency ?? currency) : '—'}</td>
-                    <td data-label="المستحقات">{row.payable_open_minor_units ? formatMinorUnits(row.payable_open_minor_units, row.currency ?? currency) : '—'}</td>
+                    <td className="num" data-label="النقدية">{moneyCell(row.cash_balance_minor_units, row.currency)}</td>
+                    <td className="num" data-label="المدفوع">{moneyCell(row.paid_minor_units, row.currency)}</td>
+                    <td className="num" data-label="المستحقات">{moneyCell(row.payable_open_minor_units, row.currency)}</td>
                     <td data-label="حالة التحويل">{FX_STATUS_LABEL[row.fx_status] ?? row.fx_status}</td>
-                    <td data-label="النقدية المحولة">
-                      {row.converted_cash_balance_minor_units
-                        ? formatMinorUnits(row.converted_cash_balance_minor_units, row.org_reporting_currency ?? '')
-                        : '—'}
+                    <td className="num" data-label="النقدية المحولة">
+                      {moneyCell(row.converted_cash_balance_minor_units, row.org_reporting_currency)}
                     </td>
                   </tr>
                 ))}
@@ -418,17 +451,19 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
             </table>
           </div>
         )}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h2>عقد المعالجة الضريبية</h2>
+            <Section
+        title="عقد المعالجة الضريبية"
+      >
         {taxRegistry.length === 0 ? (
           <p className="muted">لا توجد معالجات ضريبية مسجلة.</p>
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
+              <caption className="sr-only">جدول: الضريبة · النطاق · المعالجة · جهة التقدير · سارية</caption>
               <thead>
-                <tr><th>الضريبة</th><th>النطاق</th><th>المعالجة</th><th>جهة التقدير</th><th>سارية</th></tr>
+                <tr><th scope="col">الضريبة</th><th scope="col">النطاق</th><th scope="col">المعالجة</th><th scope="col">جهة التقدير</th><th scope="col">سارية</th></tr>
               </thead>
               <tbody>
                 {taxRegistry.map((tax) => (
@@ -445,7 +480,7 @@ export default async function IntegrityPage({ params }: { params: Promise<{ proj
           </div>
         )}
         {isOwner ? <TaxTreatmentForm organizationId={organizationId} commandNonce={newCommandNonce()} /> : null}
-      </section>
+      </Section>
     </section>
   );
 }
