@@ -4,7 +4,12 @@ import { PermissionState, Section } from '@/shared/ui';
 import { notFound } from 'next/navigation';
 import { getOrganizations } from '@/features/organizations/queries';
 import { getProject } from '@/features/projects/queries';
-import { getCurrentMembership, getCashAccountPositions, getStatementLines, getUnpostedContributions } from '@/features/finance/queries';
+import {
+  getCurrentMembership,
+  getCashAccountPositions,
+  getStatementLines,
+  getUnpostedContributions,
+} from '@/features/finance/queries';
 import {
   getActiveVersion,
   getCapitalCallLines,
@@ -46,7 +51,14 @@ import { newCommandNonce } from '@/shared/idempotency';
 import { CreatePartyForm, AddParticipantForm, AgreementDraftForm } from '../terms/forms';
 import { CapitalCallForm, ContributionForm } from '../funding/forms';
 import { CashAccountForm, BankImportForm } from '../cash/forms';
-import { ProfileForm, AssetForm, ParcelForm, AcquisitionForm, BudgetForm, ApprovalButton } from '../operations/forms';
+import {
+  ProfileForm,
+  AssetForm,
+  ParcelForm,
+  AcquisitionForm,
+  BudgetForm,
+  ApprovalButton,
+} from '../operations/forms';
 import {
   ApproveOpeningImportForm,
   RejectOpeningImportForm,
@@ -92,7 +104,11 @@ function isTerminal(status: OpeningImport['status']) {
 }
 
 function Badge({ status }: { status: SectionStatus }) {
-  return <span className={`status intake-badge intake-badge-${status.toLowerCase()}`}>{STATUS_AR[status]}</span>;
+  return (
+    <span className={`status intake-badge intake-badge-${status.toLowerCase()}`}>
+      {STATUS_AR[status]}
+    </span>
+  );
 }
 
 function SectionCard({ item, children }: { item: IntakeSection; children?: React.ReactNode }) {
@@ -107,20 +123,22 @@ function SectionCard({ item, children }: { item: IntakeSection; children?: React
       </div>
       {item.blockingReasons.length > 0 && (
         <ul className="error" role="alert">
-          {item.blockingReasons.map((reason) => <li key={reason}>{reason}</li>)}
+          {item.blockingReasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
         </ul>
       )}
-      {item.warnings.map((warning) => <p key={warning} className="muted">{warning}</p>)}
+      {item.warnings.map((warning) => (
+        <p key={warning} className="muted">
+          {warning}
+        </p>
+      ))}
       {children}
     </article>
   );
 }
 
-export default async function IntakePage({
-  params,
-}: {
-  params: Promise<{ projectId: string }>;
-}) {
+export default async function IntakePage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   const project = await getProject(projectId);
   if (!project) notFound();
@@ -198,15 +216,24 @@ export default async function IntakePage({
   const openPeriod = periods.find((period) => period.status === 'OPEN') ?? null;
   const freezeDate = declaration?.freeze_date ?? null;
   const openPeriodCoversFreeze = Boolean(
-    freezeDate && openPeriod && openPeriod.start_date <= freezeDate && openPeriod.end_date >= freezeDate,
+    freezeDate &&
+      openPeriod &&
+      openPeriod.start_date <= freezeDate &&
+      openPeriod.end_date >= freezeDate,
   );
   const activeImport = imports.find((row) => !isTerminal(row.status)) ?? null;
   const latestImport = activeImport ?? imports[0] ?? null;
   const importRows = latestImport ? await getOpeningImportRows([latestImport.import_id]) : [];
-  const openingCodes = [...new Set(importRows.filter((row) => row.status === 'ACCEPTED').map((row) => row.mapping_code))];
+  const openingCodes = [
+    ...new Set(
+      importRows.filter((row) => row.status === 'ACCEPTED').map((row) => row.mapping_code),
+    ),
+  ];
   const approvedBudgets = budgets.filter((budget) => budget.status === 'APPROVED');
   const acquiredAssets = assets.filter((asset) => Boolean(asset.acquisition_id));
-  const eligibleParties = parties.filter((party) => !participants.some((participant) => participant.party_id === party.id));
+  const eligibleParties = parties.filter(
+    (party) => !participants.some((participant) => participant.party_id === party.id),
+  );
   // S7 intake amounts are denominated in the project's reporting currency and
   // the contract carries no per-row currency, so that label is correct here.
   // A missing amount is NOT zero: manufacturing `0.00` would assert "the
@@ -249,7 +276,9 @@ export default async function IntakePage({
     openingCreditVariance: latestImport?.credit_variance_minor_units ?? null,
     matchedZeroVarianceCheckpoints: checkpoints.filter((row) => row.is_zero_variance).length,
     nonZeroVarianceCheckpoints: checkpoints.filter((row) => !row.is_zero_variance).length,
-    openCriticalExceptions: exceptions.filter((row) => row.status === 'OPEN' && row.severity === 'CRITICAL').length,
+    openCriticalExceptions: exceptions.filter(
+      (row) => row.status === 'OPEN' && row.severity === 'CRITICAL',
+    ).length,
   });
   // Organization name is not on the project row; treat presence of the project as DS-01 complete.
   snapshot.organizationName = 'منظمة المشروع';
@@ -271,9 +300,14 @@ export default async function IntakePage({
     <section className="stack">
       <header className="project-context card">
         <div>
-          <Link className="back-link" href={`/projects/${projectId}`}>→ مساحة المشروع</Link>
+          <Link className="back-link" href={`/projects/${projectId}`}>
+            → مساحة المشروع
+          </Link>
           <h1>إدخال المشروع الحقيقي</h1>
-          <p className="muted">{project.name} · {project.reporting_currency} · مسار موجّه بالعربية، دون نموذج قاعدة بيانات.</p>
+          <p className="muted">
+            {project.name} · {project.reporting_currency} · مسار موجّه بالعربية، دون نموذج قاعدة
+            بيانات.
+          </p>
         </div>
         <nav className="tab-strip tab-strip-inpage stepper" aria-label="أقسام الإدخال">
           {readiness.groups.map((group, index) => (
@@ -281,11 +315,18 @@ export default async function IntakePage({
               key={group.id}
               href={GROUP_HREF[group.id]}
               aria-current={group.next ? 'step' : undefined}
-              className={group.complete === group.total ? 'tab done' : group.next ? 'tab current' : 'tab'}
+              className={
+                group.complete === group.total ? 'tab done' : group.next ? 'tab current' : 'tab'
+              }
             >
-              <span className="step-index" aria-hidden="true">{index + 1}</span>
+              <span className="step-index" aria-hidden="true">
+                {index + 1}
+              </span>
               {group.titleAr}
-              <span className="muted"> {group.complete}/{group.total}</span>
+              <span className="muted">
+                {' '}
+                {group.complete}/{group.total}
+              </span>
             </a>
           ))}
         </nav>
@@ -295,26 +336,52 @@ export default async function IntakePage({
         id="result"
         title="نتيجة الجاهزية"
         description={readiness.verdictAr}
-        actions={<span className="status">{readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}</span>}
+        actions={
+          <span className="status">
+            {readiness.phase2Passed ? 'المرحلة 2 ناجحة' : 'المرحلة 2 غير مكتملة'}
+          </span>
+        }
       >
-        <p className="error" role="status">{readiness.phase2ReasonAr}</p>
+        <p className="error" role="status">
+          {readiness.phase2ReasonAr}
+        </p>
         {next && (
           <p>
-            الخطوة التالية: <a href={`#${next.code}`}><strong>{next.titleAr}</strong></a>
+            الخطوة التالية:{' '}
+            <a href={`#${next.code}`}>
+              <strong>{next.titleAr}</strong>
+            </a>
           </p>
         )}
         {readiness.mandatoryMissing.length > 0 && (
-          <p className="muted">أقسام إلزامية ناقصة: {readiness.mandatoryMissing.map((code) => byCode.get(code)?.titleAr).join(' · ')}</p>
+          <p className="muted">
+            أقسام إلزامية ناقصة:{' '}
+            {readiness.mandatoryMissing.map((code) => byCode.get(code)?.titleAr).join(' · ')}
+          </p>
         )}
         {readiness.failures.length > 0 && (
-          <p className="error" role="alert">إخفاقات ظاهرة: {readiness.failures.map((code) => byCode.get(code)?.titleAr).join(' · ')}</p>
+          <p className="error" role="alert">
+            إخفاقات ظاهرة: {readiness.failures.map((code) => byCode.get(code)?.titleAr).join(' · ')}
+          </p>
         )}
         {report && (
           <div className="metric-grid">
-            <article className="metric"><span className="muted">استيرادات مرحّلة</span><strong>{report.posted_opening_imports}</strong></article>
-            <article className="metric"><span className="muted">سطور مرفوضة</span><strong>{report.opening_import_rejected_rows}</strong></article>
-            <article className="metric"><span className="muted">فروق غير صفرية</span><strong>{report.reconciliation_non_zero_variances}</strong></article>
-            <article className="metric"><span className="muted">استثناءات مفتوحة</span><strong>{report.unresolved_exceptions}</strong></article>
+            <article className="metric">
+              <span className="muted">استيرادات مرحّلة</span>
+              <strong>{report.posted_opening_imports}</strong>
+            </article>
+            <article className="metric">
+              <span className="muted">سطور مرفوضة</span>
+              <strong>{report.opening_import_rejected_rows}</strong>
+            </article>
+            <article className="metric">
+              <span className="muted">فروق غير صفرية</span>
+              <strong>{report.reconciliation_non_zero_variances}</strong>
+            </article>
+            <article className="metric">
+              <span className="muted">استثناءات مفتوحة</span>
+              <strong>{report.unresolved_exceptions}</strong>
+            </article>
           </div>
         )}
         {!isOwner && <p className="muted">أوامر الإدخال المادية متاحة لمالك المنظمة فقط.</p>}
@@ -324,7 +391,10 @@ export default async function IntakePage({
         <div className="section-heading">
           <div>
             <h2 id="setup-title">إعداد المشروع</h2>
-            <p className="muted">المنظمة والمشروع وتاريخ التجميد. عملة المشروع: جنيه مصري (EGP). القطاع يُحدد عند الإنشاء: عقارات أو زراعة أو ثروة حيوانية.</p>
+            <p className="muted">
+              المنظمة والمشروع وتاريخ التجميد. عملة المشروع: جنيه مصري (EGP). القطاع يُحدد عند
+              الإنشاء: عقارات أو زراعة أو ثروة حيوانية.
+            </p>
           </div>
         </div>
         <SectionCard item={byCode.get('DS01_ORGANIZATION')!}>
@@ -338,14 +408,23 @@ export default async function IntakePage({
           />
         </SectionCard>
         <SectionCard item={byCode.get('DS02_PROJECT')!}>
-          <p className="muted">الاسم: {project.name}{project.internal_reference ? ` · ${project.internal_reference}` : ''}</p>
+          <p className="muted">
+            الاسم: {project.name}
+            {project.internal_reference ? ` · ${project.internal_reference}` : ''}
+          </p>
           {project.description && <p>{project.description}</p>}
         </SectionCard>
         <SectionCard item={byCode.get('FREEZE_DATE')!}>
           {declaration?.freeze_date ? (
-            <p>مثبّت في {declaration.freeze_date} · دليل {declaration.freeze_evidence_reference}</p>
+            <p>
+              مثبّت في {declaration.freeze_date} · دليل {declaration.freeze_evidence_reference}
+            </p>
           ) : (
-            <FreezeDateForm organizationId={organizationId} projectId={projectId} disabled={!isOwner} />
+            <FreezeDateForm
+              organizationId={organizationId}
+              projectId={projectId}
+              disabled={!isOwner}
+            />
           )}
         </SectionCard>
       </section>
@@ -354,7 +433,9 @@ export default async function IntakePage({
         <div className="section-heading">
           <div>
             <h2 id="investors-title">المستثمرون والشروط</h2>
-            <p className="muted">طرف واحد لكل شخص أو جهة. الالتزام ليس ملكية، والملكية ليست مساهمة.</p>
+            <p className="muted">
+              طرف واحد لكل شخص أو جهة. الالتزام ليس ملكية، والملكية ليست مساهمة.
+            </p>
           </div>
         </div>
         <SectionCard item={byCode.get('DS03_PARTIES')!}>
@@ -374,7 +455,11 @@ export default async function IntakePage({
               {eligibleParties.length > 0 && (
                 <details className="stack" open={participants.length === 0}>
                   <summary>إضافة طرف قائم كمستثمر</summary>
-                  <AddParticipantForm organizationId={organizationId} projectId={projectId} parties={eligibleParties} />
+                  <AddParticipantForm
+                    organizationId={organizationId}
+                    projectId={projectId}
+                    parties={eligibleParties}
+                  />
                 </details>
               )}
             </>
@@ -383,12 +468,15 @@ export default async function IntakePage({
         <SectionCard item={byCode.get('DS04_AGREEMENT')!}>
           {activeVersion ? (
             <>
-              <p>نسخة {activeVersion.version_no} مفعّلة من {activeVersion.effective_date}.</p>
+              <p>
+                نسخة {activeVersion.version_no} مفعّلة من {activeVersion.effective_date}.
+              </p>
               {!declaration?.agreement_title_or_reference && (
                 <p className="muted">أضف عنوان الاتفاقية من قسم الإعداد أعلاه.</p>
               )}
               <p className="muted">
-                حقائق الاتفاقية مثبتة. سياسة الملكية والتخصيص وتوزيع الربح لم تُقرّ بعد من المالك المفوَّض — «غير محددة بسياسة معتمدة»، ولا تُطلب لإكمال الجاهزية.
+                حقائق الاتفاقية مثبتة. سياسة الملكية والتخصيص وتوزيع الربح لم تُقرّ بعد من المالك
+                المفوَّض — «غير محددة بسياسة معتمدة»، ولا تُطلب لإكمال الجاهزية.
               </p>
             </>
           ) : participants.length === 0 ? (
@@ -408,15 +496,26 @@ export default async function IntakePage({
           ) : (
             <div className="table-wrap">
               <table className="table-stackable">
-              <caption className="sr-only">جدول: المستثمر · الالتزام</caption>
-                <thead><tr><th scope="col">المستثمر</th><th scope="col" className="num">الالتزام</th></tr></thead>
+                <caption className="sr-only">جدول: المستثمر · الالتزام</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">المستثمر</th>
+                    <th scope="col" className="num">
+                      الالتزام
+                    </th>
+                  </tr>
+                </thead>
                 <tbody>
                   {commitments.map((commitment) => {
-                    const name = participants.find((participant) => participant.id === commitment.participant_id)?.parties.legal_name;
+                    const name = participants.find(
+                      (participant) => participant.id === commitment.participant_id,
+                    )?.parties.legal_name;
                     return (
                       <tr key={commitment.id}>
                         <td data-label="المستثمر">{name ?? '—'}</td>
-                        <td className="num" data-label="الالتزام">{formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}</td>
+                        <td className="num" data-label="الالتزام">
+                          {formatMinorUnits(commitment.commitment_minor_units, commitment.currency)}
+                        </td>
                       </tr>
                     );
                   })}
@@ -431,7 +530,9 @@ export default async function IntakePage({
         <div className="section-heading">
           <div>
             <h2 id="capital-title">تاريخ رأس المال</h2>
-            <p className="muted">اختياري إن لم توجد طلبات أو مساهمات قبل التجميد. مسار واحد لكل أثر نقدي.</p>
+            <p className="muted">
+              اختياري إن لم توجد طلبات أو مساهمات قبل التجميد. مسار واحد لكل أثر نقدي.
+            </p>
           </div>
         </div>
         <SectionCard item={byCode.get('DS06_HISTORICAL_CALLS')!}>
@@ -487,7 +588,9 @@ export default async function IntakePage({
         <div className="section-heading">
           <div>
             <h2 id="cash-title">البنك والنقدية</h2>
-            <p className="muted">الرصيد الدفتري يُشتق من القيود فقط. رقم الحساب البنكي دليل خارجي.</p>
+            <p className="muted">
+              الرصيد الدفتري يُشتق من القيود فقط. رقم الحساب البنكي دليل خارجي.
+            </p>
           </div>
         </div>
         <SectionCard item={byCode.get('DS08_CASH_ACCOUNTS')!}>
@@ -526,7 +629,9 @@ export default async function IntakePage({
         </SectionCard>
         <SectionCard item={byCode.get('ACCOUNTING_PERIOD')!}>
           {openPeriod ? (
-            <p>فترة مفتوحة {openPeriod.start_date} → {openPeriod.end_date}.</p>
+            <p>
+              فترة مفتوحة {openPeriod.start_date} → {openPeriod.end_date}.
+            </p>
           ) : (
             <CreateAccountingPeriodForm
               organizationId={organizationId}
@@ -548,65 +653,78 @@ export default async function IntakePage({
         </div>
         {project.sector !== 'REAL_ESTATE' ? (
           <section className="card">
-            <p>هذا المشروع قطاعه {project.sector === 'AGRICULTURE' ? 'زراعة' : 'ثروة حيوانية'}، وتُدار حقائقه التشغيلية من مساحة القطاع الخاصة بالمشروع، وليست ضمن نموذج الإدخال العقاري.</p>
-            <Link className="button" href={`/projects/${projectId}/${project.sector === 'AGRICULTURE' ? 'agriculture' : 'livestock'}`}>فتح مساحة القطاع</Link>
+            <p>
+              هذا المشروع قطاعه {project.sector === 'AGRICULTURE' ? 'زراعة' : 'ثروة حيوانية'}،
+              وتُدار حقائقه التشغيلية من مساحة القطاع الخاصة بالمشروع، وليست ضمن نموذج الإدخال
+              العقاري.
+            </p>
+            <Link
+              className="button"
+              href={`/projects/${projectId}/${project.sector === 'AGRICULTURE' ? 'agriculture' : 'livestock'}`}
+            >
+              فتح مساحة القطاع
+            </Link>
           </section>
         ) : (
           <>
-        <SectionCard item={byCode.get('DS11_PROPERTY')!}>
-          {!profile && <ProfileForm organizationId={organizationId} projectId={projectId} />}
-          <AssetForm organizationId={organizationId} projectId={projectId} />
-          {assets.length > 0 && <ParcelForm organizationId={organizationId} projectId={projectId} assets={assets} />}
-        </SectionCard>
-        <SectionCard item={byCode.get('DS12_ACQUISITION')!}>
-          {assets.length > 0 && (
-            <AcquisitionForm
-              organizationId={organizationId}
-              projectId={projectId}
-              currency={project.reporting_currency}
-              assets={assets}
-              parties={parties}
-              obligations={[]}
-            />
-          )}
-          <ApplicabilityBlock
-            organizationId={organizationId}
-            projectId={projectId}
-            code="ACQUISITION_BASIS"
-            current={applicabilityByCode.get('ACQUISITION_BASIS')}
-            disabled={!isOwner}
-          />
-        </SectionCard>
-        <SectionCard item={byCode.get('DS13_DEVELOPMENT')!}>
-          {assets.length > 0 && (
-            <>
-              <BudgetForm
-                organizationId={organizationId}
-                projectId={projectId}
-                currency={project.reporting_currency}
-                assets={assets}
-                parcels={parcels}
-                phases={[]}
-              />
-              {budgets.filter((budget) => budget.status === 'PROPOSED').map((budget) => (
-                <ApprovalButton
-                  key={budget.budget_version_id}
-                  kind="budget"
+            <SectionCard item={byCode.get('DS11_PROPERTY')!}>
+              {!profile && <ProfileForm organizationId={organizationId} projectId={projectId} />}
+              <AssetForm organizationId={organizationId} projectId={projectId} />
+              {assets.length > 0 && (
+                <ParcelForm organizationId={organizationId} projectId={projectId} assets={assets} />
+              )}
+            </SectionCard>
+            <SectionCard item={byCode.get('DS12_ACQUISITION')!}>
+              {assets.length > 0 && (
+                <AcquisitionForm
                   organizationId={organizationId}
                   projectId={projectId}
-                  subjectId={budget.budget_version_id}
+                  currency={project.reporting_currency}
+                  assets={assets}
+                  parties={parties}
+                  obligations={[]}
                 />
-              ))}
-            </>
-          )}
-          <ApplicabilityBlock
-            organizationId={organizationId}
-            projectId={projectId}
-            code="DEVELOPMENT_BASELINE"
-            current={applicabilityByCode.get('DEVELOPMENT_BASELINE')}
-            disabled={!isOwner}
-          />
-        </SectionCard>
+              )}
+              <ApplicabilityBlock
+                organizationId={organizationId}
+                projectId={projectId}
+                code="ACQUISITION_BASIS"
+                current={applicabilityByCode.get('ACQUISITION_BASIS')}
+                disabled={!isOwner}
+              />
+            </SectionCard>
+            <SectionCard item={byCode.get('DS13_DEVELOPMENT')!}>
+              {assets.length > 0 && (
+                <>
+                  <BudgetForm
+                    organizationId={organizationId}
+                    projectId={projectId}
+                    currency={project.reporting_currency}
+                    assets={assets}
+                    parcels={parcels}
+                    phases={[]}
+                  />
+                  {budgets
+                    .filter((budget) => budget.status === 'PROPOSED')
+                    .map((budget) => (
+                      <ApprovalButton
+                        key={budget.budget_version_id}
+                        kind="budget"
+                        organizationId={organizationId}
+                        projectId={projectId}
+                        subjectId={budget.budget_version_id}
+                      />
+                    ))}
+                </>
+              )}
+              <ApplicabilityBlock
+                organizationId={organizationId}
+                projectId={projectId}
+                code="DEVELOPMENT_BASELINE"
+                current={applicabilityByCode.get('DEVELOPMENT_BASELINE')}
+                disabled={!isOwner}
+              />
+            </SectionCard>
           </>
         )}
       </section>
@@ -621,25 +739,33 @@ export default async function IntakePage({
         <SectionCard item={byCode.get('CONTROL_TOTALS')!}>
           {declaration?.declared_debit_total_minor_units ? (
             <p>
-              مدين {money(declaration.declared_debit_total_minor_units)} =
-              دائن {money(declaration.declared_credit_total_minor_units)} ·
-              دليل {declaration.control_totals_evidence_reference}
+              مدين {money(declaration.declared_debit_total_minor_units)} = دائن{' '}
+              {money(declaration.declared_credit_total_minor_units)} · دليل{' '}
+              {declaration.control_totals_evidence_reference}
             </p>
           ) : (
-            <ControlTotalsForm organizationId={organizationId} projectId={projectId} disabled={!isOwner} />
+            <ControlTotalsForm
+              organizationId={organizationId}
+              projectId={projectId}
+              disabled={!isOwner}
+            />
           )}
         </SectionCard>
         <SectionCard item={byCode.get('DS09_OPENING_BALANCES')!}>
           {latestImport && (
             <p>
-              {latestImport.source_file_name} · {recordStatusLabel(latestImport.status)} ·
-              مقبول {latestImport.accepted_row_count} / مرفوض {latestImport.rejected_row_count} ·
-              فرق المدين {money(latestImport.debit_variance_minor_units)} ·
-              فرق الدائن {money(latestImport.credit_variance_minor_units)}
+              {latestImport.source_file_name} · {recordStatusLabel(latestImport.status)} · مقبول{' '}
+              {latestImport.accepted_row_count} / مرفوض {latestImport.rejected_row_count} · فرق
+              المدين {money(latestImport.debit_variance_minor_units)} · فرق الدائن{' '}
+              {money(latestImport.credit_variance_minor_units)}
             </p>
           )}
           {isOwner && activeImport?.status === 'DRAFT' && (
-            <ValidateOpeningImportForm organizationId={organizationId} projectId={projectId} importId={activeImport.import_id} />
+            <ValidateOpeningImportForm
+              organizationId={organizationId}
+              projectId={projectId}
+              importId={activeImport.import_id}
+            />
           )}
           {isOwner && !activeImport && (
             <StageOpeningImportForm
@@ -647,27 +773,57 @@ export default async function IntakePage({
               projectId={projectId}
               mappingCodes={mappingOptions}
               parties={parties.map((party) => ({ id: party.id, legalName: party.legal_name }))}
-              cashAccounts={cashAccounts.map((account) => ({ id: account.cash_account_id, name: account.name }))}
+              cashAccounts={cashAccounts.map((account) => ({
+                id: account.cash_account_id,
+                name: account.name,
+              }))}
             />
           )}
           <details>
             <summary>رصيد لا يناسب أي ترميز معتمد</summary>
-            <ModellingGapForm organizationId={organizationId} projectId={projectId} disabled={!isOwner} />
+            <ModellingGapForm
+              organizationId={organizationId}
+              projectId={projectId}
+              disabled={!isOwner}
+            />
           </details>
           {gaps.length > 0 && (
             <div className="table-wrap">
-              <table className="table-stackable"><caption className="sr-only">جدول: المصدر · الوصف · المبلغ · الحالة</caption>
-                <thead><tr><th scope="col">المصدر</th><th scope="col">الوصف</th><th scope="col" className="num">المبلغ</th><th scope="col">الحالة</th><th scope="col"></th></tr></thead>
+              <table className="table-stackable">
+                <caption className="sr-only">جدول: المصدر · الوصف · المبلغ · الحالة</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">المصدر</th>
+                    <th scope="col">الوصف</th>
+                    <th scope="col" className="num">
+                      المبلغ
+                    </th>
+                    <th scope="col">الحالة</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {gaps.map((gap) => (
                     <tr key={gap.gap_id}>
                       <td data-label="المصدر">{gap.source_reference}</td>
-                      <td data-label="الوصف">{gap.description}<br /><span className="muted">{gap.why_unmappable}</span></td>
-                      <td className="num" data-label="المبلغ">{gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}</td>
-                      <td data-label="الحالة">{gap.status === 'OPEN' ? 'مفتوحة' : 'مقبولة تجاريًا'}</td>
+                      <td data-label="الوصف">
+                        {gap.description}
+                        <br />
+                        <span className="muted">{gap.why_unmappable}</span>
+                      </td>
+                      <td className="num" data-label="المبلغ">
+                        {gap.amount_minor_units ? money(gap.amount_minor_units) : '—'}
+                      </td>
+                      <td data-label="الحالة">
+                        {gap.status === 'OPEN' ? 'مفتوحة' : 'مقبولة تجاريًا'}
+                      </td>
                       <td data-label="">
                         {gap.status === 'OPEN' && isOwner && (
-                          <AcceptModellingGapForm organizationId={organizationId} projectId={projectId} gapId={gap.gap_id} />
+                          <AcceptModellingGapForm
+                            organizationId={organizationId}
+                            projectId={projectId}
+                            gapId={gap.gap_id}
+                          />
                         )}
                       </td>
                     </tr>
@@ -678,16 +834,38 @@ export default async function IntakePage({
           )}
         </SectionCard>
         <SectionCard item={byCode.get('DS10_UNPAID_SUPPLIERS')!}>
-          <p className="muted">يُمثَّل داخل الاستيراد بترميز مستحق الموردين مع الطرف والمبلغ ومرجع الفاتورة في الوصف.</p>
-          <ApplicabilityBlock organizationId={organizationId} projectId={projectId} code="UNPAID_SUPPLIERS" current={applicabilityByCode.get('UNPAID_SUPPLIERS')} disabled={!isOwner} />
+          <p className="muted">
+            يُمثَّل داخل الاستيراد بترميز مستحق الموردين مع الطرف والمبلغ ومرجع الفاتورة في الوصف.
+          </p>
+          <ApplicabilityBlock
+            organizationId={organizationId}
+            projectId={projectId}
+            code="UNPAID_SUPPLIERS"
+            current={applicabilityByCode.get('UNPAID_SUPPLIERS')}
+            disabled={!isOwner}
+          />
         </SectionCard>
         <SectionCard item={byCode.get('DS14_SALES')!}>
-          <p className="muted">المبيعات المكتملة قبل التجميد لا تُعاد. المتبقي فقط: ذمم عملاء أو نقدية افتتاحية.</p>
-          <ApplicabilityBlock organizationId={organizationId} projectId={projectId} code="SALES_DISPOSITIONS" current={applicabilityByCode.get('SALES_DISPOSITIONS')} disabled={!isOwner} />
+          <p className="muted">
+            المبيعات المكتملة قبل التجميد لا تُعاد. المتبقي فقط: ذمم عملاء أو نقدية افتتاحية.
+          </p>
+          <ApplicabilityBlock
+            organizationId={organizationId}
+            projectId={projectId}
+            code="SALES_DISPOSITIONS"
+            current={applicabilityByCode.get('SALES_DISPOSITIONS')}
+            disabled={!isOwner}
+          />
         </SectionCard>
         <SectionCard item={byCode.get('DS15_DISTRIBUTIONS')!}>
           <p className="muted">غير المدفوع المعتمد فقط يدخل كمستحق توزيع افتتاحي.</p>
-          <ApplicabilityBlock organizationId={organizationId} projectId={projectId} code="HISTORICAL_DISTRIBUTIONS" current={applicabilityByCode.get('HISTORICAL_DISTRIBUTIONS')} disabled={!isOwner} />
+          <ApplicabilityBlock
+            organizationId={organizationId}
+            projectId={projectId}
+            code="HISTORICAL_DISTRIBUTIONS"
+            current={applicabilityByCode.get('HISTORICAL_DISTRIBUTIONS')}
+            disabled={!isOwner}
+          />
         </SectionCard>
       </section>
 
@@ -695,28 +873,45 @@ export default async function IntakePage({
         <div className="section-heading">
           <div>
             <h2 id="validation-title">التحقق والمطابقة</h2>
-            <p className="muted">مسودة → تحقق → ترشيح → اعتماد وترحيل → مطابقة بفرق صفر. المعدّ لا يعتمد.</p>
+            <p className="muted">
+              مسودة → تحقق → ترشيح → اعتماد وترحيل → مطابقة بفرق صفر. المعدّ لا يعتمد.
+            </p>
           </div>
         </div>
         <SectionCard item={byCode.get('OPENING_VALIDATION')!}>
           {isOwner && activeImport?.status === 'DRAFT' && (
-            <ValidateOpeningImportForm organizationId={organizationId} projectId={projectId} importId={activeImport.import_id} />
+            <ValidateOpeningImportForm
+              organizationId={organizationId}
+              projectId={projectId}
+              importId={activeImport.import_id}
+            />
           )}
         </SectionCard>
         <SectionCard item={byCode.get('OPENING_APPROVAL')!}>
           {isOwner && activeImport?.status === 'VALIDATED' && (
-            <ReviewOpeningImportForm organizationId={organizationId} projectId={projectId} importId={activeImport.import_id} />
-          )}
-          {isOwner && activeImport?.status === 'READY_FOR_APPROVAL' && activeImport.control_totals_match && activeImport.rejected_row_count === 0 && (
-            <ApproveOpeningImportForm
+            <ReviewOpeningImportForm
               organizationId={organizationId}
               projectId={projectId}
               importId={activeImport.import_id}
-              postingDate={openPeriod?.start_date ?? freezeDate ?? ''}
             />
           )}
+          {isOwner &&
+            activeImport?.status === 'READY_FOR_APPROVAL' &&
+            activeImport.control_totals_match &&
+            activeImport.rejected_row_count === 0 && (
+              <ApproveOpeningImportForm
+                organizationId={organizationId}
+                projectId={projectId}
+                importId={activeImport.import_id}
+                postingDate={openPeriod?.start_date ?? freezeDate ?? ''}
+              />
+            )}
           {isOwner && activeImport && !isTerminal(activeImport.status) && (
-            <RejectOpeningImportForm organizationId={organizationId} projectId={projectId} importId={activeImport.import_id} />
+            <RejectOpeningImportForm
+              organizationId={organizationId}
+              projectId={projectId}
+              importId={activeImport.import_id}
+            />
           )}
         </SectionCard>
         <SectionCard item={byCode.get('OPENING_POSTING')!}>
@@ -728,12 +923,19 @@ export default async function IntakePage({
         </SectionCard>
         <SectionCard item={byCode.get('OPENING_RECONCILIATION')!}>
           {checkpoints.length === 0 ? (
-            <p className="muted">بعد الترحيل، سجّل نقاط المطابقة من <Link href={`/projects/${projectId}/pilot#reconciliation`}>لوحة التشغيل التجريبي</Link>.</p>
+            <p className="muted">
+              بعد الترحيل، سجّل نقاط المطابقة من{' '}
+              <Link href={`/projects/${projectId}/pilot#reconciliation`}>
+                لوحة التشغيل التجريبي
+              </Link>
+              .
+            </p>
           ) : (
             <ul>
               {checkpoints.map((row) => (
                 <li key={row.checkpoint_id}>
-                  {row.checkpoint_code}: {row.is_zero_variance ? 'صفر — مطابقة تامة' : money(row.variance_minor_units)}
+                  {row.checkpoint_code}:{' '}
+                  {row.is_zero_variance ? 'صفر — مطابقة تامة' : money(row.variance_minor_units)}
                 </li>
               ))}
             </ul>
@@ -743,8 +945,14 @@ export default async function IntakePage({
           {evidenceItems.length > 0 && (
             <div className="table-wrap">
               <table className="table-stackable">
-              <caption className="sr-only">جدول: المعرّف · الحقيقة · موقع العميل</caption>
-                <thead><tr><th scope="col">المعرّف</th><th scope="col">الحقيقة</th><th scope="col">موقع العميل</th></tr></thead>
+                <caption className="sr-only">جدول: المعرّف · الحقيقة · موقع العميل</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">المعرّف</th>
+                    <th scope="col">الحقيقة</th>
+                    <th scope="col">موقع العميل</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {evidenceItems.map((item) => (
                     <tr key={item.evidence_item_id}>
@@ -757,10 +965,16 @@ export default async function IntakePage({
               </table>
             </div>
           )}
-          <EvidenceItemForm organizationId={organizationId} projectId={projectId} disabled={!isOwner} />
+          <EvidenceItemForm
+            organizationId={organizationId}
+            projectId={projectId}
+            disabled={!isOwner}
+          />
         </SectionCard>
         <SectionCard item={byCode.get('READINESS_RESULT')!}>
-          <p>النظام جاهز لاستقبال بيانات المشروع الحقيقي عبر هذا المسار. المرحلة 2 لن تُعلَن من هنا.</p>
+          <p>
+            النظام جاهز لاستقبال بيانات المشروع الحقيقي عبر هذا المسار. المرحلة 2 لن تُعلَن من هنا.
+          </p>
         </SectionCard>
       </section>
     </section>
@@ -768,7 +982,11 @@ export default async function IntakePage({
 }
 
 function ApplicabilityBlock({
-  organizationId, projectId, code, current, disabled,
+  organizationId,
+  projectId,
+  code,
+  current,
+  disabled,
 }: {
   organizationId: string;
   projectId: string;
@@ -778,7 +996,13 @@ function ApplicabilityBlock({
 }) {
   return (
     <details>
-      <summary>{current ? (current.applicable ? 'مصرّح: ينطبق' : `مصرّح: لا ينطبق — ${current.reason}`) : 'تصريح: ينطبق أو لا ينطبق'}</summary>
+      <summary>
+        {current
+          ? current.applicable
+            ? 'مصرّح: ينطبق'
+            : `مصرّح: لا ينطبق — ${current.reason}`
+          : 'تصريح: ينطبق أو لا ينطبق'}
+      </summary>
       <SectionApplicabilityForm
         organizationId={organizationId}
         projectId={projectId}

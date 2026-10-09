@@ -95,31 +95,103 @@ function cycleQuantity(result: CropCycleResultRead, value: string | null) {
 }
 
 function ResultMetrics({ result }: Readonly<{ result: CropCycleResultRead }>) {
-  const perArea = (value: string | null) => value && result.area_unit
-    ? `${formatMinorUnits(value, result.currency)} / ${formatAreaUnit(result.area_unit)}`
-    : 'غير متاح';
+  const perArea = (value: string | null) =>
+    value && result.area_unit
+      ? `${formatMinorUnits(value, result.currency)} / ${formatAreaUnit(result.area_unit)}`
+      : 'غير متاح';
   return (
     <dl className="facts">
-      <div><dt>المساحة المزروعة/المشغلة</dt><dd>{cycleArea(result)}</dd></div>
-      <div><dt>أنشطة الحقل المسجلة</dt><dd>{result.activity_count}</dd></div>
-      <div><dt>تطبيقات المدخلات المسجلة</dt><dd>{result.input_application_count}</dd></div>
-      <div><dt>إجمالي الحصاد</dt><dd>{cycleQuantity(result, result.gross_harvest_quantity)}</dd></div>
-      <div><dt>صافي الحصاد المقبول</dt><dd>{cycleQuantity(result, result.net_accepted_harvest_quantity)}</dd></div>
-      <div><dt>فاقد الحصاد</dt><dd>{cycleQuantity(result, result.harvest_loss)}</dd></div>
-      <div><dt>التالف أثناء التخزين</dt><dd>{cycleQuantity(result, result.spoilage_quantity)}</dd></div>
-      <div><dt>الكمية المباعة</dt><dd>{cycleQuantity(result, result.quantity_sold)}</dd></div>
-      <div><dt>المخزون المتبقي</dt><dd>{cycleQuantity(result, result.remaining_physical_inventory)}</dd></div>
-      <div><dt>قيمة المخزون المتبقي</dt><dd>غير متاحة / غير معترف بها</dd></div>
-      <div><dt>الإيراد المعترف به</dt><dd>{formatMinorUnits(result.recognized_revenue_minor_units, result.currency)}</dd></div>
-      <div><dt>المحصل</dt><dd>{formatMinorUnits(result.cash_collected_minor_units, result.currency)}</dd></div>
-      <div><dt>المتبقي للتحصيل</dt><dd>{formatMinorUnits(result.receivable_outstanding_minor_units, result.currency)}</dd></div>
-      <div><dt>تكلفة التشغيل</dt><dd>{formatMinorUnits(result.attributed_operating_cost_minor_units, result.currency)}</dd></div>
-      <div><dt>النتيجة التشغيلية الحالية</dt><dd>{formatMinorUnits(result.operating_result_to_date_minor_units, result.currency)}</dd></div>
-      <div><dt>العائد لكل مساحة</dt><dd>{result.yield_per_area && result.quantity_unit && result.area_unit ? `${result.yield_per_area} ${result.quantity_unit}/${formatAreaUnit(result.area_unit)}` : 'غير متاح مع الوحدات الحالية'}</dd></div>
-      <div><dt>الإيراد لكل مساحة</dt><dd>{perArea(result.recognized_revenue_minor_units_per_area)}</dd></div>
-      <div><dt>تكلفة التشغيل لكل مساحة</dt><dd>{perArea(result.operating_cost_minor_units_per_area)}</dd></div>
-      <div><dt>متوسط سعر البيع المحقق</dt><dd>{result.realized_average_selling_price_minor_units && result.quantity_unit ? `${formatMinorUnits(result.realized_average_selling_price_minor_units, result.currency)} / ${result.quantity_unit}` : 'غير متاح'}</dd></div>
-      <div><dt>اكتمال المصادر والأدلة</dt><dd>{formatEvidenceCompleteness(result.source_evidence_completeness)}</dd></div>
+      <div>
+        <dt>المساحة المزروعة/المشغلة</dt>
+        <dd>{cycleArea(result)}</dd>
+      </div>
+      <div>
+        <dt>أنشطة الحقل المسجلة</dt>
+        <dd>{result.activity_count}</dd>
+      </div>
+      <div>
+        <dt>تطبيقات المدخلات المسجلة</dt>
+        <dd>{result.input_application_count}</dd>
+      </div>
+      <div>
+        <dt>إجمالي الحصاد</dt>
+        <dd>{cycleQuantity(result, result.gross_harvest_quantity)}</dd>
+      </div>
+      <div>
+        <dt>صافي الحصاد المقبول</dt>
+        <dd>{cycleQuantity(result, result.net_accepted_harvest_quantity)}</dd>
+      </div>
+      <div>
+        <dt>فاقد الحصاد</dt>
+        <dd>{cycleQuantity(result, result.harvest_loss)}</dd>
+      </div>
+      <div>
+        <dt>التالف أثناء التخزين</dt>
+        <dd>{cycleQuantity(result, result.spoilage_quantity)}</dd>
+      </div>
+      <div>
+        <dt>الكمية المباعة</dt>
+        <dd>{cycleQuantity(result, result.quantity_sold)}</dd>
+      </div>
+      <div>
+        <dt>المخزون المتبقي</dt>
+        <dd>{cycleQuantity(result, result.remaining_physical_inventory)}</dd>
+      </div>
+      <div>
+        <dt>قيمة المخزون المتبقي</dt>
+        <dd>غير متاحة / غير معترف بها</dd>
+      </div>
+      <div>
+        <dt>الإيراد المعترف به</dt>
+        <dd>{formatMinorUnits(result.recognized_revenue_minor_units, result.currency)}</dd>
+      </div>
+      <div>
+        <dt>المحصل</dt>
+        <dd>{formatMinorUnits(result.cash_collected_minor_units, result.currency)}</dd>
+      </div>
+      <div>
+        <dt>المتبقي للتحصيل</dt>
+        <dd>{formatMinorUnits(result.receivable_outstanding_minor_units, result.currency)}</dd>
+      </div>
+      <div>
+        <dt>تكلفة التشغيل</dt>
+        <dd>{formatMinorUnits(result.attributed_operating_cost_minor_units, result.currency)}</dd>
+      </div>
+      <div>
+        <dt>النتيجة التشغيلية الحالية</dt>
+        <dd>{formatMinorUnits(result.operating_result_to_date_minor_units, result.currency)}</dd>
+      </div>
+      <div>
+        <dt>العائد لكل مساحة</dt>
+        <dd>
+          {result.yield_per_area && result.quantity_unit && result.area_unit
+            ? `${result.yield_per_area} ${result.quantity_unit}/${formatAreaUnit(result.area_unit)}`
+            : 'غير متاح مع الوحدات الحالية'}
+        </dd>
+      </div>
+      <div>
+        <dt>الإيراد لكل مساحة</dt>
+        <dd>{perArea(result.recognized_revenue_minor_units_per_area)}</dd>
+      </div>
+      <div>
+        <dt>تكلفة التشغيل لكل مساحة</dt>
+        <dd>{perArea(result.operating_cost_minor_units_per_area)}</dd>
+      </div>
+      <div>
+        <dt>متوسط سعر البيع المحقق</dt>
+        <dd>
+          {result.realized_average_selling_price_minor_units && result.quantity_unit
+            ? `${formatMinorUnits(
+                result.realized_average_selling_price_minor_units,
+                result.currency,
+              )} / ${result.quantity_unit}`
+            : 'غير متاح'}
+        </dd>
+      </div>
+      <div>
+        <dt>اكتمال المصادر والأدلة</dt>
+        <dd>{formatEvidenceCompleteness(result.source_evidence_completeness)}</dd>
+      </div>
     </dl>
   );
 }
@@ -132,9 +204,20 @@ function ResultLandPosition({ result }: Readonly<{ result: CropCycleResultRead }
   return (
     <div className="card stack">
       <h4>الأرض كأصل استثماري</h4>
-      <p>{result.land_asset_names ?? 'لا يوجد أصل أرض مرتبط بالمزرعة'}{landBasis ? ` · ${landBasis}` : ''}</p>
-      {BigInt(result.land_consideration_minor_units) > 0n ? <p>مقابل شراء الأرض المنفصل: {formatMinorUnits(result.land_consideration_minor_units, result.currency)}</p> : null}
-      <p className="muted">هذا المركز منفصل دائمًا عن تكلفة تشغيل دورة المحصول؛ لا إهلاك أو استهلاك أو قيمة عادلة تلقائية.</p>
+      <p>
+        {result.land_asset_names ?? 'لا يوجد أصل أرض مرتبط بالمزرعة'}
+        {landBasis ? ` · ${landBasis}` : ''}
+      </p>
+      {BigInt(result.land_consideration_minor_units) > 0n ? (
+        <p>
+          مقابل شراء الأرض المنفصل:{' '}
+          {formatMinorUnits(result.land_consideration_minor_units, result.currency)}
+        </p>
+      ) : null}
+      <p className="muted">
+        هذا المركز منفصل دائمًا عن تكلفة تشغيل دورة المحصول؛ لا إهلاك أو استهلاك أو قيمة عادلة
+        تلقائية.
+      </p>
     </div>
   );
 }
@@ -144,7 +227,17 @@ function ResultIssues({ issues }: Readonly<{ issues: CropCycleIntegrityIssueRead
   return (
     <div className="card stack" aria-label="استثناءات الدورة">
       <h4>الاستثناءات والمراكز المفتوحة</h4>
-      <ul>{issues.map((issue, index) => <li key={`${issue.code}-${index}`} className={issue.severity === 'HARD' ? 'error' : undefined}>{issue.severity === 'HARD' ? 'مانع إغلاق: ' : 'مركز مفتوح: '}{issue.message_ar}</li>)}</ul>
+      <ul>
+        {issues.map((issue, index) => (
+          <li
+            key={`${issue.code}-${index}`}
+            className={issue.severity === 'HARD' ? 'error' : undefined}
+          >
+            {issue.severity === 'HARD' ? 'مانع إغلاق: ' : 'مركز مفتوح: '}
+            {issue.message_ar}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -154,14 +247,26 @@ function ResultCloseMetadata({ result }: Readonly<{ result: CropCycleResultRead 
   return (
     <div className="card stack">
       <h4>بيانات الإغلاق</h4>
-      <p>أُغلقت في {d(result.closed_at)} · السبب: {result.close_reason}</p>
-      <p className="muted">دليل الإغلاق: {result.close_evidence_reference}. التحصيلات والمخزون المفتوحان يظلان ظاهرين بعد الإغلاق.</p>
+      <p>
+        أُغلقت في {d(result.closed_at)} · السبب: {result.close_reason}
+      </p>
+      <p className="muted">
+        دليل الإغلاق: {result.close_evidence_reference}. التحصيلات والمخزون المفتوحان يظلان ظاهرين
+        بعد الإغلاق.
+      </p>
     </div>
   );
 }
 
-function ResultActions({ organizationId, projectId, result, assignments, fields, costSources, canClose }:
-Readonly<{
+function ResultActions({
+  organizationId,
+  projectId,
+  result,
+  assignments,
+  fields,
+  costSources,
+  canClose,
+}: Readonly<{
   organizationId: string;
   projectId: string;
   result: CropCycleResultRead;
@@ -170,17 +275,42 @@ Readonly<{
   costSources: CropCycleCostSourceRead[];
   canClose: boolean;
 }>) {
-  if (!canClose) return <p className="muted">تحميل التكلفة والإغلاق يتطلبان صلاحية مالك المنظمة.</p>;
+  if (!canClose)
+    return <p className="muted">تحميل التكلفة والإغلاق يتطلبان صلاحية مالك المنظمة.</p>;
   return (
     <>
-      <details><summary>تحميل تكلفة تشغيل من مصدر مالي معتمد</summary><CropCycleCostAttributionForm organizationId={organizationId} projectId={projectId} result={result} assignments={assignments} fields={fields} sources={costSources} /></details>
-      {!result.closed_at ? <CropCycleCloseoutForm organizationId={organizationId} projectId={projectId} result={result} /> : null}
+      <details>
+        <summary>تحميل تكلفة تشغيل من مصدر مالي معتمد</summary>
+        <CropCycleCostAttributionForm
+          organizationId={organizationId}
+          projectId={projectId}
+          result={result}
+          assignments={assignments}
+          fields={fields}
+          sources={costSources}
+        />
+      </details>
+      {!result.closed_at ? (
+        <CropCycleCloseoutForm
+          organizationId={organizationId}
+          projectId={projectId}
+          result={result}
+        />
+      ) : null}
     </>
   );
 }
 
-function CropCycleResultCard({ organizationId, projectId, result, issues, assignments, fields, costSources, canClose }:
-Readonly<{
+function CropCycleResultCard({
+  organizationId,
+  projectId,
+  result,
+  issues,
+  assignments,
+  fields,
+  costSources,
+  canClose,
+}: Readonly<{
   organizationId: string;
   projectId: string;
   result: CropCycleResultRead;
@@ -193,14 +323,31 @@ Readonly<{
   return (
     <article className="card stack" aria-labelledby={`result-${result.crop_cycle_id}`}>
       <header className="topline">
-        <div><h3 id={`result-${result.crop_cycle_id}`}>{result.crop} {result.variety ? `· ${result.variety}` : ''}</h3><p className="muted">{result.season_reference} · {result.farm_names} · {result.field_identifiers}</p></div>
-        <span className="status">{CYCLE_STATE_LABEL[result.operational_state] ?? result.operational_state}</span>
+        <div>
+          <h3 id={`result-${result.crop_cycle_id}`}>
+            {result.crop} {result.variety ? `· ${result.variety}` : ''}
+          </h3>
+          <p className="muted">
+            {result.season_reference} · {result.farm_names} · {result.field_identifiers}
+          </p>
+        </div>
+        <span className="status">
+          {CYCLE_STATE_LABEL[result.operational_state] ?? result.operational_state}
+        </span>
       </header>
       <ResultMetrics result={result} />
       <ResultLandPosition result={result} />
       <ResultIssues issues={issues} />
       <ResultCloseMetadata result={result} />
-      <ResultActions organizationId={organizationId} projectId={projectId} result={result} assignments={assignments} fields={fields} costSources={costSources} canClose={canClose} />
+      <ResultActions
+        organizationId={organizationId}
+        projectId={projectId}
+        result={result}
+        assignments={assignments}
+        fields={fields}
+        costSources={costSources}
+        canClose={canClose}
+      />
     </article>
   );
 }
@@ -226,12 +373,32 @@ export default async function AgriculturePage({
   const currency = project.reporting_currency;
 
   const [
-    membership, landAssets, farmLandLinks, parties, cashAccounts,
-    farms, fields, cycles, assignments, timeline, activities,
-    inputItems, inputLots, inputApplications,
-    storages, harvestEvents, harvestLots, inventoryByLocation, inventoryMovements,
-    sales, saleLines, saleCollections, lotSaleTraceability,
-    cycleResults, cycleIssues, costSources,
+    membership,
+    landAssets,
+    farmLandLinks,
+    parties,
+    cashAccounts,
+    farms,
+    fields,
+    cycles,
+    assignments,
+    timeline,
+    activities,
+    inputItems,
+    inputLots,
+    inputApplications,
+    storages,
+    harvestEvents,
+    harvestLots,
+    inventoryByLocation,
+    inventoryMovements,
+    sales,
+    saleLines,
+    saleCollections,
+    lotSaleTraceability,
+    cycleResults,
+    cycleIssues,
+    costSources,
   ] = await Promise.all([
     getCurrentMembership(organizationId),
     getAgriculturalLandAssets(projectId),
@@ -262,7 +429,12 @@ export default async function AgriculturePage({
   ]);
 
   if (!membership) {
-    return <ForbiddenCard projectId={projectId} message="عضويتك الحالية لا تسمح بقراءة عمليات الزراعة لهذا المشروع." />;
+    return (
+      <ForbiddenCard
+        projectId={projectId}
+        message="عضويتك الحالية لا تسمح بقراءة عمليات الزراعة لهذا المشروع."
+      />
+    );
   }
 
   const farmById = new Map(farms.map((f) => [f.id, f]));
@@ -323,10 +495,12 @@ export default async function AgriculturePage({
           <article className="overview-kpi">
             <span>تخصيصات نشطة</span>
             <strong>
-              {assignments.filter((a) => {
-                const c = cycleById.get(a.crop_cycle_id);
-                return c && c.operational_state !== 'CANCELLED';
-              }).length}
+              {
+                assignments.filter((a) => {
+                  const c = cycleById.get(a.crop_cycle_id);
+                  return c && c.operational_state !== 'CANCELLED';
+                }).length
+              }
             </strong>
             <small>دورات غير ملغاة على حقول</small>
           </article>
@@ -337,7 +511,8 @@ export default async function AgriculturePage({
           </article>
         </div>
         <p className="muted">
-          هذه القيم مصدرها المباشر قواعد الزراعة في هذا المشروع. لا توجد حسابات مالية أو محصولية مُحتسبة هنا في هذه الشريحة.
+          هذه القيم مصدرها المباشر قواعد الزراعة في هذا المشروع. لا توجد حسابات مالية أو محصولية
+          مُحتسبة هنا في هذه الشريحة.
         </p>
       </Section>
 
@@ -364,41 +539,126 @@ export default async function AgriculturePage({
             headingLevel={3}
             title="لا توجد أرض استثمارية مسجلة"
             description="المزارع القائمة لن يُنشأ لها أصل وهمي. سجّل السيطرة الحقيقية ثم اربط المزرعة المناسبة."
-            action={<AgriculturalLandAssetForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} />}
+            action={
+              <AgriculturalLandAssetForm
+                organizationId={organizationId}
+                projectId={projectId}
+                currency={currency}
+                parties={parties}
+              />
+            }
           />
         ) : (
           <>
             <div className="asset-grid">
               {landAssets.map((asset) => (
                 <article className="card stack" key={asset.id}>
-                  <div className="topline"><div><h3>{asset.name}</h3><p className="muted">{asset.internal_reference}</p></div><span className="status">{formatLandControlBasis(asset.control_basis)}</span></div>
+                  <div className="topline">
+                    <div>
+                      <h3>{asset.name}</h3>
+                      <p className="muted">{asset.internal_reference}</p>
+                    </div>
+                    <span className="status">{formatLandControlBasis(asset.control_basis)}</span>
+                  </div>
                   <dl className="facts">
-                    <div><dt>المساحة القانونية/التعاقدية</dt><dd>{asset.legal_area_quantity} {formatAreaUnit(asset.area_unit)}</dd></div>
-                    <div><dt>الطرف المقابل</dt><dd>{asset.counterparty_name}</dd></div>
-                    <div><dt>فترة السيطرة</dt><dd>{formatDate(asset.control_start_date)} → {asset.control_end_date ? formatDate(asset.control_end_date) : 'مفتوحة'}</dd></div>
-                    <div><dt>مرجع الاتفاق</dt><dd>{asset.agreement_reference}</dd></div>
-                    <div><dt>مرجع قانوني/حيازي</dt><dd>{asset.legal_reference ?? 'غير مسجل'}</dd></div>
-                    <div><dt>المزارع المرتبطة</dt><dd>{asset.linked_farm_count}</dd></div>
+                    <div>
+                      <dt>المساحة القانونية/التعاقدية</dt>
+                      <dd>
+                        {asset.legal_area_quantity} {formatAreaUnit(asset.area_unit)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>الطرف المقابل</dt>
+                      <dd>{asset.counterparty_name}</dd>
+                    </div>
+                    <div>
+                      <dt>فترة السيطرة</dt>
+                      <dd>
+                        {formatDate(asset.control_start_date)} →{' '}
+                        {asset.control_end_date ? formatDate(asset.control_end_date) : 'مفتوحة'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>مرجع الاتفاق</dt>
+                      <dd>{asset.agreement_reference}</dd>
+                    </div>
+                    <div>
+                      <dt>مرجع قانوني/حيازي</dt>
+                      <dd>{asset.legal_reference ?? 'غير مسجل'}</dd>
+                    </div>
+                    <div>
+                      <dt>المزارع المرتبطة</dt>
+                      <dd>{asset.linked_farm_count}</dd>
+                    </div>
                   </dl>
                   {asset.agreed_consideration_minor_units && asset.consideration_currency ? (
-                    <p><strong>المقابل المتفق عليه:</strong> {formatMinorUnits(asset.agreed_consideration_minor_units, asset.consideration_currency)}</p>
-                  ) : <p className="muted">لا يوجد مقابل شراء موثق في هذا السجل.</p>}
-                  <p className="muted">المقابل ليس سدادًا أو قيمة دفترية/تقييمًا، ولا يُحمّل تلقائيًا على دورة محصول. دليل السيطرة: {asset.evidence_reference}</p>
+                    <p>
+                      <strong>المقابل المتفق عليه:</strong>{' '}
+                      {formatMinorUnits(
+                        asset.agreed_consideration_minor_units,
+                        asset.consideration_currency,
+                      )}
+                    </p>
+                  ) : (
+                    <p className="muted">لا يوجد مقابل شراء موثق في هذا السجل.</p>
+                  )}
+                  <p className="muted">
+                    المقابل ليس سدادًا أو قيمة دفترية/تقييمًا، ولا يُحمّل تلقائيًا على دورة محصول.
+                    دليل السيطرة: {asset.evidence_reference}
+                  </p>
                 </article>
               ))}
             </div>
-            <details><summary>تسجيل أرض/أصل آخر</summary><AgriculturalLandAssetForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} /></details>
+            <details>
+              <summary>تسجيل أرض/أصل آخر</summary>
+              <AgriculturalLandAssetForm
+                organizationId={organizationId}
+                projectId={projectId}
+                currency={currency}
+                parties={parties}
+              />
+            </details>
           </>
         )}
         <div className="card stack">
           <h3>ربط المزرعة بالأرض الاستثمارية</h3>
-          {farms.length === 0 ? <p className="muted">سجّل مزرعة تشغيلية أولًا.</p> : (
+          {farms.length === 0 ? (
+            <p className="muted">سجّل مزرعة تشغيلية أولًا.</p>
+          ) : (
             <>
-              <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: المزرعة · الأرض/الأصل · حالة الربط</caption><thead><tr><th scope="col">المزرعة</th><th scope="col">الأرض/الأصل</th><th scope="col">حالة الربط</th></tr></thead><tbody>{farms.map((farm) => {
-                const link = farmLandLinks.find((item) => item.farm_id === farm.id);
-                return <tr key={farm.id}><td data-label="المزرعة">{farm.name}</td><td data-label="الأرض/الأصل">{link?.land_asset_name ?? '—'}</td><td data-label="حالة الربط">{link ? 'مرتبط' : 'لا يوجد أصل استثماري مرتبط'}</td></tr>;
-              })}</tbody></table></div>
-              <FarmLandAssetLinkForm organizationId={organizationId} projectId={projectId} landAssets={landAssets} farms={farms} linkedFarmIds={farmLandLinks.map((link) => link.farm_id)} />
+              <div className="table-wrap">
+                <table className="table-stackable">
+                  <caption className="sr-only">جدول: المزرعة · الأرض/الأصل · حالة الربط</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">المزرعة</th>
+                      <th scope="col">الأرض/الأصل</th>
+                      <th scope="col">حالة الربط</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {farms.map((farm) => {
+                      const link = farmLandLinks.find((item) => item.farm_id === farm.id);
+                      return (
+                        <tr key={farm.id}>
+                          <td data-label="المزرعة">{farm.name}</td>
+                          <td data-label="الأرض/الأصل">{link?.land_asset_name ?? '—'}</td>
+                          <td data-label="حالة الربط">
+                            {link ? 'مرتبط' : 'لا يوجد أصل استثماري مرتبط'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <FarmLandAssetLinkForm
+                organizationId={organizationId}
+                projectId={projectId}
+                landAssets={landAssets}
+                farms={farms}
+                linkedFarmIds={farmLandLinks.map((link) => link.farm_id)}
+              />
             </>
           )}
         </div>
@@ -416,7 +676,9 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
-              <caption className="sr-only">جدول: الاسم · المرجع · الموقع · المنطقة الزمنية · عدد الحقول</caption>
+                <caption className="sr-only">
+                  جدول: الاسم · المرجع · الموقع · المنطقة الزمنية · عدد الحقول
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">الاسم</th>
@@ -433,7 +695,9 @@ export default async function AgriculturePage({
                       <td data-label="المرجع">{f.internal_reference ?? '—'}</td>
                       <td data-label="الموقع">{f.operating_location ?? '—'}</td>
                       <td data-label="المنطقة الزمنية">{f.timezone}</td>
-                      <td data-label="عدد الحقول">{fields.filter((fld) => fld.farm_id === f.id).length}</td>
+                      <td data-label="عدد الحقول">
+                        {fields.filter((fld) => fld.farm_id === f.id).length}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -453,13 +717,19 @@ export default async function AgriculturePage({
             headingLevel={3}
             title="لا توجد حقول"
             description="أضف مزرعة أولًا، ثم سجّل أول حقل بمساحة موجبة ووحدة مدعومة (م²، هكتار، فدان)."
-            action={farms.length > 0 ? <FieldForm organizationId={organizationId} projectId={projectId} farms={farms} /> : null}
+            action={
+              farms.length > 0 ? (
+                <FieldForm organizationId={organizationId} projectId={projectId} farms={farms} />
+              ) : null
+            }
           />
         ) : (
           <>
             <div className="table-wrap">
               <table className="table-stackable">
-              <caption className="sr-only">جدول: المزرعة · الحقل · المساحة · الوحدة · ملاحظات</caption>
+                <caption className="sr-only">
+                  جدول: المزرعة · الحقل · المساحة · الوحدة · ملاحظات
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">المزرعة</th>
@@ -500,7 +770,9 @@ export default async function AgriculturePage({
           <EmptyState
             headingLevel={3}
             title="لا توجد دورات محصول"
-            description={'أنشئ أول دورة محصول. كل دورة تبدأ في الحالة "مخططة" ثم تنتقل وفق المسار الرسمي.'}
+            description={
+              'أنشئ أول دورة محصول. كل دورة تبدأ في الحالة "مخططة" ثم تنتقل وفق المسار الرسمي.'
+            }
             action={<CropCycleForm organizationId={organizationId} projectId={projectId} />}
           />
         ) : (
@@ -520,12 +792,16 @@ export default async function AgriculturePage({
                           {c.season_reference} · {d(c.planned_start_date)} → {d(c.planned_end_date)}
                         </p>
                       </div>
-                      <span className="status">{CYCLE_STATE_LABEL[c.operational_state] ?? c.operational_state}</span>
+                      <span className="status">
+                        {CYCLE_STATE_LABEL[c.operational_state] ?? c.operational_state}
+                      </span>
                     </header>
                     <div className="overview-kpis">
                       <article className="overview-kpi">
                         <span>الكمية المستهدفة</span>
-                        <strong>{formatQuantity(c.target_yield_quantity, c.target_yield_unit)}</strong>
+                        <strong>
+                          {formatQuantity(c.target_yield_quantity, c.target_yield_unit)}
+                        </strong>
                         <small>من دورة حياة الدورة</small>
                       </article>
                       <article className="overview-kpi">
@@ -537,7 +813,9 @@ export default async function AgriculturePage({
                     {cycleAssignments.length > 0 ? (
                       <div className="table-wrap">
                         <table className="table-stackable">
-              <caption className="sr-only">جدول: الحقل · المزرعة · المساحة المخصصة · الفترة</caption>
+                          <caption className="sr-only">
+                            جدول: الحقل · المزرعة · المساحة المخصصة · الفترة
+                          </caption>
                           <thead>
                             <tr>
                               <th scope="col">الحقل</th>
@@ -555,7 +833,8 @@ export default async function AgriculturePage({
                                   <td data-label="الحقل">{field?.identifier ?? '—'}</td>
                                   <td data-label="المزرعة">{farm?.name ?? '—'}</td>
                                   <td data-label="المساحة المخصصة">
-                                    {a.assigned_area_quantity} {AREA_UNIT_LABEL[a.assigned_area_unit]}
+                                    {a.assigned_area_quantity}{' '}
+                                    {AREA_UNIT_LABEL[a.assigned_area_unit]}
                                   </td>
                                   <td data-label="الفترة">
                                     {d(a.planned_start_date)} → {d(a.planned_end_date)}
@@ -614,7 +893,9 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="sr-only">جدول: التاريخ · النوع · الدورة · الحقل · الكمية · ملاحظات</caption>
+              <caption className="sr-only">
+                جدول: التاريخ · النوع · الدورة · الحقل · الكمية · ملاحظات
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">التاريخ</th>
@@ -633,12 +914,18 @@ export default async function AgriculturePage({
                     <tr key={a.id}>
                       <td data-label="التاريخ">{d(a.activity_date)}</td>
                       <td data-label="النوع">{formatFieldActivityType(a.activity_type)}</td>
-                      <td data-label="الدورة">{cycle ? `${cycle.crop} · ${cycle.season_reference}` : '—'}</td>
+                      <td data-label="الدورة">
+                        {cycle ? `${cycle.crop} · ${cycle.season_reference}` : '—'}
+                      </td>
                       <td data-label="الحقل">{field?.identifier ?? '—'}</td>
-                      <td data-label="الكمية">{a.quantity ? `${a.quantity} ${a.unit ?? ''}`.trim() : '—'}</td>
+                      <td data-label="الكمية">
+                        {a.quantity ? `${a.quantity} ${a.unit ?? ''}`.trim() : '—'}
+                      </td>
                       <td data-label="ملاحظات">
                         {a.notes ?? '—'}
-                        {a.evidence_reference ? <div className="muted">دليل: {a.evidence_reference}</div> : null}
+                        {a.evidence_reference ? (
+                          <div className="muted">دليل: {a.evidence_reference}</div>
+                        ) : null}
                       </td>
                     </tr>
                   );
@@ -663,8 +950,8 @@ export default async function AgriculturePage({
       >
         <p className="muted">
           هذه الشريحة تُثبت الهوية والتتبّع والكمية والمساحة والصلاحية واتساق المشروع والتخصيص.
-          لا يوجد رصيد مخزون للمدخلات ولا تحقق من توفر كمياتها؛ رصيد المخزون أدناه يخص محصول الحصاد فقط.
-          التسجيل هنا لا ينشئ التزامًا أو دفعة أو قيدًا محاسبيًا ولا يغيّر حالة دورة المحصول.
+          لا يوجد رصيد مخزون للمدخلات ولا تحقق من توفر كمياتها؛ رصيد المخزون أدناه يخص محصول الحصاد
+          فقط. التسجيل هنا لا ينشئ التزامًا أو دفعة أو قيدًا محاسبيًا ولا يغيّر حالة دورة المحصول.
         </p>
 
         <div className="overview-kpis">
@@ -701,7 +988,8 @@ export default async function AgriculturePage({
           <div className="table-wrap">
             <table className="table-stackable">
               <caption className="muted">
-                تطبيقات المدخلات مرتبة من الأحدث. المعدل قيمة مشتقة للعرض (الكمية ÷ المساحة المعالجة) ولا تُخزَّن.
+                تطبيقات المدخلات مرتبة من الأحدث. المعدل قيمة مشتقة للعرض (الكمية ÷ المساحة
+                المعالجة) ولا تُخزَّن.
               </caption>
               <thead>
                 <tr>
@@ -734,15 +1022,21 @@ export default async function AgriculturePage({
                     <td data-label="الدورة">{`${a.crop} · ${a.season_reference}`}</td>
                     <td data-label="الحقل">{a.field_identifier}</td>
                     <td data-label="الكمية">{formatInputQuantity(a.quantity, a.unit)}</td>
-                    <td data-label="المساحة المعالجة">{`${a.applied_area_quantity} ${formatAreaUnit(a.applied_area_unit)}`}</td>
-                    <td data-label="المعدل">{`${a.application_rate} ${a.unit}/${formatAreaUnit(a.applied_area_unit)}`}</td>
+                    <td data-label="المساحة المعالجة">
+                      {`${a.applied_area_quantity} ${formatAreaUnit(a.applied_area_unit)}`}
+                    </td>
+                    <td data-label="المعدل">
+                      {`${a.application_rate} ${a.unit}/${formatAreaUnit(a.applied_area_unit)}`}
+                    </td>
                     <td data-label="الصلاحية">
                       <span className="status">{formatLotExpiryStatus(a.lot_expiry_status)}</span>
                     </td>
                     <td data-label="ملاحظات">
                       {a.notes ?? '—'}
                       {a.safety_note ? <div className="muted">سلامة: {a.safety_note}</div> : null}
-                      {a.evidence_reference ? <div className="muted">دليل: {a.evidence_reference}</div> : null}
+                      {a.evidence_reference ? (
+                        <div className="muted">دليل: {a.evidence_reference}</div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -777,7 +1071,9 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
-              <caption className="sr-only">جدول: الفئة · الاسم · وحدة التطبيق · المرجع · المُصنِّع · التشغيلات</caption>
+                <caption className="sr-only">
+                  جدول: الفئة · الاسم · وحدة التطبيق · المرجع · المُصنِّع · التشغيلات
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">الفئة</th>
@@ -799,7 +1095,9 @@ export default async function AgriculturePage({
                       <td data-label="وحدة التطبيق">{i.application_unit}</td>
                       <td data-label="المرجع">{i.internal_reference ?? '—'}</td>
                       <td data-label="المُصنِّع">{i.manufacturer ?? '—'}</td>
-                      <td data-label="التشغيلات">{inputLots.filter((l) => l.input_item_id === i.id).length}</td>
+                      <td data-label="التشغيلات">
+                        {inputLots.filter((l) => l.input_item_id === i.id).length}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -818,7 +1116,10 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="sr-only">جدول: المدخل · مرجع التشغيلة · الوحدة · التصنيع · الانتهاء · الحالة · المورد / الدليل</caption>
+              <caption className="sr-only">
+                جدول: المدخل · مرجع التشغيلة · الوحدة · التصنيع · الانتهاء · الحالة · المورد /
+                الدليل
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">المدخل</th>
@@ -846,7 +1147,9 @@ export default async function AgriculturePage({
                     </td>
                     <td data-label="المورد / الدليل">
                       {l.supplier_reference ?? '—'}
-                      {l.evidence_reference ? <div className="muted">دليل: {l.evidence_reference}</div> : null}
+                      {l.evidence_reference ? (
+                        <div className="muted">دليل: {l.evidence_reference}</div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -904,18 +1207,25 @@ export default async function AgriculturePage({
           <EmptyState
             headingLevel={3}
             title="لا توجد أحداث حصاد بعد"
-            description={'سجّل أول حدث حصاد لدورة في حالة "قيد الحصاد" مع موقع تخزين لاستلام المحصول.'}
+            description={
+              'سجّل أول حدث حصاد لدورة في حالة "قيد الحصاد" مع موقع تخزين لاستلام المحصول.'
+            }
           />
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="sr-only">جدول: التاريخ · الدورة · الحقل · الإجمالي · الصافي · الفاقد · الدرجة · التشغيلة · موقع الاستلام</caption>
+              <caption className="sr-only">
+                جدول: التاريخ · الدورة · الحقل · الإجمالي · الصافي · الفاقد · الدرجة · التشغيلة ·
+                موقع الاستلام
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">التاريخ</th>
                   <th scope="col">الدورة</th>
                   <th scope="col">الحقل</th>
-                  <th className="num" scope="col">الإجمالي</th>
+                  <th className="num" scope="col">
+                    الإجمالي
+                  </th>
                   <th scope="col">الصافي</th>
                   <th scope="col">الفاقد</th>
                   <th scope="col">الدرجة</th>
@@ -929,9 +1239,15 @@ export default async function AgriculturePage({
                     <td data-label="التاريخ">{d(e.harvest_date)}</td>
                     <td data-label="الدورة">{`${e.crop} · ${e.season_reference}`}</td>
                     <td data-label="الحقل">{e.field_identifier}</td>
-                    <td className="num" data-label="الإجمالي">{formatHarvestQuantity(e.gross_quantity, e.quantity_unit)}</td>
-                    <td data-label="الصافي">{formatHarvestQuantity(e.net_quantity, e.quantity_unit)}</td>
-                    <td data-label="الفاقد">{formatHarvestQuantity(e.harvest_loss, e.quantity_unit)}</td>
+                    <td className="num" data-label="الإجمالي">
+                      {formatHarvestQuantity(e.gross_quantity, e.quantity_unit)}
+                    </td>
+                    <td data-label="الصافي">
+                      {formatHarvestQuantity(e.net_quantity, e.quantity_unit)}
+                    </td>
+                    <td data-label="الفاقد">
+                      {formatHarvestQuantity(e.harvest_loss, e.quantity_unit)}
+                    </td>
                     <td data-label="الدرجة">{e.grade ?? '—'}</td>
                     <td data-label="التشغيلة">{e.lot_reference}</td>
                     <td data-label="موقع الاستلام">{e.destination_storage_name ?? '—'}</td>
@@ -960,7 +1276,10 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="sr-only">جدول: مرجع التشغيلة · الدورة · الحقل · تاريخ الحصاد · الكمية الأولية · الرصيد الحالي الكلي · الدرجة</caption>
+              <caption className="sr-only">
+                جدول: مرجع التشغيلة · الدورة · الحقل · تاريخ الحصاد · الكمية الأولية · الرصيد الحالي
+                الكلي · الدرجة
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">مرجع التشغيلة</th>
@@ -968,7 +1287,9 @@ export default async function AgriculturePage({
                   <th scope="col">الحقل</th>
                   <th scope="col">تاريخ الحصاد</th>
                   <th scope="col">الكمية الأولية</th>
-                  <th className="num" scope="col">الرصيد الحالي الكلي</th>
+                  <th className="num" scope="col">
+                    الرصيد الحالي الكلي
+                  </th>
                   <th scope="col">الدرجة</th>
                 </tr>
               </thead>
@@ -979,8 +1300,12 @@ export default async function AgriculturePage({
                     <td data-label="الدورة">{`${l.crop} · ${l.season_reference}`}</td>
                     <td data-label="الحقل">{l.field_identifier}</td>
                     <td data-label="تاريخ الحصاد">{d(l.harvest_date)}</td>
-                    <td data-label="الكمية الأولية">{formatHarvestQuantity(l.initial_quantity, l.quantity_unit)}</td>
-                    <td className="num" data-label="الرصيد الحالي الكلي">{formatHarvestQuantity(l.current_total_balance, l.quantity_unit)}</td>
+                    <td data-label="الكمية الأولية">
+                      {formatHarvestQuantity(l.initial_quantity, l.quantity_unit)}
+                    </td>
+                    <td className="num" data-label="الرصيد الحالي الكلي">
+                      {formatHarvestQuantity(l.current_total_balance, l.quantity_unit)}
+                    </td>
                     <td data-label="الدرجة">{l.grade ?? '—'}</td>
                   </tr>
                 ))}
@@ -995,12 +1320,16 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="sr-only">جدول: التشغيلة · موقع التخزين · الرصيد الحالي · آخر حركة</caption>
+              <caption className="sr-only">
+                جدول: التشغيلة · موقع التخزين · الرصيد الحالي · آخر حركة
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">التشغيلة</th>
                   <th scope="col">موقع التخزين</th>
-                  <th className="num" scope="col">الرصيد الحالي</th>
+                  <th className="num" scope="col">
+                    الرصيد الحالي
+                  </th>
                   <th scope="col">آخر حركة</th>
                 </tr>
               </thead>
@@ -1009,7 +1338,9 @@ export default async function AgriculturePage({
                   <tr key={`${e.harvest_lot_id}-${e.storage_id}`}>
                     <td data-label="التشغيلة">{e.lot_reference}</td>
                     <td data-label="موقع التخزين">{e.storage_name}</td>
-                    <td className="num" data-label="الرصيد الحالي">{formatHarvestQuantity(e.current_balance, e.quantity_unit)}</td>
+                    <td className="num" data-label="الرصيد الحالي">
+                      {formatHarvestQuantity(e.current_balance, e.quantity_unit)}
+                    </td>
                     <td data-label="آخر حركة">{d(e.last_movement_date)}</td>
                   </tr>
                 ))}
@@ -1024,7 +1355,9 @@ export default async function AgriculturePage({
         ) : (
           <div className="table-wrap">
             <table className="table-stackable">
-              <caption className="sr-only">جدول: التاريخ · النوع · من · إلى · الكمية · السبب</caption>
+              <caption className="sr-only">
+                جدول: التاريخ · النوع · من · إلى · الكمية · السبب
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">التاريخ</th>
@@ -1045,7 +1378,9 @@ export default async function AgriculturePage({
                     <td data-label="الكمية">{formatHarvestQuantity(m.quantity, m.unit)}</td>
                     <td data-label="السبب">
                       {m.reason ?? '—'}
-                      {m.evidence_reference ? <div className="muted">دليل: {m.evidence_reference}</div> : null}
+                      {m.evidence_reference ? (
+                        <div className="muted">دليل: {m.evidence_reference}</div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -1066,7 +1401,7 @@ export default async function AgriculturePage({
           <>
             <div className="table-wrap">
               <table className="table-stackable">
-              <caption className="sr-only">جدول: الاسم · المرجع · ملاحظات</caption>
+                <caption className="sr-only">جدول: الاسم · المرجع · ملاحظات</caption>
                 <thead>
                   <tr>
                     <th scope="col">الاسم</th>
@@ -1127,44 +1462,237 @@ export default async function AgriculturePage({
             headingLevel={3}
             title="لا توجد مبيعات بعد"
             description="اختر مشتريًا ورصيد تشغيلة حصاد متاحًا لإنشاء مسودة."
-            action={<AgricultureSaleForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} inventory={inventoryByLocation} />}
+            action={
+              <AgricultureSaleForm
+                organizationId={organizationId}
+                projectId={projectId}
+                currency={currency}
+                parties={parties}
+                inventory={inventoryByLocation}
+              />
+            }
           />
         ) : (
           <>
             <div className="stack">
               {sales.map((sale) => {
                 const lines = saleLines.filter((line) => line.sale_id === sale.sale_id);
-                const collections = saleCollections.filter((collection) => collection.sale_id === sale.sale_id);
+                const collections = saleCollections.filter(
+                  (collection) => collection.sale_id === sale.sale_id,
+                );
                 return (
                   <article className="card stack" key={sale.sale_id}>
-                    <header className="topline"><div><h3>{sale.sale_reference} · {sale.buyer_name}</h3><p className="muted">{d(sale.sale_date)} · {sale.line_count} سطر</p></div><span className="status">{formatAgricultureSaleState(sale.state)}</span></header>
-                    {(sale.agreement_reference || sale.evidence_reference || sale.control_transfer_evidence_reference) ? <p className="muted">{sale.agreement_reference ? `العقد/الطلب: ${sale.agreement_reference}` : ''}{sale.evidence_reference ? ` · دليل الاتفاق: ${sale.evidence_reference}` : ''}{sale.control_transfer_evidence_reference ? ` · دليل التسليم: ${sale.control_transfer_evidence_reference}` : ''}</p> : null}
+                    <header className="topline">
+                      <div>
+                        <h3>
+                          {sale.sale_reference} · {sale.buyer_name}
+                        </h3>
+                        <p className="muted">
+                          {d(sale.sale_date)} · {sale.line_count} سطر
+                        </p>
+                      </div>
+                      <span className="status">{formatAgricultureSaleState(sale.state)}</span>
+                    </header>
+                    {sale.agreement_reference ||
+                    sale.evidence_reference ||
+                    sale.control_transfer_evidence_reference ? (
+                      <p className="muted">
+                        {sale.agreement_reference ? `العقد/الطلب: ${sale.agreement_reference}` : ''}
+                        {sale.evidence_reference
+                          ? ` · دليل الاتفاق: ${sale.evidence_reference}`
+                          : ''}
+                        {sale.control_transfer_evidence_reference
+                          ? ` · دليل التسليم: ${sale.control_transfer_evidence_reference}`
+                          : ''}
+                      </p>
+                    ) : null}
                     <dl className="facts">
-                      <div><dt>القيمة المتفق عليها</dt><dd>{formatMinorUnits(sale.agreed_total_minor_units, sale.currency)}</dd></div>
-                      <div><dt>الإيراد المعترف به</dt><dd>{formatMinorUnits(sale.recognized_revenue_minor_units, sale.currency)}</dd></div>
-                      <div><dt>النقد المحصل</dt><dd>{formatMinorUnits(sale.collected_minor_units, sale.currency)}</dd></div>
-                      <div><dt>الذمة المتبقية</dt><dd>{formatMinorUnits(sale.outstanding_receivable_minor_units, sale.currency)}</dd></div>
-                      <div><dt>الكمية</dt><dd>{sale.aggregate_quantity ? `${sale.aggregate_quantity} ${sale.quantity_unit}` : 'وحدات متعددة — راجع السطور'}</dd></div>
-                      <div><dt>تاريخ التسليم</dt><dd>{d(sale.control_transfer_date)}</dd></div>
+                      <div>
+                        <dt>القيمة المتفق عليها</dt>
+                        <dd>{formatMinorUnits(sale.agreed_total_minor_units, sale.currency)}</dd>
+                      </div>
+                      <div>
+                        <dt>الإيراد المعترف به</dt>
+                        <dd>
+                          {formatMinorUnits(sale.recognized_revenue_minor_units, sale.currency)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>النقد المحصل</dt>
+                        <dd>{formatMinorUnits(sale.collected_minor_units, sale.currency)}</dd>
+                      </div>
+                      <div>
+                        <dt>الذمة المتبقية</dt>
+                        <dd>
+                          {formatMinorUnits(sale.outstanding_receivable_minor_units, sale.currency)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>الكمية</dt>
+                        <dd>
+                          {sale.aggregate_quantity
+                            ? `${sale.aggregate_quantity} ${sale.quantity_unit}`
+                            : 'وحدات متعددة — راجع السطور'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>تاريخ التسليم</dt>
+                        <dd>{d(sale.control_transfer_date)}</dd>
+                      </div>
                     </dl>
-                    <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: التشغيلة · موقع المصدر · الكمية · سعر الوحدة · قيمة السطر · الصرف</caption><thead><tr><th scope="col">التشغيلة</th><th scope="col">موقع المصدر</th><th scope="col">الكمية</th><th scope="col" className="num">سعر الوحدة</th><th scope="col" className="num">قيمة السطر</th><th scope="col">الصرف</th></tr></thead><tbody>{lines.map((line) => <tr key={line.sale_line_id}><td data-label="التشغيلة">{line.lot_reference}</td><td data-label="موقع المصدر">{line.source_storage_name}</td><td data-label="الكمية">{formatHarvestQuantity(line.quantity, line.unit)}</td><td className="num" data-label="سعر الوحدة">{formatMinorUnits(line.unit_price_minor_units, sale.currency)}</td><td className="num" data-label="قيمة السطر">{formatMinorUnits(line.line_amount_minor_units, sale.currency)}</td><td data-label="الصرف">{line.sale_issue_movement_id ? `تم ${d(line.dispatch_date)}` : 'لم يتم'}</td></tr>)}</tbody></table></div>
-                    {sale.state === 'DRAFT' && canPostSales ? <ApproveAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
-                    {sale.state === 'APPROVED' && canPostSales ? <RecognizeAgricultureSaleForm organizationId={organizationId} projectId={projectId} saleId={sale.sale_id} /> : null}
-                    {!canPostSales && (sale.state === 'DRAFT' || sale.state === 'APPROVED') ? <p className="muted">الاعتماد والتسليم/الترحيل المالي يتطلبان صلاحية مالك المنظمة.</p> : null}
-                    {sale.recognition_id ? <p className="muted">الإيراد والذمة موثقان في القيد المشترك. لا توجد تكلفة بضاعة/مخزون مخمّنة لأن سياسة قيمة الحصاد غير معتمدة.</p> : <p className="muted">المسودة/الاعتماد لا يثبتان إيرادًا أو ذمة ولا يصرفان مخزونًا.</p>}
-                    {collections.length > 0 ? <div><h4>التحصيلات</h4><ul>{collections.map((collection) => <li key={collection.collection_id}>{d(collection.collection_date)} · {formatMinorUnits(collection.amount_minor_units, collection.currency)} · {collection.cash_account_name} · دليل: {collection.evidence_reference}</li>)}</ul></div> : null}
-                    {canPostSales ? <AgricultureSaleCollectionForm organizationId={organizationId} projectId={projectId} sale={sale} cashAccounts={cashAccounts} /> : null}
+                    <div className="table-wrap">
+                      <table className="table-stackable">
+                        <caption className="sr-only">
+                          جدول: التشغيلة · موقع المصدر · الكمية · سعر الوحدة · قيمة السطر · الصرف
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">التشغيلة</th>
+                            <th scope="col">موقع المصدر</th>
+                            <th scope="col">الكمية</th>
+                            <th scope="col" className="num">
+                              سعر الوحدة
+                            </th>
+                            <th scope="col" className="num">
+                              قيمة السطر
+                            </th>
+                            <th scope="col">الصرف</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lines.map((line) => (
+                            <tr key={line.sale_line_id}>
+                              <td data-label="التشغيلة">{line.lot_reference}</td>
+                              <td data-label="موقع المصدر">{line.source_storage_name}</td>
+                              <td data-label="الكمية">
+                                {formatHarvestQuantity(line.quantity, line.unit)}
+                              </td>
+                              <td className="num" data-label="سعر الوحدة">
+                                {formatMinorUnits(line.unit_price_minor_units, sale.currency)}
+                              </td>
+                              <td className="num" data-label="قيمة السطر">
+                                {formatMinorUnits(line.line_amount_minor_units, sale.currency)}
+                              </td>
+                              <td data-label="الصرف">
+                                {line.sale_issue_movement_id
+                                  ? `تم ${d(line.dispatch_date)}`
+                                  : 'لم يتم'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {sale.state === 'DRAFT' && canPostSales ? (
+                      <ApproveAgricultureSaleForm
+                        organizationId={organizationId}
+                        projectId={projectId}
+                        saleId={sale.sale_id}
+                      />
+                    ) : null}
+                    {sale.state === 'APPROVED' && canPostSales ? (
+                      <RecognizeAgricultureSaleForm
+                        organizationId={organizationId}
+                        projectId={projectId}
+                        saleId={sale.sale_id}
+                      />
+                    ) : null}
+                    {!canPostSales && (sale.state === 'DRAFT' || sale.state === 'APPROVED') ? (
+                      <p className="muted">
+                        الاعتماد والتسليم/الترحيل المالي يتطلبان صلاحية مالك المنظمة.
+                      </p>
+                    ) : null}
+                    {sale.recognition_id ? (
+                      <p className="muted">
+                        الإيراد والذمة موثقان في القيد المشترك. لا توجد تكلفة بضاعة/مخزون مخمّنة لأن
+                        سياسة قيمة الحصاد غير معتمدة.
+                      </p>
+                    ) : (
+                      <p className="muted">
+                        المسودة/الاعتماد لا يثبتان إيرادًا أو ذمة ولا يصرفان مخزونًا.
+                      </p>
+                    )}
+                    {collections.length > 0 ? (
+                      <div>
+                        <h4>التحصيلات</h4>
+                        <ul>
+                          {collections.map((collection) => (
+                            <li key={collection.collection_id}>
+                              {d(collection.collection_date)} ·{' '}
+                              {formatMinorUnits(collection.amount_minor_units, collection.currency)}{' '}
+                              · {collection.cash_account_name} · دليل:{' '}
+                              {collection.evidence_reference}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {canPostSales ? (
+                      <AgricultureSaleCollectionForm
+                        organizationId={organizationId}
+                        projectId={projectId}
+                        sale={sale}
+                        cashAccounts={cashAccounts}
+                      />
+                    ) : null}
                   </article>
                 );
               })}
             </div>
-            <details><summary>إنشاء مسودة بيع جديدة</summary><AgricultureSaleForm organizationId={organizationId} projectId={projectId} currency={currency} parties={parties} inventory={inventoryByLocation} /></details>
+            <details>
+              <summary>إنشاء مسودة بيع جديدة</summary>
+              <AgricultureSaleForm
+                organizationId={organizationId}
+                projectId={projectId}
+                currency={currency}
+                parties={parties}
+                inventory={inventoryByLocation}
+              />
+            </details>
           </>
         )}
         <div className="card stack">
           <h3>تتبّع تشغيلة الحصاد إلى البيع</h3>
-          <p className="muted">خطوة واحدة للأمام من التشغيلة إلى موقع الصرف والمشتري والتسليم وقيد الإيراد.</p>
-          <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">جدول: التشغيلة · البيع · المشتري · المصدر · الكمية المباعة · الإيراد</caption><thead><tr><th scope="col">التشغيلة</th><th scope="col">البيع</th><th scope="col">المشتري</th><th scope="col">المصدر</th><th scope="col">الكمية المباعة</th><th scope="col" className="num">الإيراد</th></tr></thead><tbody>{lotSaleTraceability.map((trace, index) => <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}><td data-label="التشغيلة">{trace.lot_reference}</td><td data-label="البيع">{trace.sale_reference ?? 'لم تُبع'}</td><td data-label="المشتري">{trace.buyer_name ?? '—'}</td><td data-label="المصدر">{trace.source_storage_name ?? '—'}</td><td data-label="الكمية المباعة">{trace.sold_quantity ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit) : '—'}</td><td className="num" data-label="الإيراد">{trace.revenue_journal_batch_id ? 'معترف به' : '—'}</td></tr>)}</tbody></table></div>
+          <p className="muted">
+            خطوة واحدة للأمام من التشغيلة إلى موقع الصرف والمشتري والتسليم وقيد الإيراد.
+          </p>
+          <div className="table-wrap">
+            <table className="table-stackable">
+              <caption className="sr-only">
+                جدول: التشغيلة · البيع · المشتري · المصدر · الكمية المباعة · الإيراد
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">التشغيلة</th>
+                  <th scope="col">البيع</th>
+                  <th scope="col">المشتري</th>
+                  <th scope="col">المصدر</th>
+                  <th scope="col">الكمية المباعة</th>
+                  <th scope="col" className="num">
+                    الإيراد
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lotSaleTraceability.map((trace, index) => (
+                  <tr key={`${trace.harvest_lot_id}-${trace.sale_line_id ?? index}`}>
+                    <td data-label="التشغيلة">{trace.lot_reference}</td>
+                    <td data-label="البيع">{trace.sale_reference ?? 'لم تُبع'}</td>
+                    <td data-label="المشتري">{trace.buyer_name ?? '—'}</td>
+                    <td data-label="المصدر">{trace.source_storage_name ?? '—'}</td>
+                    <td data-label="الكمية المباعة">
+                      {trace.sold_quantity
+                        ? formatHarvestQuantity(trace.sold_quantity, trace.quantity_unit)
+                        : '—'}
+                    </td>
+                    <td className="num" data-label="الإيراد">
+                      {trace.revenue_journal_batch_id ? 'معترف به' : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </Section>
 
@@ -1176,11 +1704,22 @@ export default async function AgriculturePage({
       >
         <div className="card stack">
           <h3>حدود النتيجة</h3>
-          <p className="muted">الإيراد المعترف به يختلف عن النقد المحصل. مقابل شراء الأرض منفصل عن تكلفة تشغيل الموسم. المخزون المتبقي كمية فعلية فقط؛ قيمته غير متاحة وغير معترف بها وفق السياسة الحالية، ولا نحسب تكلفة بضاعة مباعة تخمينية.</p>
-          <p className="muted">تشغيلات المدخلات للتتبّع فقط: تطبيق المدخل لا يدّعي التحقق من رصيد مخزون متاح. الشراء والاستلام ومخزون المدخلات مؤجل إلى نطاق ERP زراعي لاحق.</p>
+          <p className="muted">
+            الإيراد المعترف به يختلف عن النقد المحصل. مقابل شراء الأرض منفصل عن تكلفة تشغيل الموسم.
+            المخزون المتبقي كمية فعلية فقط؛
+            قيمته غير متاحة وغير معترف بها وفق السياسة الحالية، ولا نحسب تكلفة بضاعة مباعة تخمينية.
+          </p>
+          <p className="muted">
+            تشغيلات المدخلات للتتبّع فقط: تطبيق المدخل لا يدّعي التحقق من رصيد مخزون متاح. الشراء
+            والاستلام ومخزون المدخلات مؤجل إلى نطاق ERP زراعي لاحق.
+          </p>
         </div>
         {cycleResults.length === 0 ? (
-          <EmptyState headingLevel={3} title="لا توجد نتائج دورات بعد" description="أنشئ دورة محصول وخصص لها حقلًا لتظهر قاعدة النتيجة هنا." />
+          <EmptyState
+            headingLevel={3}
+            title="لا توجد نتائج دورات بعد"
+            description="أنشئ دورة محصول وخصص لها حقلًا لتظهر قاعدة النتيجة هنا."
+          />
         ) : (
           <div className="stack">
             {cycleResults.map((result) => (
@@ -1209,11 +1748,15 @@ export default async function AgriculturePage({
               <div className="timeline-row" key={entry.id}>
                 <div>
                   <strong>
-                    {entry.previous_state ? `${CYCLE_STATE_LABEL[entry.previous_state] ?? entry.previous_state} → ` : ''}
+                    {entry.previous_state
+                      ? `${CYCLE_STATE_LABEL[entry.previous_state] ?? entry.previous_state} → `
+                      : ''}
                     {CYCLE_STATE_LABEL[entry.new_state] ?? entry.new_state}
                   </strong>
                   <p>{entry.reason}</p>
-                  {entry.evidence_reference ? <p className="muted">دليل: {entry.evidence_reference}</p> : null}
+                  {entry.evidence_reference ? (
+                    <p className="muted">دليل: {entry.evidence_reference}</p>
+                  ) : null}
                 </div>
                 <time dateTime={entry.changed_at}>{formatDate(entry.changed_at)}</time>
               </div>
@@ -1223,7 +1766,9 @@ export default async function AgriculturePage({
       </Section>
 
       <p className="muted">
-        <Link className="back-link" href={`/projects/${projectId}`}>→ العودة إلى مساحة المشروع</Link>
+        <Link className="back-link" href={`/projects/${projectId}`}>
+          → العودة إلى مساحة المشروع
+        </Link>
       </p>
     </section>
   );
