@@ -1,12 +1,11 @@
-"""TerraNex — brand tokens v2، مستخرجة من أصول الشركة نفسها.
+"""TerraNex — brand tokens، مصدر الحقيقة الوحيد = context/palette.json.
 
-المصادر (كلها من المستودع):
-  • الشعار: التسويق-والإدارة/تسويق/مواد-وهوية/شعار-TerraNex.jpg
-  • متغيرات صفحة العرض: سوق/مواد-وهوية/صفحة-العرض-التفاعلية.html
-الألوان أدناه مستخرجة بالبكسل من الشعار — مش تقدير.
+‏palette.json بيتولّد آليًا من الشعار الرسمي عبر engine/derive_palette.py.
+ممنوع كتابة أي hex هنا — أي لون جديد يُشتق من الشعار ويُوثَّق في palette.json.
 """
 from __future__ import annotations
 
+import json
 import os
 from functools import lru_cache
 
@@ -15,26 +14,18 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONT_DIR = os.path.join(ROOT, "assets", "fonts")
 LOGO_DIR = os.path.join(ROOT, "assets", "logo")
+PALETTE = os.path.join(ROOT, "context", "palette.json")
+LOGO_FILE = "شعار-TerraNex.jpg"
 
-# ---------- tokens v2 (من الشعار + صفحة العرض) ----------
-C = {
-    # ‏من الشعار (عينات البكسل)
-    "gold_hi":   "#F0D070",   # ذهبي فاتح — لمعة
-    "gold":      "#D0A858",   # ذهبي أساسي (متوسط الشعار)
-    "gold_deep": "#B08020",   # ذهبي غامق — ظل/حدود
-    "green_logo":"#225C33",   # أخضر الشعار
-    # ‏من صفحة العرض التفاعلية
-    "green_900": "#07271E",
-    "green_800": "#0B3D2E",   # --green
-    "green_700": "#115E43",   # --green2
-    "green_100": "#E7F2EC",   # --green3
-    "gold_page": "#C9A227",   # --gold
-    "gold_page2":"#F3D97B",   # --gold2
-    "cream":     "#FBF7EC",   # --cream
-    "ink":       "#17352B",   # --ink
-    "muted":     "#5E7268",
-    "white":     "#FFFFFF",
-}
+# ---------- tokens: تُقرأ ولا تُكتب ----------
+with open(PALETTE, encoding="utf-8") as _f:
+    _PAL = json.load(_f)
+
+C = dict(_PAL["final"])
+# أسماء متوافقة مع بقية المحركات
+C["gold_page"] = _PAL.get("page_vars", {}).get("gold", C["gold_mid"])
+C["cream"] = C["bg_cream"]
+C["white"] = "#FFFFFF"
 
 FONTS = {
     "black": "Tajawal-Black.ttf",
@@ -46,7 +37,6 @@ FONTS = {
 }
 
 PHONE = "01010154221"
-LOGO_FILE = "شعار-TerraNex.jpg"
 
 
 # ---------- fonts ----------
@@ -130,7 +120,6 @@ def vignette(img, strength=115):
 # ---------- الشعار الرسمي ----------
 @lru_cache(maxsize=64)
 def logo(size: int, knockout_bg=True) -> Image.Image:
-    """يرجّع الشعار الرسمي بخلفية شفافة (الأسود بقى alpha=0)."""
     p = os.path.join(LOGO_DIR, LOGO_FILE)
     if not os.path.exists(p):
         raise FileNotFoundError(f"الشعار الرسمي غير موجود: {p}")

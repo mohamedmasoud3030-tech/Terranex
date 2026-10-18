@@ -103,14 +103,14 @@ def build(days=30, start=None, seed=11):
     return rows
 
 
-def to_md(rows, title="تقويم TerraNex — 30 يوم"):
-    out = [f"# {title}", "",
+def to_md(rows, title=None):
+    out = [f"# {title or f'تقويم TerraNex — {len(rows)} يوم'}", "",
            f"مولّد آليًا من `engine/gen_calendar.py`. الأوقات من `context/product-marketing.md §5`.",
-           "", "| # | التاريخ | اليوم | المحور | Hook | مصدر الفوتاج | الوقت | الفورمات |",
+           "", "| # | التاريخ | اليوم | المحور | Hook | مصدر الفوتاج | الوقت | الحالة |",
            "|---|---|---|---|---|---|---|---|"]
     for i, r in enumerate(rows, 1):
         out.append(f"| {i} | {r['date']} | {AR_DAY[r['day']]} | {PILLAR_AR[r['pillar']]} "
-                   f"| {r['hook']} | {r['source']} | {r['time']} | {r['format']} |")
+                   f"| {r['hook']} | {r['source']} | {r['time']} | {r.get('state','')} |")
     # تغطية
     from collections import Counter
     c = Counter(r["pillar"] for r in rows)
@@ -118,7 +118,9 @@ def to_md(rows, title="تقويم TerraNex — 30 يوم"):
     for p in PILLARS:
         out.append(f"- {PILLAR_AR[p]}: **{c[p]}** يوم")
     need = [r for r in rows if "تصوير مطلوب" in r["source"]]
-    out += ["", f"## تصوير مطلوب: **{len(need)}** يوم", ""]
+    ready = len(rows) - len(need)
+    out += ["", f"## الملخص: **{ready}** منشور جاهز · **{len(need)}** بانتظار تصوير", "",
+            "> سقف المصادر الحقيقية = 7. أي يوم بعده مش منشور — ده طلب تصوير.", ""]
     for r in need[:12]:
         out.append(f"- {r['date']} ({AR_DAY[r['day']]}) — {r['hook']} → {r['source']}")
     out += ["", "> **قاعدة:** أي يوم مكتوب عليه «تصوير مطلوب» ما ينشرش بلقطة قديمة معادة. "
@@ -126,15 +128,36 @@ def to_md(rows, title="تقويم TerraNex — 30 يوم"):
     return "\n".join(out)
 
 
+REAL_SOURCES = {"proof": "04 الوزن", "teach": "02 الأسئلة الخمسة", "behind": "06 تحضير بيتي",
+                "ask": "03 سؤال تفاعلي", "value": "05 محتوى قيمي", "sell": "01 بومو الشركة"}
+MAX_REAL_POSTS = 7   # سقف المصادر الفريدة الحقيقية
+
+
+def enforce_cap(rows):
+    """بيحوّل أي يوم بعد سقف المصادر الحقيقي إلى «تصوير مطلوب» كمصدر لا كمنشور."""
+    used = {}
+    for i, r in enumerate(rows, 1):
+        src = REAL_SOURCES.get(r["pillar"], r["source"])
+        if used.get(src, 0) >= 1 or i > MAX_REAL_POSTS:
+            r["source"] = "تصوير مطلوب — لقطة جديدة من المزرعة"
+            r["state"] = "بانتظار تصوير"
+            r["format"] = "— (لا يُنشر قبل التصوير)"
+        else:
+            used[src] = used.get(src, 0) + 1
+            r["state"] = "جاهز للمونتاج"
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=30)
+    ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--start", default=None, help="YYYY-MM-DD")
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     start = dt.date.fromisoformat(a.start) if a.start else None
     rows = build(a.days, start, a.seed)
+    rows = enforce_cap(rows)
     open(a.out, "w", encoding="utf-8").write(to_md(rows))
     print(f"OK {a.out} — {len(rows)} يوم")
 

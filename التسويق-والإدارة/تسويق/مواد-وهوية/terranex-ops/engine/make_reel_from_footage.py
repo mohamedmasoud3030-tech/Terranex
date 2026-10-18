@@ -52,9 +52,9 @@ def top_layer():
     d = ImageDraw.Draw(lay)
     d.rectangle([0, 0, W, TH], fill=(11, 42, 23, 252))
     d.rectangle([0, TH - 4, W, TH], fill=(132, 204, 22, 140))
-    B.brand_mark(lay, 84, TH // 2, d=66)
+    B.place_logo(lay, 84, TH // 2, 108)
     f = B.font("black", 36)
-    B.text(d, (132, TH // 2), "TERRANEX", f, B.hex2rgb(B.C["cream50"]) + (245,), anchor="lm", direction="ltr")
+    B.text(d, (132, TH // 2), "TERRANEX", f, B.hex2rgb(B.C["cream"]) + (245,), anchor="lm", direction="ltr")
     f2 = B.font("medium", 27)
     B.text(d, (W - 40, TH // 2), "استثمار حيواني · الإسكندرية", f2, (214, 226, 210, 215), anchor="rm")
     return lay
@@ -73,7 +73,7 @@ def bottom_layer():
     lay.paste(Image.composite(dark, Image.new("RGBA", (W, gh), (0, 0, 0, 0)),
                               grad.point(lambda v: v)), (0, H - gh))
     f = B.font("bold", 30)
-    B.text(d, (W // 2, H - 210), f"واتساب {B.PHONE}", f, B.hex2rgb(B.C["cream50"]) + (215,), anchor="mm")
+    B.text(d, (W // 2, H - 210), f"واتساب {B.PHONE}", f, B.hex2rgb(B.C["cream"]) + (215,), anchor="mm")
     return lay
 
 
@@ -101,16 +101,16 @@ def endcard_layer():
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(lay)
     d.rectangle([0, 0, W, H], fill=(11, 42, 23, 255))
-    B.brand_mark(lay, W // 2, int(H * 0.245), d=136)
+    B.place_logo(lay, W // 2, int(H * 0.245), 210)
     f0 = B.font("bold", 30)
     B.text(d, (W // 2, int(H * 0.245) + 108), "TERRANEX", f0, (240, 246, 238, 235), anchor="mm", direction="ltr")
     f1 = B.font("black", 74)
     B.text(d, (W // 2, int(H * 0.395)), "ملك حقيقي", f1, (255, 255, 255, 255), anchor="mm")
     f2 = B.font("bold", 52)
-    B.text(d, (W // 2, int(H * 0.462)), "ومتابعة بعينك", f2, B.hex2rgb(B.C["lime500"]) + (255,), anchor="mm")
+    B.text(d, (W // 2, int(H * 0.462)), "ومتابعة بعينك", f2, B.hex2rgb(B.C["gold"]) + (255,), anchor="mm")
     fa = B.font("regular", 38)
     B.text(d, (W // 2, int(H * 0.528)), "الوزن · الفحص · التغذية — بالصور والتاريخ", fa, (216, 226, 210, 225), anchor="mm")
-    B.hairline(d, int(W * 0.18), int(W * 0.82), int(H * 0.588), B.C["lime500"], 2, 140)
+    B.hairline(d, int(W * 0.18), int(W * 0.82), int(H * 0.588), B.C["gold"], 2, 140)
     fp = B.font("black", 60)
     B.text(d, (W // 2, int(H * 0.655)), B.PHONE, fp, (255, 255, 255, 255), anchor="mm", direction="ltr")
     fw = B.font("medium", 31)

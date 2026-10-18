@@ -23,12 +23,12 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
     """Layout مبني على قياس فعلي للنص، مش إحداثيات ثابتة."""
     W, H = SIZES[size]
     if theme == "light":
-        base = B.vgradient((W, H), [(0.0, B.C["green_100"]), (1.0, B.C["cream"])]).convert("RGBA")
-        ink, muted, accent = B.C["ink"], B.C["muted"], B.C["green_700"]
+        base = B.vgradient((W, H), [(0.0, B.C["cream"]), (1.0, B.C["bg_cream"])]).convert("RGBA")
+        ink, muted, accent = B.C["ink"], B.C["muted"], B.C["green"]
     else:
-        base = B.vgradient((W, H), [(0.0, B.C["green_900"]), (0.55, B.C["green_800"]),
-                                    (1.0, B.C["green_700"])]).convert("RGBA")
-        ink, muted, accent = B.C["cream"], "#D9E6DF", B.C["gold"]
+        base = B.vgradient((W, H), [(0.0, B.C["bg_dark"]), (0.55, B.C["bg_mid"]),
+                                    (1.0, B.C["green_deep"])]).convert("RGBA")
+        ink, muted, accent = B.C["cream"], B.C["cream"], B.C["gold"]
 
     if theme == "dark":
         base = B.glow(base, (int(W * 0.82), int(H * 0.12)), int(W * 0.62), B.C["gold"], alpha=38)
@@ -37,6 +37,12 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(lay)
     pad = int(W * 0.09)
+
+    # شبح الشعار: يملأ الفراغ البصري في الستوري ويؤكد الهوية
+    if size == "story" and not stat:
+        gh = B.logo(int(W * 0.92))
+        gh.putalpha(gh.getchannel("A").point(lambda v: int(v * 0.075)))
+        base.alpha_composite(gh, (int(W / 2 - gh.width / 2), int(H * 0.695 - gh.height / 2)))
 
     # ---------- header ----------
     hy = int(H * 0.095)
@@ -47,7 +53,8 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
     B.hairline(d, int(W * 0.36), int(W * 0.64), hy + 158, B.C["gold"], 2, 170)
 
     # ---------- measure middle block ----------
-    fh = B.font("black", 100 if len(headline) <= 18 else 84)
+    fh = B.font("black", (118 if size == "story" else 100) if len(headline) <= 18
+                   else (100 if size == "story" else 84))
     hlines = B.wrap(headline, fh, W - 2 * pad, max_lines=2)
     h_h = len(hlines) * int(fh.size * 1.16)
 
@@ -57,16 +64,18 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
         fs = B.font("black", 250 if size != "square" else 210)
         stat_h = int(fs.size * 0.86)
 
-    fsub = B.font("regular", 44)
+    fsub = B.font("regular", 48 if size == "story" else 44)
     slines = B.wrap(sub, fsub, W - 2 * pad - 40, max_lines=3) if sub else []
     s_h = len(slines) * int(fsub.size * 1.5)
 
     k = 1.55 if size == "story" else 1.0
     gap1, gap2 = int(H * 0.042 * k), int(H * 0.038 * k)
     total = h_h + (gap1 + stat_h if stat else 0) + (gap2 + s_h if slines else 0)
-    top_limit = int(H * 0.255)
-    bot_limit = int(H * 0.795) if size != "story" else int(H * 0.775)
-    y = top_limit + max(0, ((bot_limit - top_limit) - total) // 2)
+    top_limit = int(H * 0.255) if size != "story" else int(H * 0.255)
+    bot_limit = int(H * 0.795) if size != "story" else int(H * 0.735)
+    slack = max(0, (bot_limit - top_limit) - total)
+    # إمالة الكتلة لأعلى (32% فوق / 68% تحت) بدل التعليق في نص الفراغ
+    y = top_limit + int(slack * 0.30)
 
     # ---------- headline ----------
     for ln in hlines:
@@ -98,6 +107,8 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
     # ---------- sub ----------
     if slines:
         y += gap2
+        if size == "story" and not stat:
+            B.hairline(d, int(W * 0.40), int(W * 0.60), y - int(gap2 * 0.42), B.C["gold"], 2, 120)
         for ln in slines:
             B.text(d, (W // 2, y + int(fsub.size * 0.6)), ln, fsub, muted, anchor="mm")
             y += int(fsub.size * 1.5)

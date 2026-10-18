@@ -31,13 +31,13 @@ def ease_out(t: float) -> float:
 
 def background(idx: int, total: int):
     palettes = [
-        [(0.0, B.C["green900"]), (1.0, B.C["green700"])],
-        [(0.0, B.C["green700"]), (1.0, B.C["olive800"])],
-        [(0.0, "#0A2414"), (1.0, "#1B4A2B")],
+        [(0.0, B.C["bg_dark"]), (1.0, B.C["bg_mid"])],
+        [(0.0, B.C["bg_mid"]), (1.0, B.C["green_deep"])],
+        [(0.0, B.C["bg_dark"]), (1.0, B.C["green_deep"])],
     ]
     p = palettes[idx % len(palettes)]
     base = B.vgradient((W, H), p).convert("RGBA")
-    base = B.glow(base, (int(W * 0.7), int(H * 0.2)), int(W * 0.8), B.C["lime500"], alpha=34)
+    base = B.glow(base, (int(W * 0.7), int(H * 0.2)), int(W * 0.8), B.C["gold"], alpha=34)
     base = B.vignette(base, 120)
     return base
 
@@ -52,9 +52,9 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
     dy = int((1 - e) * 64)
 
     # عناصر ثابتة
-    B.brand_mark(canvas, W // 2, 128, d=74)
+    B.place_logo(canvas, W // 2, 122, 150)
     f_logo = B.font("bold", 25)
-    B.text(d, (W // 2, 196), "TERRANEX", f_logo, B.hex2rgb(B.C["cream50"]) + (a,),
+    B.text(d, (W // 2, 196), "TERRANEX", f_logo, B.hex2rgb(B.C["cream"]) + (a,),
            anchor="mm", direction="ltr")
 
     # قياس البلوك
@@ -77,12 +77,12 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
     y = top + max(0, ((bottom - top) - total_h) // 2) + dy
 
     if sc.get("kicker"):
-        B.text(d, (W // 2, y + 20), sc["kicker"], fk, B.hex2rgb(B.C["lime500"]) + (a,), anchor="mm")
-        B.hairline(d, int(W * 0.32), int(W * 0.68), y + 54, B.C["gold600"], 2, a // 2)
+        B.text(d, (W // 2, y + 20), sc["kicker"], fk, B.hex2rgb(B.C["gold"]) + (a,), anchor="mm")
+        B.hairline(d, int(W * 0.32), int(W * 0.68), y + 54, B.C["gold_mid"], 2, a // 2)
         y += kh
 
     for ln in hlines:
-        B.text(d, (W // 2, y + int(fh.size * 0.56)), ln, fh, B.hex2rgb(B.C["cream50"]) + (a,), anchor="mm")
+        B.text(d, (W // 2, y + int(fh.size * 0.56)), ln, fh, B.hex2rgb(B.C["cream"]) + (a,), anchor="mm")
         y += int(fh.size * 1.12)
 
     if fs:
@@ -92,11 +92,11 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
         wu = B.measure(sc.get("unit", ""), B.font("bold", 68)) if sc.get("unit") else 0
         blockw = wn + (wu + 26 if wu else 0)
         x_num = W // 2 + int(blockw / 2) - int(wn / 2)
-        B.text(d, (x_num, y + sh * 0.5), num, fs, B.hex2rgb(B.C["lime500"]) + (a,),
+        B.text(d, (x_num, y + sh * 0.5), num, fs, B.hex2rgb(B.C["gold"]) + (a,),
                anchor="mm", direction="ltr")
         if wu:
             B.text(d, (x_num + wn / 2 + 26 + wu / 2, y + sh * 0.54), sc["unit"],
-                   B.font("bold", 68), B.hex2rgb(B.C["cream50"]) + (a,), anchor="mm")
+                   B.font("bold", 68), B.hex2rgb(B.C["cream"]) + (a,), anchor="mm")
         y += sh
 
     if slines:
@@ -110,10 +110,10 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
     ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     od = ImageDraw.Draw(ov)
     prog = (i + p) / max(1, total)
-    od.rectangle([0, H - 10, int(W * prog), H], fill=B.hex2rgb(B.C["lime500"]) + (210,))
+    od.rectangle([0, H - 10, int(W * prog), H], fill=B.hex2rgb(B.C["gold"]) + (210,))
     ff = B.font("medium", 28)
-    od.text((W // 2, H - 96), f"واتساب {B.PHONE}", font=ff,
-            fill=B.hex2rgb(B.C["cream50"]) + (165,), anchor="mm", direction="rtl", language="ar")
+    od.text((W // 2, H - 96) if False else (W // 2, H - 96), f"واتساب {B.PHONE}", font=ff,
+            fill=B.hex2rgb(B.C["cream"]) + (165,), anchor="mm", direction="rtl", language="ar")
     canvas.alpha_composite(ov)
 
 
