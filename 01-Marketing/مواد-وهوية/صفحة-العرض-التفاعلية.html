@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraNex | العرض التسويقي — من صفحة… إلى منظومة مبيعات</title>
+<style>
+  :root{
+    --green:#0B3D2E; --green2:#115E43; --green3:#E7F2EC;
+    --gold:#C9A227; --gold2:#F3D97B; --cream:#FBF7EC; --ink:#17352B; --muted:#5E7268;
+    --card:#ffffff; --line:#E3EAE5; --red:#B44436;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--cream);color:var(--ink);line-height:1.75}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px 70px}
+
+  /* HERO */
+  .hero{background:linear-gradient(150deg,#07271E 0%,var(--green) 55%,var(--green2) 100%);color:#fff;border-radius:0 0 28px 28px;padding:54px 28px 46px;text-align:center;position:relative;overflow:hidden}
+  .hero::before{content:"🌾";position:absolute;font-size:190px;opacity:.07;top:-30px;left:-20px;transform:rotate(-18deg)}
+  .hero::after{content:"🐄";position:absolute;font-size:170px;opacity:.07;bottom:-40px;right:-10px;transform:rotate(12deg)}
+  .badge{display:inline-block;background:rgba(201,162,39,.18);border:1px solid var(--gold);color:var(--gold2);padding:5px 18px;border-radius:99px;font-size:14px;font-weight:700;letter-spacing:.3px}
+  .hero h1{font-size:44px;line-height:1.3;margin:18px auto 8px;max-width:760px;font-weight:900}
+  .hero h1 .g{color:var(--gold2)}
+  .hero p{font-size:19px;color:#D9EADF;max-width:680px;margin:0 auto}
+  .brand{font-size:15px;color:#BFD8CC;margin-bottom:6px;letter-spacing:2px;font-weight:700}
+  .hero-cta{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2}
+  .btn{background:var(--gold);color:#231a00;font-weight:900;padding:13px 30px;border-radius:12px;text-decoration:none;font-size:17px;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+  .btn.ghost{background:transparent;color:#fff;border:1.5px solid #ffffff88;box-shadow:none}
+  .meta{margin-top:20px;font-size:13.5px;color:#A9C6B8}
+
+  /* STATS */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:-26px auto 0;max-width:920px;position:relative;z-index:3;padding:0 6px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 10px 14px;text-align:center;box-shadow:0 10px 24px rgba(11,61,46,.09)}
+  .stat b{display:block;font-size:27px;color:var(--green);font-weight:900}
+  .stat span{font-size:13px;color:var(--muted)}
+
+  section{margin-top:52px}
+  .kicker{color:var(--gold);font-weight:900;font-size:14px;letter-spacing:1px}
+  h2{font-size:30px;color:var(--green);font-weight:900;line-height:1.4;margin:4px 0 8px}
+  .lead{color:var(--muted);font-size:17px;max-width:760px}
+  .grid{display:grid;gap:16px;margin-top:20px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)} .g5{grid-template-columns:repeat(5,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 6px 18px rgba(11,61,46,.05)}
+  .card .ic{font-size:30px}
+  .card h3{color:var(--green);font-size:19px;margin:8px 0 6px;font-weight:800}
+  .card p,.card li{font-size:15px;color:#3d554b}
+  .card ul{padding-right:18px}
+  .pain{border-top:4px solid var(--red)}
+  .sol{border-top:4px solid var(--gold)}
+  .quote{background:var(--green);color:#EAF4EE;border-radius:18px;padding:28px;font-size:20px;font-weight:700;text-align:center;line-height:1.9}
+  .quote .g{color:var(--gold2)}
+
+  /* FUNNEL */
+  .funnel{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;align-items:stretch}
+  .step{flex:1;min-width:140px;background:var(--green);color:#fff;border-radius:14px;padding:16px 12px;text-align:center;position:relative}
+  .step:nth-child(2){background:#0E4D38}.step:nth-child(3){background:var(--green2)}.step:nth-child(4){background:#1B7A55}.step:nth-child(5){background:var(--gold);color:#231a00}
+  .step b{display:block;font-size:16px;margin-bottom:4px}
+  .step span{font-size:13px;opacity:.92}
+  .arrow{align-self:center;font-size:20px;color:var(--gold);font-weight:900}
+
+  /* TIMELINE */
+  .phase{display:grid;grid-template-columns:110px 1fr;gap:16px;margin-top:16px}
+  .ph-num{background:var(--green);color:#fff;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 6px;text-align:center}
+  .ph-num b{font-size:24px;color:var(--gold2)}
+  .ph-num span{font-size:12.5px}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(11,61,46,.05);margin-top:18px;font-size:14.5px}
+  th{background:var(--green);color:#fff;padding:13px 10px;text-align:right;font-size:15px}
+  td{padding:11px 10px;border-top:1px solid var(--line);vertical-align:top}
+  tr td:first-child{font-weight:800;color:var(--green);white-space:nowrap}
+
+  /* PRICING */
+  .price{position:relative;text-align:center;padding-top:30px}
+  .price .amount{font-size:38px;font-weight:900;color:var(--green)}
+  .price .amount small{font-size:15px;color:var(--muted);font-weight:600}
+  .price ul{list-style:none;padding:0;text-align:right;margin-top:12px}
+  .price li{padding:7px 0;border-top:1px dashed var(--line);font-size:14.5px}
+  .price li::before{content:"✓ ";color:var(--green2);font-weight:900}
+  .hot{border:2.5px solid var(--gold);transform:scale(1.02)}
+  .hot-tag{position:absolute;top:-14px;right:50%;transform:translateX(50%);background:var(--gold);color:#231a00;font-weight:900;font-size:13px;padding:4px 18px;border-radius:99px;white-space:nowrap}
+  .note{font-size:13.5px;color:var(--muted);margin-top:14px;background:var(--green3);border-radius:12px;padding:12px 16px}
+
+  .scenario{background:#FFF8E1;border:1.5px dashed var(--gold);border-radius:18px;padding:24px;margin-top:20px}
+  .scenario h3{color:#8a6d00}
+  .calc{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;text-align:center}
+  .calc div{background:#fff;border-radius:12px;padding:14px;border:1px solid #eee0ae}
+  .calc b{display:block;font-size:24px;color:var(--green)}
+
+  .final{background:linear-gradient(150deg,#07271E,var(--green));color:#fff;border-radius:24px;padding:40px 28px;text-align:center;margin-top:56px}
+  .final h2{color:#fff}
+  .final .g{color:var(--gold2)}
+  .final p{color:#D9EADF;max-width:640px;margin:8px auto 0}
+  .sig{margin-top:22px;font-size:14px;color:#A9C6B8}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:26px}
+  .disc{font-size:12px;color:#8aa096;text-align:center;margin-top:10px}
+
+  @media(max-width:820px){
+    .g3,.g2,.g5,.stats,.calc{grid-template-columns:1fr 1fr}
+    .hero h1{font-size:32px} h2{font-size:25px}
+    .phase{grid-template-columns:1fr}
+    .hot{transform:none}
+  }
+  @media print{ .hero-cta{display:none} body{background:#fff} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="brand">TERRANEX LLC &nbsp;•&nbsp; للاستثمار الحيواني والتنمية الزراعية</div>
+    <span class="badge">📋 عرض إدارة وتسويق ومبيعات — مُعد خصيصاً لإدارة TerraNex</span>
+    <h1>من صفحة فيسبوك…<br>إلى <span class="g">منظومة مبيعات</span> بتجيب مستثمرين</h1>
+    <p>مش هدفنا لايكات ولا متابعين وخلاص. هدفنا رسائل واتساب من مستثمرين جادين، ومكالمات، وزيارات للمزرعة — تتحول لعقود واستثمارات حقيقية.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#packages">شوف باقات الاستثمار 👇</a>
+      <a class="btn ghost" href="#plan">خطة الـ 90 يوم</a>
+    </div>
+    <div class="meta">الإسكندرية • الاستثمار الحيواني والتنمية الزراعية • عرض ساري للتطبيق الفوري</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><b>2,763</b><span>متابع حالي على الصفحة — قاعدة نبدأ منها مش من الصفر</span></div>
+    <div class="stat"><b>329</b><span>شخص بيتفاعلوا وبيتكلموا عنكم — دليل إن الاسم بدأ يتعرف</span></div>
+    <div class="stat"><b>90 يوم</b><span>خطة واضحة بمراحل ومؤشرات قياس من أول أسبوع</span></div>
+    <div class="stat"><b>واتساب</b><span>وجهة كل إعلان: محادثة بيع، مش زيارة صفحة</span></div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section>
+    <div class="kicker">التشخيص الصريح</div>
+    <h2>عندكم أهم حاجة في السوق ده… ولسه مش مستغلينها</h2>
+    <p class="lead">سوق الاستثمار الحيواني مشكلته مش الطلب — ناس كتير عايزة تستثمر فلوسها في حاجة حقيقية ومضمونة. مشكلته <b>الثقة</b>. واللي هيكسب هو اللي يظهر قدام العميل بشكل منتظم ومحترف ويوريه فلوسه بتشتغل فين.</p>
+    <div class="grid g3">
+      <div class="card pain"><div class="ic">👻</div><h3>حضور متقطع = فرص ضايعة</h3><p>كل يوم الصفحة ساكتة فيه، فيه مستثمر بيبحث وبيروح لمنافس ظهر قدامه الأول. العميل مش هيدوّر عليكم مرتين.</p></div>
+      <div class="card pain"><div class="ic">🤝</div><h3>الثقة مش بتتبني ببوست</h3><p>المستثمر بيحط مبلغ كبير. قبل ما يتصل، هيقلّب في صفحتكم أسابيع. لو ملقاش محتوى يطمنه — جولات، متابعات، إجابات على مخاوفه — مش هيتصل أصلاً.</p></div>
+      <div class="card pain"><div class="ic">💸</div><h3>إعلان بدون منظومة = فلوس بتطير</h3><p>الإعلان اللي يجيب رسالة ومحدش يرد بسرعة وبأسلوب بيع صح، كأن الشركة دفعت تمن عميل ورمته. المشكلة غالباً مش في الإعلان… في اللي بعد الإعلان.</p></div>
+    </div>
+  </section>
+
+  <!-- OPPORTUNITY -->
+  <section>
+    <div class="kicker">الفرصة</div>
+    <h2>رسالتكم المعلنة هي أقوى إعلان عندكم</h2>
+    <div class="quote">أنتم كاتبين على صفحتكم: <span class="g">«هدفنا الوصول لفرص آمنة وشفافة»</span><br>دي مش جملة تعريفية… دي هي الرسالة البيعية اللي السوق كله بيدوّر عليها. شغلنا إننا نحوّلها من جملة في الـ Bio إلى محتوى يومي العميل يشوفه بعينه: <span class="g">الفلوس فين، وبتعمل إيه، وبتكبر إزاي.</span></div>
+    <div class="grid g3">
+      <div class="card sol"><div class="ic">🇪🇬</div><h3>جمهور جاهز في مصر</h3><p>موظفين وأصحاب أعمال بيدوّروا على دخل إضافي من أصل حقيقي بدل ما فلوسهم تفقد قيمتها — الإسكندرية والبحيرة والقاهرة أولاً.</p></div>
+      <div class="card sol"><div class="ic">✈️</div><h3>المصريون بالخارج</h3><p>مغترب عايز يستثمر في بلده من غير ما يدير بنفسه. ده عميلكم المثالي — والمحتوى الشفاف هو الطريقة الوحيدة للوصول له.</p></div>
+      <div class="card sol"><div class="ic">📈</div><h3>عميل بيجيب عشرة</h3><p>المستثمر الراضي بيجيب قرايبه وشركاه. كل عقد ناجح موثق بمحتوى هو إعلان مجاني دائم للشركة.</p></div>
+    </div>
+  </section>
+
+  <!-- SYSTEM -->
+  <section>
+    <div class="kicker">الحل اللي بنقدمه</div>
+    <h2>منظومة من 3 أجزاء — مش «إدارة صفحة»</h2>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🎬</div><h3>1) محتوى بيبني ثقة</h3><ul><li>ريلز من قلب المزرعة: تغذية، رعاية بيطرية، أوزان ومتابعات</li><li>محتوى تعليمي: إزاي الاستثمار الحيواني بيشتغل؟ والمخاطر بصراحة</li><li>إثباتات: تحديثات دورية وشهادات عملاء (بموافقتهم)</li><li>إجابات مسبقة على كل سؤال بيخوف المستثمر</li></ul></div>
+      <div class="card"><div class="ic">🎯</div><h3>2) إعلانات بتجيب مستثمرين</h3><ul><li>حملات واتساب مستهدفة جغرافياً وبالاهتمامات</li><li>رسائل إعلانية مختلفة لكل شريحة (محلي / مغترب / تاجر)</li><li>إعادة استهداف كل من تفاعل أو شاهد ولم يتواصل</li><li>اختبار وقياس أسبوعي: اللي ميجيبش نتيجة بيقف</li></ul></div>
+      <div class="card"><div class="ic">📞</div><h3>3) مبيعات بتقفل</h3><ul><li>رد سريع على الرسائل بسكريبتات بيع جاهزة ومدروسة</li><li>تأهيل العميل: ميزانيته وهدفه قبل ما ياخد وقت الفريق</li><li>هدف كل محادثة: حجز مكالمة أو زيارة للمزرعة</li><li>متابعة منظمة لمن لم يقرر بعد — أغلب الصفقات بتتقفل في المتابعة</li></ul></div>
+    </div>
+
+    <div class="funnel">
+      <div class="step"><b>🎬 ريلز ومحتوى</b><span>جذب وبناء ثقة</span></div><div class="arrow">←</div>
+      <div class="step"><b>📣 إعلان ممول</b><span>وصول للمستثمر المناسب</span></div><div class="arrow">←</div>
+      <div class="step"><b>💬 محادثة واتساب</b><span>تأهيل وشرح الفرصة</span></div><div class="arrow">←</div>
+      <div class="step"><b>📍 مكالمة / زيارة</b><span>رؤية على الطبيعة</span></div><div class="arrow">←</div>
+      <div class="step"><b>✍️ عقد واستثمار</b><span>+ عميل يجيب غيره</span></div>
+    </div>
+    <p class="note">📌 بنقيس النجاح بعدد المحادثات المؤهلة والزيارات والعقود — مش بعدد اللايكات. تقرير شهري واضح بالأرقام قدام إدارة الشركة.</p>
+  </section>
+
+  <!-- WEEK 1 -->
+  <section>
+    <div class="kicker">عينة تنفيذية</div>
+    <h2>أول أسبوع محتوى — كده هنبدأ فعلاً</h2>
+    <table>
+      <tr><th>اليوم</th><th>المحتوى</th><th>هدفه البيعي</th></tr>
+      <tr><td>السبت</td><td>🎬 ريلز: جولة 60 ثانية داخل المزرعة — «فلوس المستثمر بتروح فين؟»</td><td>كسر حاجز الخوف وبناء الثقة من أول ثانية</td></tr>
+      <tr><td>الأحد</td><td>📌 بوست تعليمي: 5 أسئلة لازم تسألها قبل ما تستثمر في الثروة الحيوانية</td><td>وضع TerraNex في مكان «الخبير الأمين»</td></tr>
+      <tr><td>الاثنين</td><td>🎬 ريلز: خلف الكواليس — التغذية والرعاية البيطرية اليومية</td><td>إثبات احترافية التشغيل</td></tr>
+      <tr><td>الثلاثاء</td><td>💬 بوست تفاعلي + ستوري: «لو هتستثمر، يهمك أكتر: عائد دوري ولا نمو رأس المال؟»</td><td>فهم السوق وجمع عملاء مهتمين</td></tr>
+      <tr><td>الأربعاء</td><td>🎬 ريلز: متابعة نمو / أوزان — الشفافية بالأرقام والصور</td><td>تحويل «الشفافية» من شعار لواقع مرئي</td></tr>
+      <tr><td>الخميس</td><td>📣 بوست الفرصة الاستثمارية الحالية + دعوة واضحة لواتساب</td><td>تحويل المتابعين لعملاء محتملين</td></tr>
+      <tr><td>الجمعة</td><td>🤲 محتوى قيمي خفيف + إعادة نشر أفضل تفاعلات الأسبوع</td><td>حضور مستمر وبناء مجتمع حوالين الاسم</td></tr>
+    </table>
+  </section>
+
+  <!-- PLAN -->
+  <section id="plan">
+    <div class="kicker">خارطة الطريق</div>
+    <h2>خطة الـ 90 يوم — 3 مراحل</h2>
+    <div class="phase">
+      <div class="ph-num"><b>1</b><span>يوم 1 – 30<br>التأسيس والثقة</span></div>
+      <div class="card"><h3>نبني الواجهة اللي تستقبل المستثمر</h3><p>تطوير هوية الصفحة والمحتوى، أرشيف ريلز يبني ثقة، تجهيز سكريبتات الرد ونظام المتابعة، وبدء النشر المنتظم. <b>الناتج:</b> صفحة أي مستثمر يدخلها يلاقي شركة «شغالة وحقيقية».</p></div>
+    </div>
+    <div class="phase">
+      <div class="ph-num"><b>2</b><span>يوم 31 – 60<br>الإطلاق والمبيعات</span></div>
+      <div class="card"><h3>تشغيل حملات جلب المستثمرين</h3><p>حملات واتساب ممولة للشرائح المستهدفة، إعادة استهداف المتفاعلين، وتحسين أسبوعي للرسائل والاستهداف بناءً على النتائج الفعلية. <b>الناتج:</b> تدفق محادثات مؤهلة قابل للقياس والتكلفة معروفة لكل عميل محتمل.</p></div>
+    </div>
+    <div class="phase">
+      <div class="ph-num"><b>3</b><span>يوم 61 – 90<br>التوسع والسيطرة</span></div>
+      <div class="card"><h3>نكبّر اللي نجح ونوقف اللي منجحش</h3><p>توسيع الحملات الرابحة، دخول شريحة المصريين بالخارج، وتحويل رضا المستثمرين الحاليين لمحتوى وإحالات. <b>الناتج:</b> منظومة مبيعات شغالة باستمرار — مش حملة وخلصت.</p></div>
+    </div>
+
+    <div class="scenario">
+      <h3>🧮 سيناريو توضيحي — كده بنحسبها بالأرقام (مش وعود)</h3>
+      <p style="font-size:15px">الأرقام النهائية بتتحدد بعد أول أسبوعين اختبار فعلي، لكن ده نموذج حساب أي ميزانية:</p>
+      <div class="calc">
+        <div><b>20,000 جـ</b>ميزانية إعلانات شهرية (مثال)</div>
+        <div><b>100 – 250 جـ</b>تكلفة مستهدفة للمحادثة المؤهلة الواحدة</div>
+        <div><b>80 – 200</b>محادثة مع مستثمرين مهتمين شهرياً</div>
+      </div>
+      <p style="font-size:14.5px;margin-top:12px">المعادلة اللي بتخلي الاستثمار واضح: <b>لو عقد استثماري واحد فقط</b> من هذه المحادثات غطى تكلفة التسويق كاملة — فكل عقد بعده نمو صافي. وده بالضبط اللي هنقيسه ونعرضه في التقرير الشهري. <span style="color:#8a6d00">(أرقام استرشادية للتوضيح، تثبت أو تتعدل بالاختبار الفعلي — لا نبيع وعوداً، نبيع قياساً ونتائج.)</span></p>
+    </div>
+  </section>
+
+  <!-- PACKAGES -->
+  <section id="packages">
+    <div class="kicker">الاستثمار المطلوب</div>
+    <h2>اختاروا مستوى النمو المناسب لـ TerraNex</h2>
+    <p class="lead">الباقات أتعاب إدارة وتشغيل المنظومة. ميزانية الإعلانات الممولة منفصلة وتدفع لفيسبوك مباشرة بشفافية كاملة — مقترح البدء بها من 15,000 إلى 30,000 جـ شهرياً حسب عدد الفرص المطلوب.</p>
+    <div class="grid g3">
+      <div class="card price">
+        <h3>🌱 الانطلاقة</h3>
+        <div class="amount">8,000 <small>جـ / شهر</small></div>
+        <ul>
+          <li>12 محتوى شهرياً (بوستات + ريلز)</li>
+          <li>إدارة كاملة للصفحة والنشر المنتظم</li>
+          <li>الرد على الرسائل والتعليقات (أوقات العمل)</li>
+          <li>تقرير أداء شهري</li>
+          <li>مناسب لـ: بناء الحضور والثقة</li>
+        </ul>
+      </div>
+      <div class="card price hot">
+        <span class="hot-tag">⭐ الأنسب لـ TerraNex</span>
+        <h3>🚀 النمو والمبيعات</h3>
+        <div class="amount">14,000 <small>جـ / شهر</small></div>
+        <ul>
+          <li>20 محتوى شهرياً منها 8 ريلز احترافية</li>
+          <li>إدارة كاملة للصفحة + حملات إعلانية ممولة</li>
+          <li>سكريبتات بيع واتساب + متابعة العملاء المحتملين</li>
+          <li>حملات إعادة استهداف للمتفاعلين</li>
+          <li>تقرير شهري بالأرقام + اجتماع مراجعة</li>
+          <li>مناسب لـ: جلب مستثمرين فعليين</li>
+        </ul>
+      </div>
+      <div class="card price">
+        <h3>👑 شريك النمو</h3>
+        <div class="amount">22,000 <small>جـ / شهر</small></div>
+        <ul>
+          <li>محتوى شبه يومي + تغطية مصورة من المزرعة</li>
+          <li>إدارة إعلانات وواتساب بيزنس ونظام CRM للمتابعة</li>
+          <li>استهداف المصريين بالخارج وحملات موسمية</li>
+          <li>تقارير نصف شهرية + أولوية تنفيذ ودعم</li>
+          <li>مناسب لـ: التوسع والسيطرة على السوق</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">🔒 <b>ضمان البداية الآمنة:</b> نبدأ بشهر أول كامل بمراجعة أداء مفتوحة — لو الأرقام والشغل مش على مستوى توقعاتكم، القرار لكم في الاستمرار. إحنا بنكسب لما انتم تكسبوا، وبنكبر معاكم باقة ورا باقة.</p>
+  </section>
+
+  <!-- WHY NOW -->
+  <section>
+    <div class="kicker">لماذا الآن؟</div>
+    <h2>كل شهر تأخير له تمن</h2>
+    <div class="grid g3">
+      <div class="card"><div class="ic">⏳</div><h3>المنافس بيبني ثقة دلوقتي</h3><p>المستثمر بيختار الشركة اللي شافها واطمنلها على مدار أسابيع. كل أسبوع تأخير هو أسبوع ثقة بيروح لغيركم.</p></div>
+      <div class="card"><div class="ic">📱</div><h3>عميلكم على الموبايل الآن</h3><p>قرار الاستثمار بيبدأ بفيديو 60 ثانية على فيسبوك. السؤال: هيشوفكم انتم ولا حد تاني؟</p></div>
+      <div class="card"><div class="ic">🎯</div><h3>البداية الصح أرخص</h3><p>بناء المنظومة مرة واحدة صح — محتوى + إعلان + مبيعات — أوفر بكتير من إعلانات متقطعة بدون نتيجة.</p></div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <div class="final">
+    <h2>TerraNex عندها الأرض والشغل الحقيقي 🌾<br>وإحنا عندنا <span class="g">المنظومة اللي توصّله للناس</span></h2>
+    <p>خطوة واحدة تفصلنا عن البدء: اجتماع قصير نتفق فيه على الباقة المناسبة وأهداف أول 90 يوم — ونبدأ التنفيذ خلال أيام.</p>
+    <div class="hero-cta"><a class="btn" href="#packages">نبدأ بـ «النمو والمبيعات» ⭐</a></div>
+    <div class="sig">عرض مُقدم إلى إدارة TerraNex LLC — للاستثمار الحيواني والتنمية الزراعية • الإسكندرية<br>Marketing • Sales • إدارة صفحات وحملات ممولة</div>
+  </div>
+
+  <footer>TerraNex — من صفحة… إلى منظومة مبيعات 🚀</footer>
+  <p class="disc">الأرقام الإحصائية الخاصة بالصفحة (عدد المتابعين والتفاعل) معلنة على صفحة الشركة وقت إعداد العرض. السيناريوهات المالية توضيحية لشرح طريقة القياس ولا تمثل وعداً بعوائد؛ النتائج الفعلية تُقاس وتُعرض بتقارير دورية.</p>
+
+</div>
+</body>
+</html>
