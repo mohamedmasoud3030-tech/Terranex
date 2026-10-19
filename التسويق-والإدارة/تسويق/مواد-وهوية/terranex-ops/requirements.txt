@@ -1,0 +1,9 @@
+# TerraNex Ops — تبعيات تشغيل المحرك (engine/)
+# التثبيت:  bash setup.sh    أو: python3 -m pip install -r requirements.txt (مع --break-system-packages على ديبيان 12)
+pillow==10.4.0        # رسم الصور (بدون libraqm — البديل artext.py) — مثبّتة بقفل: moviepy+rembg حولها مقيودة بها
+numpy>=1.24           # معالجة الإطارات والألوان
+imageio-ffmpeg>=0.5   # باينري ffmpeg مضمون بدون تثبيت نظامي
+uharfbuzz>=0.40       # تشكيل النص العربي (GSUB/GPOS) — بديل raqm
+python-bidi>=0.4      # الترتيب الاتجاهي RTL — بديل fribidi
+freetype-py>=2.4      # راسترايز الـglyphs (يلبّس libfreetype مدموجة في العجلة)
+moviepy==2.1.2        # مونتاج متقاطع من عدة لقطات (MIT — انظر studio/مخزون-الأدوات-المفتوحة.md)

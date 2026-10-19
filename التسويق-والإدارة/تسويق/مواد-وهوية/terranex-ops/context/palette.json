@@ -1,0 +1,161 @@
+{
+  "_meta": {
+    "single_source_of_truth": "assets/logo/شعار-TerraNex.jpg",
+    "method": "k-means (k=6) على بكسلات الشعار بعد استبعاد الخلفية السوداء/البيضاء",
+    "conflict_rule": "عند التعارض يُعتمد الشعار لأن الصفحة مشتقة منه وليست الأصل",
+    "conflict_threshold_rgb": 42.0,
+    "generated_by": "engine/derive_palette.py"
+  },
+  "logo_roles": {
+    "gold_deep": "#936F36",
+    "gold_hi": "#EFDB9B",
+    "gold": "#E9C46A",
+    "gold_mid": "#C5933C",
+    "green_logo": "#2F562F",
+    "green_deep": "#2F562F"
+  },
+  "clusters": [
+    {
+      "hex": "#2F562F",
+      "rgb": [
+        47.3,
+        85.7,
+        47.2
+      ],
+      "weight": 0.2179,
+      "lum": 60.1,
+      "gold": false,
+      "green": true
+    },
+    {
+      "hex": "#E9C46A",
+      "rgb": [
+        233.4,
+        196.1,
+        106.3
+      ],
+      "weight": 0.2102,
+      "lum": 178.6,
+      "gold": true,
+      "green": false
+    },
+    {
+      "hex": "#C5933C",
+      "rgb": [
+        197.4,
+        146.7,
+        60.2
+      ],
+      "weight": 0.1676,
+      "lum": 134.8,
+      "gold": true,
+      "green": false
+    },
+    {
+      "hex": "#EFDB9B",
+      "rgb": [
+        239.4,
+        219.1,
+        154.5
+      ],
+      "weight": 0.166,
+      "lum": 204.4,
+      "gold": true,
+      "green": false
+    },
+    {
+      "hex": "#936F36",
+      "rgb": [
+        146.6,
+        110.7,
+        54.5
+      ],
+      "weight": 0.1573,
+      "lum": 103.9,
+      "gold": true,
+      "green": false
+    },
+    {
+      "hex": "#B8A175",
+      "rgb": [
+        184.0,
+        160.7,
+        117.2
+      ],
+      "weight": 0.0811,
+      "lum": 154.0,
+      "gold": true,
+      "green": false
+    }
+  ],
+  "page_vars": {
+    "green": "#0B3D2E",
+    "green2": "#115E43",
+    "green3": "#E7F2EC",
+    "gold": "#C9A227",
+    "gold2": "#F3D97B",
+    "cream": "#FBF7EC",
+    "ink": "#17352B",
+    "muted": "#5E7268"
+  },
+  "comparisons": [
+    {
+      "role": "gold",
+      "logo": "#E9C46A",
+      "page": "#C9A227",
+      "distance": 81.7,
+      "decision": "logo"
+    },
+    {
+      "role": "gold_hi",
+      "logo": "#EFDB9B",
+      "page": "#F3D97B",
+      "distance": 32.3,
+      "decision": "match"
+    },
+    {
+      "role": "green_logo",
+      "logo": "#2F562F",
+      "page": "#0B3D2E",
+      "distance": 43.8,
+      "decision": "logo"
+    },
+    {
+      "role": "green_deep",
+      "logo": "#2F562F",
+      "page": "#115E43",
+      "distance": 36.9,
+      "decision": "match"
+    }
+  ],
+  "conflicts": [
+    "gold: الشعار #E9C46A ≠ الصفحة #C9A227 (Δ=82) → اعتُمد الشعار",
+    "green_logo: الشعار #2F562F ≠ الصفحة #0B3D2E (Δ=44) → اعتُمد الشعار"
+  ],
+  "shades": {
+    "derived": {
+      "green_deep": "#223F22",
+      "bg_dark": "#101E10",
+      "bg_mid": "#1A2F1A"
+    },
+    "rule": [
+      "green_deep = أخضر الشعار × 0.73 (سطوع مستهدف 44)",
+      "bg_dark = أخضر الشعار × 0.35 (سطوع مستهدف 21)",
+      "bg_mid = أخضر الشعار × 0.55 (سطوع مستهدف 33)"
+    ],
+    "note": "الشعار لا يحتوي إلا درجة خضراء واحدة، فتُشتق درجات الخلفية بتظليل خطي موثّق."
+  },
+  "final": {
+    "gold_hi": "#EFDB9B",
+    "gold": "#E9C46A",
+    "gold_mid": "#C5933C",
+    "gold_deep": "#936F36",
+    "green": "#2F562F",
+    "green_deep": "#223F22",
+    "bg_dark": "#101E10",
+    "bg_mid": "#1A2F1A",
+    "bg_cream": "#FBF7EC",
+    "ink": "#17352B",
+    "muted": "#5E7268"
+  }
+}
