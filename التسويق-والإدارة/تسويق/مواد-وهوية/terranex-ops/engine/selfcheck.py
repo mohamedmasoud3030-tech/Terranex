@@ -139,7 +139,7 @@ def check_qa(reel: str | None) -> None:
 
 def check_critic() -> None:
     import critic
-    clean = "الوزن على الطبيعة… زي ما هو ⚖️\nشوف بنفسك على الميزان.\n#TerraNex #استثمار_حيواني #الإسكندرية"
+    clean = "الوزن على الطبيعة… زي ما هو ⚖️\nشوف بنفسك على الميزان.\n#TerraNex #استثمار_حيواني #ثروة_حيوانية"
     bad = "عائد مضمون 30% بدون مخاطر"
     r1 = critic.check(clean)
     r2 = critic.check(bad)
@@ -187,7 +187,7 @@ def check_package(tmp: str, reel: str | None) -> None:
         return
     cap = os.path.join(tmp, "cap.txt")
     with open(cap, "w", encoding="utf-8") as f:
-        f.write("الوزن على الطبيعة… زي ما هو ⚖️\nشوف بنفسك على الميزان.\n#TerraNex #استثمار_حيواني #الإسكندرية")
+        f.write("الوزن على الطبيعة… زي ما هو ⚖️\nشوف بنفسك على الميزان.\n#TerraNex #استثمار_حيواني #ثروة_حيوانية")
     out_dir = os.path.join(tmp, "out")
     p = run([sys.executable, "engine/package_post.py", "--video", reel, "--caption", cap,
              "--platforms", "facebook", "--date", "2026-10-20", "--time", "20:00",
@@ -276,7 +276,7 @@ def check_campaign(tmp: str) -> None:
               "-af", "loudnorm=I=-15:TP=-1.5:LRA=11", "-c:v", "libx264",
               "-pix_fmt", "yuv420p", "-c:a", "aac", vid])
     with open(cap, "w", encoding="utf-8") as f:
-        f.write("لقطة حقيقية من المزرعة النهارده\nوزن وفحص قبل التصوير — شوف بنفسك.\n#TerraNex #استثمار_حيواني #الإسكندرية\n")
+        f.write("لقطة حقيقية من المزرعة النهارده\nوزن وفحص قبل التصوير — شوف بنفسك.\n#TerraNex #استثمار_حيواني #ثروة_حيوانية\n")
     import json as _json
     with open(brief, "w", encoding="utf-8") as f:
         _json.dump({"name": "فحص-ذاتي-حملة", "start": "2026-10-26",
@@ -308,6 +308,45 @@ def check_measure(tmp: str) -> None:
            ok, (p0.stderr or p1.stderr)[-300:] if not ok else "")
 
 
+
+def check_identity_rules() -> None:
+    """فحص قواعد الهوية المحفورة 19/10: B9 (المدينة) · B10 (إذن المالك) · B11 (العلامة المائية)."""
+    import brand as B
+    import critic
+    import reel_build as R
+
+    ok_b9 = len(critic.lint_city("إحنا في الإسكندرية")) > 0 and not critic.lint_city("استثمار حيواني")
+    b9_hard = any(h["code"] == "B9" for h in critic.check("محتوى فيه الإسكندرية")["hard"])
+
+    owner_blocked = False
+    try:
+        R.require_consent({"clips": [], "on_screen_persons": ["owner"]})
+    except SystemExit:
+        owner_blocked = True
+    owner_allowed = True
+    try:
+        R.require_consent({"clips": [], "on_screen_persons": ["owner"],
+                           "consent_persons": ["owner"]})
+    except SystemExit:
+        owner_allowed = False
+
+    # العلامة المائية: تُرسم فعلًا وتحتوي شعارًا (طبقة غير فارغة)
+    from PIL import Image
+    canvas = Image.new("RGB", (1080, 1350), (16, 30, 16)).convert("RGBA")
+    before = canvas.tobytes()
+    B.watermark(canvas, pos="bl", theme="dark")
+    wm_drawn = canvas.tobytes() != before
+
+    # الشعار الكبير: الحد الأدنى مفروض في القفل الكامل
+    lg = B.logo(120, "full")
+    logo_ok = lg.width >= B.LOGO_MIN_LOCKUP_W
+
+    ok = ok_b9 and b9_hard and owner_blocked and owner_allowed and wm_drawn and logo_ok
+    detail = (f"B9={ok_b9 and b9_hard} · B10={owner_blocked and owner_allowed} · "
+              f"watermark={wm_drawn} · logo={lg.width}px")
+    record("قواعد الهوية B9/B10/B11 (مدينة · إذن المالك · علامة مائية)", ok, detail)
+
+
 def main():
     quick = "--quick" in sys.argv
     check_deps()
@@ -315,6 +354,7 @@ def main():
     check_palette()
     check_arabic()
     check_critic()
+    check_identity_rules()
     with tempfile.TemporaryDirectory(prefix="tx-ops-check-") as tmp:
         poster = check_poster(tmp)
         if poster is None and RESULTS[-1][1] is False and "setup.sh" in (RESULTS[-1][2] or ""):

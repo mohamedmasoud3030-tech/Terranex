@@ -51,11 +51,9 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
     a = int(255 * min(e, out))
     dy = int((1 - e) * 64)
 
-    # عناصر ثابتة
-    B.place_logo(canvas, W // 2, 122, 150)
-    f_logo = B.font("bold", 25)
-    B.text(d, (W // 2, 196), "TERRANEX", f_logo, B.hex2rgb(B.C["cream"]) + (a,),
-           anchor="mm", direction="ltr")
+    # عناصر ثابتة — قفل شعار كبير (19/10): الكلمة داخل الشعار نفسه، لا نكرّرها يدويًا
+    box = B.place_logo(canvas, W // 2, 150, int(W * 0.38), "full")
+    LOGO_BOTTOM = box[3]
 
     # قياس البلوك
     fk = B.font("medium", 32)
