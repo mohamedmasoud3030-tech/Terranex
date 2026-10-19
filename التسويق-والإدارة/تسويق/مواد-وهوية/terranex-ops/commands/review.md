@@ -26,5 +26,6 @@
 مخالفات: [قائمة مرقمة بالكود B1/S3/…]
 الإصلاحات: [3 كحد أقصى، كل واحد قابل للتنفيذ في سطر]
 ```
-+ بعد «انشر»: سجّل في `output/queue.csv`:
-`date,time,platform,title,hook,source_clip,critic_score,status`
++ بعد «انشر»: سجّل في `output/queue.csv` — يتم آليًا عبر `engine/package_post.py`
+  (الأعمدة: `date,time,platform,title,hook,source_clip,critic_score,qa,status,variants`).
+  الحالة دائمًا تبدأ «بانتظار-موافقة»؛ التحويل لـ«منشور» يدوي بعد نشر المستخدم فعليًا.

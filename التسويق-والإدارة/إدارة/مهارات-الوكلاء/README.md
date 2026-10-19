@@ -1,7 +1,10 @@
 # مهارات الوكلاء — TerraNex
 
 النظام الرسمي الوحيد: **`terranex-ops`** في `تسويق/مواد-وهوية/terranex-ops/`
-(محرك تنفيذ v2.0.0 — 8 أوامر: idea/script/caption/ad/edit/review/pitch/leads).
+(محرك تنفيذ — 9 أوامر: idea/script/caption/ad/edit/review/pitch/leads/scenario).
+
+تشغيل أي جلسة جديدة يبدأ من: `bash setup.sh` (تثبيت التبعيات) ثم
+`python engine/selfcheck.py` (فحص شامل — تفاصيل التشغيل في `OPS.md`).
 
 المهارات الأربع المنفصلة القديمة دُمجت فيه وحُذفت من شجرة العمل بتاريخ 19 أكتوبر 2026،
 ونسخها محفوظة في تاريخ Git (قبل تعديل التنقية) لمن يحتاج الرجوع لها.

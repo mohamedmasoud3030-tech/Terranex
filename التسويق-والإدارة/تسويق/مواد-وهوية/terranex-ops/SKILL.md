@@ -2,7 +2,7 @@
 name: terranex-ops
 description: "محرك التنفيذ الرسمي الوحيد لتسويق وإدارة TerraNex (استثمار حيواني، الإسكندرية). استخدمه لأي طلب على صفحة الشركة أو على عرض المالك أو على ليدز الواتساب: أفكار محتوى، سكريبت فيديو، كابشن مصري، نسخ إعلانية، تصميم/بوستر، مونتاج، عرض مالك وباقات وتفاوض، تأهيل ومتابعة ليدز حتى الزيارة والعقد، وتقويم نشر، ومراجعة قبل النشر. عبارات التفعيل: «اعمل فيديو»، «اكتب كابشن»، «هنجهز إيه»، «إعلان»، «بوستر»، «عرض للمالك»، «رد على العميل»، «ليد جديد»، «متابعة»، «تقويم محتوى»، «راجع قبل النشر». النظام بيطبّق قواعد الالتزام والهوية الرسمية (المستخرجة من الشعار) قبل أي تسليم."
 metadata:
-  version: 2.1.0
+  version: 2.2.0
   owner: TerraNex
   supersedes: [terranex-video-producer, terranex-content-calendar, terranex-owner-pitch, terranex-lead-followup]
 ---
@@ -10,6 +10,7 @@ metadata:
 # TerraNex Ops
 
 نظام واحد رسمي: **9 أوامر**، 5 ملفات سياق، ومحرّك تنفيذ. مفيش نظام تاني منافس.
+التشغيل اليومي والإعداد والفحص الذاتي وحدود البيئة: **`OPS.md`** (يُقرأ مع هذا الملف).
 
 ## قبل أي حاجة — اقرأ 5 ملفات (إلزامي)
 | الملف | بيحدد |
@@ -52,9 +53,9 @@ SCORE: critic.py
 ## قواعد الإنتاج (مدموجة من video-producer)
 1. **الفكرة أولًا** — زاوية جديدة + هوك في أول ثانيتين. ممنوع تبدأ من ريل جاهز.
 2. **مادة الشركة الحقيقية فقط.** لا Stock، ولا توليد كبديل (الاستثناءات بقرار المستخدم فقط).
-3. **التفريغ** — faster-whisper محليًا؛ فكّ wav بـ`wave`+`numpy` ومرّر float32 (تمرير اسم الملف بيفشل مع PyAV الحديث).
+3. **التفريغ** — faster-whisper **غير متاح في هذه البيئة** (نماذجه على HF خارج النطاق الشبكي). البديل المنفّذ: الكابشن يُكتب من السكربت/النسخة المعروفة ويُحرق عبر `make_video.py`/`make_reel_from_footage.py`. لو اتثبّت whisper في بيئة سليمة: فكّ wav بـ`wave`+`numpy` ومرّر float32.
 4. **القصّ** — مونتاج متقاطع من أكثر من مصدر، 9:16 للصفحة و16:9 لعروض المالك. لا تزاحم وسم الشركة الموجود أصلًا في اللقطات.
-5. **النص العربي** — ارسمه بـPillow مع `anchor` وlibraqm. **ممنوع** `arabic_reshaper` فوق Pillow الداعم لـraqm (بيشوّه الحروف).
+5. **النص العربي** — ارسمه عبر `brand.text()` (يبني على `engine/artext.py`: HarfBuzz + FreeType + bidi — التشكيل الكامل بدون libraqm لأن عجلات Pillow على PyPI لا تحمله). **ممنوع** `arabic_reshaper` كبديل، وممنوع `direction=` على `ImageDraw.text` مباشرة (بيفشل بدون raqm).
 6. **الأدوات** — لا ffmpeg على النظام؛ استخدم باينري `imageio-ffmpeg`. الصور الثابتة كإطار مفرد بدون `-loop`. أنشئ مجلد الإخراج قبل التركيب.
 
 ## قواعد التقويم (مدموجة من content-calendar)
@@ -74,9 +75,16 @@ SCORE: critic.py
 ## الأدوات
 | الأمر | الأداة |
 |---|---|
+| فحص النظام | `python engine/selfcheck.py` (شغّل أول حاجة في الجلسة) |
+| الإعداد | `bash setup.sh` (تبعيات + فحص) |
 | الألوان | `python engine/derive_palette.py` (من الشعار → `context/palette.json`) |
 | بوستر | `python engine/make_poster.py --headline "…" --out نماذج/x.png` |
 | موشن | `python engine/make_video.py --script script.json --out نماذج/x.mp4` |
+| ريل بلقطة حقيقية | `python engine/make_reel_from_footage.py --video f.mp4 --captions c.json --out x.mp4` |
+| نسخ المنصات | `python engine/make_variants.py --video m.mp4 --outdir output/variants/x` |
+| فوتاج جديد | `python engine/ingest_footage.py` (من `مواد-خام/وارد/`) |
+| فحص فيديو | `python engine/qa_video.py --video v.mp4 --profile reels` |
+| تجهيز منشور | `python engine/package_post.py --video v.mp4 --caption c.txt --platforms "facebook,instagram" --date … --time …` |
 | تقويم | `python engine/gen_calendar.py --days 7 --out calendar.md` |
 | سيناريو تصوري | `python engine/make_scenario.py --spec spec.json --outdir frames --video teaser.mp4` |
 | فحص | `python engine/critic.py --file copy.txt` |

@@ -6,7 +6,7 @@
 المبادئ:
   • 5 محاور بالتناوب، مفيش محور مرتين ورا بعض.
   • مفيش hook متكرر داخل نفس الشهر.
-  • كل يوم معلوم عليه مصدر الفوتاج المتاح (01–06) — لو مفيش، مكتوب «تصوير مطلوب».
+  • كل يوم معلوم عليه مصدر الفوتاج المتاح (01–07) — لو مفيش، مكتوب «تصوير مطلوب».
   • أوقات النشر من product-marketing.md §5.
 """
 from __future__ import annotations
@@ -73,7 +73,7 @@ KEY = {5: "sat", 6: "sun", 0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri"}  # 
 
 def build(days=30, start=None, seed=11):
     rnd = random.Random(seed)
-    start = start or dt.date(2026, 10, 19)  # السبت القادم
+    start = start or dt.date.today()  # يبدأ من النهارده افتراضيًا
     rows = []
     used = {p: set() for p in PILLARS}
     prev = None
@@ -124,7 +124,7 @@ def to_md(rows, title=None):
     for r in need[:12]:
         out.append(f"- {r['date']} ({AR_DAY[r['day']]}) — {r['hook']} → {r['source']}")
     out += ["", "> **قاعدة:** أي يوم مكتوب عليه «تصوير مطلوب» ما ينشرش بلقطة قديمة معادة. "
-                "استخدم فيديو من 01–06 أو صوّر جديد."]
+                "استخدم فيديو من 01–07 أو صوّر جديد."]
     return "\n".join(out)
 
 

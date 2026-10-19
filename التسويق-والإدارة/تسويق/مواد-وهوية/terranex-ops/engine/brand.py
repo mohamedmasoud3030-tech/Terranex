@@ -7,9 +7,30 @@ from __future__ import annotations
 
 import json
 import os
+import weakref
 from functools import lru_cache
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+# artext: محرك تشكيل عربي (HarfBuzz+FreeType) — بديل libraqm الغائب من عجلات Pillow.
+try:
+    import artext as _ART
+except Exception:  # لو التبعيات مش متثبتة — نرجع لمسار PIL (لاتيني فقط صحيح)
+    _ART = None
+
+# سجل Draw→Image: يرسم artext على الصورة نفسها، وImageDraw ما بيحتفظش بمرجع ليها.
+_DR2IMG: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+_IMGDRAW_DRAW = ImageDraw.Draw
+
+
+def _tracked_draw(im, mode=None):
+    d = _IMGDRAW_DRAW(im, mode)
+    _DR2IMG[d] = im
+    return d
+
+
+ImageDraw.Draw = _tracked_draw
+_WARNED = {"fb": False}
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONT_DIR = os.path.join(ROOT, "assets", "fonts")
@@ -45,18 +66,39 @@ def font(weight: str, size: int) -> ImageFont.FreeTypeFont:
     path = os.path.join(FONT_DIR, FONTS.get(weight, FONTS["regular"]))
     if not os.path.exists(path):
         path = os.path.join(FONT_DIR, "Cairo-VF.ttf")
-    return ImageFont.truetype(path, size)
+    f = ImageFont.truetype(path, size)
+    # تُستخدم من artext للتشكيل الحقيقي
+    f.art_path = path  # type: ignore[attr-defined]
+    f.art_px = int(size)  # type: ignore[attr-defined]
+    return f
 
 
 # ---------- text ----------
+def _fb_notice():
+    if not _WARNED["fb"]:
+        print("⚠️  artext غير متاح — الرجوع لمسار PIL (العربي قد لا يتشكّل صح)."
+              " ثبّت التبعيات: bash setup.sh")
+        _WARNED["fb"] = True
+
+
 def text(draw, xy, s, f, fill, anchor="mm", stroke=0, stroke_fill=None, direction="rtl"):
+    if _ART is not None:
+        im = _DR2IMG.get(draw)
+        if im is not None:
+            _ART.render(im, xy, s, f.art_path, getattr(f, "art_px", f.size), fill,
+                        anchor=anchor, stroke=stroke, stroke_fill=stroke_fill,
+                        direction=direction)
+            return
+    _fb_notice()
     draw.text(xy, s, font=f, fill=fill, anchor=anchor, stroke_width=stroke,
-              stroke_fill=stroke_fill, direction=direction, language="ar",
-              features=["kern", "liga", "calt"])
+              stroke_fill=stroke_fill)
 
 
 def measure(s, f, direction="rtl") -> float:
-    return f.getlength(s, direction=direction, language="ar")
+    if _ART is not None:
+        return _ART.measure(s, f.art_path, getattr(f, "art_px", f.size), direction)
+    _fb_notice()
+    return f.getlength(s)
 
 
 def wrap(s, f, max_w, max_lines=3):
@@ -148,5 +190,5 @@ def watermark(img, label="TerraNex", pos="tl", alpha=105, color=None):
     d = ImageDraw.Draw(lay)
     f = font("medium", 22)
     xy = {"tl": (40, 38), "tr": (img.width - 40, 38)}.get(pos, (40, 38))
-    d.text(xy, label, font=f, fill=hex2rgb(color or C["cream"]) + (alpha,), anchor="la", direction="ltr")
+    text(d, xy, label, f, hex2rgb(color or C["cream"]) + (alpha,), anchor="la", direction="ltr")
     img.alpha_composite(lay)

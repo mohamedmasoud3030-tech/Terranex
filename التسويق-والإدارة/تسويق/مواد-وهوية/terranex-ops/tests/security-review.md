@@ -62,3 +62,22 @@
 
 ## النتيجة
 **اجتاز الفحص.** صفر شبكة · صفر أسرار · صفر أوامر خطرة · كتابة محدودة ومعلومة · لا رفع صلاحيات.
+
+---
+
+## ملحق 19 أكتوبر 2026 — فحص الملفات الجديدة
+النطاق: `artext.py` · `qa_video.py` · `ingest_footage.py` · `make_variants.py` · `package_post.py` · `selfcheck.py`
+
+| الفحص | النتيجة (بأدلة grep) |
+|---|---|
+| شبكة (requests/urllib/socket/http) | **لا يوجد** في أي ملف من الستة |
+| أسرار/توكنات/مفاتيح | **لا يوجد** |
+| `eval`/`exec`/`pickle` | لا يوجد |
+| `shell=True` | **لا يوجد** — كل استدعاءات ffmpeg بقوائم وسيطاء |
+| عمليات حذف مدمرة | لا `rmtree` ولا `remove` — ingest ينقل فقط داخل `مواد-خام/` (شاملاً المكررات إلى `مكررات/` قابلة للاسترجاع) |
+| نطاق الكتابة | artext: لا يكتب · qa/make_variants: مخرجات `--out*` فقط · ingest: داخل `مواد-خام/` حصرًا · package: داخل `output/` + نسخة كابشن · selfcheck: `tempfile` مؤقت حصريًا (معزول بـTX_RAW_DIR/TX_OUT_DIR) |
+| subprocess | qa_video (ffmpeg فحص: ebur128/silencedetect/blackdetect) · make_variants (ترميز) · selfcheck (استدعاء أدوات المحرك نفسها) — كلها بلا shell ومحددة الأغراض |
+| صلاحيات | مستخدم فقط · لا sudo · لا منافذ شبكة |
+| تبعيات جديدة | uharfbuzz / python-bidi / freetype-py — من PyPI الرسمي، وظيفة واحدة معلومة، مثبتة `--user` |
+
+**النتيجة:** اجتاز بنفس معايير الأصل. لا مخاطر جديدة مُدخلة.

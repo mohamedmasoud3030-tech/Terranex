@@ -112,8 +112,8 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
     prog = (i + p) / max(1, total)
     od.rectangle([0, H - 10, int(W * prog), H], fill=B.hex2rgb(B.C["gold"]) + (210,))
     ff = B.font("medium", 28)
-    od.text((W // 2, H - 96) if False else (W // 2, H - 96), f"واتساب {B.PHONE}", font=ff,
-            fill=B.hex2rgb(B.C["cream"]) + (165,), anchor="mm", direction="rtl", language="ar")
+    B.text(od, (W // 2, H - 96), f"واتساب {B.PHONE}", ff,
+           B.hex2rgb(B.C["cream"]) + (165,), anchor="mm")
     canvas.alpha_composite(ov)
 
 

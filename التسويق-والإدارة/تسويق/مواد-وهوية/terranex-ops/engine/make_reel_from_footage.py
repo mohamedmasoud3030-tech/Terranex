@@ -50,8 +50,8 @@ def top_layer():
     TH = 250
     lay = Image.new("RGBA", (W, TH), (0, 0, 0, 0))
     d = ImageDraw.Draw(lay)
-    d.rectangle([0, 0, W, TH], fill=(11, 42, 23, 252))
-    d.rectangle([0, TH - 4, W, TH], fill=(132, 204, 22, 140))
+    d.rectangle([0, 0, W, TH], fill=B.hex2rgb(B.C["bg_dark"]) + (252,))
+    d.rectangle([0, TH - 4, W, TH], fill=B.hex2rgb(B.C["gold"]) + (140,))
     B.place_logo(lay, 84, TH // 2, 108)
     f = B.font("black", 36)
     B.text(d, (132, TH // 2), "TERRANEX", f, B.hex2rgb(B.C["cream"]) + (245,), anchor="lm", direction="ltr")
@@ -69,7 +69,7 @@ def bottom_layer():
     for y in range(gh):
         grad.putpixel((0, y), int(200 * (y / gh) ** 1.5))
     grad = grad.resize((W, gh))
-    dark = Image.new("RGBA", (W, gh), (11, 42, 23, 255))
+    dark = Image.new("RGBA", (W, gh), B.hex2rgb(B.C["bg_dark"]) + (255,))
     lay.paste(Image.composite(dark, Image.new("RGBA", (W, gh), (0, 0, 0, 0)),
                               grad.point(lambda v: v)), (0, H - gh))
     f = B.font("bold", 30)
@@ -88,8 +88,8 @@ def caption_tile(text: str):
     tile = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     td = ImageDraw.Draw(tile)
     r = 20
-    td.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=(11, 42, 23, 214),
-                         outline=(132, 204, 22, 90), width=2)
+    td.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=B.hex2rgb(B.C["bg_dark"]) + (214,),
+                         outline=B.hex2rgb(B.C["gold"]) + (90,), width=2)
     y = pad_y + lh // 2
     for ln in lines:
         B.text(td, (w // 2, y), ln, f, (255, 255, 255, 255), anchor="mm")
@@ -100,7 +100,7 @@ def caption_tile(text: str):
 def endcard_layer():
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(lay)
-    d.rectangle([0, 0, W, H], fill=(11, 42, 23, 255))
+    d.rectangle([0, 0, W, H], fill=B.hex2rgb(B.C["bg_dark"]) + (255,))
     B.place_logo(lay, W // 2, int(H * 0.245), 210)
     f0 = B.font("bold", 30)
     B.text(d, (W // 2, int(H * 0.245) + 108), "TERRANEX", f0, (240, 246, 238, 235), anchor="mm", direction="ltr")
