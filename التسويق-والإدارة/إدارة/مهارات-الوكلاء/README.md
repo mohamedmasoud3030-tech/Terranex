@@ -1,7 +1,7 @@
 # مهارات الوكلاء — TerraNex
 
 النظام الرسمي الوحيد: **`terranex-ops`** في `تسويق/مواد-وهوية/terranex-ops/`
-(محرك تنفيذ — 9 أوامر: idea/script/caption/ad/edit/review/pitch/leads/scenario).
+(محرك تنفيذ — 10 أوامر: idea/script/caption/ad/edit/review/pitch/leads/scenario + discovery للاكتشاف الذاتي).
 
 تشغيل أي جلسة جديدة يبدأ من: `bash setup.sh` (تثبيت التبعيات) ثم
 `python engine/selfcheck.py` (فحص شامل — تفاصيل التشغيل في `OPS.md`).
