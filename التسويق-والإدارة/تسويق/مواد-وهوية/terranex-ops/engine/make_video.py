@@ -2,7 +2,7 @@
 """محرّك الريل — يبني فيديو 9:16 من سكربت JSON بدون أي API key.
 
   python engine/make_video.py --script output/script.json --out output/reel.mp4
-  python engine/make_video.py --script output/script.json --voice recording.m4a --out output/reel.mp4
+  python engine/make_video.py --script output/script.json --voice voice.mp3 --out output/reel.mp4
 
 قواعد الالتزام مطبّقة في المحرّك نفسه:
   • لا يولّد صوتًا أبدًا (Piper/TTS ممنوع). الصوت يُمرَّر من تسجيل حقيقي فقط.
@@ -134,8 +134,14 @@ def render(script: dict, out_path: str, voice: str | None = None):
     if voice:
         cmd += ["-i", voice]
     cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart"]
-    cmd += ["-c:a", "aac", "-b:a", "128k", "-shortest"] if voice else ["-an"]
+            "-profile:v", "high", "-level", "4.1", "-movflags", "+faststart"]
+    if voice:
+        # apad: يمدّ الصوت الصامت لآخر الفيديو — بدونه -shortest بيقطع الفيديو
+        # على طول الصوت. loudnorm: توحيد الجهارة على معيار السوشيال.
+        cmd += ["-af", "apad,loudnorm=I=-15:TP=-1.5:LRA=11",
+                "-c:a", "aac", "-b:a", "160k", "-shortest"]
+    else:
+        cmd += ["-an"]
     cmd += [out_path]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
                             stderr=subprocess.PIPE)
@@ -169,7 +175,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--script", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--voice", default=None, help="تسجيل صوتي حقيقي (ممنوع أي TTS)")
+    ap.add_argument("--voice", default=None,
+                    help="مسار الصوت: تسجيل حقيقي مُفضّل، أو تعليق صوتي مولّد بطلب صريح (compliance §3.5)")
     a = ap.parse_args()
 
     script = json.load(open(a.script, encoding="utf-8"))
