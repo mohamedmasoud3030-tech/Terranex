@@ -3,7 +3,7 @@
 > مراجعة سطرًا بسطر لقبل أول تشغيل إنتاجي. التاريخ: 18 أكتوبر 2026.
 
 ## نطاق الفحص
-`brand.py` · `derive_palette.py` · `make_poster.py` · `make_video.py` · `make_reel_from_footage.py` · `critic.py` · `gen_calendar.py` · `learn.py`
+`brand.py` · `derive_palette.py` · `make_poster.py` · `make_video.py` · `make_reel_from_footage.py` · `make_scenario.py` · `critic.py` · `gen_calendar.py` · `learn.py`
 
 ## 1) الشبكة
 | الفحص | النتيجة |
@@ -33,6 +33,7 @@
 |---|---|---|
 | `make_video.py` | `ffmpeg` (باينري imageio-ffmpeg) | args قائمة، بلا `shell=True`، مدخلات من ملف JSON محلي |
 | `make_reel_from_footage.py` | `ffmpeg` فك/ترميز | نفس السبب + مسار ملف يُمرَّر كوسيط لا كأمر |
+| `make_scenario.py` | `ffmpeg` ترميز من stdin | args قائمة، بلا `shell=True`؛ الصور تُقرأ من `spec.json` داخل مجلد السيناريو فقط |
 | `derive_palette.py` | **لا يوجد** | — |
 
 ## 4) الكتابة على القرص
@@ -42,6 +43,7 @@
 | `make_poster.py` | مسار `--out` فقط | ملف واحد ✓ |
 | `make_video.py` | مسار `--out` فقط | ملف واحد ✓ |
 | `make_reel_from_footage.py` | مسار `--out` فقط | ملف واحد ✓ |
+| `make_scenario.py` | مجلد `--outdir` + `--video` | ملفات الإطارات + فيلم + ستوريبورد داخل نفس المجلد ✓ |
 | `gen_calendar.py` | مسار `--out` فقط | ملف واحد ✓ |
 | `learn.py` | `context/learnings.md` (فقط مع `--append`) | ملف واحد، بموافقة صريحة عبر الفلاغ ✓ |
 | `critic.py` | **لا يكتب شيئًا** | صفر ✓ |
