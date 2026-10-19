@@ -1,7 +1,8 @@
 # 🛠️ OPS — تشغيل عملية تسويق TerraNex (الدليل الحاكم للوكيل والمستخدم)
 
 > اقرأ `SKILL.md` أولًا (الأوامر التسعة والقواعد)، وهذا الملف لكيفية التشغيل اليومي وسلامة النظام.
-> كل أمر هنا مُختبر فعليًا آخر مرة بتاريخ 19 أكتوبر 2026 عبر `engine/selfcheck.py` (11/11).
+> كل أمر هنا مُختبر فعليًا آخر مرة بتاريخ 19 أكتوبر 2026 عبر `engine/selfcheck.py` (13/13).
+> القرارات المتخذة حيال الأدوات المفتوحة المصدر (تبني/رفض/حدود): `studio/مخزون-الأدوات-المفتوحة.md`.
 
 ## 0) إعداد جلسة جديدة (30 ثانية)
 ```bash
@@ -38,6 +39,8 @@ package_post ← قيد في output/queue.csv بحالة «بانتظار-موا
 | بوستر/ستوري بهوية الشعار | `python engine/make_poster.py --headline "…" --stat 50 --unit "كجم" --sub "…" --out output/p.png` |
 | ريل موشن 9:16 من سكربت | `python engine/make_video.py --script s.json [--voice حقيقي.mp3] --out output/r.mp4` |
 | ريل براند من لقطة حقيقية | `python engine/make_reel_from_footage.py --video fx.mp4 --captions c.json --out output/r.mp4` |
+| مونتاج متقاطع (2+ لقطة) | `python engine/make_montage.py --clips a.mp4 b.mp4 --trims "0:4,2:6" --out output/m.mp4` |
+| قصّ وقفات فيديو كلام | `python engine/fix_pauses.py --in raw.mp4 --out cut.mp4 [--min-pause 0.6]` |
 | نسخ المنصات (reels/4:5/1:1) | `python engine/make_variants.py --video m.mp4 --outdir output/variants/x` |
 | فحص جودة فيديو | `python engine/qa_video.py --video v.mp4 --profile reels` |
 | فحص التزام نص | `python engine/critic.py --file cap.txt` |
@@ -61,6 +64,9 @@ package_post ← قيد في output/queue.csv بحالة «بانتظار-موا
 | libraqm في بيئة Pillow | غير متاح (عجلات PyPI بلا raqm) | `engine/artext.py`: HarfBuzz+FreeType — تشكيل عربي مكافئ |
 | ffmpeg النظامي | غير مثبت | `imageio-ffmpeg` (باينري pip) — يستخدمه كل المحركات |
 | تفريغ صوتي (whisper) | مكتباته ثقيلة ونماذجه على HF خارج النطاق الشبكي | الكابشنات تُكتب من السكربت/النسخة المعروفة وتُحرق عبر make_video/make_reel |
+| قصّ وقفات آلي متخصص (auto-editor) | متعذر التحميل في هذه البيئة (باينري خارج النطاق) | `engine/fix_pauses.py` — نفس النتيجة عمليًا، مُختبر |
+| TTS عربي محلي (piper) | الأصوات على HF خارج النطاق | أداة الصوت في جلسة Arena (طلب صريح، وسم §3.5) أو تسجيل الفريق |
+| قصاصات صور (rembg) | تعارض pillow (انظر المخزون) | knockout السطوع للشعار؛ venv معزول عند الحاجة الفعلية |
 | النشر على المنصات | لا تكاملات مخوّلة في هذه الجلسة | جدولة queue.csv + نشر يدوي من مجلد الجاهز |
 | TTS عربي | متاح عبر أدوات الجلسة بطلب صريح فقط (compliance §3.5) | يُوسم «تعليق صوتي» في الوصف دائمًا |
 | مونتاج آلي لسلسلة لقطات | غير موجود (OpenMontage وهمي) | CapCut للمستخدم أو make_reel للفيديو الواحد |

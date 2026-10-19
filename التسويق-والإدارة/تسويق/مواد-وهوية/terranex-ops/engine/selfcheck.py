@@ -199,6 +199,55 @@ def check_package(tmp: str, reel: str | None) -> None:
            (p.stderr or p.stdout)[-300:] if not ok else "")
 
 
+def check_pauses(tmp: str) -> None:
+    """مقطع كلام فيه وقفة — يجب قصّها: 2ث نغمة + 1.5ث صمت + 2ث نغمة → ≈4ث."""
+    import imageio_ffmpeg
+    ff = imageio_ffmpeg.get_ffmpeg_exe()
+    src = os.path.join(tmp, "talk.mp4")
+    p0 = run([ff, "-y", "-f", "lavfi", "-i", "color=c=0x102018:s=540x960:d=5.5:r=25",
+              "-f", "lavfi", "-i", "sine=frequency=330:duration=2",
+              "-f", "lavfi", "-t", "1.5", "-i", "anullsrc=r=48000:cl=mono",
+              "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+              "-filter_complex", "[1:a][2:a][3:a]concat=n=3:v=0:a=1[a]",
+              "-map", "0:v", "-map", "[a]", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+              "-c:a", "aac", src])
+    out = os.path.join(tmp, "talk-cut.mp4")
+    p1 = run([sys.executable, "engine/fix_pauses.py", "--in", src, "--out", out,
+              "--min-pause", "0.5"])
+    ok = p0.returncode == 0 and p1.returncode == 0 and os.path.exists(out)
+    dur_ok = False
+    if ok:
+        import qa_video
+        d = qa_video.probe(out).get("duration", 0)
+        dur_ok = 3.2 <= d <= 4.6
+    record("قصّ الوقفات fix_pauses (تنفيذ محلي بديل auto-editor)", ok and dur_ok,
+           (p0.stderr or p1.stderr)[-300:] if not ok else "المدة بعد القص خارج المتوقع")
+
+
+def check_montage(tmp: str, reel: str | None) -> None:
+    """تركيب لقطتين عبر MoviePy — قصّ كل واحدة إلى ~1ث."""
+    if not reel:
+        record("المونتاج المتقاطع make_montage (MoviePy)", False, "لا يوجد ريل اختبار")
+        return
+    import imageio_ffmpeg
+    ff = imageio_ffmpeg.get_ffmpeg_exe()
+    c2 = os.path.join(tmp, "c2.mp4")
+    run([ff, "-y", "-f", "lavfi", "-i", "testsrc=duration=2:size=1080x1920:rate=25",
+         "-f", "lavfi", "-i", "sine=frequency=500:duration=2",
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", c2])
+    out = os.path.join(tmp, "montage.mp4")
+    p = run([sys.executable, "engine/make_montage.py", "--clips", reel, c2,
+             "--trims", "0:1,0:1", "--out", out])
+    ok = p.returncode == 0 and os.path.exists(out)
+    dur_ok = False
+    if ok:
+        import qa_video
+        d = qa_video.probe(out).get("duration", 0)
+        dur_ok = abs(d - 2.0) < 0.35
+    record("المونتاج المتقاطع make_montage (MoviePy/MIT)", ok and dur_ok,
+           (p.stderr or "")[-300:] if not ok else "مدة المونتاج ≠ 2ث تقريبًا")
+
+
 def _report() -> int:
     print("\n🩺 الفحص الذاتي — terranex-ops\n")
     fails = 0
@@ -230,6 +279,8 @@ def main():
             check_qa(reel)
             check_ingest(tmp, reel)
             check_package(tmp, reel)
+            check_pauses(tmp)
+            check_montage(tmp, reel)
         check_calendar(tmp)
     sys.exit(_report())
 
