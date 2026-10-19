@@ -83,6 +83,8 @@ SCORE: critic.py
 | ريل بلقطة حقيقية | `python engine/make_reel_from_footage.py --video f.mp4 --captions c.json --out x.mp4` |
 | مونتاج متقاطع | `python engine/make_montage.py --clips a.mp4 b.mp4 --trims "0:4,2:6" --out x.mp4` (MoviePy/MIT) |
 | قصّ وقفات المقدم | `python engine/fix_pauses.py --in raw.mp4 --out cut.mp4` |
+| حملة كاملة من موجز | `python engine/campaign_run.py --brief campaigns/<اسم>.json [--register]` |
+| قياس وتحسين | `python engine/measure.py --csv data/week-NN.csv [--prev w(N-1).csv --append]` |
 | نسخ المنصات | `python engine/make_variants.py --video m.mp4 --outdir output/variants/x` |
 | فوتاج جديد | `python engine/ingest_footage.py` (من `مواد-خام/وارد/`) |
 | فحص فيديو | `python engine/qa_video.py --video v.mp4 --profile reels` |

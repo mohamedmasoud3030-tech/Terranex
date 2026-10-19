@@ -200,6 +200,7 @@ def check_package(tmp: str, reel: str | None) -> None:
 
 
 def check_pauses(tmp: str) -> None:
+
     """مقطع كلام فيه وقفة — يجب قصّها: 2ث نغمة + 1.5ث صمت + 2ث نغمة → ≈4ث."""
     import imageio_ffmpeg
     ff = imageio_ffmpeg.get_ffmpeg_exe()
@@ -262,6 +263,51 @@ def _report() -> int:
     return 0 if fails == 0 else 1
 
 
+def check_campaign(tmp: str) -> None:
+    """منسّق الحملة: فيكستشر 3.5ث + كابشن نظيف → تشغيل كامل ثم تنظيف."""
+    import imageio_ffmpeg
+    import shutil
+    ff = imageio_ffmpeg.get_ffmpeg_exe()
+    vid = os.path.join(tmp, "camp-fix.mp4")
+    cap = os.path.join(tmp, "camp-cap.txt")
+    brief = os.path.join(tmp, "camp-brief.json")
+    p0 = run([ff, "-y", "-f", "lavfi", "-i", "testsrc2=duration=3.5:size=1080x1920:rate=30",
+              "-f", "lavfi", "-i", "sine=frequency=440:duration=3.5",
+              "-af", "loudnorm=I=-15:TP=-1.5:LRA=11", "-c:v", "libx264",
+              "-pix_fmt", "yuv420p", "-c:a", "aac", vid])
+    with open(cap, "w", encoding="utf-8") as f:
+        f.write("لقطة حقيقية من المزرعة النهارده\nوزن وفحص قبل التصوير — شوف بنفسك.\n#TerraNex #استثمار_حيواني #الإسكندرية\n")
+    import json as _json
+    with open(brief, "w", encoding="utf-8") as f:
+        _json.dump({"name": "فحص-ذاتي-حملة", "start": "2026-10-26",
+                    "platforms": ["facebook", "instagram"],
+                    "posts": [{"video": vid, "caption": cap, "title": "فحص-ذاتي-منشور"}]},
+                   f, ensure_ascii=False)
+    p1 = run([sys.executable, "engine/campaign_run.py", "--brief", brief])
+    cdir = os.path.join(ROOT, "output", "campaigns", "فحص-ذاتي-حملة")
+    q_ok = p1.returncode == 0 and os.path.isfile(os.path.join(cdir, "queue-campaign.csv"))
+    files_ok = q_ok and len([x for x in os.listdir(cdir)]) >= 5
+    if os.path.isdir(cdir):
+        shutil.rmtree(cdir)
+    record("منسّق الحملة campaign_run (بوابة ← تجهيز ← جدول+قالب قياس)",
+           files_ok, (p0.stderr or p1.stderr or p1.stdout)[-300:] if not files_ok else "")
+
+
+def check_measure(tmp: str) -> None:
+    """القياس: قالب للفريق + تحليل النموذج المرجعي ينتج تقريرًا ثم يُنظّف."""
+    t = os.path.join(tmp, "قالب-قياس.csv")
+    p0 = run([sys.executable, "engine/measure.py", "--template", t])
+    p1 = run([sys.executable, "engine/measure.py", "--csv", "data/week-00-نموذج.csv"])
+    reports_dir = os.path.abspath(os.path.join(ROOT, "..", "..", "..", "إدارة", "تقارير-ومتابعة"))
+    import datetime as _dt
+    rep = os.path.join(reports_dir, f"قياس-الحملة-week-00-نموذج-{_dt.date.today().isoformat()}.md")
+    ok = p0.returncode == 0 and p1.returncode == 0 and os.path.isfile(rep) and os.path.getsize(rep) > 200
+    if ok:
+        os.remove(rep)
+    record("قياس الحملة measure (قالب فريق ← تحليل ← تقرير)",
+           ok, (p0.stderr or p1.stderr)[-300:] if not ok else "")
+
+
 def main():
     quick = "--quick" in sys.argv
     check_deps()
@@ -281,6 +327,8 @@ def main():
             check_package(tmp, reel)
             check_pauses(tmp)
             check_montage(tmp, reel)
+            check_campaign(tmp)
+            check_measure(tmp)
         check_calendar(tmp)
     sys.exit(_report())
 
