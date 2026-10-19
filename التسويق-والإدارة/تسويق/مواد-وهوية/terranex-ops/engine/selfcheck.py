@@ -347,6 +347,32 @@ def check_identity_rules() -> None:
     record("قواعد الهوية B9/B10/B11 (مدينة · إذن المالك · علامة مائية)", ok, detail)
 
 
+# ملفات مسموح لها ذكر المدينة لأنها **تُعرِّف القاعدة** أو تختبرها فقط
+CITY_ALLOWED_FILES = {"critic.py", "brand.py", "selfcheck.py", "reel_build.py"}
+
+
+def check_no_city_in_engines() -> None:
+    """حارس B9 الثابت: أي محرك بيبني نصًا/فريمًا ممنوع يحتوي على اسم المدينة.
+
+    يمنع رجوع القاعدة (حصل فعلًا في make_reel_from_footage قبل التصحيح).
+    """
+    import glob
+    import brand as B
+    engine_dir = os.path.dirname(os.path.abspath(__file__))
+    offenders = []
+    for p in sorted(glob.glob(os.path.join(engine_dir, "*.py"))):
+        name = os.path.basename(p)
+        if name in CITY_ALLOWED_FILES:
+            continue
+        txt = open(p, encoding="utf-8").read()
+        for c in B.CITY_BAN:
+            if c in txt:
+                offenders.append(f"{name}:{c}")
+                break
+    record("حارس B9 — لا اسم مدينة في أي محرك إنتاج",
+           not offenders, "؛ ".join(offenders))
+
+
 def main():
     quick = "--quick" in sys.argv
     check_deps()
@@ -355,6 +381,7 @@ def main():
     check_arabic()
     check_critic()
     check_identity_rules()
+    check_no_city_in_engines()
     with tempfile.TemporaryDirectory(prefix="tx-ops-check-") as tmp:
         poster = check_poster(tmp)
         if poster is None and RESULTS[-1][1] is False and "setup.sh" in (RESULTS[-1][2] or ""):

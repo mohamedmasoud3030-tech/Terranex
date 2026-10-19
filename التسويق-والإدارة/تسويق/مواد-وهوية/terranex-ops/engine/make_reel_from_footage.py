@@ -56,7 +56,7 @@ def top_layer():
     f = B.font("black", 36)
     B.text(d, (132, TH // 2), "TERRANEX", f, B.hex2rgb(B.C["cream"]) + (245,), anchor="lm", direction="ltr")
     f2 = B.font("medium", 27)
-    B.text(d, (W - 40, TH // 2), "استثمار حيواني · الإسكندرية", f2, (214, 226, 210, 215), anchor="rm")
+    B.text(d, (W - 40, TH // 2), "استثمار حيواني · ثروة حقيقية", f2, (214, 226, 210, 215), anchor="rm")
     return lay
 
 
@@ -114,7 +114,7 @@ def endcard_layer():
     fp = B.font("black", 60)
     B.text(d, (W // 2, int(H * 0.655)), B.PHONE, fp, (255, 255, 255, 255), anchor="mm", direction="ltr")
     fw = B.font("medium", 31)
-    B.text(d, (W // 2, int(H * 0.703)), "واتساب — الإسكندرية", fw, (214, 226, 210, 210), anchor="mm")
+    B.text(d, (W // 2, int(H * 0.703)), "واتساب — للاستفسار", fw, (214, 226, 210, 210), anchor="mm")
     return lay
 
 
