@@ -43,7 +43,7 @@ sed 's/create role authenticated nologin; create role anon nologin;//' \
 
 for file in "$ROOT"/supabase/migrations/*.sql; do
   case "$(basename "$file")" in
-    20260813001100*.sql|20260814*.sql|20260815*.sql|20260816*.sql) continue ;;
+    20260813001100*.sql|20260814*.sql|20260815*.sql|20260816*.sql|202609*.sql) continue ;;
   esac
   psql_db "$UPGRADE_DB" < "$file"
 done

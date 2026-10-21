@@ -36,7 +36,7 @@ Read these files completely before changing the product:
 8. `docs/greenfield/07_UX_INFORMATION_ARCHITECTURE.md`
 9. `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`
 10. `docs/OPEN_BUSINESS_DECISIONS.md`
-11. `GREENFIELD_EXECUTION.md`
+11. `docs/GREENFIELD_EXECUTION.md`
 12. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
 13. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
 14. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`

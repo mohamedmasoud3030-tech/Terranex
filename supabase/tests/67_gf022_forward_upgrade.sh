@@ -42,7 +42,7 @@ done
 for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"
   [[ "$base" == 00_* ]] && continue
-  [[ "$base" < 65_ ]] || continue
+  [[ "$base" =~ ^([0-9]+) ]] && (( 10#${BASH_REMATCH[1]} < 65 )) || continue
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null
 done
 
