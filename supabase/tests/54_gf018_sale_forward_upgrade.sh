@@ -21,7 +21,7 @@ for migration in "$ROOT"/supabase/migrations/*.sql; do
 done
 for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"; [[ "$base" == '00_supabase_shim.sql' ]] && continue
-  [[ "$base" < '52_' ]] || continue
+  [[ "$base" =~ ^([0-9]+) ]] && (( 10#${BASH_REMATCH[1]} < 52 )) || continue
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null
 done
 fingerprint_sql="select md5(jsonb_build_object(

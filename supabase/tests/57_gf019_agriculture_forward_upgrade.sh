@@ -24,7 +24,7 @@ done
 # Shell suites are not seed migrations; GF-019 is excluded by its exact family.
 for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"; [[ "$base" == '00_supabase_shim.sql' ]] && continue
-  [[ "$base" < '55_' ]] || continue
+  [[ "$base" =~ ^([0-9]+) ]] && (( 10#${BASH_REMATCH[1]} < 55 )) || continue
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null
 done
 [[ "$(psql_db "$UPGRADE_DB" -Atc "select to_regclass('public.crop_cycle_cost_attributions') is null")" == t ]] || { echo 'ERROR: fixture is not genuinely pre-GF-019' >&2; exit 1; }

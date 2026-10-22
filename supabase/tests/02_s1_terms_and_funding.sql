@@ -190,7 +190,7 @@ select 1/case when s1_expect_raise('00000000-0000-4000-8000-000000000001', forma
   :'project_a', :'part_a1', :'version_a1', :'call_1'), 'P0001') then 1 else 0 end as contribution_retry_payload_mismatch_rejected;
 
 select s1_run('00000000-0000-4000-8000-000000000001', format(
-  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,150000,'EGP',date '2026-09-13','contrib-main-a2-1')$$,
+  $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,150000,'EGP',current_date,'contrib-main-a2-1')$$,
   :'project_a', :'part_a2', :'version_a1', :'call_1'));
 select s1_run('00000000-0000-4000-8000-000000000001', format(
   $$select public.record_contribution('10000000-0000-4000-8000-000000000001',%L,%L,%L,%L,50000,'EGP',date '2026-09-14','contrib-main-a2-2')$$,
