@@ -338,7 +338,7 @@ Delivered and verified in this slice:
     environment because neither `psql` nor Docker is available
     on the local agent sandbox. The canonical GitHub Actions
     PostgreSQL 16 job is the authoritative gate before the PR
-    is called ready. Per `AGENTS.md` and `docs/DB_DEVELOPMENT.md`,
+    is called ready. Per `AGENTS.md` and `docs/specs/ops/DB_DEVELOPMENT.md`,
     the local database gate is never simulated or marked passed
     when its prerequisites are missing.
 
