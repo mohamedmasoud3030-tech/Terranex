@@ -34,6 +34,21 @@ CAP_MAX_WORDS = 6       # كلمات لكل سطر
 CAP_FONT = 54
 
 
+def _safe_input_path(path: str, *roots: str) -> str:
+    """مسار إدخال آمن: مطلق، موجود، لا يبدأ بشرطة (حقن خيارات ffmpeg)،
+    وداخل أحد الجذور المسموحة (مجلد الـspec أو مجلد العمل)."""
+    ap = os.path.abspath(path)
+    if os.path.basename(ap).startswith("-"):
+        raise SystemExit(f"unsafe input path (option injection): {path}")
+    if not os.path.exists(ap):
+        raise SystemExit(f"input not found: {path}")
+    for r in roots:
+        rp = os.path.abspath(r)
+        if os.path.commonpath([ap, rp]) == rp:
+            return ap
+    raise SystemExit(f"input path outside allowed roots: {path}")
+
+
 def ff() -> str:
     try:
         import imageio_ffmpeg
@@ -211,7 +226,7 @@ def mix_audio(spec: dict, voice: str, original: str, total: float, out: str) -> 
         ss = max(0.0, total - tail_len - 0.2)
         fc += ("[1:a]atrim=start=%.2f,asetpts=N/SR/TB,volume=%.3f[tail];" % (ss, a))
         fc += ("[voB][duck][tail]amix=inputs=3:duration=longest:dropout_transition=0:"
-               "normalize=0," % ())
+               "normalize=0,")
     else:
         fc += "[voB][duck]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0,"
     fc += "atrim=0:%.2f,loudnorm=I=-15:TP=-1.5:LRA=11[aout]" % total
@@ -232,6 +247,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     for c in spec["clips"]:
         if not os.path.isabs(c["path"]):
             c["path"] = os.path.normpath(os.path.join(base, c["path"]))
+        c["path"] = _safe_input_path(c["path"], base)
 
     require_consent(spec)
     lint_text(spec.get("hook", ""))
@@ -288,6 +304,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-"]
     mixed = None
     if voice:
+        voice = _safe_input_path(voice, base, os.getcwd())
         mixed = os.path.join(tmpdir, "mix.wav")
         mix_audio(spec, voice, clips[0]["path"], total, mixed)
         cmd += ["-i", mixed]
