@@ -38,7 +38,7 @@ for test_file in "$ROOT"/supabase/tests/*.sql; do
   # Only include test fixtures below the GF-017 boundary (prefix < 50)
   # and explicitly exclude any R4/procurement tests which reference
   # supplier_invoices that only exist after GF-017.
-  [[ "$base" < "50_" ]] || continue
+  [[ "$base" =~ ^([0-9]+) ]] && (( 10#${BASH_REMATCH[1]} < 50 )) || continue
   [[ "$base" == "83_"* ]] && continue  # Skip R4 procurement integration (83_r4_*.sql)
   [[ "$base" == "85_"* ]] && continue  # Skip R4 evidence tests (85_r4_*.sql)
   psql_db "$UPGRADE_DB" < "$test_file" >/dev/null

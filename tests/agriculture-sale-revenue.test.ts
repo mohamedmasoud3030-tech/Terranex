@@ -114,7 +114,7 @@ describe('GF-018 sale, dispatch and Finance Core boundary', () => {
   });
 
   it('forward-upgrades a full GF-017 boundary without changing historical rows', () => {
-    expect(forward).toContain("< '52_'");
+    expect(forward).toContain("10#${BASH_REMATCH[1]} < 52");
     expect(forward).toContain('genuinely pre-GF-018');
     for (const key of ['land', 'farm_land', 'harvest_events', 'movements', 'batches', 'lines', 'cash']) {
       expect(forward).toContain(`'${key}'`);

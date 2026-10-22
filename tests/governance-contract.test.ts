@@ -29,7 +29,7 @@ describe('GF-012 canonical governance contract', () => {
 
   it('sets the remaining Agriculture phases in their authorized order', () => {
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
-    const execution = read('GREENFIELD_EXECUTION.md');
+    const execution = read('docs/GREENFIELD_EXECUTION.md');
     expect(roadmap).toMatch(/GF-017 — Agricultural Land Asset, Acquisition & Control \(merged\)/);
     expect(roadmap).toMatch(/GF-018 — Agriculture Sale, Dispatch & Revenue \(merged\)/);
     expect(roadmap).toMatch(/GF-019 — Agriculture Profitability, Cycle Closeout & Technical Gate/);
@@ -41,7 +41,7 @@ describe('GF-012 canonical governance contract', () => {
   it('states the Agriculture delivery state truthfully across canonical docs', () => {
     const policy = read('AGENTS.md');
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
-    const execution = read('GREENFIELD_EXECUTION.md');
+    const execution = read('docs/GREENFIELD_EXECUTION.md');
 
     // R0 canonical text: all three sector paths are technically implemented
     // for their authorized scopes, the historical expansion sequence is
@@ -67,7 +67,7 @@ describe('GF-012 canonical governance contract', () => {
   });
 
   it('keeps the deferred Agriculture scope honest during GF-019', () => {
-    const execution = read('GREENFIELD_EXECUTION.md');
+    const execution = read('docs/GREENFIELD_EXECUTION.md');
     const roadmap = read('docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md');
     // Result/closeout is delivered in GF-019, while input stock remains explicitly deferred.
     expect(execution).toMatch(/deferred beyond GF-019/);
@@ -82,7 +82,7 @@ describe('GF-012 canonical governance contract', () => {
   });
 
   it('keeps implementation, deployment, and customer evidence separate', () => {
-    const execution = read('GREENFIELD_EXECUTION.md');
+    const execution = read('docs/GREENFIELD_EXECUTION.md');
     const readme = read('README.md');
     expect(execution).toMatch(/LATEST PRODUCTION ALIAS VERIFICATION PENDING/);
     expect(execution).toMatch(/real-customer validation, buyer UAT, and commercial Phase 2\/3 evidence: not started\/not passed/);
@@ -90,7 +90,7 @@ describe('GF-012 canonical governance contract', () => {
   });
 
   it('records R1 Portfolio Foundation as management-only with economics excluded', () => {
-    const execution = read('GREENFIELD_EXECUTION.md');
+    const execution = read('docs/GREENFIELD_EXECUTION.md');
     const adr = read('docs/decisions/0025_R1_PORTFOLIO_FOUNDATION.md');
     const migration = read('supabase/migrations/20260815030000_r1_portfolio_foundation.sql');
 
