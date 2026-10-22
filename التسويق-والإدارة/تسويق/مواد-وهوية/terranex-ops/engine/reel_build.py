@@ -240,6 +240,10 @@ def mix_audio(spec: dict, voice: str, original: str, total: float, out: str) -> 
 
 
 def build(spec_path: str, voice: str | None, out: str) -> dict:
+    spec_path = _safe_input_path(spec_path, os.getcwd())
+    if os.path.basename(out).startswith("-") or os.path.basename(out) == "":
+        raise SystemExit(f"unsafe output path: {out}")
+    out = os.path.abspath(out)
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
     # المسارات النسبية في الـspec تُحسب من مجلد الـspec نفسه (لا من CWD)
