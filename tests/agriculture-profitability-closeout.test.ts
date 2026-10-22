@@ -147,7 +147,7 @@ describe('GF-019 closeout and technical controls', () => {
 
   it('forward upgrades the exact GF-018 boundary and fingerprints the complete chain', () => {
     expect(forward).toContain('"20260814001600"');
-    expect(forward).toContain("< '55_'");
+    expect(forward).toContain("10#${BASH_REMATCH[1]} < 55");
     for (const key of ['land', 'farms', 'fields', 'cycles', 'activities', 'applications', 'harvest_events', 'movements', 'sales', 'recognitions', 'collections', 'batches', 'lines']) {
       expect(forward).toContain(`'${key}'`);
     }

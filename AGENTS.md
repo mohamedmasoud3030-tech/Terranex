@@ -1,3 +1,18 @@
+# AGENTS.md — بوابة توجيه أي وكيل AI يفتح هذا المستودع
+> **اختر مسارك من طلب المستخدم، قبل أي عمل:**
+
+| طلب المستخدم عن… | المسار | وثيقة الدخول الحاكمة |
+|---|---|---|
+| **تسويق · محتوى · فيديو · حملات · ليدز السوشيال** | `التسويق-والإدارة/` | `التسويق-والإدارة/وكيل-AI-ابدأ-هنا.md`* |
+| **منتج Terranex · كود · بنية · أمان** | جذر المستودع | سياسة المنتج أدناه (Greenfield Agent Policy) |
+
+## قانونان يسريان على المسارين (محفوران 19/10 بعد فشل اختبار فعلي)
+1. **استوضح الموضوع قبل التنفيذ:** طلب مفتوح بلا موضوع («اعمل فيديو») ← سؤال
+   واحد قصير عن الموضوع قبل البدء. ممنوع تخمين المحتوى.
+2. **التسليم قبل التأسيس:** المطلوب يصل أولًا؛ بناء أدوات يأتي بعد إثبات الحاجة.
+
+---
+
 # Terranex Greenfield — Agent Policy
 
 **Effective:** 2026-08-15
@@ -21,7 +36,7 @@ Read these files completely before changing the product:
 8. `docs/greenfield/07_UX_INFORMATION_ARCHITECTURE.md`
 9. `docs/greenfield/08_MVP_AND_DELIVERY_ROADMAP.md`
 10. `docs/OPEN_BUSINESS_DECISIONS.md`
-11. `GREENFIELD_EXECUTION.md`
+11. `docs/GREENFIELD_EXECUTION.md`
 12. `docs/decisions/0001_PRODUCT_FIRST_BUILD.md`
 13. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
 14. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`

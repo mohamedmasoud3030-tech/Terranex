@@ -1,0 +1,194 @@
+"""TerraNex — brand tokens، مصدر الحقيقة الوحيد = context/palette.json.
+
+‏palette.json بيتولّد آليًا من الشعار الرسمي عبر engine/derive_palette.py.
+ممنوع كتابة أي hex هنا — أي لون جديد يُشتق من الشعار ويُوثَّق في palette.json.
+"""
+from __future__ import annotations
+
+import json
+import os
+import weakref
+from functools import lru_cache
+
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+# artext: محرك تشكيل عربي (HarfBuzz+FreeType) — بديل libraqm الغائب من عجلات Pillow.
+try:
+    import artext as _ART
+except Exception:  # لو التبعيات مش متثبتة — نرجع لمسار PIL (لاتيني فقط صحيح)
+    _ART = None
+
+# سجل Draw→Image: يرسم artext على الصورة نفسها، وImageDraw ما بيحتفظش بمرجع ليها.
+_DR2IMG: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+_IMGDRAW_DRAW = ImageDraw.Draw
+
+
+def _tracked_draw(im, mode=None):
+    d = _IMGDRAW_DRAW(im, mode)
+    _DR2IMG[d] = im
+    return d
+
+
+ImageDraw.Draw = _tracked_draw
+_WARNED = {"fb": False}
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FONT_DIR = os.path.join(ROOT, "assets", "fonts")
+LOGO_DIR = os.path.join(ROOT, "assets", "logo")
+PALETTE = os.path.join(ROOT, "context", "palette.json")
+LOGO_FILE = "شعار-TerraNex.jpg"
+
+# ---------- tokens: تُقرأ ولا تُكتب ----------
+with open(PALETTE, encoding="utf-8") as _f:
+    _PAL = json.load(_f)
+
+C = dict(_PAL["final"])
+# أسماء متوافقة مع بقية المحركات
+C["gold_page"] = _PAL.get("page_vars", {}).get("gold", C["gold_mid"])
+C["cream"] = C["bg_cream"]
+C["white"] = "#FFFFFF"
+
+FONTS = {
+    "black": "Tajawal-Black.ttf",
+    "extrabold": "Tajawal-ExtraBold.ttf",
+    "bold": "Tajawal-Bold.ttf",
+    "medium": "Tajawal-Medium.ttf",
+    "regular": "Tajawal-Regular.ttf",
+    "light": "Tajawal-Light.ttf",
+}
+
+PHONE = "01010154221"
+
+
+# ---------- fonts ----------
+@lru_cache(maxsize=128)
+def font(weight: str, size: int) -> ImageFont.FreeTypeFont:
+    path = os.path.join(FONT_DIR, FONTS.get(weight, FONTS["regular"]))
+    if not os.path.exists(path):
+        path = os.path.join(FONT_DIR, "Cairo-VF.ttf")
+    f = ImageFont.truetype(path, size)
+    # تُستخدم من artext للتشكيل الحقيقي
+    f.art_path = path  # type: ignore[attr-defined]
+    f.art_px = int(size)  # type: ignore[attr-defined]
+    return f
+
+
+# ---------- text ----------
+def _fb_notice():
+    if not _WARNED["fb"]:
+        print("⚠️  artext غير متاح — الرجوع لمسار PIL (العربي قد لا يتشكّل صح)."
+              " ثبّت التبعيات: bash setup.sh")
+        _WARNED["fb"] = True
+
+
+def text(draw, xy, s, f, fill, anchor="mm", stroke=0, stroke_fill=None, direction="rtl"):
+    if _ART is not None:
+        im = _DR2IMG.get(draw)
+        if im is not None:
+            _ART.render(im, xy, s, f.art_path, getattr(f, "art_px", f.size), fill,
+                        anchor=anchor, stroke=stroke, stroke_fill=stroke_fill,
+                        direction=direction)
+            return
+    _fb_notice()
+    draw.text(xy, s, font=f, fill=fill, anchor=anchor, stroke_width=stroke,
+              stroke_fill=stroke_fill)
+
+
+def measure(s, f, direction="rtl") -> float:
+    if _ART is not None:
+        return _ART.measure(s, f.art_path, getattr(f, "art_px", f.size), direction)
+    _fb_notice()
+    return f.getlength(s)
+
+
+def wrap(s, f, max_w, max_lines=3):
+    words, lines, cur = s.split(), [], ""
+    for w in words:
+        t = (cur + " " + w).strip()
+        if measure(t, f) <= max_w or not cur:
+            cur = t
+        else:
+            lines.append(cur); cur = w
+            if len(lines) == max_lines:
+                break
+    if cur and len(lines) < max_lines:
+        lines.append(cur)
+    return lines
+
+
+# ---------- colors/background ----------
+def hex2rgb(x):
+    x = x.lstrip("#")
+    return tuple(int(x[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def vgradient(size, stops):
+    w, h = size
+    col = Image.new("RGB", (1, h)); px = col.load()
+    stops = sorted([(t, hex2rgb(c) if isinstance(c, str) else c) for t, c in stops])
+    for y in range(h):
+        t = y / max(1, h - 1)
+        for i in range(len(stops) - 1):
+            t0, c0 = stops[i]; t1, c1 = stops[i + 1]
+            if t0 <= t <= t1:
+                k = (t - t0) / max(1e-6, t1 - t0)
+                px[0, y] = tuple(int(c0[j] + (c1[j] - c0[j]) * k) for j in range(3))
+                break
+    return col.resize((w, h), Image.BILINEAR)
+
+
+def glow(base, center, radius, color, alpha=60):
+    w, h = base.size
+    layer = Image.new("L", (w, h), 0); d = ImageDraw.Draw(layer)
+    cx, cy = center
+    for i in range(18, 0, -1):
+        r = radius * i / 18
+        d.ellipse([cx - r, cy - r * 1.15, cx + r, cy + r * 1.15], fill=int(alpha * (1 - i / 18) ** 1.6))
+    layer = layer.filter(ImageFilter.GaussianBlur(radius // 6))
+    tint = Image.new("RGB", (w, h), hex2rgb(color))
+    base.paste(Image.composite(tint, base, layer), (0, 0))
+    return base
+
+
+def vignette(img, strength=115):
+    w, h = img.size
+    m = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(m).ellipse([-w * .35, -h * .25, w * 1.35, h * 1.25], fill=255)
+    m = m.filter(ImageFilter.GaussianBlur(min(w, h) // 8))
+    dark = Image.new("RGB", (w, h), (0, 0, 0))
+    return Image.composite(dark, img, m.point(lambda v: int((255 - v) * strength / 255)))
+
+
+# ---------- الشعار الرسمي ----------
+@lru_cache(maxsize=64)
+def logo(size: int, knockout_bg=True) -> Image.Image:
+    p = os.path.join(LOGO_DIR, LOGO_FILE)
+    if not os.path.exists(p):
+        raise FileNotFoundError(f"الشعار الرسمي غير موجود: {p}")
+    im = Image.open(p).convert("RGBA")
+    if knockout_bg:
+        import numpy as np
+        a = np.asarray(im).astype(int)
+        lum = a[..., :3].sum(2)
+        alpha = np.clip((lum - 26) * 6, 0, 255).astype("uint8")
+        im.putalpha(Image.fromarray(alpha))
+    im.thumbnail((size, size), Image.LANCZOS)
+    return im
+
+
+def place_logo(canvas: Image.Image, cx: int, cy: int, size: int = 120):
+    lg = logo(size)
+    canvas.alpha_composite(lg, (int(cx - lg.width / 2), int(cy - lg.height / 2)))
+
+
+def hairline(draw, x0, x1, y, color=None, w=2, alpha=255):
+    draw.line([x0, y, x1, y], fill=hex2rgb(color or C["gold"]) + (alpha,), width=w)
+
+
+def watermark(img, label="TerraNex", pos="tl", alpha=105, color=None):
+    lay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(lay)
+    f = font("medium", 22)
+    xy = {"tl": (40, 38), "tr": (img.width - 40, 38)}.get(pos, (40, 38))
+    text(d, xy, label, f, hex2rgb(color or C["cream"]) + (alpha,), anchor="la", direction="ltr")
+    img.alpha_composite(lay)

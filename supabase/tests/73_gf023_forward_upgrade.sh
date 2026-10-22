@@ -29,7 +29,7 @@ done
 for test_file in "$ROOT"/supabase/tests/*.sql; do
   base="$(basename "$test_file")"
   [[ "$base" == 00_* ]] && continue
-  [[ "$base" < 71_ ]] || continue
+  [[ "$base" =~ ^([0-9]+) ]] && (( 10#${BASH_REMATCH[1]} < 71 )) || continue
   pg_db "$UPGRADE_DB" < "$test_file" >/dev/null
 done
 [[ "$(pg_db "$UPGRADE_DB" -Atc "select to_regclass('public.livestock_feed_issues') is null")" == t ]] || { echo 'ERROR: fixture is not pre-GF-023'; exit 1; }
