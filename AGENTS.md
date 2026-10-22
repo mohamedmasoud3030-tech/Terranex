@@ -41,9 +41,9 @@ Read these files completely before changing the product:
 13. `docs/decisions/0002_SIMPLICITY_AND_VERTICAL_SLICES.md`
 14. `docs/decisions/0012_SECTOR_EXPANSION_SEQUENCE.md`
 15. `docs/ROADMAP_R0_R17.md` (R0–R17 sequence; hard stop at R13; R14–R17 policy pack)
-16. `docs/DB_DEVELOPMENT.md`
+16. `docs/specs/ops/DB_DEVELOPMENT.md`
 
-No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/LEGACY_FREEZE.md` and exists only for forensic reference.
+No deleted or archived Terranex file is authoritative. The frozen legacy snapshot is recorded in `docs/specs/LEGACY_FREEZE.md` and exists only for forensic reference.
 
 ## Project Agent Skills
 

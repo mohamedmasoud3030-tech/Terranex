@@ -7,7 +7,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const SRC = 'docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md';
+const SRC = 'docs/specs/owner/R14_TARGET_COMPANY_DECISION_PACK_AR.md';
 const OUT = process.argv[2] ?? '/home/user/R14_Owner_Decision_Pack_AR.html';
 const DEMO_URL = 'https://terranex.vercel.app';
 const md = readFileSync(SRC, 'utf8');
@@ -594,7 +594,7 @@ ${blocks(approvalRaw.replace(/^## .+\n/, ''))}
 </div>
 
 <footer>
-  هذه الوثيقة مولّدة من المصدر الموثق <code>docs/R14_TARGET_COMPANY_DECISION_PACK_AR.md</code> في مستودع Terranex — أي تعديل يُسجَّل هناك أولًا.
+  هذه الوثيقة مولّدة من المصدر الموثق <code>docs/specs/owner/R14_TARGET_COMPANY_DECISION_PACK_AR.md</code> في مستودع Terranex — أي تعديل يُسجَّل هناك أولًا.
 </footer>
 
 </div>
