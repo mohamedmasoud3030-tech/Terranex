@@ -47,6 +47,7 @@ package_post ← قيد في output/queue.csv بحالة «بانتظار-موا
 | نسخ المنصات (reels/4:5/1:1) | `python engine/make_variants.py --video m.mp4 --outdir output/variants/x` |
 | فحص جودة فيديو | `python engine/qa_video.py --video v.mp4 --profile reels` |
 | فحص التزام نص | `python engine/critic.py --file cap.txt` |
+| **بناء ريل بالهوية الثابتة** | `python engine/reel_build.py --spec spec.json --voice vo.mp3 --out x.mp4` |
 | تجهيز منشور للجدول | `python engine/package_post.py --video v.mp4 --caption cap.txt --platforms "facebook,instagram" --date … --time 20:00 [--variants]` |
 | تقويم محتوى | `python engine/gen_calendar.py --days 7 --out output/calendar.md` |
 | تحليل أداء أسبوعي | `python engine/learn.py --csv data/week-XX.csv [--append]` |
@@ -73,6 +74,15 @@ package_post ← قيد في output/queue.csv بحالة «بانتظار-موا
 | النشر على المنصات | لا تكاملات مخوّلة في هذه الجلسة | جدولة queue.csv + نشر يدوي من مجلد الجاهز |
 | TTS عربي | متاح عبر أدوات الجلسة بطلب صريح فقط (compliance §3.5) | يُوسم «تعليق صوتي» في الوصف دائمًا |
 | مونتاج آلي لسلسلة لقطات | غير موجود (OpenMontage وهمي) | CapCut للمستخدم أو make_reel للفيديو الواحد |
+
+## 4.b) الهوية الثابتة — قواعد 19/10 (تفصيلها في `context/compliance.md` §1.b و`brand-kit.md` §8.b)
+| القاعدة | الأثر على التشغيل |
+|---|---|
+| **B9 — لا مدينة** | `critic.py` يرفض أي نص فيه «الإسكندرية»؛ `reel_build` يرفض البناء. الكيكر الرسمي: «استثمار حيواني · ثروة حقيقية» |
+| **B10 — المالك لا يظهر تلقائيًا** | `personas.json` مصدر الحقيقة؛ `reel_build.require_consent` يوقف البناء بدون `consent_persons` |
+| **B11 — علامة مائية موحّدة** | شعار + TerraNex؛ «TerraNex LLC» ممنوعة ومقصوصة من الفوتاج |
+| **B12 — شعار كبير** | قفل الشعار ≥ 0.36×W، ومكان ثابت |
+| **الصوت الأساسي** | `voice-00` (مصري هادي واثق) لكل تعليق صوتي؛ صوت المالك يحتاج تسجيلًا حقيقيًا |
 
 ## 5) قواعد لا تُكسر (ملخص)
 1. لا نشر ولا تواصل مع عملاء ولا إنفاق مال بدون موافقة صريحة.

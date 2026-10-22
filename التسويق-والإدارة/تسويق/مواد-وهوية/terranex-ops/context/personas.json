@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "updated": "2026-10-19",
+  "policy": {
+    "owner_on_screen": "ممنوع ظهور المالك في أي فيديو/صورة بدون طلب صريح مكتوب منه شخصيًا في نفس الجلسة",
+    "owner_voice": "صوت المالك لا يُستخدم إلا بتسجيل حقيقي منه وموافقة صريحة على النشر",
+    "rule": "غياب الإذن = غياب الشخص. لا استنتاج ولا افتراض."
+  },
+  "people": [
+    {
+      "id": "owner",
+      "name_ar": "المهندس عبدالله بدر",
+      "name_en": "Eng. Abdallah Badr",
+      "role": "صاحب الشركة",
+      "on_screen": "explicit-only",
+      "appears_automatically": false,
+      "consent_required": true,
+      "consent_scope": "كل ظهور يحتاج إذنًا صريحًا منفصلًا (لا إذن دائم)",
+      "voice_asset": null,
+      "voice_status": "بانتظار تسجيل حقيقي + إذن استخدام",
+      "notes": "لا يُقصّ ولا يُركّب صوته من مقاطع قديمة. التسجيل الجديد فقط."
+    }
+  ],
+  "voice_bank": {
+    "default_narrator": {
+      "id": "ar-eg-calm-confident",
+      "engine": "arena-session-tts",
+      "voice_id": "voice-00",
+      "language": "ar-EG",
+      "tone": "مصري هادي واثق",
+      "status": "معتمد كصوت أساسي ثابت للتعليق الصوتي (19/10)",
+      "approved_by": "المالك — اختيار من نموذجين في جلسة 19/10",
+      "usage_rule": "أي فيديو يحتاج تعليقًا صوتيًا يستخدم هذا الصوت افتراضيًا، ولا يُبدّل إلا بطلب صريح"
+    },
+    "owner_voice": {
+      "id": "owner-eng-abdallah",
+      "status": "غير متاح — يحتاج تسجيلًا حقيقيًا من المهندس عبدالله",
+      "usage_rule": "لا استنساخ ولا توليد. يُستخدم التسجيل الأصلي فقط وبعد إذنه"
+    }
+  }
+}

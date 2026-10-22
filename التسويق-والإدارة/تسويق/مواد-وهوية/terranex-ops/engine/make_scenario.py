@@ -82,17 +82,17 @@ def text_layer(fr: dict, index: int, total: int, disclosure: str) -> Image.Image
     pad = int(W * 0.085)
 
     # ================= الكتلة العلوية =================
-    B.place_logo(lay, W // 2, int(H * 0.058), 136)
+    _lbox = B.place_logo(lay, W // 2, int(H * 0.075), int(W * 0.36), "full")
 
     if fr.get("kicker"):
-        B.text(d, (W // 2, int(H * 0.124)), fr["kicker"], B.font("medium", 30),
+        B.text(d, (W // 2, _lbox[3] + 40), fr["kicker"], B.font("medium", 30),
                B.hex2rgb(B.C["gold"]) + (242,), anchor="mm")
-        B.hairline(d, int(W * 0.395), int(W * 0.605), int(H * 0.144), B.C["gold"], 2, 140)
+        B.hairline(d, int(W * 0.395), int(W * 0.605), _lbox[3] + 78, B.C["gold"], 2, 140)
 
     fh = B.font("black", 106 if len(fr["headline"]) <= 20 else 90)
     lines = B.wrap(fr["headline"], fh, W - 2 * pad, max_lines=3)
     lh = int(fh.size * 1.15)
-    y = int(H * 0.172)
+    y = max(int(H * 0.172), _lbox[3] + 120)
     for ln in lines:
         B.text(d, (W // 2, y + int(lh * 0.5)), ln, fh, B.hex2rgb(B.C["cream"]) + (255,), anchor="mm")
         y += lh
@@ -138,7 +138,7 @@ def text_layer(fr: dict, index: int, total: int, disclosure: str) -> Image.Image
     B.hairline(d, pad, W - pad, int(H * 0.888), B.C["gold"], 2, 120)
     B.text(d, (W // 2, int(H * 0.918)), f"واتساب  {B.PHONE}", B.font("bold", 38),
            B.hex2rgb(B.C["cream"]) + (245,), anchor="mm")
-    B.text(d, (W // 2, int(H * 0.947)), "الإسكندرية · متابعة بالصور والوزن داخل الدورة",
+    B.text(d, (W // 2, int(H * 0.947)), "متابعة بالصور والوزن داخل الدورة",
            B.font("regular", 24), B.hex2rgb(B.C["cream"]) + (160,), anchor="mm")
     B.text(d, (W // 2, int(H * 0.972)), disclosure, B.font("medium", 23),
            B.hex2rgb(B.C["gold_hi"]) + (200,), anchor="mm")

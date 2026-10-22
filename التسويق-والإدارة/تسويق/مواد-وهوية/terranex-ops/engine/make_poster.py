@@ -18,7 +18,7 @@ import brand as B  # noqa: E402
 SIZES = {"feed": (1080, 1350), "story": (1080, 1920), "square": (1080, 1080)}
 
 
-def build(headline, sub="", stat=None, unit="", kicker="استثمار حيواني · الإسكندرية",
+def build(headline, sub="", stat=None, unit="", kicker="استثمار حيواني · ثروة حقيقية",
           size="feed", theme="dark", phone=B.PHONE):
     """Layout مبني على قياس فعلي للنص، مش إحداثيات ثابتة."""
     W, H = SIZES[size]
@@ -38,19 +38,16 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
     d = ImageDraw.Draw(lay)
     pad = int(W * 0.09)
 
-    # شبح الشعار: يملأ الفراغ البصري في الستوري ويؤكد الهوية
-    if size == "story" and not stat:
-        gh = B.logo(int(W * 0.92))
-        gh.putalpha(gh.getchannel("A").point(lambda v: int(v * 0.075)))
-        base.alpha_composite(gh, (int(W / 2 - gh.width / 2), int(H * 0.695 - gh.height / 2)))
-
-    # ---------- header ----------
-    hy = int(H * 0.095)
-    B.place_logo(base, W // 2, hy - 4, 176)
-
+    # ---------- header: قفل شعار كبير وثابت ----------
+    # (19/10) الشعار الكامل بعرض 0.40×W — السطر الثابت «TERRANEX» مقروء في كل المقاسات.
+    logo_w = int(W * (0.40 if size != "square" else 0.36))
+    logo_cy = int(H * (0.105 if size == "story" else 0.112))
+    box = B.place_logo(base, W // 2, logo_cy, logo_w, "full")
+    kicker_y = box[3] + int(H * 0.026)
     f_k = B.font("medium", 30)
-    B.text(d, (W // 2, hy + 116), kicker, f_k, accent if theme == "dark" else B.C["gold_page"], anchor="mm")
-    B.hairline(d, int(W * 0.36), int(W * 0.64), hy + 158, B.C["gold"], 2, 170)
+    B.text(d, (W // 2, kicker_y), kicker, f_k,
+           accent if theme == "dark" else B.C["gold_page"], anchor="mm")
+    B.hairline(d, int(W * 0.36), int(W * 0.64), kicker_y + 42, B.C["gold"], 2, 170)
 
     # ---------- measure middle block ----------
     fh = B.font("black", (118 if size == "story" else 100) if len(headline) <= 18
@@ -71,7 +68,7 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
     k = 1.55 if size == "story" else 1.0
     gap1, gap2 = int(H * 0.042 * k), int(H * 0.038 * k)
     total = h_h + (gap1 + stat_h if stat else 0) + (gap2 + s_h if slines else 0)
-    top_limit = int(H * 0.255) if size != "story" else int(H * 0.255)
+    top_limit = max(int(H * 0.255), kicker_y + 42 + int(H * 0.030))
     bot_limit = int(H * 0.795) if size != "story" else int(H * 0.735)
     slack = max(0, (bot_limit - top_limit) - total)
     # إمالة الكتلة لأعلى (32% فوق / 68% تحت) بدل التعليق في نص الفراغ
@@ -114,15 +111,14 @@ def build(headline, sub="", stat=None, unit="", kicker="استثمار حيوا�
             y += int(fsub.size * 1.5)
 
     # ---------- footer ----------
-    B.hairline(d, pad, W - pad, int(H * 0.878), B.C["gold"], 2, 85)
+    B.hairline(d, pad, W - pad, int(H * 0.842), B.C["gold"], 2, 85)
     f_foot = B.font("bold", 35)
-    B.text(d, (W // 2, int(H * 0.912)), f"واتساب  {phone}", f_foot, ink, anchor="mm")
+    B.text(d, (W // 2, int(H * 0.878)), f"واتساب  {phone}", f_foot, ink, anchor="mm")
     f_small = B.font("regular", 26)
-    B.text(d, (W // 2, int(H * 0.944)), "الإسكندرية · متابعة بالصور والوزن داخل الدورة", f_small, muted, anchor="mm")
+    B.text(d, (W // 2, int(H * 0.912)), "متابعة بالصور والوزن داخل الدورة", f_small, muted, anchor="mm")
 
     out = Image.alpha_composite(base, lay)
-    B.watermark(out, label="TerraNex", pos="tl", alpha=110,
-                color=B.C["cream"] if theme == "dark" else B.C["ink"])
+    B.watermark(out, pos="bl", theme=theme, alpha=155)
     return out.convert("RGB")
 
 
@@ -132,7 +128,7 @@ def main():
     ap.add_argument("--sub", default="")
     ap.add_argument("--stat", default=None)
     ap.add_argument("--unit", default="")
-    ap.add_argument("--kicker", default="استثمار حيواني · الإسكندرية")
+    ap.add_argument("--kicker", default="استثمار حيواني · ثروة حقيقية")
     ap.add_argument("--size", default="feed", choices=list(SIZES))
     ap.add_argument("--theme", default="dark", choices=["dark", "light"])
     ap.add_argument("--out", required=True)
