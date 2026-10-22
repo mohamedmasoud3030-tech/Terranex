@@ -93,13 +93,23 @@ function Result({
 }) {
   return (
     <>
-      {state.error && <p className="error" role="alert">{state.error}</p>}
+      {state.error && (
+        <p className="error" role="alert">
+          {state.error}
+        </p>
+      )}
       <button disabled={pending}>{pending ? pendingLabel : label}</button>
     </>
   );
 }
 
-export function ProfileForm({ organizationId, projectId }: { organizationId: string; projectId: string }) {
+export function ProfileForm({
+  organizationId,
+  projectId,
+}: {
+  organizationId: string;
+  projectId: string;
+}) {
   const [state, action, pending] = useActionState(createAgricultureProfile, initial);
   return (
     <form action={action} className="form-grid">
@@ -136,28 +146,108 @@ export function AgriculturalLandAssetForm({
     <form action={action} className="form-grid">
       <Context organizationId={organizationId} projectId={projectId} />
       <Key prefix="ag-land" />
-      <label>اسم الأرض/الأصل<input name="name" required minLength={2} maxLength={160} /></label>
-      <label>المرجع الداخلي<input name="internalReference" required maxLength={80} /></label>
-      <label>المرجع القانوني/الحيازي <span className="muted">(اختياري)</span><input name="legalReference" maxLength={160} /></label>
-      <label>المالك/البائع/المؤجر/المساهم<select name="counterpartyPartyId" required><option value="">اختر الطرف</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.legal_name}</option>)}</select></label>
-      <label>المساحة القانونية/التعاقدية<input name="legalAreaQuantity" inputMode="decimal" required /></label>
-      <label>وحدة المساحة<select name="areaUnit" defaultValue="FEDDAN"><option value="FEDDAN">{AREA_UNIT_LABEL.FEDDAN}</option><option value="HECTARE">{AREA_UNIT_LABEL.HECTARE}</option><option value="M2">{AREA_UNIT_LABEL.M2}</option></select></label>
-      <label>أساس السيطرة<select name="controlBasis" value={basis} onChange={(event) => setBasis(event.target.value as typeof basis)}>{LAND_CONTROL_BASES.map((value) => <option key={value} value={value}>{LAND_CONTROL_BASIS_LABEL[value]}</option>)}</select></label>
-      <label>بداية السيطرة<input type="date" name="controlStartDate" required /></label>
-      <label>نهاية السيطرة <span className="muted">(اختياري)</span><input type="date" name="controlEndDate" /></label>
-      <label>مرجع العقد/الاتفاق<input name="agreementReference" required minLength={2} maxLength={200} /></label>
-      <label>مرجع دليل السيطرة<input name="evidenceReference" required minLength={3} maxLength={200} /></label>
-      <label className="full">وصف قانوني/موقعي <span className="muted">(اختياري)</span><textarea name="legalLocationDescription" maxLength={1000} /></label>
+      <label>
+        اسم الأرض/الأصل
+        <input name="name" required minLength={2} maxLength={160} />
+      </label>
+      <label>
+        المرجع الداخلي
+        <input name="internalReference" required maxLength={80} />
+      </label>
+      <label>
+        المرجع القانوني/الحيازي <span className="muted">(اختياري)</span>
+        <input name="legalReference" maxLength={160} />
+      </label>
+      <label>
+        المالك/البائع/المؤجر/المساهم
+        <select name="counterpartyPartyId" required>
+          <option value="">اختر الطرف</option>
+          {parties.map((party) => (
+            <option key={party.id} value={party.id}>
+              {party.legal_name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        المساحة القانونية/التعاقدية
+        <input name="legalAreaQuantity" inputMode="decimal" required />
+      </label>
+      <label>
+        وحدة المساحة
+        <select name="areaUnit" defaultValue="FEDDAN">
+          <option value="FEDDAN">{AREA_UNIT_LABEL.FEDDAN}</option>
+          <option value="HECTARE">{AREA_UNIT_LABEL.HECTARE}</option>
+          <option value="M2">{AREA_UNIT_LABEL.M2}</option>
+        </select>
+      </label>
+      <label>
+        أساس السيطرة
+        <select
+          name="controlBasis"
+          value={basis}
+          onChange={(event) => setBasis(event.target.value as typeof basis)}
+        >
+          {LAND_CONTROL_BASES.map((value) => (
+            <option key={value} value={value}>
+              {LAND_CONTROL_BASIS_LABEL[value]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        بداية السيطرة
+        <input type="date" name="controlStartDate" required />
+      </label>
+      <label>
+        نهاية السيطرة <span className="muted">(اختياري)</span>
+        <input type="date" name="controlEndDate" />
+      </label>
+      <label>
+        مرجع العقد/الاتفاق
+        <input name="agreementReference" required minLength={2} maxLength={200} />
+      </label>
+      <label>
+        مرجع دليل السيطرة
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <label className="full">
+        وصف قانوني/موقعي <span className="muted">(اختياري)</span>
+        <textarea name="legalLocationDescription" maxLength={1000} />
+      </label>
       {basis === 'PURCHASED' ? (
         <>
-          <label>المقابل المتفق عليه <span className="muted">(اختياري)</span><input name="agreedConsideration" inputMode="decimal" /></label>
-          <label>عملة المقابل<select name="considerationCurrency" defaultValue=""><option value="">بدون مقابل مسجل</option><option value={currency}>{currency}</option></select></label>
-          <p className="muted full">المقابل المتفق عليه ليس مبلغًا مسددًا ولا قيمة دفترية أو تقييمًا، ولا يدخل تلقائيًا ضمن تكلفة دورة المحصول. اترك المقابل والعملة فارغين معًا إن لم يكن المقابل موثقًا بعد.</p>
+          <label>
+            المقابل المتفق عليه <span className="muted">(اختياري)</span>
+            <input name="agreedConsideration" inputMode="decimal" />
+          </label>
+          <label>
+            عملة المقابل
+            <select name="considerationCurrency" defaultValue="">
+              <option value="">بدون مقابل مسجل</option>
+              <option value={currency}>{currency}</option>
+            </select>
+          </label>
+          <p className="muted full">
+            المقابل المتفق عليه ليس مبلغًا مسددًا ولا قيمة دفترية أو تقييمًا، ولا يدخل تلقائيًا ضمن
+            تكلفة دورة المحصول. اترك المقابل والعملة فارغين معًا إن لم يكن المقابل موثقًا بعد.
+          </p>
         </>
       ) : null}
-      {basis === 'CONTRIBUTED_IN_KIND' ? <p className="muted full">يسجل هذا أساس السيطرة والدليل فقط. النواة الحالية تدعم مساهمات نقدية؛ لن ننشئ مساهمة نقدية أو دفعة وهمية للأرض العينية.</p> : null}
-      {basis === 'LEASED' || basis === 'MANAGED_FOR_OWNER' ? <p className="muted full">حق تشغيل موثق فقط؛ لا يصف النظام هذه الأرض بأنها مملوكة ولا يستنتج قيمة دفترية.</p> : null}
-      <div className="full"><Result state={state} pending={pending} label="تسجيل الأرض/الأصل" /></div>
+      {basis === 'CONTRIBUTED_IN_KIND' ? (
+        <p className="muted full">
+          يسجل هذا أساس السيطرة والدليل فقط.
+          النواة الحالية تدعم مساهمات نقدية؛ لن ننشئ مساهمة نقدية أو دفعة وهمية للأرض العينية.
+        </p>
+      ) : null}
+      {basis === 'LEASED' || basis === 'MANAGED_FOR_OWNER' ? (
+        <p className="muted full">
+          حق تشغيل موثق فقط؛ لا يصف النظام هذه الأرض بأنها مملوكة ولا يستنتج قيمة دفترية.
+        </p>
+      ) : null}
+      <div className="full">
+        <Result state={state} pending={pending} label="تسجيل الأرض/الأصل" />
+      </div>
     </form>
   );
 }
@@ -184,15 +274,43 @@ export function FarmLandAssetLinkForm({
     <form action={action} className="form-grid compact">
       <Context organizationId={organizationId} projectId={projectId} />
       <Key prefix="ag-land-farm-link" />
-      <label>الأرض/الأصل<select name="landAssetId" required>{landAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name} · {asset.internal_reference}</option>)}</select></label>
-      <label>المزرعة<select name="farmId" required>{availableFarms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label>
-      <div><Result state={state} pending={pending} label="ربط المزرعة" /></div>
-      <p className="muted full">الأرض أصل استثماري/قانوني، والمزرعة موقع تشغيل، والحقل وحدة زراعية داخل المزرعة.</p>
+      <label>
+        الأرض/الأصل
+        <select name="landAssetId" required>
+          {landAssets.map((asset) => (
+            <option key={asset.id} value={asset.id}>
+              {asset.name} · {asset.internal_reference}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        المزرعة
+        <select name="farmId" required>
+          {availableFarms.map((farm) => (
+            <option key={farm.id} value={farm.id}>
+              {farm.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div>
+        <Result state={state} pending={pending} label="ربط المزرعة" />
+      </div>
+      <p className="muted full">
+        الأرض أصل استثماري/قانوني، والمزرعة موقع تشغيل، والحقل وحدة زراعية داخل المزرعة.
+      </p>
     </form>
   );
 }
 
-export function FarmForm({ organizationId, projectId }: { organizationId: string; projectId: string }) {
+export function FarmForm({
+  organizationId,
+  projectId,
+}: {
+  organizationId: string;
+  projectId: string;
+}) {
   const [state, action, pending] = useActionState(createFarm, initial);
   return (
     <form action={action} className="form-grid">
@@ -216,7 +334,11 @@ export function FarmForm({ organizationId, projectId }: { organizationId: string
       </label>
       <label className="full">
         وصف الحيازة / السيطرة <span className="muted">(اختياري)</span>
-        <textarea name="tenureDescription" maxLength={1000} placeholder="نوع العقد، المدة، الشروط الأساسية" />
+        <textarea
+          name="tenureDescription"
+          maxLength={1000}
+          placeholder="نوع العقد، المدة، الشروط الأساسية"
+        />
       </label>
       <label className="full">
         مرجع الخريطة <span className="muted">(اختياري)</span>
@@ -253,13 +375,21 @@ export function FieldForm({
         المزرعة
         <select name="farmId" required>
           {farms.map((f) => (
-            <option key={f.id} value={f.id}>{f.name}</option>
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
           ))}
         </select>
       </label>
       <label>
         معرّف الحقل
-        <input name="identifier" required minLength={1} maxLength={100} placeholder="مثال: حقل شمال-1" />
+        <input
+          name="identifier"
+          required
+          minLength={1}
+          maxLength={100}
+          placeholder="مثال: حقل شمال-1"
+        />
       </label>
       <label>
         المساحة
@@ -310,7 +440,13 @@ export function CropCycleForm({
       </label>
       <label>
         مرجع الموسم
-        <input name="seasonReference" required minLength={2} maxLength={80} placeholder="مثال: 2026/2027-شتوي" />
+        <input
+          name="seasonReference"
+          required
+          minLength={2}
+          maxLength={80}
+          placeholder="مثال: 2026/2027-شتوي"
+        />
       </label>
       <label>
         تاريخ البداية المخطط
@@ -329,7 +465,8 @@ export function CropCycleForm({
         <input name="targetYieldUnit" maxLength={40} placeholder="كجم/فدان" />
       </label>
       <p className="muted full">
-        دورة المحصول تبدأ في الحالة المخططة. الانتقال اللاحق يتم من قسم &quot;دورات المحصول&quot; أدناه.
+        دورة المحصول تبدأ في الحالة المخططة. الانتقال اللاحق يتم من قسم &quot;دورات المحصول&quot;
+        أدناه.
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="إنشاء دورة المحصول" />
@@ -367,7 +504,9 @@ export function CycleTransitionForm({
         الحالة الجديدة
         <select name="newState" defaultValue={allowed[0]}>
           {allowed.map((s) => (
-            <option key={s} value={s}>{CYCLE_STATE_LABEL[s]}</option>
+            <option key={s} value={s}>
+              {CYCLE_STATE_LABEL[s]}
+            </option>
           ))}
         </select>
       </label>
@@ -380,7 +519,12 @@ export function CycleTransitionForm({
         <input name="evidenceReference" maxLength={200} />
       </label>
       <div>
-        <Result state={state} pending={pending} label="تأكيد الانتقال" pendingLabel="جارٍ التأكيد…" />
+        <Result
+          state={state}
+          pending={pending}
+          label="تأكيد الانتقال"
+          pendingLabel="جارٍ التأكيد…"
+        />
       </div>
     </form>
   );
@@ -398,13 +542,14 @@ export function AssignmentForm({
   fields: FieldRead[];
 }) {
   const [state, action, pending] = useActionState(assignCropCycleToField, initial);
-  const availableCycles = cycles.filter((c) => c.operational_state !== 'CANCELLED' && c.operational_state !== 'FAILED' && c.operational_state !== 'CLOSED');
+  const availableCycles = cycles.filter(
+    (c) =>
+      c.operational_state !== 'CANCELLED' &&
+      c.operational_state !== 'FAILED' &&
+      c.operational_state !== 'CLOSED',
+  );
   if (availableCycles.length === 0 || fields.length === 0) {
-    return (
-      <p className="muted">
-        يلزم وجود دورة محصول نشطة وحقل مسجّل لتخصيص دورة لحقل.
-      </p>
-    );
+    return <p className="muted">يلزم وجود دورة محصول نشطة وحقل مسجّل لتخصيص دورة لحقل.</p>;
   }
   return (
     <form action={action} className="form-grid">
@@ -477,7 +622,8 @@ export function FieldActivityForm({
   if (assignments.length === 0) {
     return (
       <p className="muted">
-        يلزم وجود تخصيص دورة-حقل قائم قبل تسجيل نشاط ميداني. النشاط لا ينشئ تخصيصًا ولا يغيّر حالة الدورة.
+        يلزم وجود تخصيص دورة-حقل قائم قبل تسجيل نشاط ميداني. النشاط لا ينشئ تخصيصًا ولا يغيّر حالة
+        الدورة.
       </p>
     );
   }
@@ -489,13 +635,17 @@ export function FieldActivityForm({
       <Key prefix="ag-activity" />
       <label className="full">
         التخصيص (الدورة والحقل)
-        <select name="assignmentPicker" required defaultValue={assignments[0]?.id}
+        <select
+          name="assignmentPicker"
+          required
+          defaultValue={assignments[0]?.id}
           onChange={(event) => {
             const selected = assignments.find((a) => a.id === event.target.value);
             const form = event.currentTarget.form;
             if (!form || !selected) return;
             (form.elements.namedItem('assignmentId') as HTMLInputElement).value = selected.id;
-            (form.elements.namedItem('cropCycleId') as HTMLInputElement).value = selected.crop_cycle_id;
+            (form.elements.namedItem('cropCycleId') as HTMLInputElement).value =
+              selected.crop_cycle_id;
             (form.elements.namedItem('fieldId') as HTMLInputElement).value = selected.field_id;
           }}
         >
@@ -504,7 +654,8 @@ export function FieldActivityForm({
             const field = fieldById.get(a.field_id);
             return (
               <option key={a.id} value={a.id}>
-                {cycle ? `${cycle.crop} — ${cycle.season_reference}` : 'دورة'} · {field?.identifier ?? 'حقل'}
+                {cycle ? `${cycle.crop} — ${cycle.season_reference}` : 'دورة'} ·{' '}
+                {field?.identifier ?? 'حقل'}
               </option>
             );
           })}
@@ -521,7 +672,9 @@ export function FieldActivityForm({
         نوع النشاط
         <select name="activityType" required defaultValue="IRRIGATE">
           {FIELD_ACTIVITY_TYPES.map((t) => (
-            <option key={t} value={t}>{FIELD_ACTIVITY_TYPE_LABEL[t]}</option>
+            <option key={t} value={t}>
+              {FIELD_ACTIVITY_TYPE_LABEL[t]}
+            </option>
           ))}
         </select>
       </label>
@@ -583,7 +736,9 @@ export function InputItemForm({
         فئة المدخل
         <select name="category" required defaultValue="FERTILIZER">
           {INPUT_CATEGORIES.map((c) => (
-            <option key={c} value={c}>{INPUT_CATEGORY_LABEL[c]}</option>
+            <option key={c} value={c}>
+              {INPUT_CATEGORY_LABEL[c]}
+            </option>
           ))}
         </select>
       </label>
@@ -653,7 +808,13 @@ export function InputLotForm({
       </label>
       <label>
         مرجع التشغيلة
-        <input name="lotReference" required minLength={1} maxLength={120} placeholder="LOT-2027-001" />
+        <input
+          name="lotReference"
+          required
+          minLength={1}
+          maxLength={120}
+          placeholder="LOT-2027-001"
+        />
       </label>
       <label>
         مرجع المورد <span className="muted">(اختياري)</span>
@@ -672,8 +833,8 @@ export function InputLotForm({
         <input name="evidenceReference" maxLength={200} />
       </label>
       <p className="muted full">
-        وحدة التشغيلة تُشتق من المدخل: <strong>{selected.application_unit}</strong>.
-        التشغيلة سجل تتبّع وهوية، وليست رصيد مخزون: تسجيلها لا يعني توفر كمية.
+        وحدة التشغيلة تُشتق من المدخل: <strong>{selected.application_unit}</strong>. التشغيلة سجل
+        تتبّع وهوية، وليست رصيد مخزون: تسجيلها لا يعني توفر كمية.
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تسجيل التشغيلة" />
@@ -705,8 +866,10 @@ export function InputApplicationForm({
 
   // Only activities that semantically apply an input are selectable.
   const eligibleActivities = useMemo(
-    () => activities.filter((a) =>
-      (INPUT_BEARING_ACTIVITY_TYPES as readonly string[]).includes(a.activity_type)),
+    () =>
+      activities.filter((a) =>
+        (INPUT_BEARING_ACTIVITY_TYPES as readonly string[]).includes(a.activity_type),
+      ),
     [activities],
   );
   const [activityId, setActivityId] = useState(eligibleActivities[0]?.id ?? '');
@@ -723,9 +886,12 @@ export function InputApplicationForm({
   // Selecting an input filters the eligible lots, and a lot that had
   // already expired on the activity date is not offered.
   const eligibleLots = useMemo(
-    () => lots.filter((l) =>
-      l.input_item_id === item?.id
-      && (l.expires_on === null || !activity || l.expires_on >= activity.activity_date)),
+    () =>
+      lots.filter(
+        (l) =>
+          l.input_item_id === item?.id &&
+          (l.expires_on === null || !activity || l.expires_on >= activity.activity_date),
+      ),
     [lots, item?.id, activity],
   );
   const [lotId, setLotId] = useState('');
@@ -738,8 +904,8 @@ export function InputApplicationForm({
   if (eligibleActivities.length === 0) {
     return (
       <p className="muted">
-        يلزم وجود نشاط حقل من نوع زراعة أو تسميد أو رش قبل تسجيل تطبيق مدخل.
-        أنشطة المعاينة والري والتعشيب لا تستقبل مدخلات.
+        يلزم وجود نشاط حقل من نوع زراعة أو تسميد أو رش قبل تسجيل تطبيق مدخل. أنشطة المعاينة والري
+        والتعشيب لا تستقبل مدخلات.
       </p>
     );
   }
@@ -751,8 +917,10 @@ export function InputApplicationForm({
       return 'تعذر تحديد تخصيص الدورة-الحقل لهذا النشاط. حدّث الصفحة ثم أعد المحاولة.';
     }
     if (eligibleItems.length === 0) {
-      return `النشاط المختار من نوع ${formatFieldActivityType(activity?.activity_type)} ويتطلب مدخلًا من فئة `
-        + `${requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'}. لا يوجد مدخل مسجّل بهذه الفئة بعد.`;
+      return (
+        `النشاط المختار من نوع ${formatFieldActivityType(activity?.activity_type)} ويتطلب مدخلًا من فئة ` +
+        `${requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'}. لا يوجد مدخل مسجّل بهذه الفئة بعد.`
+      );
     }
     if (eligibleLots.length === 0) {
       return 'لا توجد تشغيلة سارية لهذا المدخل في تاريخ النشاط. سجّل تشغيلة صالحة أولًا.';
@@ -794,7 +962,10 @@ export function InputApplicationForm({
         {activityPicker}
         {eligibleItems.length > 0 ? (
           <label>
-            المدخل <span className="muted">({requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'})</span>
+            المدخل{' '}
+            <span className="muted">
+              ({requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'})
+            </span>
             <select
               value={item?.id ?? ''}
               onChange={(event) => {
@@ -803,12 +974,16 @@ export function InputApplicationForm({
               }}
             >
               {eligibleItems.map((i) => (
-                <option key={i.id} value={i.id}>{i.name} ({i.application_unit})</option>
+                <option key={i.id} value={i.id}>
+                  {i.name} ({i.application_unit})
+                </option>
               ))}
             </select>
           </label>
         ) : null}
-        <p className="muted full" role="status">{blockedReason}</p>
+        <p className="muted full" role="status">
+          {blockedReason}
+        </p>
       </div>
     );
   }
@@ -824,13 +999,18 @@ export function InputApplicationForm({
         <strong>{cycle ? `${cycle.crop} — ${cycle.season_reference}` : '—'}</strong> ·{' '}
         <strong>{field?.identifier ?? '—'}</strong> · المساحة المخصصة{' '}
         <strong>
-          {assignment ? `${assignment.assigned_area_quantity} ${AREA_UNIT_LABEL[assignment.assigned_area_unit]}` : '—'}
+          {assignment
+            ? `${assignment.assigned_area_quantity} ${AREA_UNIT_LABEL[assignment.assigned_area_unit]}`
+            : '—'}
         </strong>
         . لا يُطلب منك اختيار هذه المعرّفات يدويًا.
       </p>
 
       <label>
-        المدخل <span className="muted">({requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'})</span>
+        المدخل{' '}
+        <span className="muted">
+          ({requiredCategory ? INPUT_CATEGORY_LABEL[requiredCategory] : '—'})
+        </span>
         <select
           name="inputItemId"
           required
@@ -841,7 +1021,9 @@ export function InputApplicationForm({
           }}
         >
           {eligibleItems.map((i) => (
-            <option key={i.id} value={i.id}>{i.name} ({i.application_unit})</option>
+            <option key={i.id} value={i.id}>
+              {i.name} ({i.application_unit})
+            </option>
           ))}
         </select>
       </label>
@@ -894,15 +1076,19 @@ export function InputApplicationForm({
       </label>
       <label className="full">
         ملاحظة سلامة أو طقس <span className="muted">(اختياري)</span>
-        <textarea name="safetyNote" maxLength={2000} placeholder="مثال: فترة أمان 7 أيام، رياح خفيفة" />
+        <textarea
+          name="safetyNote"
+          maxLength={2000}
+          placeholder="مثال: فترة أمان 7 أيام، رياح خفيفة"
+        />
       </label>
       <label className="full">
         مرجع الدليل <span className="muted">(اختياري)</span>
         <input name="evidenceReference" maxLength={200} />
       </label>
       <p className="muted full">
-        المساحة المعالجة يجب ألا تتجاوز المساحة المخصصة لهذا التخصيص، والتشغيلة يجب أن تكون سارية في تاريخ التطبيق.
-        النظام لا يتحقق من توفر رصيد مخزون: لا توجد حركات مخزون في هذه الشريحة.
+        المساحة المعالجة يجب ألا تتجاوز المساحة المخصصة لهذا التخصيص، والتشغيلة يجب أن تكون سارية في
+        تاريخ التطبيق. النظام لا يتحقق من توفر رصيد مخزون: لا توجد حركات مخزون في هذه الشريحة.
         التسجيل لا يغيّر حالة دورة المحصول ولا ينشئ قيدًا محاسبيًا.
       </p>
       <div className="full">
@@ -951,7 +1137,8 @@ export function StorageLocationForm({
         <textarea name="notes" maxLength={2000} />
       </label>
       <p className="muted full">
-        موقع التخزين بسيط: اسم ومرجع وملاحظات فقط. لا توجد سعة أو مناطق أو رفوف أو أتمتة حرارية في هذه الشريحة.
+        موقع التخزين بسيط: اسم ومرجع وملاحظات فقط. لا توجد سعة أو مناطق أو رفوف أو أتمتة حرارية في
+        هذه الشريحة.
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تسجيل موقع التخزين" />
@@ -984,7 +1171,8 @@ export function HarvestEventForm({
 
   const eligibleAssignments = assignments.filter((a) => a.crop_cycle_id === cycle?.id);
   const [assignmentId, setAssignmentId] = useState(eligibleAssignments[0]?.id ?? '');
-  const assignment = eligibleAssignments.find((a) => a.id === assignmentId) ?? eligibleAssignments[0];
+  const assignment =
+    eligibleAssignments.find((a) => a.id === assignmentId) ?? eligibleAssignments[0];
   const field = fields.find((f) => f.id === assignment?.field_id);
 
   const fieldById = new Map(fields.map((f) => [f.id, f]));
@@ -992,8 +1180,8 @@ export function HarvestEventForm({
   if (harvestReadyCycles.length === 0) {
     return (
       <p className="muted">
-        لا توجد دورات محصول في حالة &quot;قيد الحصاد&quot;.
-        انقل الدورة إلى حالة الحصاد أولًا من قسم &quot;دورات المحصول&quot; قبل تسجيل حدث حصاد.
+        لا توجد دورات محصول في حالة &quot;قيد الحصاد&quot;. انقل الدورة إلى حالة الحصاد أولًا من قسم
+        &quot;دورات المحصول&quot; قبل تسجيل حدث حصاد.
       </p>
     );
   }
@@ -1029,33 +1217,37 @@ export function HarvestEventForm({
     </label>
   );
 
-  const assignmentPicker = eligibleAssignments.length > 0 ? (
-    <label className="full">
-      الحقل (التخصيص يُشتق تلقائيًا)
-      <select
-        name={blockedReason ? undefined : 'assignmentPicker'}
-        required={!blockedReason}
-        value={assignment?.id ?? ''}
-        onChange={(event) => setAssignmentId(event.target.value)}
-      >
-        {eligibleAssignments.map((a) => {
-          const f = fieldById.get(a.field_id);
-          return (
-            <option key={a.id} value={a.id}>
-              {f?.identifier ?? 'حقل'} · {a.assigned_area_quantity} {AREA_UNIT_LABEL[a.assigned_area_unit]}
-            </option>
-          );
-        })}
-      </select>
-    </label>
-  ) : null;
+  const assignmentPicker =
+    eligibleAssignments.length > 0 ? (
+      <label className="full">
+        الحقل (التخصيص يُشتق تلقائيًا)
+        <select
+          name={blockedReason ? undefined : 'assignmentPicker'}
+          required={!blockedReason}
+          value={assignment?.id ?? ''}
+          onChange={(event) => setAssignmentId(event.target.value)}
+        >
+          {eligibleAssignments.map((a) => {
+            const f = fieldById.get(a.field_id);
+            return (
+              <option key={a.id} value={a.id}>
+                {f?.identifier ?? 'حقل'} · {a.assigned_area_quantity}{' '}
+                {AREA_UNIT_LABEL[a.assigned_area_unit]}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+    ) : null;
 
   if (blockedReason) {
     return (
       <div className="form-grid">
         {cyclePicker}
         {assignmentPicker}
-        <p className="muted full" role="status">{blockedReason}</p>
+        <p className="muted full" role="status">
+          {blockedReason}
+        </p>
       </div>
     );
   }
@@ -1097,13 +1289,21 @@ export function HarvestEventForm({
       </label>
       <label>
         مرجع تشغيلة الحصاد
-        <input name="lotReference" required minLength={1} maxLength={120} placeholder="LOT-HV-001" />
+        <input
+          name="lotReference"
+          required
+          minLength={1}
+          maxLength={120}
+          placeholder="LOT-HV-001"
+        />
       </label>
       <label>
         موقع التخزين المستلم
         <select name="destinationStorageId" required>
           {storages.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
       </label>
@@ -1116,9 +1316,9 @@ export function HarvestEventForm({
         <input name="evidenceReference" maxLength={200} />
       </label>
       <p className="muted full">
-        الكمية الصافية يجب ألا تتجاوز الإجمالية، والفاقد (الإجمالي − الصافي) يُشتق تلقائيًا ولا يُخزَّن مرتين.
-        تسجيل الحصاد ينشئ تشغيلة المحصول ويستلم كميتها الصافية في موقع التخزين المختار كحركة واحدة.
-        لا يغيّر حالة دورة المحصول ولا ينشئ قيدًا محاسبيًا.
+        الكمية الصافية يجب ألا تتجاوز الإجمالية، والفاقد (الإجمالي − الصافي) يُشتق تلقائيًا ولا
+        يُخزَّن مرتين. تسجيل الحصاد ينشئ تشغيلة المحصول ويستلم كميتها الصافية في موقع التخزين
+        المختار كحركة واحدة. لا يغيّر حالة دورة المحصول ولا ينشئ قيدًا محاسبيًا.
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تسجيل حدث الحصاد" />
@@ -1145,7 +1345,9 @@ export function TransferHarvestInventoryForm({
   const [lotId, setLotId] = useState(lots[0]?.id ?? '');
   const lot = lots.find((l) => l.id === lotId) ?? lots[0];
 
-  const lotLocations = inventory.filter((e) => e.harvest_lot_id === lot?.id && Number(e.current_balance) > 0);
+  const lotLocations = inventory.filter(
+    (e) => e.harvest_lot_id === lot?.id && Number(e.current_balance) > 0,
+  );
   const [fromStorageId, setFromStorageId] = useState(lotLocations[0]?.storage_id ?? '');
   const source = lotLocations.find((e) => e.storage_id === fromStorageId) ?? lotLocations[0];
 
@@ -1202,7 +1404,9 @@ export function TransferHarvestInventoryForm({
           {storages
             .filter((s) => s.id !== source?.storage_id)
             .map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
         </select>
       </label>
@@ -1224,8 +1428,8 @@ export function TransferHarvestInventoryForm({
         <input name="evidenceReference" maxLength={200} />
       </label>
       <p className="muted full">
-        النقل يغيّر الموقع فقط ولا ينشئ كمية جديدة. وحدة الكمية تُشتق من تشغيلة الحصاد ولا يمكن تغييرها هنا.
-        الرصيد المتاح يُحتسب من حركات المخزون ولا يُدخَل يدويًا.
+        النقل يغيّر الموقع فقط ولا ينشئ كمية جديدة. وحدة الكمية تُشتق من تشغيلة الحصاد ولا يمكن
+        تغييرها هنا. الرصيد المتاح يُحتسب من حركات المخزون ولا يُدخَل يدويًا.
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تنفيذ النقل" />
@@ -1255,7 +1459,9 @@ export function HarvestInventoryAdjustmentForm({
   const location = lotLocations.find((e) => e.storage_id === storageId) ?? lotLocations[0];
 
   if (lots.length === 0) {
-    return <p className="muted">لا توجد تشغيلات حصاد بعد. سجّل حدث حصاد أولًا قبل تعديل المخزون.</p>;
+    return (
+      <p className="muted">لا توجد تشغيلات حصاد بعد. سجّل حدث حصاد أولًا قبل تعديل المخزون.</p>
+    );
   }
   if (lotLocations.length === 0) {
     return <p className="muted">لا توجد مواقع تخزين لهذه التشغيلة بعد.</p>;
@@ -1320,14 +1526,21 @@ export function HarvestInventoryAdjustmentForm({
       </label>
       <label className="full">
         السبب <span className="muted">(مطلوب)</span>
-        <textarea name="reason" required minLength={3} maxLength={500} placeholder="مثال: جرد فعلي، تسوية، تلف أثناء التخزين" />
+        <textarea
+          name="reason"
+          required
+          minLength={3}
+          maxLength={500}
+          placeholder="مثال: جرد فعلي، تسوية، تلف أثناء التخزين"
+        />
       </label>
       <label className="full">
         مرجع الدليل <span className="muted">(اختياري)</span>
         <input name="evidenceReference" maxLength={200} />
       </label>
       <p className="muted full">
-        التعديل أو التالف يتطلب سببًا، ولا يمكن أن يجعل الرصيد سالبًا. التصحيحات حركات إضافية وليست تعديلًا على حركة سابقة.
+        التعديل أو التالف يتطلب سببًا، ولا يمكن أن يجعل الرصيد سالبًا. التصحيحات حركات إضافية وليست
+        تعديلًا على حركة سابقة.
       </p>
       <div className="full">
         <Result state={state} pending={pending} label="تسجيل الحركة" />
@@ -1360,50 +1573,203 @@ export function AgricultureSaleForm({
     { key: 'line-1', inventoryKey: firstKey, quantity: '', unitPrice: '' },
   ]);
   const [state, action, pending] = useActionState(createAgricultureSale, initial);
-  const linesJson = JSON.stringify(rows.map((row) => {
-    const [harvestLotId, sourceStorageId] = row.inventoryKey.split('::');
-    return { harvestLotId, sourceStorageId, quantity: row.quantity, unitPrice: row.unitPrice };
-  }));
+  const linesJson = JSON.stringify(
+    rows.map((row) => {
+      const [harvestLotId, sourceStorageId] = row.inventoryKey.split('::');
+      return { harvestLotId, sourceStorageId, quantity: row.quantity, unitPrice: row.unitPrice };
+    }),
+  );
   if (parties.length === 0) return <p className="muted">سجّل المشتري كطرف في قسم الشروط أولًا.</p>;
-  if (available.length === 0) return <p className="muted">لا يوجد رصيد حصاد متاح للبيع في أي موقع تخزين.</p>;
+  if (available.length === 0)
+    return <p className="muted">لا يوجد رصيد حصاد متاح للبيع في أي موقع تخزين.</p>;
   return (
     <form action={action} className="form-grid">
       <Context organizationId={organizationId} projectId={projectId} />
       <Key prefix="ag-sale-draft" />
       <input type="hidden" name="currency" value={currency} />
       <input type="hidden" name="linesJson" value={linesJson} />
-      <label>المشتري<select name="buyerPartyId" required><option value="">اختر المشتري</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.legal_name}</option>)}</select></label>
-      <label>مرجع البيع<input name="saleReference" required maxLength={120} /></label>
-      <label>تاريخ البيع<input type="date" name="saleDate" required /></label>
-      <label>مرجع العقد/الطلب <span className="muted">(اختياري)</span><input name="agreementReference" maxLength={200} /></label>
-      <label className="full">الشروط <span className="muted">(اختياري)</span><textarea name="terms" maxLength={1000} /></label>
-      <label className="full">مرجع دليل الاتفاق <span className="muted">(اختياري للمسودة)</span><input name="evidenceReference" maxLength={200} /></label>
+      <label>
+        المشتري
+        <select name="buyerPartyId" required>
+          <option value="">اختر المشتري</option>
+          {parties.map((party) => (
+            <option key={party.id} value={party.id}>
+              {party.legal_name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        مرجع البيع
+        <input name="saleReference" required maxLength={120} />
+      </label>
+      <label>
+        تاريخ البيع
+        <input type="date" name="saleDate" required />
+      </label>
+      <label>
+        مرجع العقد/الطلب <span className="muted">(اختياري)</span>
+        <input name="agreementReference" maxLength={200} />
+      </label>
+      <label className="full">
+        الشروط <span className="muted">(اختياري)</span>
+        <textarea name="terms" maxLength={1000} />
+      </label>
+      <label className="full">
+        مرجع دليل الاتفاق <span className="muted">(اختياري للمسودة)</span>
+        <input name="evidenceReference" maxLength={200} />
+      </label>
       <fieldset className="full stack">
         <legend>سطور تشغيلات الحصاد</legend>
         {rows.map((row, index) => (
           <div className="form-grid compact" key={row.key}>
-            <label>التشغيلة وموقع المصدر<select value={row.inventoryKey} onChange={(event) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, inventoryKey: event.target.value } : item))}>{available.map((item) => <option key={`${item.harvest_lot_id}-${item.storage_id}`} value={`${item.harvest_lot_id}::${item.storage_id}`}>{item.lot_reference} · {item.storage_name} · متاح {item.current_balance} {item.quantity_unit}</option>)}</select></label>
-            <label>الكمية<input value={row.quantity} onChange={(event) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, quantity: event.target.value } : item))} inputMode="decimal" required aria-label={`كمية سطر البيع ${index + 1}`} /></label>
-            <label>سعر الوحدة ({currency})<input value={row.unitPrice} onChange={(event) => setRows((current) => current.map((item) => item.key === row.key ? { ...item, unitPrice: event.target.value } : item))} inputMode="decimal" required aria-label={`سعر وحدة سطر البيع ${index + 1}`} /></label>
-            {rows.length > 1 ? <button type="button" className="secondary" onClick={() => setRows((current) => current.filter((item) => item.key !== row.key))}>حذف السطر</button> : null}
+            <label>
+              التشغيلة وموقع المصدر
+              <select
+                value={row.inventoryKey}
+                onChange={(event) =>
+                  setRows((current) =>
+                    current.map((item) =>
+                      item.key === row.key ? { ...item, inventoryKey: event.target.value } : item,
+                    ),
+                  )
+                }
+              >
+                {available.map((item) => (
+                  <option
+                    key={`${item.harvest_lot_id}-${item.storage_id}`}
+                    value={`${item.harvest_lot_id}::${item.storage_id}`}
+                  >
+                    {item.lot_reference} · {item.storage_name} · متاح {item.current_balance}{' '}
+                    {item.quantity_unit}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              الكمية
+              <input
+                value={row.quantity}
+                onChange={(event) =>
+                  setRows((current) =>
+                    current.map((item) =>
+                      item.key === row.key ? { ...item, quantity: event.target.value } : item,
+                    ),
+                  )
+                }
+                inputMode="decimal"
+                required
+                aria-label={`كمية سطر البيع ${index + 1}`}
+              />
+            </label>
+            <label>
+              سعر الوحدة ({currency})
+              <input
+                value={row.unitPrice}
+                onChange={(event) =>
+                  setRows((current) =>
+                    current.map((item) =>
+                      item.key === row.key ? { ...item, unitPrice: event.target.value } : item,
+                    ),
+                  )
+                }
+                inputMode="decimal"
+                required
+                aria-label={`سعر وحدة سطر البيع ${index + 1}`}
+              />
+            </label>
+            {rows.length > 1 ? (
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setRows((current) => current.filter((item) => item.key !== row.key))}
+              >
+                حذف السطر
+              </button>
+            ) : null}
           </div>
         ))}
-        <button type="button" className="secondary" onClick={() => setRows((current) => [...current, { key: crypto.randomUUID(), inventoryKey: firstKey, quantity: '', unitPrice: '' }])}>إضافة سطر حصاد</button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() =>
+            setRows((current) => [
+              ...current,
+              { key: crypto.randomUUID(), inventoryKey: firstKey, quantity: '', unitPrice: '' },
+            ])
+          }
+        >
+          إضافة سطر حصاد
+        </button>
       </fieldset>
-      <p className="muted full">حفظ المسودة لا يصرف مخزونًا ولا يعترف بإيراد. وحدة البيع تأتي من تشغيلة الحصاد ولا يمكن للمتصفح تغييرها.</p>
-      <div className="full"><Result state={state} pending={pending} label="حفظ مسودة البيع" /></div>
+      <p className="muted full">
+        حفظ المسودة لا يصرف مخزونًا ولا يعترف بإيراد. وحدة البيع تأتي من تشغيلة الحصاد ولا يمكن
+        للمتصفح تغييرها.
+      </p>
+      <div className="full">
+        <Result state={state} pending={pending} label="حفظ مسودة البيع" />
+      </div>
     </form>
   );
 }
 
-export function ApproveAgricultureSaleForm({ organizationId, projectId, saleId }: { organizationId: string; projectId: string; saleId: string }) {
+export function ApproveAgricultureSaleForm({
+  organizationId,
+  projectId,
+  saleId,
+}: {
+  organizationId: string;
+  projectId: string;
+  saleId: string;
+}) {
   const [state, action, pending] = useActionState(approveAgricultureSale, initial);
-  return <form action={action}><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-approve" /><input type="hidden" name="saleId" value={saleId} /><Result state={state} pending={pending} label="اعتماد البيع" pendingLabel="جارٍ الاعتماد…" /></form>;
+  return (
+    <form action={action}>
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-sale-approve" />
+      <input type="hidden" name="saleId" value={saleId} />
+      <Result state={state} pending={pending} label="اعتماد البيع" pendingLabel="جارٍ الاعتماد…" />
+    </form>
+  );
 }
 
-export function RecognizeAgricultureSaleForm({ organizationId, projectId, saleId }: { organizationId: string; projectId: string; saleId: string }) {
+export function RecognizeAgricultureSaleForm({
+  organizationId,
+  projectId,
+  saleId,
+}: {
+  organizationId: string;
+  projectId: string;
+  saleId: string;
+}) {
   const [state, action, pending] = useActionState(recognizeAgricultureSale, initial);
-  return <form action={action} className="form-grid compact"><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-recognize" /><input type="hidden" name="saleId" value={saleId} /><label>تاريخ التسليم/انتقال السيطرة<input type="date" name="controlTransferDate" required /></label><label>مرجع دليل التسليم<input name="evidenceReference" required minLength={3} maxLength={200} /></label><div><Result state={state} pending={pending} label="تسجيل التسليم والإيراد" pendingLabel="جارٍ الصرف والترحيل…" /></div><p className="muted full">عملية ذرية: صرف SALE_ISSUE من المخزون + إثبات البيع + إيراد وذمة مدينة. لا تُسجّل تكلفة مخزون تخمينية.</p></form>;
+  return (
+    <form action={action} className="form-grid compact">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-sale-recognize" />
+      <input type="hidden" name="saleId" value={saleId} />
+      <label>
+        تاريخ التسليم/انتقال السيطرة
+        <input type="date" name="controlTransferDate" required />
+      </label>
+      <label>
+        مرجع دليل التسليم
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <div>
+        <Result
+          state={state}
+          pending={pending}
+          label="تسجيل التسليم والإيراد"
+          pendingLabel="جارٍ الصرف والترحيل…"
+        />
+      </div>
+      <p className="muted full">
+        عملية ذرية: صرف SALE_ISSUE من المخزون + إثبات البيع + إيراد وذمة مدينة. لا تُسجّل تكلفة
+        مخزون تخمينية.
+      </p>
+    </form>
+  );
 }
 
 export function AgricultureSaleCollectionForm({
@@ -1420,8 +1786,45 @@ export function AgricultureSaleCollectionForm({
   const [state, action, pending] = useActionState(collectAgricultureSaleReceivable, initial);
   if (!sale.recognition_id || BigInt(sale.outstanding_receivable_minor_units) <= 0n) return null;
   const accounts = cashAccounts.filter((account) => account.currency === sale.currency);
-  if (accounts.length === 0) return <p className="muted">لا يوجد حساب نقدية للمشروع بنفس عملة البيع.</p>;
-  return <form action={action} className="form-grid compact"><Context organizationId={organizationId} projectId={projectId} /><Key prefix="ag-sale-collection" /><input type="hidden" name="recognitionId" value={sale.recognition_id} /><input type="hidden" name="currency" value={sale.currency} /><label>حساب النقدية<select name="cashAccountId" required>{accounts.map((account) => <option key={account.cash_account_id} value={account.cash_account_id}>{account.name}</option>)}</select></label><label>مبلغ التحصيل<input name="amount" inputMode="decimal" required /></label><label>تاريخ التحصيل<input type="date" name="collectionDate" required /></label><label>مرجع دليل التحصيل<input name="evidenceReference" required minLength={3} maxLength={200} /></label><div><Result state={state} pending={pending} label="تسجيل التحصيل" /></div><p className="muted full">التحصيل يخفض الذمة المدينة فقط ولا يعيد الاعتراف بالإيراد. يمكن تسجيل تحصيلات جزئية ومتعددة دون تجاوز المتبقي.</p></form>;
+  if (accounts.length === 0)
+    return <p className="muted">لا يوجد حساب نقدية للمشروع بنفس عملة البيع.</p>;
+  return (
+    <form action={action} className="form-grid compact">
+      <Context organizationId={organizationId} projectId={projectId} />
+      <Key prefix="ag-sale-collection" />
+      <input type="hidden" name="recognitionId" value={sale.recognition_id} />
+      <input type="hidden" name="currency" value={sale.currency} />
+      <label>
+        حساب النقدية
+        <select name="cashAccountId" required>
+          {accounts.map((account) => (
+            <option key={account.cash_account_id} value={account.cash_account_id}>
+              {account.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        مبلغ التحصيل
+        <input name="amount" inputMode="decimal" required />
+      </label>
+      <label>
+        تاريخ التحصيل
+        <input type="date" name="collectionDate" required />
+      </label>
+      <label>
+        مرجع دليل التحصيل
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <div>
+        <Result state={state} pending={pending} label="تسجيل التحصيل" />
+      </div>
+      <p className="muted full">
+        التحصيل يخفض الذمة المدينة فقط ولا يعيد الاعتراف بالإيراد. يمكن تسجيل تحصيلات جزئية ومتعددة
+        دون تجاوز المتبقي.
+      </p>
+    </form>
+  );
 }
 
 export function CropCycleCostAttributionForm({
@@ -1441,9 +1844,16 @@ export function CropCycleCostAttributionForm({
 }>) {
   const [state, action, pending] = useActionState(attributeCropCycleCost, initial);
   const available = sources.filter((source) => BigInt(source.available_amount_minor_units) > 0n);
-  const cycleAssignments = assignments.filter((assignment) => assignment.crop_cycle_id === result.crop_cycle_id);
+  const cycleAssignments = assignments.filter(
+    (assignment) => assignment.crop_cycle_id === result.crop_cycle_id,
+  );
   if (available.length === 0) {
-    return <p className="muted">لا يوجد مصروف تشغيل مُرحّل في النواة المالية برصيد متاح للتحميل. أنشئ واعتمد التزام تكلفة تشغيل من قسم التكاليف أولًا.</p>;
+    return (
+      <p className="muted">
+        لا يوجد مصروف تشغيل مُرحّل في النواة المالية برصيد متاح للتحميل. أنشئ واعتمد التزام تكلفة
+        تشغيل من قسم التكاليف أولًا.
+      </p>
+    );
   }
   return (
     <form action={action} className="form-grid compact">
@@ -1451,18 +1861,69 @@ export function CropCycleCostAttributionForm({
       <Key prefix="ag-cycle-cost" />
       <input type="hidden" name="cropCycleId" value={result.crop_cycle_id} />
       <input type="hidden" name="currency" value={result.currency} />
-      <label className="full">مصدر المصروف المالي المعتمد{' '}
+      <label className="full">
+        مصدر المصروف المالي المعتمد{' '}
         <select name="sourceJournalLineId" required>
-          {available.map((source) => <option key={source.source_journal_line_id} value={source.source_journal_line_id}>{source.description} · متاح {formatMinorUnits(source.available_amount_minor_units, source.currency)} · {source.transaction_date}</option>)}
+          {available.map((source) => (
+            <option key={source.source_journal_line_id} value={source.source_journal_line_id}>
+              {source.description} · متاح{' '}
+              {formatMinorUnits(source.available_amount_minor_units, source.currency)} ·{' '}
+              {source.transaction_date}
+            </option>
+          ))}
         </select>
       </label>
-      <label>المبلغ المحمّل ({result.currency})<input name="amount" required inputMode="decimal" /></label>
-      <label>فئة التشغيل<select name="costCategory" required>{CROP_CYCLE_COST_CATEGORIES.map((category) => <option key={category} value={category}>{CROP_CYCLE_COST_CATEGORY_LABEL[category]}</option>)}</select></label>
-      <label>الحقل <span className="muted">(اختياري)</span><select name="fieldId" defaultValue=""><option value="">على مستوى الدورة</option>{cycleAssignments.map((assignment) => <option key={assignment.id} value={assignment.field_id}>{fields.find((field) => field.id === assignment.field_id)?.identifier ?? assignment.field_id}</option>)}</select></label>
-      <label>مرجع سياسة التحميل<input name="policyReference" required minLength={3} maxLength={200} placeholder="مثال: سياسة تكلفة التشغيل 2026" /></label>
-      <label className="full">مرجع الدليل<input name="evidenceReference" required minLength={3} maxLength={200} /></label>
-      <p className="muted full">هذا الربط لا ينشئ مصروفًا جديدًا: المبلغ مصدره قيد Finance Core المرحّل، ولا يمكن أن تتجاوز مجموع التحميلات قيمة المصدر. مقابل شراء الأرض غير مؤهل.</p>
-      <div className="full"><Result state={state} pending={pending} label="تحميل تكلفة التشغيل" pendingLabel="جارٍ ربط المصدر المالي…" /></div>
+      <label>
+        المبلغ المحمّل ({result.currency})<input name="amount" required inputMode="decimal" />
+      </label>
+      <label>
+        فئة التشغيل
+        <select name="costCategory" required>
+          {CROP_CYCLE_COST_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {CROP_CYCLE_COST_CATEGORY_LABEL[category]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        الحقل <span className="muted">(اختياري)</span>
+        <select name="fieldId" defaultValue="">
+          <option value="">على مستوى الدورة</option>
+          {cycleAssignments.map((assignment) => (
+            <option key={assignment.id} value={assignment.field_id}>
+              {fields.find((field) => field.id === assignment.field_id)?.identifier ??
+                assignment.field_id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        مرجع سياسة التحميل
+        <input
+          name="policyReference"
+          required
+          minLength={3}
+          maxLength={200}
+          placeholder="مثال: سياسة تكلفة التشغيل 2026"
+        />
+      </label>
+      <label className="full">
+        مرجع الدليل
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <p className="muted full">
+        هذا الربط لا ينشئ مصروفًا جديدًا: المبلغ مصدره قيد Finance Core المرحّل، ولا يمكن أن تتجاوز
+        مجموع التحميلات قيمة المصدر. مقابل شراء الأرض غير مؤهل.
+      </p>
+      <div className="full">
+        <Result
+          state={state}
+          pending={pending}
+          label="تحميل تكلفة التشغيل"
+          pendingLabel="جارٍ ربط المصدر المالي…"
+        />
+      </div>
     </form>
   );
 }
@@ -1479,17 +1940,43 @@ export function CropCycleCloseoutForm({
   const [state, action, pending] = useActionState(closeCropCycle, initial);
   if (result.operational_state !== 'HARVESTING') return null;
   if (result.hard_exception_count > 0) {
-    return <output className="error">الإغلاق موقوف حتى معالجة استثناءات السلامة الجوهرية الموضحة أعلاه.</output>;
+    return (
+      <output className="error">
+        الإغلاق موقوف حتى معالجة استثناءات السلامة الجوهرية الموضحة أعلاه.
+      </output>
+    );
   }
   return (
     <form action={action} className="form-grid compact">
       <Context organizationId={organizationId} projectId={projectId} />
       <Key prefix="ag-cycle-close" />
       <input type="hidden" name="cropCycleId" value={result.crop_cycle_id} />
-      <label className="full">سبب الإغلاق<textarea name="closeReason" required minLength={3} maxLength={500} aria-describedby={`close-help-${result.crop_cycle_id}`} /></label>
-      <label className="full">مرجع دليل الإغلاق<input name="evidenceReference" required minLength={3} maxLength={200} /></label>
-      <p className="muted full" id={`close-help-${result.crop_cycle_id}`}>يمكن أن يبقى مخزون فعلي أو ذمة للتحصيل بعد الإغلاق؛ سيظلان ظاهرين ويتغير التحصيل لاحقًا دون إعادة فتح دورة التشغيل.</p>
-      <div className="full"><Result state={state} pending={pending} label="إغلاق دورة المحصول" pendingLabel="جارٍ فحص السلامة والإغلاق…" /></div>
+      <label className="full">
+        سبب الإغلاق
+        <textarea
+          name="closeReason"
+          required
+          minLength={3}
+          maxLength={500}
+          aria-describedby={`close-help-${result.crop_cycle_id}`}
+        />
+      </label>
+      <label className="full">
+        مرجع دليل الإغلاق
+        <input name="evidenceReference" required minLength={3} maxLength={200} />
+      </label>
+      <p className="muted full" id={`close-help-${result.crop_cycle_id}`}>
+        يمكن أن يبقى مخزون فعلي أو ذمة للتحصيل بعد الإغلاق؛ سيظلان ظاهرين ويتغير التحصيل لاحقًا دون
+        إعادة فتح دورة التشغيل.
+      </p>
+      <div className="full">
+        <Result
+          state={state}
+          pending={pending}
+          label="إغلاق دورة المحصول"
+          pendingLabel="جارٍ فحص السلامة والإغلاق…"
+        />
+      </div>
     </form>
   );
 }
