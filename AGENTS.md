@@ -213,3 +213,19 @@ Do not claim a gate passed unless it was run against the reported commit and env
 ## Definition of complete
 
 A task is complete only when the requested outcome is implemented, relevant evidence is committed, targeted verification passes, the diff contains no legacy leakage or secrets, unresolved business dependencies are explicit, and the PR clearly states what remains outside scope.
+
+---
+
+## Portfolio command center
+
+This repository is part of a 10-project portfolio governed by the
+[`command-center-`](https://github.com/mohamedmasoud3030-tech/command-center-) repository. Portfolio rules (they take precedence over this file where they conflict):
+one live status file per repo, dated reports are archived — never silently deleted, no secrets in git,
+and the non-technical owner is always answered in simple Egyptian Arabic with explicit decisions to approve.
+
+## Skill/tooling systems index (2026-10-21 cleanup)
+
+Three systems coexist here by design — edit the one relevant system, do not merge or duplicate across them:
+- `.agents/skills/` — engineering skills (architecture, database, code review, planning, implementation, threat model)
+- `docs/agent-os/` — the internal standard for designing skills
+- `التسويق-والإدارة/` — standalone marketing-ops engine (`terranex-ops`) and campaign workspace

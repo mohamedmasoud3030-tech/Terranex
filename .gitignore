@@ -68,3 +68,8 @@ scripts/pglite-replay.mjs
 # Python
 __pycache__/
 *.pyc
+
+# portfolio rule 2026-10-21: never commit real environments
+.env*
+!.env.example
+!.env.*.example
