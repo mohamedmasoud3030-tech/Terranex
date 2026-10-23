@@ -41,3 +41,17 @@ Root `README.md` + `AGENTS.md`; `docs/` canonical files above + `decisions/`
 register + living specs under `docs/specs/`, `greenfield/`, `runbooks/`,
 `pilot-readiness/`, `design/`, `demo/`, `agent-os/`. Removed 2026-10-22:
 dated execution/audit/status reports — Git history is the archive.
+
+---
+
+## 🛰️ مراجع الموجات الإدارية — مزامنة مركز القيادة (2026-10-23)
+
+آخر ثلاث موجات إدارية اكتملت على هذا المستودع بدمج موثق — هذا القسم هو الصفحة الأخيرة من رحلة «خطة ← تسليم»:
+
+| الموجة | PR | مرجع الدمج | التاريخ | الأثر |
+|---|---|---|---|---|
+| توحيد المستندات القانونية | #189 | `edcf0d8` | 2026-10-22 | القانونية الثلاثية + specs + القرار 0035 موثق |
+| ربط مركز القيادة | #190 | `dea39c2` | 2026-10-23 | 🛡️ إزالة .env.production + ربط المركز |
+| مزامنة المهارات | #191 | `eb44bcf` | 2026-10-23 | 19 مهارة مرجعية بعد المزامنة |
+
+> **المرجع الأم للمحفظة:** مركز القيادة [`command-center-`](https://github.com/mohamedmasoud3030-tech/command-center-) — سجل الجلسات النشطة والـ PRs المفتوحة وقرارات المالك يعيش هناك. هذا القسم يحدّثه مدير المحفظة مع كل موجة ولا يُعدّل يدوياً.
