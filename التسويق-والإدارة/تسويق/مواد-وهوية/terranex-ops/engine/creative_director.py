@@ -126,20 +126,46 @@ _AR_DIGITS = str.maketrans({chr(0x0660 + i): str(i) for i in range(10)})
 _AR_DIGITS.update({chr(0x06F0 + i): str(i) for i in range(10)})
 _WORD_NUM = {"عشرة": 10, "عشر": 10, "خمستاشر": 15, "خمسة عشر": 15, "عشرين": 20,
              "ثلاثين": 30, "تلاتين": 30, "اربعة": 4, "أربعة": 4, "خمسة": 5}
-_DUR_RE = re.compile(r"(?>(\d++(?:[.]\d++)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec))")
+_DUR_UNITS = ("ثانيةً", "ثانية", "ثانيه", "ثواني", "ث", "seconds", "second", "sec")
 
 
 def _latin_digits(s: str) -> str:
     return s.translate(_AR_DIGITS)
 
 
+def _numeric_duration(n: str) -> float | None:
+    # Linear scan instead of a backtracking regex: find a unit, then read the
+    # number immediately before it. No caller text is passed to a shell/ffmpeg.
+    for unit in _DUR_UNITS:
+        start = 0
+        while True:
+            i = n.find(unit, start)
+            if i < 0:
+                break
+            after = i + len(unit)
+            if after < len(n) and (n[after].isalnum() or n[after] == "ً"):
+                start = after
+                continue
+            j = i - 1
+            while j >= 0 and n[j].isspace():
+                j -= 1
+            end = j + 1
+            while j >= 0 and (n[j].isdigit() or n[j] in ".,"):
+                j -= 1
+            token = n[j + 1:end].replace(",", ".")
+            if token:
+                try:
+                    return float(token)
+                except ValueError:
+                    pass
+            start = after
+    return None
+
+
 def _parse_duration(n: str) -> float:
-    m = _DUR_RE.search(n)
-    if m:
-        dur = float(m.group(1))
-    else:
-        dur = None
-        for w, v in _WORD_NUM.items():
+    dur = _numeric_duration(n)
+    if dur is None:
+        for w, v in sorted(_WORD_NUM.items(), key=lambda kv: -len(kv[0])):
             if SL._norm(w) in n and re.search(r"ثاني|ثواني|ث", n):
                 dur = float(v)
                 break

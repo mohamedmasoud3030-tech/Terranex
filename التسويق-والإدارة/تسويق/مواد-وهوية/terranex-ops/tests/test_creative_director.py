@@ -66,6 +66,10 @@ class TestBrief(unittest.TestCase):
     def test_arabic_digits(self):
         self.assertEqual(CD.parse_brief("إعلان ٢٠ ثانية عن متابعة الحيوانات في المزرعة")["duration_sec"], 20.0)
 
+    def test_word_duration_not_confused_by_substring(self):
+        self.assertEqual(CD.parse_brief("إعلان عشرين ثانية عن متابعة الحيوانات في المزرعة")["duration_sec"], 20.0)
+        self.assertEqual(CD.parse_brief("إعلان 15ث عن متابعة الحيوانات في المزرعة")["duration_sec"], 15.0)
+
     def test_missing_duration_rejected(self):
         with self.assertRaises(ValueError):
             CD.parse_brief("اعمل إعلان عن متابعة الحيوانات")
