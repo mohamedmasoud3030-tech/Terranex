@@ -1,5 +1,6 @@
 # بيئات/مخرجات اختبار محلية لا تُتتبع في Git
 .venv/
+.venv-*/
 .coverage
 .coverage.*
 htmlcov/
