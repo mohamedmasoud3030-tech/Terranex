@@ -133,32 +133,42 @@ def _latin_digits(s: str) -> str:
     return s.translate(_AR_DIGITS)
 
 
+def _number_before(n: str, i: int) -> float | None:
+    j = i - 1
+    while j >= 0 and n[j].isspace():
+        j -= 1
+    end = j + 1
+    while j >= 0 and (n[j].isdigit() or n[j] in ".,"):
+        j -= 1
+    token = n[j + 1:end].replace(",", ".")
+    if not token:
+        return None
+    try:
+        return float(token)
+    except ValueError:
+        return None
+
+
+def _unit_instances(n: str, unit: str):
+    start = 0
+    while True:
+        i = n.find(unit, start)
+        if i < 0:
+            return
+        after = i + len(unit)
+        if after >= len(n) or not (n[after].isalnum() or n[after] == "ً"):
+            yield i, after
+        start = after
+
+
 def _numeric_duration(n: str) -> float | None:
     # Linear scan instead of a backtracking regex: find a unit, then read the
     # number immediately before it. No caller text is passed to a shell/ffmpeg.
     for unit in _DUR_UNITS:
-        start = 0
-        while True:
-            i = n.find(unit, start)
-            if i < 0:
-                break
-            after = i + len(unit)
-            if after < len(n) and (n[after].isalnum() or n[after] == "ً"):
-                start = after
-                continue
-            j = i - 1
-            while j >= 0 and n[j].isspace():
-                j -= 1
-            end = j + 1
-            while j >= 0 and (n[j].isdigit() or n[j] in ".,"):
-                j -= 1
-            token = n[j + 1:end].replace(",", ".")
-            if token:
-                try:
-                    return float(token)
-                except ValueError:
-                    pass
-            start = after
+        for i, _after in _unit_instances(n, unit):
+            value = _number_before(n, i)
+            if value is not None:
+                return value
     return None
 
 
