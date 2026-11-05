@@ -1,0 +1,93 @@
+{
+  "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-followup-20s-voiced/preview-silent-v2.mp4",
+  "band_y": [
+    1254,
+    1434
+  ],
+  "method": "count of near-white pixels (caption glyphs) inside the caption band",
+  "threshold_pixels": 1500,
+  "all_as_expected": true,
+  "samples": [
+    {
+      "t": 1.0,
+      "label": "hook-title-no-caption",
+      "expect_caption": false,
+      "white_text_pixels": 0,
+      "caption_detected": false,
+      "as_expected": true
+    },
+    {
+      "t": 3.5,
+      "label": "L1-بنتابع-التغذية",
+      "expect_caption": true,
+      "white_text_pixels": 5160,
+      "caption_detected": true,
+      "as_expected": true
+    },
+    {
+      "t": 4.75,
+      "label": "gap-1",
+      "expect_caption": false,
+      "white_text_pixels": 0,
+      "caption_detected": false,
+      "as_expected": true
+    },
+    {
+      "t": 6.5,
+      "label": "L2-على-أرض-الواقع",
+      "expect_caption": true,
+      "white_text_pixels": 9519,
+      "caption_detected": true,
+      "as_expected": true
+    },
+    {
+      "t": 8.25,
+      "label": "gap-2",
+      "expect_caption": false,
+      "white_text_pixels": 0,
+      "caption_detected": false,
+      "as_expected": true
+    },
+    {
+      "t": 10.0,
+      "label": "L3-من-الحظيرة-وللمزرعة",
+      "expect_caption": true,
+      "white_text_pixels": 7679,
+      "caption_detected": true,
+      "as_expected": true
+    },
+    {
+      "t": 11.75,
+      "label": "gap-3",
+      "expect_caption": false,
+      "white_text_pixels": 0,
+      "caption_detected": false,
+      "as_expected": true
+    },
+    {
+      "t": 14.0,
+      "label": "L4-متابعة-وتوثيق",
+      "expect_caption": true,
+      "white_text_pixels": 10766,
+      "caption_detected": true,
+      "as_expected": true
+    },
+    {
+      "t": 16.8,
+      "label": "gap-4",
+      "expect_caption": false,
+      "white_text_pixels": 0,
+      "caption_detected": false,
+      "as_expected": true
+    },
+    {
+      "t": 18.5,
+      "label": "endcard-no-caption",
+      "expect_caption": false,
+      "white_text_pixels": 0,
+      "caption_detected": false,
+      "as_expected": true
+    }
+  ],
+  "note": "الكابشن الخامس (17.20–19.70) يقع على كارت الخاتمة، ومحرك الرندر لا يرسم كابشن فوق الكارت؛ لذلك يُتوقع غياب أي كابشن عند 18.50 وهذا سلوك المحرك لا خطأ في المعاينة."
+}

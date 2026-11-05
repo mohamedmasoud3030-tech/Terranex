@@ -1,0 +1,140 @@
+{
+  "status": "proposal-only-not-adopted",
+  "proposed_version": 3,
+  "project_id": "cd-followup-20s-voiced",
+  "based_on_version": 2,
+  "date_owner_timezone": "2026-11-06",
+  "language": "ar-EG",
+  "requires_owner_written_approval": true,
+  "adopted": false,
+  "applied_to_plan": false,
+  "applied_to_spec": false,
+  "applied_to_transcript": false,
+  "voice_identity_unchanged": {
+    "profile_id": "ar-eg-calm-confident",
+    "engine": "arena-session-tts",
+    "voice_id": "voice-00",
+    "note": "لا تغيير لهوية الصوت في هذه الخطوة؛ قرار المالك القائم هو «القرار بعد الاستماع»."
+  },
+  "windows_unchanged": true,
+  "visuals_unchanged": true,
+  "lines": [
+    {
+      "line": 1,
+      "current_text": "بنتابع التغذية.",
+      "proposed_text": "بنتابع العلف.",
+      "reason": "«التغذية» لفظة فصحى مجردة داخل نص عامي ولا تسمّي الظاهر في الكادر؛ «العلف» ملموسة ومطابقة لوصف الفهرس وأقصر بمقطع واحد.",
+      "picture_evidence": "s01-08: أبقار بنية وبيضاء تأكل العلف/التبن عند الحاجز (لقطة تغذية قريبة).",
+      "syllables": 6,
+      "syllable_breakdown": {"بنتابع": 3, "العلف": 3},
+      "internal_pause_sec": 0.0,
+      "target_from_sec": 2.55,
+      "target_to_sec": 4.5,
+      "window_sec": 1.95,
+      "estimated_speech_sec_at_4_0": 1.5,
+      "margin_sec": 0.45
+    },
+    {
+      "line": 2,
+      "current_text": "وبنتابعهم على أرض الواقع.",
+      "proposed_text": "بنتابع الوزن على الطبيعة.",
+      "reason": "تسمية الفعل الموثّق الظاهر بدل تعبير صحفي مستهلك، و«على الطبيعة» لهجة مصرية أصيلة وهي نفس توصيف المادة المصدرية.",
+      "picture_evidence": "s04-02: لقطة الوزن الحقلي الرئيسية — نشاط الوزن الحقلي الموثق (منصة الميزان لا تظهر بوضوح).",
+      "claim_boundary": "تسمية النشاط فقط؛ لا ادعاء برقم قياس ولا دقة ولا نتيجة، لأن الفهرس ينص على أن منصة الميزان غير ظاهرة بوضوح.",
+      "optional_more_generic_alternative": "وبنتابعهم على الطبيعة.",
+      "syllables": 11,
+      "syllable_breakdown": {"بنتابع": 3, "الوزن": 2, "على": 2, "الطبيعة": 4},
+      "internal_pause_sec": 0.0,
+      "target_from_sec": 5.0,
+      "target_to_sec": 8.0,
+      "window_sec": 3.0,
+      "estimated_speech_sec_at_4_0": 2.75,
+      "margin_sec": 0.25
+    },
+    {
+      "line": 3,
+      "current_text": "من الحظيرة… وللمزرعة.",
+      "proposed_text": "من الحظيرة… للمزرعة.",
+      "reason": "حذف الواو يصلح التوازي «من … لـ…» ويخفّف النطق بدون أن يغيّر المعنى.",
+      "picture_evidence": "s01-03: حظيرة/حاجز تغذية (لقطة واسعة) ← s01-07: رشاشات ري على محصول أخضر.",
+      "syllables": 9,
+      "syllable_breakdown": {"من": 1, "الحظيرة": 4, "للمزرعة": 4},
+      "internal_pause_sec": 0.2,
+      "target_from_sec": 8.5,
+      "target_to_sec": 11.5,
+      "window_sec": 3.0,
+      "estimated_speech_sec_at_4_0": 2.45,
+      "margin_sec": 0.55
+    },
+    {
+      "line": 4,
+      "current_text": "متابعة وتوثيق… خطوة بخطوة.",
+      "proposed_text": "وبنوثّق المتابعة… خطوة بخطوة.",
+      "reason": "فعل نشط بدل جملة اسمية بنبرة كتيّب، ويقلّل تكرار جذر «متابعة» (الهوك + ج2 + ج4) مع حفظ إيقاع «خطوة بخطوة».",
+      "picture_evidence": "s04-04: استمرار نشاط الوزن الحقلي وتوثيقه.",
+      "syllables": 13,
+      "syllable_breakdown": {"وبنوثّق": 4, "المتابعة": 4, "خطوة": 2, "بخطوة": 3},
+      "internal_pause_sec": 0.2,
+      "target_from_sec": 12.0,
+      "target_to_sec": 16.6,
+      "window_sec": 4.6,
+      "estimated_speech_sec_at_4_0": 3.45,
+      "margin_sec": 1.15
+    },
+    {
+      "line": 5,
+      "current_text": "كلمنا على واتساب.",
+      "proposed_text": "ابعتلنا على واتساب.",
+      "reason": "«كلمنا» تُوحي بمكالمة، وواتساب مراسلة؛ «ابعتلنا» أدق للوسيلة وأقل إلحاحًا.",
+      "picture_evidence": "كارت الخاتمة: واتساب 01010154221.",
+      "renderer_note": "نافذة 17.20–19.70 تقع على كارت الخاتمة، والمحرك لا يرسم كابشن فوق الكارت — الجملة منطوقة فقط ما لم تُنقل قبل 17.0 ث.",
+      "syllables": 8,
+      "syllable_breakdown": {"ابعتلنا": 4, "على": 2, "واتساب": 2},
+      "internal_pause_sec": 0.0,
+      "target_from_sec": 17.2,
+      "target_to_sec": 19.7,
+      "window_sec": 2.5,
+      "estimated_speech_sec_at_4_0": 2.0,
+      "margin_sec": 0.5
+    }
+  ],
+  "totals": {
+    "words": 16,
+    "syllables": 47,
+    "estimated_speech_sec_at_4_0": 12.15,
+    "video_total_sec": 20.0,
+    "all_lines_fit_windows": true,
+    "min_margin_sec": 0.25
+  },
+  "compliance_check_executed": {
+    "critic_hard": [],
+    "critic_soft_codes": ["S3", "R6", "R7"],
+    "critic_soft_note": "S3 دعوة واتساب مباشرة (مقصودة في البريف)؛ R6/R7 تخصّان الكابشن المنشور لا النص المنطوق.",
+    "lint_text_per_line": "ok",
+    "lint_city": "clean",
+    "no_profit_promise": true,
+    "no_percentages_or_numbers": true,
+    "no_risk_free_claim": true,
+    "no_comparative_claim": true,
+    "no_universal_quantifiers": true
+  },
+  "claims_deliberately_avoided": [
+    "«بالأرقام» أو أي نتيجة قياس — منصة الميزان غير ظاهرة بوضوح في الكادر.",
+    "«بنفسنا» / «قدامك» / «كل خطوة متوثقة» — ادعاءات تشغيلية أو تعميمات بلا دليل.",
+    "«شرب» / «رعاية بيطرية» / «متابعة يومية» — غير ظاهرة في اللقطات ولا في البريف."
+  ],
+  "editorial_notes_not_implemented": [
+    "اللقطة الافتتاحية s04-03 ماكرو لصوف الخروف بجودة 0.5 في الفهرس (الأضعف)؛ لقطة أوسع كانت أقوى للهوك. لم يُغيَّر أي مشهد.",
+    "الكابشن الخامس لا يُرسم فوق كارت الخاتمة؛ نقله قبل 17.0 ث يجعله مكتوبًا لكنه يستلزم تقصير الجملة الرابعة. قرار المالك."
+  ],
+  "owner_decisions_requested": [
+    "اعتماد المقترح v3 كاملًا / جزئيًا (بأرقام السطور) / الإبقاء على النسخة الحالية.",
+    "اختيار بديل السطر ٢ الأعم «وبنتابعهم على الطبيعة.» من عدمه.",
+    "نقل الجملة الخامسة قبل الكارت لتظهر مكتوبة أم تبقى منطوقة فقط."
+  ],
+  "next_step_after_approval_only": [
+    "تحديث creative-input.json بالنص المعتمد ثم apply-creative (v3 في البايلوت فقط).",
+    "إعادة توليد ورقة التوقيت ونموذج التفريغ من الخطة الجديدة.",
+    "إعادة رندر معاينة صامتة بالنص المعتمد قبل التسجيل."
+  ]
+}
