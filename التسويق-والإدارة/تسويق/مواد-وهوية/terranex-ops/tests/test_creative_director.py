@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, "engine"))
 import creative_director as CD
 import creative_store as CS
 import qa_video
+from safe_paths import confine
 
 REQ = ("اعمل إعلان 20 ثانية يوضح إننا بنتابع الحيوانات على أرض الواقع، بأسلوب مؤسسي احترافي، "
        "ولقطات متنوعة، وتعليق صوتي مصري هادي، وخاتمة فيها دعوة للتواصل.")
@@ -101,6 +102,20 @@ class TestSecurity(unittest.TestCase):
         self.assertNotIn("out_path", inspect.signature(CD.render_project).parameters)
         self.assertNotIn("audio_path", inspect.signature(CD.attach_voice).parameters)
         self.assertNotIn("original_video", inspect.signature(CD.prove_relocation).parameters)
+
+    def test_confine_rejects_traversal_and_symlink_escape(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = os.path.join(td, "root")
+            os.makedirs(root)
+            inside = os.path.join(root, "a.txt")
+            open(inside, "w").close()
+            self.assertEqual(confine(inside, root), inside)
+            with self.assertRaises(ValueError):
+                confine(os.path.join(root, "..", "outside.txt"), root)
+            link = os.path.join(root, "link")
+            os.symlink(td, link)
+            with self.assertRaises(ValueError):
+                confine(os.path.join(link, "outside.txt"), root)
 
 
 class TestLibraryAndPlan(unittest.TestCase):

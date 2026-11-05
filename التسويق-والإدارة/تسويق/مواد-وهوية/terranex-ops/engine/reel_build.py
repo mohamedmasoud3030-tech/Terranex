@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+from safe_paths import confine  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # جذر مساحة التسويق (تسويق/) — يُسمح بمراجعته بالمسارات النسبية بدل المسارات المطلقة القديمة.
@@ -52,7 +53,7 @@ def _safe_input_path(path: str, *roots: str) -> str:
         root = os.path.realpath(r)
         try:
             if rp == root or os.path.commonpath([rp, root]) == root:
-                return rp
+                return confine(rp, root)
         except ValueError:
             continue
     raise SystemExit(f"input path outside allowed roots: {path}")

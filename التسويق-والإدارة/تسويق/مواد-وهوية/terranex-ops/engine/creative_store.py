@@ -65,7 +65,10 @@ class ProjectStore:
     def path(self, name: str) -> Path:
         if name not in ALLOWED_FILES:
             raise ValueError(f"اسم ملف غير مسموح في المشروع: {name}")
-        return self.dir / name
+        base = os.path.basename(name)
+        if base != name:
+            raise ValueError(f"اسم ملف غير مسموح في المشروع: {name}")
+        return self.dir / base
 
     def exists(self, name: str) -> bool:
         return self.path(name).is_file()

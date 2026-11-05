@@ -40,6 +40,7 @@ import critic                # noqa: E402
 import qa_video              # noqa: E402
 import reel_build as R       # noqa: E402
 import scene_library as SL   # noqa: E402
+from safe_paths import confine  # noqa: E402
 from creative_store import (  # noqa: E402
     ProjectStore, BRIEF, PLAN, SPEC, MEMORY, CAPTION, STORYBOARD,
     RENDER_REPORT, CRITIC_REPORT, RELOCATION_REPORT, CREATIVE_INPUT,
@@ -107,9 +108,10 @@ def _rel(path) -> str:
     return os.path.relpath(os.path.abspath(path), REPO).replace(os.sep, "/")
 
 
-def _sha256(path) -> str:
+def _sha256(path, root: str) -> str:
+    safe = confine(str(path), root)
     h = hashlib.sha256()
-    with open(path, "rb") as f:
+    with open(safe, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
@@ -124,7 +126,7 @@ _AR_DIGITS = str.maketrans({chr(0x0660 + i): str(i) for i in range(10)})
 _AR_DIGITS.update({chr(0x06F0 + i): str(i) for i in range(10)})
 _WORD_NUM = {"عشرة": 10, "عشر": 10, "خمستاشر": 15, "خمسة عشر": 15, "عشرين": 20,
              "ثلاثين": 30, "تلاتين": 30, "اربعة": 4, "أربعة": 4, "خمسة": 5}
-_DUR_RE = re.compile(r"([0-9]++(?:[.][0-9]++)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec)")
+_DUR_RE = re.compile(r"(\d++(?:[.]\d++)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec)")
 
 
 def _latin_digits(s: str) -> str:
@@ -235,7 +237,7 @@ def _validate_sources(idx: dict, repo: str, check_git: bool, issues: list) -> No
         if not os.path.isfile(fp):
             issues.append(f"{sid}: المصدر غير موجود: {p}")
             continue
-        if s.get("sha256") and _sha256(fp) != s["sha256"]:
+        if s.get("sha256") and _sha256(fp, repo) != s["sha256"]:
             issues.append(f"{sid}: SHA-256 لا يطابق الفهرس")
         if not check_git:
             continue
@@ -665,7 +667,7 @@ def _video_path(project_id: str, version: int) -> str:
 
 
 def _save_current(store: ProjectStore, mem: dict, brief: dict, plan: dict, spec: dict,
-                  sched: dict, endcard: dict | None = None) -> None:
+                  sched: dict) -> None:
     store.write_json(BRIEF, brief)
     store.write_json(PLAN, plan)
     store.write_json(SPEC, spec)
@@ -763,7 +765,7 @@ def apply_creative(project_id: str, creative: dict | None = None, projects_root:
             "spec": _rel(store.path(SPEC)), "storyboard": _rel(store.path(STORYBOARD))}
     mem["revisions"].append({"at": _now(), "version": version, "source": "arena-json",
                              "note": creative.get("note", "سيناريو إبداعي من وكيل Arena")})
-    _save_current(store, mem, brief, plan, spec, sched, endcard)
+    _save_current(store, mem, brief, plan, spec, sched)
     store.append_event("creative-applied", {"version": version, "scene_ids": mem["selected_scene_ids"]})
     return {"version": version, "spec": spec, "plan": plan}
 
@@ -1014,10 +1016,10 @@ def attach_voice(project_id: str, approval_note: str, projects_root: str = PROJE
     spec["hook_sec"] = min(spec.get("hook_sec", 0.0), padded[0][0])
     spec["visual_draft"] = False
     spec["endcard"]["disclosure"] = AI_VOICE_DISCLOSURE if transcript.get("ai_generated") else VOICE_DISCLOSURE
-    spec["voice"] = {"path": asset.name, "profile_id": profile_id, "sha256": _sha256(asset),
+    spec["voice"] = {"path": asset.name, "profile_id": profile_id, "sha256": _sha256(asset, str(store.dir)),
                      "timing_source": "measured-energy+approved-transcript",
                      "approval_note": approval_note,
-                     "transcript_sha256": _sha256(store.path(VOICE_TRANSCRIPT)),
+                     "transcript_sha256": _sha256(store.path(VOICE_TRANSCRIPT), str(store.dir)),
                      "transcript_verification": "human-reviewed"}
     spec["_caption_timing_source"] = "measured-energy+approved-transcript"
     plan["schedule"]["caption_timing_source"] = spec["_caption_timing_source"]
@@ -1057,7 +1059,7 @@ def render_project(project_id: str, projects_root: str = PROJECTS, force: bool =
     idx = load_index()
     validate_plan(idx, mem["brief"], plan["schedule"], spec)
     entry = _version_entry(mem, mem["current_version"])
-    video = os.path.join(REPO, entry["video"]) if entry.get("video") else _video_path(store.project_id, mem["current_version"])
+    video = confine(os.path.join(REPO, entry["video"]), REPO) if entry.get("video") else _video_path(store.project_id, mem["current_version"])
     if not force and entry.get("sha256") and os.path.isfile(video):
         report = store.read_json(RENDER_REPORT) if store.exists(RENDER_REPORT) else {}
         return {"render": {"out": video, "sha256": entry["sha256"], "cached": True},
@@ -1069,7 +1071,7 @@ def render_project(project_id: str, projects_root: str = PROJECTS, force: bool =
         voice = str(store.path(spec["voice"]["path"]))
     os.makedirs(os.path.dirname(video), exist_ok=True)
     result = R.build(str(store.path(SPEC)), voice, video)
-    sha = _sha256(video)
+    sha = _sha256(video, MARKETING_ROOT)
     visual_draft = bool(spec.get("visual_draft"))
     report = qa_video.qa(video, "reels", visual_draft=visual_draft)
     expected = mem["brief"]["duration_sec"]
@@ -1117,7 +1119,7 @@ def prove_relocation(project_id: str, projects_root: str = PROJECTS) -> dict:
                            capture_output=True, text=True)
         if r.returncode != 0:
             raise RuntimeError("فشل الرندر من المسار المنقول:\n" + r.stderr[-1200:])
-        sha = _sha256(out)
+        sha = _sha256(out, td)
         report = {"project_id": store.project_id, "version": mem["current_version"],
                   "render_stdout": r.stdout.strip(), "sha256": sha,
                   "expected_sha256": expected_sha,
@@ -1142,7 +1144,7 @@ def migrate_legacy_project(project_id: str, projects_root: str = PROJECTS) -> di
     if video_rel:
         vp = os.path.join(REPO, video_rel)
         if os.path.isfile(vp):
-            sha = _sha256(vp)
+            sha = _sha256(vp, REPO)
     mem["schema_version"] = 2
     mem["current_version"] = 1
     mem["versions"] = [{"version": 1, "created_at": mem.get("created_at", _now()),
