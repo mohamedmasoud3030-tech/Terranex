@@ -1,0 +1,11 @@
+# بيئات/مخرجات اختبار محلية لا تُتتبع في Git
+.venv/
+.coverage
+.coverage.*
+htmlcov/
+output/coverage/
+
+# مخرجات ثقيلة مستقبلية: تُصدّر كأدلة/Release assets بدل تضخيم Git
+# (الأصول الحالية المتتبعة تبقى كما هي؛ هذا يمنع إضافة نسخ جديدة تلقائيًا)
+output/creative-projects/**/voice-input.*
+output/creative-projects/**/versions/**/*.mp4
