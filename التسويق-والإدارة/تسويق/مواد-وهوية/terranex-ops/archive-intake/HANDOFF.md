@@ -12,6 +12,23 @@
 - **لا تُدمج أي نتيجة جرد في `scene-library` الإنتاجية قبل مراجعة المالك.**
 - لا ترفع الفيديوهات الكبيرة إلى Git.
 
+## ١ب) الحالة الراهنة لأولوية الإدخال (2026‑11‑06)
+
+- **التنزيل الجزئي عبر الموصّل غير مدعوم** — اختبار فعلي، الدليل في `range-support-test.json`.
+- **مسار العودة مُثبت**: ملف اختبار 102 بايت رجع مطابقًا إلى `google_drive/` في مساحة العمل ثم حُذف.
+- **`google_drive/` مستثنى من Git** (أضيف إلى `.gitignore` الجذر).
+- القرار: **U2 تقسيم سحابي**. Notebook جاهز: `colab/TerraNex-Split-Archive.ipynb` + `COLAB-INSTRUCTIONS.md`.
+- **في انتظار المالك** ليشغّل Notebook ويقول «الأجزاء جاهزة في TerraNex-Archive-Parts».
+
+### عند وصول الأجزاء — بالترتيب الصارم
+1. `google_drive.search_files` عن المجلد ثم `list_files` لجلب معرّفات الأجزاء و`manifest.json`.
+2. `download_file` لكل جزء (كلٌّ 57.6 MiB < 100 MiB) — يهبط في `google_drive/`.
+3. تجميع بالترتيب + التحقق: **181,196,089 بايت** و**SHA‑256 = 7a2bd417bb12b1d0eba348509b889d5f6a3f0d1af72d17734c943d3d7feed4d2**.
+4. **لا استخراج** عند أي نقص أو اختلاف بصمة.
+5. `archive_audit.py --zip <المجمّع> --out archive-intake/drive-archive --label drive`.
+6. مراجعة بصرية لأوراق المعاينة + تحديث الفهرس المرحلي والتقييمات.
+7. **لا دمج في المكتبة الإنتاجية، ولا رفع خام إلى Git، ولا نشر، ولا PR.**
+
 ## ٢) حالة أرشيف Drive
 
 `DRIVE-ARCHIVE-STATUS.md` + `drive-archive-manifest.json`.
