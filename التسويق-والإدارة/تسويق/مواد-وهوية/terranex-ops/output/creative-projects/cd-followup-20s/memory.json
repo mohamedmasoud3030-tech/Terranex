@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project_id": "cd-followup-20s",
   "created_at": "2026-11-05T12:35:19+00:00",
-  "updated_at": "2026-11-05T12:48:45+00:00",
+  "updated_at": "2026-11-05T13:23:22+00:00",
   "base_commit": "113a3dd25565f0ed2658da75b42adb73a33cde7d",
   "branch": "arena/f2829137-terranex",
   "status": "visual-draft",
@@ -44,34 +44,63 @@
     "topic": "field-followup",
     "duration_sec": 20.0,
     "endcard_sec": 3.0,
-    "hook": "الحيوانات… متابعة حقيقية.",
+    "hook": "من المزرعة… متابعة حقيقية.",
     "hook_sec": 2.0,
     "content_budget_sec": 17.0,
     "shots": [
       {
-        "scene_id": "s01-02",
-        "source_id": "src-01",
-        "role": "establish",
-        "source_start": 9.733,
-        "source_end": 10.767,
-        "planned_duration": 1.034,
+        "scene_id": "s04-03",
+        "source_id": "src-04",
+        "role": "establish-alt",
+        "source_start": 11.0,
+        "source_end": 13.5,
+        "planned_duration": 2.5,
         "timeline_start": 0.0,
-        "timeline_end": 1.034,
+        "timeline_end": 2.5,
         "excerpt_policy": "full-indexed-scene",
-        "indexed_scene_start": 9.733,
-        "indexed_scene_end": 10.767,
-        "text": "رأس حقيقي… مش مجرد صورة.",
-        "motion": "لقطة قريبة ثابتة؛ دخول هادئ للنص فقط.",
+        "indexed_scene_start": 11.0,
+        "indexed_scene_end": 13.5,
+        "text": "من المزرعة… متابعة حقيقية.",
+        "motion": "بداية مختلفة من الفهرس؛ قطع هادئ.",
         "tags": [
           "animal",
-          "sheep",
+          "sheep"
+        ],
+        "quality": 0.5,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-03.jpg",
+        "treatment": {
+          "crop": {
+            "left": 0.09,
+            "right": 0.02
+          },
+          "proof_bar": true
+        }
+      },
+      {
+        "scene_id": "s01-08",
+        "source_id": "src-01",
+        "role": "feeding",
+        "source_start": 19.0,
+        "source_end": 21.033,
+        "planned_duration": 2.033,
+        "timeline_start": 2.5,
+        "timeline_end": 4.533,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 19.0,
+        "indexed_scene_end": 21.033,
+        "text": "للتغذية…",
+        "motion": "لقطة تغذية أقرب؛ إبقاء الحيوان داخل الكادر.",
+        "tags": [
+          "animal",
+          "cows",
+          "feeding",
           "farm"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-02.jpg",
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
         "treatment": {
           "crop": {
-            "bottom": 0.14
+            "top": 0.07
           }
         }
       },
@@ -79,11 +108,11 @@
         "scene_id": "s04-02",
         "source_id": "src-04",
         "role": "followup",
-        "source_start": 4.858,
-        "source_end": 10.141,
-        "planned_duration": 5.283,
-        "timeline_start": 1.034,
-        "timeline_end": 6.317,
+        "source_start": 5.651,
+        "source_end": 9.349,
+        "planned_duration": 3.698,
+        "timeline_start": 4.533,
+        "timeline_end": 8.231,
         "excerpt_policy": "centered-excerpt-within-indexed-scene",
         "indexed_scene_start": 4.0,
         "indexed_scene_end": 11.0,
@@ -113,8 +142,8 @@
         "source_start": 10.767,
         "source_end": 12.267,
         "planned_duration": 1.5,
-        "timeline_start": 6.317,
-        "timeline_end": 7.817,
+        "timeline_start": 8.231,
+        "timeline_end": 9.731,
         "excerpt_policy": "full-indexed-scene",
         "indexed_scene_start": 10.767,
         "indexed_scene_end": 12.267,
@@ -135,42 +164,14 @@
         }
       },
       {
-        "scene_id": "s01-08",
-        "source_id": "src-01",
-        "role": "feeding",
-        "source_start": 19.0,
-        "source_end": 21.033,
-        "planned_duration": 2.033,
-        "timeline_start": 7.817,
-        "timeline_end": 9.85,
-        "excerpt_policy": "full-indexed-scene",
-        "indexed_scene_start": 19.0,
-        "indexed_scene_end": 21.033,
-        "text": "للتغذية…",
-        "motion": "لقطة تغذية أقرب؛ إبقاء الحيوان داخل الكادر.",
-        "tags": [
-          "animal",
-          "cows",
-          "feeding",
-          "farm"
-        ],
-        "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
-        "treatment": {
-          "crop": {
-            "top": 0.07
-          }
-        }
-      },
-      {
         "scene_id": "s01-07",
         "source_id": "src-01",
         "role": "farm",
         "source_start": 17.133,
         "source_end": 19.0,
         "planned_duration": 1.867,
-        "timeline_start": 9.85,
-        "timeline_end": 11.717,
+        "timeline_start": 9.731,
+        "timeline_end": 11.598,
         "excerpt_policy": "full-indexed-scene",
         "indexed_scene_start": 17.133,
         "indexed_scene_end": 19.0,
@@ -192,10 +193,10 @@
         "scene_id": "s04-04",
         "source_id": "src-04",
         "role": "followup-close",
-        "source_start": 13.758,
-        "source_end": 19.041,
-        "planned_duration": 5.283,
-        "timeline_start": 11.717,
+        "source_start": 13.699,
+        "source_end": 19.101,
+        "planned_duration": 5.402,
+        "timeline_start": 11.598,
         "timeline_end": 17.0,
         "excerpt_policy": "centered-excerpt-within-indexed-scene",
         "indexed_scene_start": 13.5,
@@ -222,45 +223,45 @@
     ],
     "voice_phrases": [
       {
-        "role": "establish",
-        "text": "رأس حقيقي… مش مجرد صورة.",
+        "role": "establish-alt",
+        "text": "من المزرعة… متابعة حقيقية.",
         "from": 2.0,
-        "to": 6.091
-      },
-      {
-        "role": "followup",
-        "text": "بنتابع الحيوانات على أرض الواقع.",
-        "from": 6.091,
-        "to": 10.182
-      },
-      {
-        "role": "herd",
-        "text": "من الحظيرة…",
-        "from": 10.182,
-        "to": 11.818
+        "to": 5.095
       },
       {
         "role": "feeding",
         "text": "للتغذية…",
-        "from": 11.818,
-        "to": 12.636
+        "from": 5.095,
+        "to": 6.619
+      },
+      {
+        "role": "followup",
+        "text": "بنتابع الحيوانات على أرض الواقع.",
+        "from": 6.619,
+        "to": 10.238
+      },
+      {
+        "role": "herd",
+        "text": "من الحظيرة…",
+        "from": 10.238,
+        "to": 12.286
       },
       {
         "role": "farm",
         "text": "وللمزرعة.",
-        "from": 12.636,
-        "to": 13.454
+        "from": 12.286,
+        "to": 13.81
       },
       {
         "role": "followup-close",
         "text": "متابعة وتوثيق… خطوة بخطوة.",
-        "from": 13.454,
-        "to": 16.727
+        "from": 13.81,
+        "to": 16.905
       },
       {
         "role": "cta",
         "text": "للتفاصيل… كلمنا على واتساب.",
-        "from": 16.727,
+        "from": 16.905,
         "to": 20.0
       }
     ],
@@ -268,10 +269,10 @@
     "audio_status": "silent-visual-draft"
   },
   "selected_scene_ids": [
-    "s01-02",
+    "s04-03",
+    "s01-08",
     "s04-02",
     "s01-03",
-    "s01-08",
     "s01-07",
     "s04-04"
   ],
@@ -281,14 +282,62 @@
     "spec": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/spec.json",
     "storyboard": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/storyboard.png",
     "caption": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/caption.txt",
-    "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/2026-11-05/10-متابعة-الحيوانات-20ث-مسودة-بصرية.mp4",
+    "relocation_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/relocation-report.json",
+    "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-followup-20s/v0002.mp4",
     "render_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/render-report.json",
-    "critic_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/critic-report.json",
-    "relocation_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/relocation-report.json"
+    "critic_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/critic-report.json"
   },
   "decisions": [
     "استخدام فهرس المشاهد الحقيقي فقط",
     "مسودة بصرية صامتة حتى يتوفر تعليق معتمد"
   ],
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-05T13:20:40+00:00",
+      "version": 2,
+      "source": "revision",
+      "note": "غيّر البداية، قلل لقطة الوزن، وقدم التغذية"
+    }
+  ],
+  "current_version": 2,
+  "versions": [
+    {
+      "version": 1,
+      "created_at": "2026-11-05T12:35:19+00:00",
+      "source": "legacy-migration",
+      "instruction": null,
+      "status": "visual-draft",
+      "scene_ids": [
+        "s01-02",
+        "s04-02",
+        "s01-03",
+        "s01-08",
+        "s01-07",
+        "s04-04"
+      ],
+      "hook": "الحيوانات… متابعة حقيقية.",
+      "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/2026-11-05/10-متابعة-الحيوانات-20ث-مسودة-بصرية.mp4",
+      "sha256": "30246ea67d39208d4618ed1ee00e95cd04432048c3a7f196a0248636dcdcec91",
+      "snapshot": "versions/v0001"
+    },
+    {
+      "version": 2,
+      "created_at": "2026-11-05T13:20:40+00:00",
+      "source": "natural-language",
+      "instruction": "غيّر البداية، قلل لقطة الوزن، وقدم التغذية",
+      "status": "visual-draft",
+      "scene_ids": [
+        "s04-03",
+        "s01-08",
+        "s04-02",
+        "s01-03",
+        "s01-07",
+        "s04-04"
+      ],
+      "hook": "من المزرعة… متابعة حقيقية.",
+      "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-followup-20s/v0002.mp4",
+      "sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98",
+      "snapshot": "versions/v0002"
+    }
+  ]
 }

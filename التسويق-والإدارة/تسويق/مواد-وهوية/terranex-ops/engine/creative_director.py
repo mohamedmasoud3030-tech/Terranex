@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Creative Director v1 — من طلب عربي مصري إلى خطة إنتاج قابلة للتنفيذ.
+"""Creative Director v1 — Arabic brief / Arena-authored JSON → validated ad plan.
 
-ليس نموذج لغة عامًا ولا يدّعي فهمًا مفتوحًا: محلل قواعد محدد بالموضوعات المدعومة،
-يختار من scene-library/index.json فقط، ويولّد spec لـreel_build. كل توقيت مصدر
-مشتق من الفهرس (مشهد كامل أو excerpt محسوب داخل حدوده) — لا توقيتات مختلقة.
+Two authoring paths:
+1. template: limited Egyptian Arabic brief → deterministic beat template;
+2. creative JSON: Arena agent writes hook/shots/voice/endcard, engine validates
+   scene IDs, indexed timings, identity and compliance before rendering.
 
-المخرجات لكل مشروع (تحت output/creative-projects/<id>/):
-  brief.json, plan.json, spec.json, storyboard.png, caption.txt,
-  memory.json, decisions.jsonl, render-report.json
+No internal Arena model API is assumed or called. The agent authors JSON outside
+this module; this module is the deterministic production gate.
 
-الصوت: لا يولّد هذا المحرك صوتًا. يرفق ملفًا معتمدًا عبر attach-voice ويقيس
-حدود الجمل بالطاقة لربط الكابشنات بالصوت الفعلي. بدون ملف معتمد = مسودة بصرية
-صامتة موسومة بوضوح، وليست إعلانًا نهائيًا.
+Voice: no TTS is generated here. An approved asset plus a human-reviewed
+transcript manifest are required before captions can be bound to measured
+speech energy. Energy alone never proves spoken-text equality.
 """
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -26,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -38,6 +40,11 @@ import critic                # noqa: E402
 import qa_video              # noqa: E402
 import reel_build as R       # noqa: E402
 import scene_library as SL   # noqa: E402
+from creative_store import (  # noqa: E402
+    ProjectStore, BRIEF, PLAN, SPEC, MEMORY, CAPTION, STORYBOARD,
+    RENDER_REPORT, CRITIC_REPORT, RELOCATION_REPORT, CREATIVE_INPUT,
+    REVISION_INPUT, VOICE_TRANSCRIPT, VOICE_ASSET_NAMES,
+)
 
 REPO = SL.REPO
 MARKETING_ROOT = R.MARKETING_ROOT
@@ -45,10 +52,11 @@ PROJECTS = os.path.join(ROOT, "output", "creative-projects")
 INDEX_PATH = SL.INDEX
 PERSONAS = os.path.join(ROOT, "context", "personas.json")
 TOL = 0.05
-
 SUPPORTED_TOPICS = ("field-followup", "feeding", "weight")
+SILENT_DISCLOSURE = "مسودة بصرية للمراجعة · بدون تعليق صوتي"
+VOICE_DISCLOSURE = "تعليق صوتي معتمد"
+AI_VOICE_DISCLOSURE = "تعليق صوتي · مدعوم بإضافات AI"
 
-# أدوار السيناريو المدعومة. الوسوم تشير إلى فهرس المشاهد الحقيقي؛ لا scene_id مكتوب هنا.
 BEATS = {
     "field-followup": [
         {"role": "establish", "tags": {"sheep"}, "weight": 1.0, "short_bonus": True,
@@ -58,14 +66,11 @@ BEATS = {
          "text": "بنتابع الحيوانات على أرض الواقع.",
          "motion": "لقطة متابعة عن قرب؛ شريط إثبات يغطي العلامة المحروقة."},
         {"role": "herd", "tags": {"cows"}, "weight": 1.2, "short_bonus": True,
-         "text": "من الحظيرة…",
-         "motion": "لقطة واسعة للقطيع؛ انتقال قطع بسيط."},
+         "text": "من الحظيرة…", "motion": "لقطة واسعة للقطيع؛ انتقال قطع بسيط."},
         {"role": "feeding", "tags": {"feeding"}, "weight": 1.5,
-         "text": "للتغذية…",
-         "motion": "لقطة تغذية أقرب؛ إبقاء الحيوان داخل الكادر."},
+         "text": "للتغذية…", "motion": "لقطة تغذية أقرب؛ إبقاء الحيوان داخل الكادر."},
         {"role": "farm", "tags": {"irrigation"}, "weight": 1.2,
-         "text": "وللمزرعة.",
-         "motion": "لقطة ري/محصول كسياق للمزرعة؛ لا ادعاء بفحص بيطري."},
+         "text": "وللمزرعة.", "motion": "لقطة ري/محصول كسياق للمزرعة؛ لا ادعاء بفحص بيطري."},
         {"role": "followup-close", "tags": {"animal", "person-hand"}, "weight": 3.0,
          "text": "متابعة وتوثيق… خطوة بخطوة.",
          "motion": "زاوية متابعة أخرى؛ لا تكرار نفس اللقطة."},
@@ -84,7 +89,8 @@ BEATS = {
         {"role": "establish", "tags": {"sheep"}, "weight": 1.0, "short_bonus": True,
          "text": "رأس حقيقي… مش مجرد صورة.", "motion": "لقطة خروف قريبة."},
         {"role": "followup", "tags": {"animal", "person-hand"}, "weight": 3.0,
-         "text": "الوزن الحقلي… زي ما هو.", "motion": "لقطة الوزن الحقلي؛ لا ادعاء بميزان واضح إن لم يظهر."},
+         "text": "الوزن الحقلي… زي ما هو.",
+         "motion": "لقطة الوزن الحقلي؛ لا ادعاء بميزان واضح إن لم يظهر."},
         {"role": "feeding", "tags": {"feeding"}, "weight": 1.5,
          "text": "وتغذية… قبل وبعدها.", "motion": "لقطة تغذية."},
         {"role": "followup-close", "tags": {"animal", "person-hand"}, "weight": 3.0,
@@ -97,23 +103,11 @@ def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def _rel(path: str, base: str = REPO) -> str:
-    return os.path.relpath(os.path.abspath(path), base).replace(os.sep, "/")
+def _rel(path) -> str:
+    return os.path.relpath(os.path.abspath(path), REPO).replace(os.sep, "/")
 
 
-def _read_json(path: str) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def _write_json(path: str, data: dict) -> None:
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-
-
-def _sha256(path: str) -> str:
+def _sha256(path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
@@ -121,29 +115,28 @@ def _sha256(path: str) -> str:
     return h.hexdigest()
 
 
-_AR_DIGITS = str.maketrans({chr(0x0660+i): str(i) for i in range(10)})
-_AR_DIGITS.update({chr(0x06F0+i): str(i) for i in range(10)})
+def _norm_text(s: str) -> str:
+    s = SL._norm(s or "")
+    return re.sub(r"[^\w\u0600-\u06FF]+", "", s)
+
+
+_AR_DIGITS = str.maketrans({chr(0x0660 + i): str(i) for i in range(10)})
+_AR_DIGITS.update({chr(0x06F0 + i): str(i) for i in range(10)})
 _WORD_NUM = {"عشرة": 10, "عشر": 10, "خمستاشر": 15, "خمسة عشر": 15, "عشرين": 20,
              "ثلاثين": 30, "تلاتين": 30, "اربعة": 4, "أربعة": 4, "خمسة": 5}
+_DUR_RE = re.compile(r"([0-9]++(?:[.][0-9]++)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec)")
 
 
 def _latin_digits(s: str) -> str:
     return s.translate(_AR_DIGITS)
 
 
-def parse_brief(text: str) -> dict:
-    """استخراج محدود ومعلن. ما لا يُذكر صراحةً يُسجّل كافتراض، لا كحقيقة."""
-    raw = text.strip()
-    if not raw:
-        raise ValueError("الطلب فارغ")
-    n = SL._norm(_latin_digits(raw))
-    warnings, assumptions = [], []
-
-    dur = None
-    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec)", n)
+def _parse_duration(n: str) -> float:
+    m = _DUR_RE.search(n)
     if m:
         dur = float(m.group(1))
     else:
+        dur = None
         for w, v in _WORD_NUM.items():
             if SL._norm(w) in n and re.search(r"ثاني|ثواني|ث", n):
                 dur = float(v)
@@ -152,60 +145,69 @@ def parse_brief(text: str) -> dict:
         raise ValueError("المدة غير محددة — اكتب مثلًا «20 ثانية»")
     if not (3 <= dur <= 120):
         raise ValueError("المدة المطلوبة خارج النطاق المدعوم (3–120 ثانية)")
+    return dur
 
+
+def _parse_topic(n: str) -> str:
     animal = any(w in n for w in ("حيوان", "حيوانات", "خروف", "خراف", "غنم", "بقر", "ابقار", "ضاني", "رأس"))
-    followup = any(w in n for w in ("متابع", "بنتابع", "ارض الواقع", "ار الواقع", "المزرعه", "المزرعة", "توثيق"))
+    followup = any(w in n for w in ("متابع", "بنتابع", "ارض الواقع", "ار الواقع", "توثيق"))
     feeding = any(w in n for w in ("تغذيه", "تغذية", "علف", "اكل", "أكل"))
     weight = any(w in n for w in ("وزن", "ميزان", "يتوزن", "الميزان"))
     if weight:
-        topic = "weight"
-    elif feeding and not followup:
-        topic = "feeding"
-    elif animal and followup:
-        topic = "field-followup"
-    elif feeding:
-        topic = "feeding"
-    elif animal or followup:
-        topic = "field-followup"
-    else:
-        raise ValueError("الموضوع غير مدعوم في v1 — المدعوم: متابعة الحيوانات/التغذية/الوزن الحقلي")
+        return "weight"
+    if feeding and not followup:
+        return "feeding"
+    if animal or followup or feeding:
+        return "field-followup" if (animal or followup) else "feeding"
+    raise ValueError("الموضوع غير مدعوم في v1 — المدعوم: متابعة الحيوانات/التغذية/الوزن الحقلي")
 
-    audience = None
+
+def _parse_audience(n: str, assumptions: list) -> str:
     if any(w in n for w in ("مستثمر", "مستثمرين", "استثمار")):
-        audience = "مهتمون بالاستثمار الحيواني"
-    elif any(w in n for w in ("اصحاب اعمال", "أصحاب أعمال", "تجار", "تاجر")):
-        audience = "أصحاب أنشطة وتجار"
-    elif any(w in n for w in ("عائلات", "عائلة", "مغترب")):
-        audience = "عائلات ومغتربون"
-    if audience is None:
-        audience = "جمهور عام مهتم بالمزرعة والمتابعة الحقيقية"
-        assumptions.append("الجمهور غير مذكور صراحةً؛ استُخدم جمهور عام بدون استهداف استثماري أو وعود.")
+        return "مهتمون بالاستثمار الحيواني"
+    if any(w in n for w in ("اصحاب اعمال", "أصحاب أعمال", "تجار", "تاجر")):
+        return "أصحاب أنشطة وتجار"
+    if any(w in n for w in ("عائلات", "عائلة", "مغترب")):
+        return "عائلات ومغتربون"
+    assumptions.append("الجمهور غير مذكور صراحةً؛ استُخدم جمهور عام بدون استهداف استثماري أو وعود.")
+    return "جمهور عام مهتم بالمزرعة والمتابعة الحقيقية"
 
+
+def _parse_style_voice(n: str, warnings: list) -> tuple:
     style = "مصري بسيط وهادي"
     if any(w in n for w in ("مؤسسي", "احترافي", "رسمي")):
         style = "مؤسسي احترافي بنبرة مصرية هادئة"
     if any(w in n for w in ("حماسي", "سريع", "طاقة")):
         style = "إيقاع أسرع"
         warnings.append("الإيقاع السريع قد لا يناسب نبرة العلامة الهادئة؛ راجع بشريًا.")
-
     voice_requested = any(w in n for w in ("تعليق صوتي", "صوت", "فويس", "voiceover", "narration", "voice"))
     voice_tone = "هادي واثق"
     if any(w in n for w in ("حماسي", "سريع")):
         voice_tone = "أكثر طاقة"
         warnings.append("نبرة الصوت المطلوبة تختلف عن الصوت المثبت؛ يلزم قرار مالك صريح قبل التبديل.")
     voice_lang = "ar-EG" if any(w in n for w in ("مصري", "مصريه", "مصرية", "عاميه", "عامية")) else "ar"
+    return style, voice_requested, voice_tone, voice_lang
 
+
+def parse_brief(text: str) -> dict:
+    raw = text.strip()
+    if not raw:
+        raise ValueError("الطلب فارغ")
+    n = SL._norm(_latin_digits(raw))
+    warnings, assumptions = [], []
+    dur = _parse_duration(n)
+    topic = _parse_topic(n)
+    audience = _parse_audience(n, assumptions)
+    style, voice_requested, voice_tone, voice_lang = _parse_style_voice(n, warnings)
     cta = None
     if any(w in n for w in ("تواصل", "واتساب", "كلمنا", "اتصل", "تواصلوا", "رسالة")):
-        cta = {"type": "contact", "text": f"للتفاصيل… كلمنا على واتساب.", "phone": B.PHONE}
-
+        cta = {"type": "contact", "text": "للتفاصيل… كلمنا على واتساب.", "phone": B.PHONE}
     variety = any(w in n for w in ("متنوع", "متنوعة", "لقطات مختلفة", "تنوع"))
     message = {
         "field-followup": "متابعة الحيوانات على أرض الواقع من المزرعة",
         "feeding": "التغذية والرعاية داخل المزرعة",
         "weight": "الوزن الحقلي الموثق — بدون ادعاء ميزان واضح إن لم يظهر",
     }[topic]
-
     return {
         "raw_request": raw, "language": "ar-EG", "topic": topic, "message": message,
         "duration_sec": dur, "audience": audience, "style": style,
@@ -219,17 +221,12 @@ def parse_brief(text: str) -> dict:
 
 
 def load_index(index_path: str = INDEX_PATH) -> dict:
-    return _read_json(index_path)
+    with open(index_path, encoding="utf-8") as f:
+        return json.load(f)
 
 
-def validate_index(idx: dict, repo: str = REPO, check_git: bool = True) -> list:
-    issues = []
-    sources = idx.get("sources", {})
-    scenes = idx.get("scenes", [])
-    if not sources:
-        issues.append("الفهرس بلا مصادر")
-    seen = set()
-    for sid, s in sources.items():
+def _validate_sources(idx: dict, repo: str, check_git: bool, issues: list) -> None:
+    for sid, s in idx.get("sources", {}).items():
         p = s.get("path", "")
         if not p or os.path.isabs(p) or ".." in p.split("/"):
             issues.append(f"{sid}: مسار مصدر غير نسبي/غير آمن: {p}")
@@ -240,17 +237,23 @@ def validate_index(idx: dict, repo: str = REPO, check_git: bool = True) -> list:
             continue
         if s.get("sha256") and _sha256(fp) != s["sha256"]:
             issues.append(f"{sid}: SHA-256 لا يطابق الفهرس")
-        if check_git:
-            r = subprocess.run(["git", "ls-files", "--error-unmatch", p], cwd=repo,
-                               capture_output=True, text=True)
-            if r.returncode != 0:
-                issues.append(f"{sid}: المصدر غير متتبع في git — غير قابل للاستعادة تلقائيًا")
-            else:
-                r2 = subprocess.run(["git", "cat-file", "-e", f"HEAD:{p}"], cwd=repo,
-                                    capture_output=True, text=True)
-                if r2.returncode != 0:
-                    issues.append(f"{sid}: المصدر غير موجود في HEAD — لن يُستعاد من git")
-    for sc in scenes:
+        if not check_git:
+            continue
+        r = subprocess.run(["git", "ls-files", "--error-unmatch", p], cwd=repo,
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            issues.append(f"{sid}: المصدر غير متتبع في git — غير قابل للاستعادة تلقائيًا")
+            continue
+        r2 = subprocess.run(["git", "cat-file", "-e", f"HEAD:{p}"], cwd=repo,
+                            capture_output=True, text=True)
+        if r2.returncode != 0:
+            issues.append(f"{sid}: المصدر غير موجود في HEAD — لن يُستعاد من git")
+
+
+def _validate_scenes(idx: dict, repo: str, issues: list) -> None:
+    seen = set()
+    sources = idx.get("sources", {})
+    for sc in idx.get("scenes", []):
         sid = sc.get("scene_id")
         if sid in seen:
             issues.append(f"scene_id مكرر: {sid}")
@@ -267,6 +270,14 @@ def validate_index(idx: dict, repo: str = REPO, check_git: bool = True) -> list:
         pv = sc.get("preview", "")
         if not pv or os.path.isabs(pv) or not os.path.isfile(os.path.join(repo, pv)):
             issues.append(f"{sid}: معاينة غير قابلة للاسترجاع: {pv}")
+
+
+def validate_index(idx: dict, repo: str = REPO, check_git: bool = True) -> list:
+    issues = []
+    if not idx.get("sources"):
+        issues.append("الفهرس بلا مصادر")
+    _validate_sources(idx, repo, check_git, issues)
+    _validate_scenes(idx, repo, issues)
     return issues
 
 
@@ -296,31 +307,29 @@ def rank_candidates(idx: dict, brief: dict) -> list:
 
 def _waterfill(weights: list, caps: list, budget: float, mins: list | None = None) -> list:
     n = len(weights)
-    mins = mins or [0.0] * n
+    mins = list(mins) if mins is not None else [0.0] * n
     if budget + 1e-9 < sum(mins):
         raise ValueError("المدة المطلوبة أقصر من الحد الأدنى للمشاهد المختارة")
     if budget > sum(caps) + 1e-9:
         raise ValueError("المدة المطلوبة تتجاوز إجمالي المشاهد المتاحة بدون تكرار")
-    alloc = [0.0] * n
-    remaining = budget
-    active = set(range(n))
-    while active:
+    alloc = list(mins)
+    remaining = budget - sum(mins)
+    active = [i for i in range(n) if caps[i] > mins[i] + 1e-9]
+    while remaining > 1e-9 and active:
         tw = sum(weights[i] for i in active)
-        clamped = []
-        for i in sorted(active):
+        progressed = False
+        for i in list(active):
             share = remaining * weights[i] / tw
-            if share >= caps[i] - 1e-9:
+            room = caps[i] - alloc[i]
+            if share >= room - 1e-9:
                 alloc[i] = caps[i]
-                clamped.append(i)
-        if clamped:
-            for i in clamped:
-                remaining -= alloc[i]
+                remaining -= room
                 active.remove(i)
-        else:
+                progressed = True
+        if not progressed:
             for i in active:
-                alloc[i] = remaining * weights[i] / tw
-            break
-    # ضبط التقريب على آخر عنصر قابل للتعديل بدون كسر الحدود.
+                alloc[i] += remaining * weights[i] / tw
+            remaining = 0.0
     diff = round(budget - sum(alloc), 3)
     for i in range(n - 1, -1, -1):
         new = round(alloc[i] + diff, 3)
@@ -330,13 +339,7 @@ def _waterfill(weights: list, caps: list, budget: float, mins: list | None = Non
     return [round(x, 3) for x in alloc]
 
 
-def select_and_schedule(idx: dict, brief: dict) -> dict:
-    topic = brief["topic"]
-    beats = BEATS[topic]
-    endcard = 3.0 if brief.get("cta") else 0.0
-    budget = round(brief["duration_sec"] - endcard, 3)
-    if budget <= 0:
-        raise ValueError("المدة لا تتسع للخاتمة")
+def _choose_shots(idx: dict, beats: list) -> list:
     scenes = [s for s in idx["scenes"] if _usable(s)]
     used, used_sources, used_sig = set(), {}, set()
     chosen = []
@@ -344,17 +347,13 @@ def select_and_schedule(idx: dict, brief: dict) -> dict:
         best, best_score = None, -1e9
         for sc in scenes:
             sid = sc["scene_id"]
-            if sid in used:
+            if sid in used or not beat["tags"] <= set(sc["tags"]):
                 continue
             tags = set(sc["tags"])
-            if not beat["tags"] <= tags:
-                continue
             dur = sc["end"] - sc["start"]
-            score = float(sc.get("quality", 0.5)) * 4
-            score += len(tags & beat["tags"])
+            score = float(sc.get("quality", 0.5)) * 4 + len(tags & beat["tags"])
             score -= 0.3 * used_sources.get(sc["source_id"], 0)
-            sig = tuple(sorted(tags))
-            if sig in used_sig:
+            if tuple(sorted(tags)) in used_sig:
                 score -= 0.3
             if beat.get("short_bonus") and dur < 2.0:
                 score += 1.5
@@ -366,53 +365,78 @@ def select_and_schedule(idx: dict, brief: dict) -> dict:
         used_sources[best["source_id"]] = used_sources.get(best["source_id"], 0) + 1
         used_sig.add(tuple(sorted(best["tags"])))
         chosen.append((beat, best))
+    return chosen
 
-    caps = [sc["end"] - sc["start"] for _, sc in chosen]
-    weights = [b["weight"] for b, _ in chosen]
-    mins = [min(1.0, c) for c in caps]
-    durations = _waterfill(weights, caps, budget, mins)
 
+def _excerpt(sc: dict, d: float) -> tuple:
+    full = sc["end"] - sc["start"]
+    if d >= full - 1e-9:
+        return sc["start"], sc["end"], "full-indexed-scene"
+    center = (sc["start"] + sc["end"]) / 2
+    a = round(max(sc["start"], center - d / 2), 3)
+    b = round(a + d, 3)
+    if b > sc["end"] + 1e-9:
+        b = sc["end"]
+        a = round(b - d, 3)
+    return a, b, "centered-excerpt-within-indexed-scene"
+
+
+def _timeline_from_shots(shots: list, idx: dict) -> list:
+    by_id = {s["scene_id"]: s for s in idx["scenes"]}
     timeline, cursor = [], 0.0
-    for (beat, sc), d in zip(chosen, durations):
-        full = sc["end"] - sc["start"]
-        if d >= full - 1e-9:
-            a, b = sc["start"], sc["end"]
-            policy = "full-indexed-scene"
-        else:
-            center = (sc["start"] + sc["end"]) / 2
-            a = round(max(sc["start"], center - d / 2), 3)
-            b = round(a + d, 3)
-            if b > sc["end"] + 1e-9:
-                b = sc["end"]
-                a = round(b - d, 3)
-            policy = "centered-excerpt-within-indexed-scene"
+    for shot in shots:
+        sc = by_id[shot["scene_id"]]
+        d = shot["planned_duration"]
+        a, b, policy = _excerpt(sc, d)
         timeline.append({
-            "scene_id": sc["scene_id"], "source_id": sc["source_id"], "role": beat["role"],
+            "scene_id": sc["scene_id"], "source_id": sc["source_id"], "role": shot["role"],
             "source_start": a, "source_end": b, "planned_duration": round(b - a, 3),
             "timeline_start": round(cursor, 3), "timeline_end": round(cursor + (b - a), 3),
             "excerpt_policy": policy, "indexed_scene_start": sc["start"], "indexed_scene_end": sc["end"],
-            "text": beat["text"], "motion": beat["motion"], "tags": sc["tags"],
+            "text": shot["text"], "motion": shot["motion"], "tags": sc["tags"],
             "quality": sc.get("quality"), "preview": sc["preview"], "treatment": sc.get("treatment", {}),
         })
         cursor += b - a
+    return timeline
 
+
+def _voice_windows(phrases: list, total: float, hook_sec: float) -> list:
+    budget = round(total - hook_sec, 3)
+    if budget <= 0:
+        raise ValueError("لا وقت للتعليق بعد الهوك")
+    wcounts = [max(1, len(p["text"].split())) for p in phrases]
+    pdurs = _waterfill([float(w) for w in wcounts], [budget] * len(wcounts), budget,
+                       [min(1.0, budget / len(wcounts))] * len(wcounts))
+    vc = hook_sec
+    for p, d in zip(phrases, pdurs):
+        p["from"], p["to"] = round(vc, 3), round(vc + d, 3)
+        vc += d
+    return phrases
+
+
+def select_and_schedule(idx: dict, brief: dict) -> dict:
+    beats = BEATS[brief["topic"]]
+    endcard = 3.0 if brief.get("cta") else 0.0
+    budget = round(brief["duration_sec"] - endcard, 3)
+    if budget <= 0:
+        raise ValueError("المدة لا تتسع للخاتمة")
+    chosen = _choose_shots(idx, beats)
+    caps = [sc["end"] - sc["start"] for _, sc in chosen]
+    weights = [b["weight"] for b, _ in chosen]
+    durations = _waterfill(weights, caps, budget, [min(1.0, c) for c in caps])
+    shots = []
+    for (beat, sc), d in zip(chosen, durations):
+        shots.append({"scene_id": sc["scene_id"], "role": beat["role"], "text": beat["text"],
+                      "motion": beat["motion"], "planned_duration": d, "weight": beat["weight"]})
+    timeline = _timeline_from_shots(shots, idx)
     hook = "الحيوانات… متابعة حقيقية."
     hook_sec = min(2.0, round(brief["duration_sec"] * 0.1, 3))
     voice_phrases = [{"role": t["role"], "text": t["text"]} for t in timeline]
     if brief.get("cta"):
         voice_phrases.append({"role": "cta", "text": brief["cta"]["text"]})
-    # نوافذ قراءة تقديرية للصمت فقط؛ عند إرفاق صوت تُستبدل بقياس الطاقة الفعلي.
-    voice_budget = round(brief["duration_sec"] - hook_sec, 3)
-    wcounts = [max(1, len(p["text"].split())) for p in voice_phrases]
-    pdurs = _waterfill([float(w) for w in wcounts], [voice_budget] * len(wcounts),
-                       voice_budget, [min(1.0, voice_budget / len(wcounts))] * len(wcounts))
-    vc = hook_sec
-    for p, d in zip(voice_phrases, pdurs):
-        p["from"], p["to"] = round(vc, 3), round(vc + d, 3)
-        vc += d
-
+    _voice_windows(voice_phrases, brief["duration_sec"], hook_sec)
     return {
-        "topic": topic, "duration_sec": brief["duration_sec"], "endcard_sec": endcard,
+        "topic": brief["topic"], "duration_sec": brief["duration_sec"], "endcard_sec": endcard,
         "hook": hook, "hook_sec": hook_sec, "content_budget_sec": budget,
         "shots": timeline, "voice_phrases": voice_phrases,
         "caption_timing_source": "reading-budget-estimate",
@@ -420,7 +444,13 @@ def select_and_schedule(idx: dict, brief: dict) -> dict:
     }
 
 
-def build_spec(idx: dict, brief: dict, sched: dict, spec_path: str) -> dict:
+def _default_endcard(brief: dict, silent: bool = True) -> dict:
+    return {"headline": "ملك حقيقي", "subtitle": "ومتابعة بعينك",
+            "cta": f"واتساب {B.PHONE}" if brief.get("cta") else "TerraNex",
+            "disclosure": SILENT_DISCLOSURE if silent else VOICE_DISCLOSURE}
+
+
+def build_spec(idx: dict, brief: dict, sched: dict, spec_path, endcard: dict | None = None) -> dict:
     spec_dir = os.path.dirname(os.path.abspath(spec_path))
     clips = []
     for shot in sched["shots"]:
@@ -434,30 +464,36 @@ def build_spec(idx: dict, brief: dict, sched: dict, spec_path: str) -> dict:
                 "_excerpt_policy": shot["excerpt_policy"]}
         clip.update(sc.get("treatment", {}))
         clips.append(clip)
-    captions = [{"from": p["from"], "to": p["to"], "text": p["text"]}
-                for p in sched["voice_phrases"]]
-    silent_disclosure = "مسودة بصرية للمراجعة · بدون تعليق صوتي"
+    captions = [{"from": p["from"], "to": p["to"], "text": p["text"]} for p in sched["voice_phrases"]]
     spec = {
         "title": f"creative-director-{brief['topic']}-{int(brief['duration_sec'])}s",
         "template": "corporate-no-face", "on_screen_persons": [], "consent_persons": [],
         "clips": clips, "hook": sched["hook"], "hook_sec": sched["hook_sec"],
         "captions": captions, "endcard_sec": sched["endcard_sec"],
-        "endcard": {"headline": "ملك حقيقي", "subtitle": "ومتابعة بعينك",
-                    "cta": f"واتساب {B.PHONE}" if brief.get("cta") else "TerraNex",
-                    "disclosure": silent_disclosure},
+        "endcard": endcard or _default_endcard(brief),
         "visual_draft": True,
         "audio": {"original_gain": 0.12, "ambient_from": 0, "duck": True, "lufs": -15},
         "_library_derived": True,
         "_scene_ids": [c["scene_id"] for c in clips],
         "_caption_timing_source": sched["caption_timing_source"],
     }
-    _write_json(spec_path, spec)
     return spec
+
+
+def _lint_texts(texts: list) -> None:
+    joined = "\n".join(t for t in texts if t)
+    cr = critic.check(joined)
+    if cr["hard"]:
+        raise ValueError("نص الخطة يخالف قواعد الالتزام: " + "; ".join(h["code"] for h in cr["hard"]))
+    for t in texts:
+        if t and len(t.split()) > 14:
+            raise ValueError(f"نص طويل جدًا للكادر: {t}")
 
 
 def validate_plan(idx: dict, brief: dict, sched: dict, spec: dict) -> None:
     by_id = {s["scene_id"]: s for s in idx["scenes"]}
-    if len(set(sched["shots"][i]["scene_id"] for i in range(len(sched["shots"])))) != len(sched["shots"]):
+    ids = [s["scene_id"] for s in sched["shots"]]
+    if len(set(ids)) != len(ids):
         raise ValueError("مشهد مكرر في الخطة")
     for shot, clip in zip(sched["shots"], spec["clips"]):
         sid = shot["scene_id"]
@@ -476,15 +512,90 @@ def validate_plan(idx: dict, brief: dict, sched: dict, spec: dict) -> None:
     total = sum(c["end"] - c["start"] for c in spec["clips"]) + spec["endcard_sec"]
     if total > brief["duration_sec"] + TOL:
         raise ValueError(f"الخطة تتجاوز المدة المطلوبة: {total:.2f} > {brief['duration_sec']}")
-    texts = [spec["hook"]] + [c["text"] for c in spec["captions"]]
-    texts += list(spec.get("endcard", {}).values())
-    joined = "\n".join(texts)
-    cr = critic.check(joined)
-    if cr["hard"]:
-        raise ValueError("نص الخطة يخالف قواعد الالتزام: " + "; ".join(h["code"] for h in cr["hard"]))
+    prev = 0.0
+    for cap in spec["captions"]:
+        if not (0 <= cap["from"] < cap["to"] <= total + TOL) or cap["from"] < prev - TOL:
+            raise ValueError("نوافذ الكابشن غير صالحة")
+        prev = cap["to"]
+    texts = [spec["hook"]] + [c["text"] for c in spec["captions"]] + list(spec.get("endcard", {}).values())
+    _lint_texts(texts)
+    if len(spec["hook"].split()) > 8:
+        raise ValueError("الهوك أطول من 8 كلمات")
 
 
-def _storyboard_png(idx: dict, brief: dict, sched: dict, out: str) -> str:
+def _reject_unknown(obj: dict, allowed: set, label: str) -> None:
+    extra = set(obj) - allowed
+    if extra:
+        raise ValueError(f"حقول غير مدعومة في {label}: {sorted(extra)}")
+
+
+def validate_creative(idx: dict, brief: dict, creative: dict) -> dict:
+    if creative.get("schema_version") != 1:
+        raise ValueError("creative JSON يدعم schema_version=1 فقط")
+    _reject_unknown(creative, {"schema_version", "topic", "note", "hook", "endcard_sec", "shots",
+                               "voice_phrases", "cta", "endcard"}, "creative JSON")
+    _reject_unknown(creative.get("hook", {}), {"text", "duration_sec"}, "hook")
+    for s in creative.get("shots", []):
+        _reject_unknown(s, {"scene_id", "role", "text", "motion", "duration_sec", "weight",
+                            "source_start", "source_end"}, "shot")
+    if creative.get("endcard"):
+        _reject_unknown(creative["endcard"], {"headline", "subtitle", "cta", "disclosure"}, "endcard")
+    if creative.get("topic") and creative["topic"] != brief["topic"]:
+        raise ValueError("موضوع creative JSON يختلف عن موضوع المشروع")
+    shots_in = creative.get("shots")
+    if not isinstance(shots_in, list) or not (1 <= len(shots_in) <= 12):
+        raise ValueError("shots يجب أن تكون قائمة من 1 إلى 12 لقطة")
+    by_id = {s["scene_id"]: s for s in idx["scenes"]}
+    endcard_sec = float(creative.get("endcard_sec", 3.0 if brief.get("cta") else 0.0))
+    budget = round(brief["duration_sec"] - endcard_sec, 3)
+    shots, total = [], 0.0
+    seen = set()
+    for i, s in enumerate(shots_in):
+        sid = s.get("scene_id")
+        if sid not in by_id:
+            raise ValueError(f"scene_id مختلق: {sid}")
+        if sid in seen:
+            raise ValueError(f"مشهد مكرر: {sid}")
+        seen.add(sid)
+        sc = by_id[sid]
+        if not _usable(sc):
+            raise ValueError(f"مشهد غير صالح: {sid}")
+        d = float(s.get("duration_sec", sc["end"] - sc["start"]))
+        if not (0.2 <= d <= sc["end"] - sc["start"] + TOL):
+            raise ValueError(f"مدة لقطة خارج حدود المشهد: {sid}")
+        if "source_start" in s or "source_end" in s:
+            a = float(s.get("source_start", sc["start"]))
+            b = float(s.get("source_end", a + d))
+            if not (sc["start"] - TOL <= a < b <= sc["end"] + TOL) or abs((b - a) - d) > TOL:
+                raise ValueError(f"توقيت مصدر خارج حدود الفهرس: {sid}")
+        shots.append({"scene_id": sid, "role": s.get("role", f"creative-{i+1}"),
+                      "text": s.get("text", ""), "motion": s.get("motion", "قطع بسيط؛ بدون حركة كاميرا مُضافة."),
+                      "planned_duration": round(d, 3), "weight": float(s.get("weight", 1.0))})
+        total += d
+    if abs(total - budget) > TOL:
+        raise ValueError(f"مجموع اللقطات {total:.3f} لا يطابق الميزانية {budget:.3f}")
+    hook = creative.get("hook", {}).get("text", "")
+    if not hook:
+        raise ValueError("hook مطلوب")
+    hook_sec = float(creative.get("hook", {}).get("duration_sec", min(2.0, brief["duration_sec"] * 0.1)))
+    voice = creative.get("voice_phrases") or [{"role": s["role"], "text": s["text"]} for s in shots]
+    if brief.get("cta") and creative.get("cta", {}).get("text"):
+        voice = voice + [{"role": "cta", "text": creative["cta"]["text"]}]
+    _voice_windows(voice, brief["duration_sec"], hook_sec)
+    timeline = _timeline_from_shots(shots, idx)
+    sched = {"topic": brief["topic"], "duration_sec": brief["duration_sec"], "endcard_sec": endcard_sec,
+             "hook": hook, "hook_sec": hook_sec, "content_budget_sec": budget,
+             "shots": timeline, "voice_phrases": voice,
+             "caption_timing_source": "reading-budget-estimate", "audio_status": "silent-visual-draft"}
+    endcard = creative.get("endcard") or _default_endcard(brief)
+    if brief.get("cta") and B.PHONE not in endcard.get("cta", ""):
+        raise ValueError("خاتمة التواصل يجب أن تحمل رقم واتساب الرسمي")
+    spec = build_spec(idx, brief, sched, os.path.join(PROJECTS, "validation", SPEC), endcard)
+    validate_plan(idx, brief, sched, spec)
+    return {"schedule": sched, "endcard": endcard}
+
+
+def _storyboard_png(brief: dict, sched: dict, out: str) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     shots = sched["shots"]
     cols = 2
@@ -503,7 +614,6 @@ def _storyboard_png(idx: dict, brief: dict, sched: dict, out: str) -> str:
     txt(W - 24, 72, f"المدة {brief['duration_sec']:.0f}ث · {brief['style']}", 22, (226, 232, 240))
     status = "مسودة بصرية صامتة — ليست إعلانًا نهائيًا" if sched["audio_status"] == "silent-visual-draft" else "مرفق صوت معتمد"
     txt(W - 24, 104, status, 20, (250, 204, 21))
-
     panels = []
     for shot in shots:
         panels.append((shot["preview"], shot["scene_id"],
@@ -537,6 +647,60 @@ def _storyboard_png(idx: dict, brief: dict, sched: dict, out: str) -> str:
     return out
 
 
+def _caption_text(sched: dict) -> str:
+    return "\n".join([sched["hook"]] + [p["text"] for p in sched["voice_phrases"]]) + "\n\n#TerraNex #متابعة_حقيقية #مزرعة\n"
+
+
+def _version_entry(mem: dict, version: int) -> dict:
+    for v in mem["versions"]:
+        if v["version"] == version:
+            return v
+    raise ValueError(f"الإصدار غير موجود: {version}")
+
+
+def _video_path(project_id: str, version: int) -> str:
+    safe_id = os.path.basename(project_id)
+    v = int(version)
+    return os.path.join(MARKETING_ROOT, "فيديوهات-المنتجة", "creative-director", safe_id, f"v{v:04d}.mp4")
+
+
+def _save_current(store: ProjectStore, mem: dict, brief: dict, plan: dict, spec: dict,
+                  sched: dict, endcard: dict | None = None) -> None:
+    store.write_json(BRIEF, brief)
+    store.write_json(PLAN, plan)
+    store.write_json(SPEC, spec)
+    store.write_text(CAPTION, _caption_text(sched))
+    _storyboard_png(brief, sched, str(store.path(STORYBOARD)))
+    mem["brief"] = brief
+    mem["schedule"] = sched
+    mem["selected_scene_ids"] = [s["scene_id"] for s in sched["shots"]]
+    mem["updated_at"] = _now()
+    mem["artifacts"].update({
+        "brief": _rel(store.path(BRIEF)), "plan": _rel(store.path(PLAN)),
+        "spec": _rel(store.path(SPEC)), "storyboard": _rel(store.path(STORYBOARD)),
+        "caption": _rel(store.path(CAPTION)),
+    })
+    store.write_json(MEMORY, mem)
+    store.snapshot(mem["current_version"])
+    entry = _version_entry(mem, mem["current_version"])
+    entry.update({"scene_ids": mem["selected_scene_ids"], "hook": sched["hook"],
+                  "status": mem["status"], "snapshot": f"versions/v{mem['current_version']:04d}"})
+    store.write_json(MEMORY, mem)
+
+
+def _new_version(mem: dict, source: str, instruction: str | None = None) -> int:
+    version = mem["current_version"] + 1
+    mem["current_version"] = version
+    mem["status"] = "planned"
+    mem["versions"].append({"version": version, "created_at": _now(), "source": source,
+                            "instruction": instruction, "status": "planned",
+                            "scene_ids": [], "hook": None, "video": None, "sha256": None})
+    mem["artifacts"].pop("video", None)
+    mem["artifacts"].pop("render_report", None)
+    mem["artifacts"].pop("critic_report", None)
+    return version
+
+
 def create_project(request: str, project_id: str | None = None, projects_root: str = PROJECTS,
                    index_path: str = INDEX_PATH) -> dict:
     brief = parse_brief(request)
@@ -546,72 +710,239 @@ def create_project(request: str, project_id: str | None = None, projects_root: s
         raise ValueError("فهرس المشاهد غير قابل للاسترجاع:\n" + "\n".join(issues))
     if not project_id:
         project_id = "cd-" + hashlib.sha256(request.encode("utf-8")).hexdigest()[:10]
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,80}", project_id):
-        raise ValueError("project_id غير آمن")
-    pdir = os.path.join(projects_root, project_id)
-    os.makedirs(pdir, exist_ok=True)
+    store = ProjectStore(project_id, projects_root)
     ranked = rank_candidates(idx, brief)
     sched = select_and_schedule(idx, brief)
-    spec_path = os.path.join(pdir, "spec.json")
-    spec = build_spec(idx, brief, sched, spec_path)
+    spec = build_spec(idx, brief, sched, store.path(SPEC))
     validate_plan(idx, brief, sched, spec)
-    sb = _storyboard_png(idx, brief, sched, os.path.join(pdir, "storyboard.png"))
-    caption = "\n".join([sched["hook"]] + [p["text"] for p in sched["voice_phrases"]])
-    caption += "\n\n#TerraNex #متابعة_حقيقية #مزرعة"
-    with open(os.path.join(pdir, "caption.txt"), "w", encoding="utf-8") as f:
-        f.write(caption + "\n")
     plan = {"brief": brief, "search_ranking": ranked[:20], "schedule": sched,
             "selected_scene_ids": [s["scene_id"] for s in sched["shots"]],
-            "spec": _rel(spec_path), "storyboard": _rel(sb)}
-    _write_json(os.path.join(pdir, "brief.json"), brief)
-    _write_json(os.path.join(pdir, "plan.json"), plan)
-    memory = {
-        "schema_version": 1, "project_id": project_id, "created_at": _now(), "updated_at": _now(),
+            "authoring_mode": "template",
+            "spec": _rel(store.path(SPEC)), "storyboard": _rel(store.path(STORYBOARD))}
+    mem = {
+        "schema_version": 2, "project_id": store.project_id, "created_at": _now(), "updated_at": _now(),
         "base_commit": subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip(),
         "branch": subprocess.run(["git", "branch", "--show-current"], cwd=REPO, capture_output=True, text=True).stdout.strip(),
-        "status": "planned", "request": request, "brief": brief, "schedule": sched,
-        "selected_scene_ids": plan["selected_scene_ids"],
-        "artifacts": {"brief": _rel(os.path.join(pdir, "brief.json")),
-                      "plan": _rel(os.path.join(pdir, "plan.json")),
-                      "spec": _rel(spec_path), "storyboard": _rel(sb),
-                      "caption": _rel(os.path.join(pdir, "caption.txt"))},
+        "current_version": 1, "status": "planned", "request": request,
+        "brief": brief, "schedule": sched, "selected_scene_ids": plan["selected_scene_ids"],
+        "artifacts": {}, "versions": [{"version": 1, "created_at": _now(), "source": "template",
+                                       "instruction": None, "status": "planned", "scene_ids": [],
+                                       "hook": None, "video": None, "sha256": None}],
         "decisions": ["استخدام فهرس المشاهد الحقيقي فقط", "مسودة بصرية صامتة حتى يتوفر تعليق معتمد"],
         "revisions": [],
     }
-    _write_json(os.path.join(pdir, "memory.json"), memory)
-    _append_event(pdir, "created", {"project_id": project_id, "scene_ids": plan["selected_scene_ids"]})
-    return {"project_dir": pdir, "brief": brief, "plan": plan, "spec": spec, "memory": memory}
-
-
-def _append_event(pdir: str, kind: str, data: dict) -> None:
-    with open(os.path.join(pdir, "decisions.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps({"at": _now(), "kind": kind, **data}, ensure_ascii=False) + "\n")
+    _save_current(store, mem, brief, plan, spec, sched)
+    store.append_event("created", {"project_id": store.project_id, "scene_ids": mem["selected_scene_ids"]})
+    return {"project_dir": str(store.dir), "brief": brief, "plan": plan, "spec": spec, "memory": mem}
 
 
 def load_project(project_id: str, projects_root: str = PROJECTS) -> dict:
-    pdir = os.path.join(projects_root, project_id)
-    mem = _read_json(os.path.join(pdir, "memory.json"))
-    plan = _read_json(os.path.join(pdir, "plan.json"))
-    spec = _read_json(os.path.join(pdir, "spec.json"))
-    return {"project_dir": pdir, "memory": mem, "plan": plan, "spec": spec}
+    store = ProjectStore(project_id, projects_root)
+    mem = store.read_json(MEMORY)
+    if mem.get("schema_version") != 2:
+        raise ValueError("ذاكرة المشروع بإصدار قديم — شغّل migration أولًا")
+    plan = store.read_json(PLAN)
+    spec = store.read_json(SPEC)
+    return {"project_dir": str(store.dir), "memory": mem, "plan": plan, "spec": spec, "store": store}
 
 
-def revise_project(project_id: str, note: str, projects_root: str = PROJECTS) -> dict:
+def apply_creative(project_id: str, creative: dict | None = None, projects_root: str = PROJECTS) -> dict:
     proj = load_project(project_id, projects_root)
-    pdir = proj["project_dir"]
-    mem = proj["memory"]
-    mem["revisions"].append({"at": _now(), "note": note})
+    store, mem, brief = proj["store"], proj["memory"], proj["memory"]["brief"]
+    if creative is None:
+        creative = store.read_json(CREATIVE_INPUT)
+    idx = load_index()
+    validated = validate_creative(idx, brief, creative)
+    sched, endcard = validated["schedule"], validated["endcard"]
+    version = _new_version(mem, "arena-json", creative.get("note"))
+    spec = build_spec(idx, brief, sched, store.path(SPEC), endcard)
+    validate_plan(idx, brief, sched, spec)
+    plan = {"brief": brief, "search_ranking": proj["plan"].get("search_ranking", []),
+            "schedule": sched, "selected_scene_ids": [s["scene_id"] for s in sched["shots"]],
+            "authoring_mode": "arena-json", "creative_input": creative,
+            "spec": _rel(store.path(SPEC)), "storyboard": _rel(store.path(STORYBOARD))}
+    mem["revisions"].append({"at": _now(), "version": version, "source": "arena-json",
+                             "note": creative.get("note", "سيناريو إبداعي من وكيل Arena")})
+    _save_current(store, mem, brief, plan, spec, sched, endcard)
+    store.append_event("creative-applied", {"version": version, "scene_ids": mem["selected_scene_ids"]})
+    return {"version": version, "spec": spec, "plan": plan}
+
+
+def parse_revision(instruction: str) -> dict:
+    n = SL._norm(instruction or "")
+    ops = []
+    if any(w in n for w in ("غير البدايه", "غير البداية", "بدل البدايه", "بدل البداية", "بدايه مختلفه", "بداية مختلفة")):
+        ops.append({"op": "replace_beginning"})
+    if "قدم" in n and any(w in n for w in ("تغذيه", "تغذية", "العلف")):
+        ops.append({"op": "promote_tag", "tag": "feeding", "position": 1 if ops else 0})
+    if "قلل" in n and any(w in n for w in ("وزن", "ميزان")):
+        ops.append({"op": "reduce_tag_duration", "tag": "scale", "factor": 0.7, "target": "longest"})
+    if not ops:
+        raise ValueError("أمر التعديل غير مدعوم في v1 — استخدم: غيّر البداية / قدم التغذية / قلل لقطة الوزن")
+    return {"schema_version": 1, "operations": ops}
+
+
+def _choose_replacement(idx: dict, first: dict, used: set) -> dict:
+    tags = set(first.get("tags", []))
+    candidates = [s for s in idx["scenes"] if _usable(s) and s["scene_id"] not in used]
+    if tags:
+        candidates = [s for s in candidates if tags & set(s["tags"])] or candidates
+    non_scale = [s for s in candidates if "scale" not in s["tags"]]
+    if non_scale:
+        candidates = non_scale
+    candidates.sort(key=lambda s: (-(s["end"] - s["start"]), -float(s.get("quality", 0.5)), s["scene_id"]))
+    if not candidates:
+        raise ValueError("لا يوجد مشهد بديل للبداية")
+    return candidates[0]
+
+
+def _apply_ops(shots: list, ops: list, idx: dict) -> tuple:
+    shots = copy.deepcopy(shots)
+    hook_changed = False
+    for op in ops:
+        kind = op.get("op")
+        if kind == "replace_beginning":
+            used = {s["scene_id"] for s in shots}
+            sc = _choose_replacement(idx, shots[0], used)
+            shots[0].update({"scene_id": sc["scene_id"], "role": "establish-alt",
+                             "text": "من المزرعة… متابعة حقيقية.",
+                             "motion": "بداية مختلفة من الفهرس؛ قطع هادئ.",
+                             "planned_duration": round(sc["end"] - sc["start"], 3),
+                             "tags": sc["tags"]})
+            hook_changed = True
+        elif kind == "promote_tag":
+            tag = op["tag"]
+            pos = int(op.get("position", 0))
+            i = next((i for i, s in enumerate(shots) if tag in s.get("tags", []) and s.get("role") == tag), None)
+            if i is None:
+                i = next((i for i, s in enumerate(shots) if tag in s.get("tags", [])), None)
+            if i is None:
+                cand = [s for s in idx["scenes"] if _usable(s) and tag in s["tags"] and s["scene_id"] not in {x["scene_id"] for x in shots}]
+                if not cand:
+                    raise ValueError(f"لا يوجد مشهد بالوسم {tag}")
+                sc = cand[0]
+                shots.insert(min(pos, len(shots)), {"scene_id": sc["scene_id"], "role": f"promoted-{tag}",
+                                                    "text": "التغذية… من قلب المزرعة.",
+                                                    "motion": "تقديم لقطة التغذية.",
+                                                    "planned_duration": round(sc["end"] - sc["start"], 3),
+                                                    "tags": sc["tags"]})
+            else:
+                shot = shots.pop(i)
+                shots.insert(min(pos, len(shots)), shot)
+        elif kind == "reduce_tag_duration":
+            tag = op["tag"]
+            factor = float(op.get("factor", 0.7))
+            tagged = [s for s in shots if tag in s.get("tags", [])]
+            if not tagged:
+                raise ValueError(f"لا توجد لقطة بالوسم {tag} لتقليلها")
+            target = max(tagged, key=lambda s: s["planned_duration"]) if op.get("target") == "longest" else tagged[0]
+            target["max_duration"] = round(max(0.5, target["planned_duration"] * factor), 3)
+        elif kind == "set_hook":
+            hook_changed = True
+        else:
+            raise ValueError(f"عملية تعديل غير مدعومة: {kind}")
+    return shots, hook_changed
+
+
+def _rebalance(shots: list, idx: dict, budget: float, prefer_tags: set) -> list:
+    by_id = {s["scene_id"]: s for s in idx["scenes"]}
+    for s in shots:
+        sc = by_id[s["scene_id"]]
+        s["tags"] = sc["tags"]
+        s["weight"] = s.get("weight", 1.0) * (2.0 if prefer_tags & set(sc["tags"]) else 1.0)
+    def caps():
+        return [min(by_id[s["scene_id"]]["end"] - by_id[s["scene_id"]]["start"],
+                    s.get("max_duration", 1e9)) for s in shots]
+    used = {s["scene_id"] for s in shots}
+    while sum(caps()) < budget - 1e-9:
+        cand = [s for s in idx["scenes"] if _usable(s) and s["scene_id"] not in used]
+        cand.sort(key=lambda s: (-(len(prefer_tags & set(s["tags"]))), -float(s.get("quality", 0.5)), s["scene_id"]))
+        if not cand:
+            raise ValueError("المادة المتاحة لا تكفي إعادة التوازن بعد التعديل")
+        sc = cand[0]
+        used.add(sc["scene_id"])
+        insert_at = next((i for i, s in enumerate(shots) if "scale" in s.get("tags", [])), len(shots))
+        shots.insert(insert_at, {"scene_id": sc["scene_id"], "role": "added-for-balance",
+                                 "text": "ومن المزرعة… خطوة بخطوة.",
+                                 "motion": "لقطة إضافية من الفهرس لحفظ المدة.",
+                                 "planned_duration": round(sc["end"] - sc["start"], 3),
+                                 "tags": sc["tags"], "weight": 1.0})
+    cs = caps()
+    durations = _waterfill([s.get("weight", 1.0) for s in shots], cs, budget, [min(1.0, c) for c in cs])
+    for s, d in zip(shots, durations):
+        s["planned_duration"] = d
+    return shots
+
+
+def revise_project(project_id: str, instruction: str | None = None, patch: dict | None = None,
+                   projects_root: str = PROJECTS) -> dict:
+    proj = load_project(project_id, projects_root)
+    store, mem, plan = proj["store"], proj["memory"], proj["plan"]
+    brief = mem["brief"]
+    if patch is None:
+        if instruction:
+            patch = parse_revision(instruction)
+        elif store.exists(REVISION_INPUT):
+            patch = store.read_json(REVISION_INPUT)
+        else:
+            raise ValueError("لا يوجد أمر تعديل أو patch")
+    if patch.get("schema_version") != 1:
+        raise ValueError("revision JSON يدعم schema_version=1 فقط")
+    idx = load_index()
+    sched = copy.deepcopy(plan["schedule"])
+    shots, hook_changed = _apply_ops(sched["shots"], patch.get("operations", []), idx)
+    prefer = {"feeding"} if any(op.get("tag") == "feeding" for op in patch.get("operations", [])) else set()
+    shots = _rebalance(shots, idx, sched["content_budget_sec"], prefer)
+    timeline = _timeline_from_shots(shots, idx)
+    sched["shots"] = timeline
+    if hook_changed:
+        sched["hook"] = "من المزرعة… متابعة حقيقية."
+    voice = [{"role": t["role"], "text": t["text"]} for t in timeline]
+    if brief.get("cta"):
+        voice.append({"role": "cta", "text": brief["cta"]["text"]})
+    _voice_windows(voice, brief["duration_sec"], sched["hook_sec"])
+    sched["voice_phrases"] = voice
+    sched["caption_timing_source"] = "reading-budget-estimate"
+    sched["audio_status"] = "silent-visual-draft"
+    version = _new_version(mem, "natural-language" if instruction else "structured-patch", instruction)
+    spec = build_spec(idx, brief, sched, store.path(SPEC))
+    validate_plan(idx, brief, sched, spec)
+    plan.update({"schedule": sched, "selected_scene_ids": [s["scene_id"] for s in timeline],
+                 "authoring_mode": "revision", "revision_patch": patch,
+                 "spec": _rel(store.path(SPEC)), "storyboard": _rel(store.path(STORYBOARD))})
+    mem["revisions"].append({"at": _now(), "version": version, "source": "revision",
+                             "note": instruction or json.dumps(patch, ensure_ascii=False)})
+    _save_current(store, mem, brief, plan, spec, sched)
+    store.append_event("revised", {"version": version, "instruction": instruction,
+                                   "scene_ids": mem["selected_scene_ids"]})
+    return {"version": version, "spec": spec, "plan": plan}
+
+
+def rollback_project(project_id: str, version: int, projects_root: str = PROJECTS) -> dict:
+    proj = load_project(project_id, projects_root)
+    store, mem = proj["store"], proj["memory"]
+    entry = _version_entry(mem, int(version))
+    store.restore(int(version))
+    plan = store.read_json(PLAN)
+    mem["current_version"] = int(version)
+    mem["status"] = entry.get("status", "planned")
+    mem["schedule"] = plan["schedule"]
+    mem["selected_scene_ids"] = plan["selected_scene_ids"]
     mem["updated_at"] = _now()
-    _write_json(os.path.join(pdir, "memory.json"), mem)
-    _append_event(pdir, "revision", {"note": note})
+    mem["artifacts"]["video"] = entry.get("video")
+    store.write_json(MEMORY, mem)
+    store.append_event("rollback", {"version": int(version)})
     return mem
 
 
-def measure_phrases(audio_path: str, expected: int, thr_db: float = -38.0, merge_gap: float = 0.30) -> list:
+def measure_phrases(audio_path, expected: int, thr_db: float = -38.0, merge_gap: float = 0.30) -> list:
     import imageio_ffmpeg
     ff = imageio_ffmpeg.get_ffmpeg_exe()
-    p = subprocess.run([ff, "-v", "error", "-i", audio_path, "-ac", "1", "-ar", "16000",
-                        "-f", "s16le", "-"], capture_output=True)
+    # Audio bytes go through stdin: no caller-supplied path becomes an ffmpeg argument.
+    with open(audio_path, "rb") as f:
+        data = f.read()
+    p = subprocess.run([ff, "-v", "error", "-i", "pipe:0", "-ac", "1", "-ar", "16000",
+                        "-f", "s16le", "-"], input=data, capture_output=True)
     if p.returncode != 0:
         raise ValueError("تعذر قراءة الصوت")
     a = np.frombuffer(p.stdout, dtype=np.int16).astype(np.float32) / 32768
@@ -642,106 +973,143 @@ def measure_phrases(audio_path: str, expected: int, thr_db: float = -38.0, merge
     return [(round(x, 3), round(y, 3)) for x, y in merged]
 
 
-def attach_voice(project_id: str, audio_path: str, approval_note: str,
-                 projects_root: str = PROJECTS, profile_id: str = "ar-eg-calm-confident") -> dict:
+def _verify_transcript(transcript: dict, phrases: list) -> None:
+    if transcript.get("verification_method") != "human-reviewed":
+        raise ValueError("مطلوب تفريغ بشري معتمد للنص المنطوق — الطاقة وحدها لا تثبت المطابقة")
+    if not transcript.get("reviewer") or not transcript.get("approval_note"):
+        raise ValueError("مطلوب اسم المراجع وإذن الاستخدام")
+    tp = transcript.get("phrases")
+    if not isinstance(tp, list) or len(tp) != len(phrases):
+        raise ValueError("عدد جمل التفريغ لا يطابق السيناريو")
+    for expected, got in zip(phrases, tp):
+        if _norm_text(expected["text"]) != _norm_text(got.get("text", "")):
+            raise ValueError("النص المنطوق في التفريغ لا يطابق الكابشن — رُفض الإرفاق")
+
+
+def attach_voice(project_id: str, approval_note: str, projects_root: str = PROJECTS,
+                 profile_id: str = "ar-eg-calm-confident") -> dict:
     proj = load_project(project_id, projects_root)
-    pdir, mem, plan, spec = proj["project_dir"], proj["memory"], proj["plan"], proj["spec"]
-    personas = _read_json(PERSONAS)
+    store, mem, plan, spec = proj["store"], proj["memory"], proj["plan"], proj["spec"]
+    with open(PERSONAS, encoding="utf-8") as f:
+        personas = json.load(f)
     bank = personas.get("voice_bank", {}).get("default_narrator", {})
     if profile_id != bank.get("id"):
         raise ValueError("الصوت المطلوب ليس الصوت المثبت في الهوية")
     if not approval_note.strip():
         raise ValueError("يلزم توثيق إذن استخدام الصوت")
-    audio_path = os.path.abspath(audio_path)
-    if not os.path.isfile(audio_path):
-        raise ValueError("ملف الصوت غير موجود")
-    dest = os.path.join(pdir, "voice" + os.path.splitext(audio_path)[1])
-    if os.path.abspath(dest) != audio_path:
-        with open(audio_path, "rb") as src, open(dest, "wb") as out:
-            out.write(src.read())
+    asset = store.first_existing(VOICE_ASSET_NAMES)
+    if asset is None:
+        raise ValueError("ضع ملف الصوت المعتمد باسم voice-input.wav/mp3/m4a داخل مجلد المشروع")
+    if not store.exists(VOICE_TRANSCRIPT):
+        raise ValueError("مطلوب voice-transcript.json بتفريغ بشري معتمد — الطاقة وحدها لا تثبت مطابقة النص")
+    transcript = store.read_json(VOICE_TRANSCRIPT)
+    _verify_transcript(transcript, plan["schedule"]["voice_phrases"])
     phrases = plan["schedule"]["voice_phrases"]
-    windows = measure_phrases(dest, len(phrases))
+    windows = measure_phrases(asset, len(phrases))
     total = sum(c["end"] - c["start"] for c in spec["clips"]) + spec["endcard_sec"]
     if windows[-1][1] > total + TOL:
         raise ValueError("الصوت أطول من الفيديو — لا قصّ تلقائي للكلام")
-    # ربط الكابشنات بالطاقة الفعلية، ليس بمدة المشهد.
     padded = [(max(0.0, x - 0.05), min(total, y + 0.05)) for x, y in windows]
     spec["captions"] = [{"from": x, "to": y, "text": p["text"]} for p, (x, y) in zip(phrases, padded)]
     spec["hook_sec"] = min(spec.get("hook_sec", 0.0), padded[0][0])
     spec["visual_draft"] = False
-    spec["endcard"]["disclosure"] = "تعليق صوتي · مدعوم بإضافات AI"
-    spec["voice"] = {"path": os.path.relpath(dest, pdir).replace(os.sep, "/"),
-                     "profile_id": profile_id, "sha256": _sha256(dest),
-                     "timing_source": "measured-energy", "approval_note": approval_note}
-    spec["_caption_timing_source"] = "measured-energy"
-    _write_json(os.path.join(pdir, "spec.json"), spec)
-    plan["schedule"]["caption_timing_source"] = "measured-energy"
+    spec["endcard"]["disclosure"] = AI_VOICE_DISCLOSURE if transcript.get("ai_generated") else VOICE_DISCLOSURE
+    spec["voice"] = {"path": asset.name, "profile_id": profile_id, "sha256": _sha256(asset),
+                     "timing_source": "measured-energy+approved-transcript",
+                     "approval_note": approval_note,
+                     "transcript_sha256": _sha256(store.path(VOICE_TRANSCRIPT)),
+                     "transcript_verification": "human-reviewed"}
+    spec["_caption_timing_source"] = "measured-energy+approved-transcript"
+    plan["schedule"]["caption_timing_source"] = spec["_caption_timing_source"]
     plan["schedule"]["audio_status"] = "voice-attached"
     for p, (x, y) in zip(phrases, padded):
         p["from"], p["to"] = x, y
-    _write_json(os.path.join(pdir, "plan.json"), plan)
     mem["status"] = "voice-attached"
-    mem["updated_at"] = _now()
-    mem["artifacts"]["voice"] = _rel(dest)
-    mem["decisions"].append("إرفاق صوت معتمد وربط الكابشنات بقياس الطاقة الفعلي")
-    _write_json(os.path.join(pdir, "memory.json"), mem)
-    _append_event(pdir, "voice-attached", {"sha256": spec["voice"]["sha256"], "phrases": len(phrases)})
+    mem["decisions"].append("إرفاق صوت معتمد + تفريغ بشري مطابق + تزامن مقاس بالطاقة")
+    _save_current(store, mem, mem["brief"], plan, spec, plan["schedule"])
+    entry = _version_entry(mem, mem["current_version"])
+    entry["voice_sha256"] = spec["voice"]["sha256"]
+    store.write_json(MEMORY, mem)
+    store.append_event("voice-attached", {"sha256": spec["voice"]["sha256"], "phrases": len(phrases)})
     return spec
 
 
-def render_project(project_id: str, out_path: str | None = None, projects_root: str = PROJECTS) -> dict:
+def publication_readiness(spec: dict, qa_report: dict, critic_report: dict) -> dict:
+    blockers = []
+    if spec.get("visual_draft"):
+        blockers.append("لا يوجد تعليق صوتي معتمد مطابق للسكربت")
+    if not qa_report.get("pass"):
+        blockers.append("فحص الفيديو التقني لم ينجح")
+    if critic_report.get("hard") or critic_report.get("score", 0) < 80:
+        blockers.append("النص لم يجتز بوابة الالتزام")
+    voice = spec.get("voice") or {}
+    if voice.get("transcript_verification") != "human-reviewed":
+        blockers.append("مطابقة النص المنطوق غير موثقة بتفريغ بشري")
+    blockers.append("قرار النشر الفعلي من المالك غير مسجل")
+    return {"ready": False, "decision": "غير جاهز للنشر", "blockers": blockers,
+            "text_success": not critic_report.get("hard") and critic_report.get("score", 0) >= 80,
+            "technical_success": bool(qa_report.get("pass"))}
+
+
+def render_project(project_id: str, projects_root: str = PROJECTS, force: bool = False) -> dict:
     proj = load_project(project_id, projects_root)
-    pdir, mem, spec = proj["project_dir"], proj["memory"], proj["spec"]
-    spec_path = os.path.join(pdir, "spec.json")
+    store, mem, spec, plan = proj["store"], proj["memory"], proj["spec"], proj["plan"]
+    idx = load_index()
+    validate_plan(idx, mem["brief"], plan["schedule"], spec)
+    entry = _version_entry(mem, mem["current_version"])
+    video = os.path.join(REPO, entry["video"]) if entry.get("video") else _video_path(store.project_id, mem["current_version"])
+    if not force and entry.get("sha256") and os.path.isfile(video):
+        report = store.read_json(RENDER_REPORT) if store.exists(RENDER_REPORT) else {}
+        return {"render": {"out": video, "sha256": entry["sha256"], "cached": True},
+                "qa": report, "video": video}
     voice = None
     if spec.get("voice"):
-        voice = os.path.normpath(os.path.join(pdir, spec["voice"]["path"]))
-    if out_path is None:
-        day = datetime.now(timezone.utc).date().isoformat()
-        out_path = os.path.join(MARKETING_ROOT, "فيديوهات-المنتجة", day, f"{project_id}.mp4")
-    out_path = os.path.abspath(out_path)
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    result = R.build(spec_path, voice, out_path)
+        if spec["voice"]["path"] not in VOICE_ASSET_NAMES:
+            raise ValueError("مسار الصوت غير مسموح")
+        voice = str(store.path(spec["voice"]["path"]))
+    os.makedirs(os.path.dirname(video), exist_ok=True)
+    result = R.build(str(store.path(SPEC)), voice, video)
+    sha = _sha256(video)
     visual_draft = bool(spec.get("visual_draft"))
-    report = qa_video.qa(out_path, "reels", visual_draft=visual_draft)
+    report = qa_video.qa(video, "reels", visual_draft=visual_draft)
     expected = mem["brief"]["duration_sec"]
     if abs(result["duration"] - expected) > 0.1:
         report["warns"].append(f"المدة الفعلية {result['duration']}ث تختلف عن المطلوبة {expected}ث")
     report["expected_duration_sec"] = expected
     report["visual_draft"] = visual_draft
+    report["technical_pass"] = report["pass"]
     report["status"] = "visual-draft" if visual_draft else "rendered-with-voice"
-    _write_json(os.path.join(pdir, "render-report.json"), report)
-    cap_path = os.path.join(pdir, "caption.txt")
-    cr = {}
-    if os.path.isfile(cap_path):
-        with open(cap_path, encoding="utf-8") as f:
-            cr = critic.check(f.read())
-        _write_json(os.path.join(pdir, "critic-report.json"), cr)
+    cr = critic.check(store.read_text(CAPTION))
+    cr["scope"] = "text-only"
+    cr["text_decision"] = cr.pop("decision")
+    cr["decision"] = "نص فقط — ليس قرار نشر"
+    pub = publication_readiness(spec, report, cr)
+    report["publication"] = pub
+    cr["publication"] = pub
+    store.write_json(RENDER_REPORT, report)
+    store.write_json(CRITIC_REPORT, cr)
     mem["status"] = report["status"]
-    mem["updated_at"] = _now()
-    mem["artifacts"]["video"] = _rel(out_path)
-    mem["artifacts"]["render_report"] = _rel(os.path.join(pdir, "render-report.json"))
-    if cr:
-        mem["artifacts"]["critic_report"] = _rel(os.path.join(pdir, "critic-report.json"))
-    _write_json(os.path.join(pdir, "memory.json"), mem)
-    _append_event(pdir, "rendered", {"video": _rel(out_path), "qa_pass": report["pass"],
-                                     "duration": result["duration"], "visual_draft": visual_draft})
-    return {"render": result, "qa": report, "video": out_path}
+    mem["artifacts"]["video"] = _rel(video)
+    mem["artifacts"]["render_report"] = _rel(store.path(RENDER_REPORT))
+    mem["artifacts"]["critic_report"] = _rel(store.path(CRITIC_REPORT))
+    entry.update({"video": _rel(video), "sha256": sha, "status": mem["status"]})
+    store.write_json(MEMORY, mem)
+    store.snapshot(mem["current_version"])
+    store.append_event("rendered", {"version": mem["current_version"], "video": _rel(video),
+                                     "qa_pass": report["pass"], "sha256": sha,
+                                     "publication_ready": pub["ready"]})
+    return {"render": {**result, "sha256": sha}, "qa": report, "video": video}
 
 
-def prove_relocation(project_id: str, projects_root: str = PROJECTS,
-                     original_video: str | None = None) -> dict:
-    """ينسخ شجرة التسويق إلى مسار مؤقت مختلف ويعيد الرندر من هناك بنفس الـspec النسبي.
-    يثبت أن المشروع لا يعتمد على /home/user/Terranex أو CWD الأصلي."""
+def prove_relocation(project_id: str, projects_root: str = PROJECTS) -> dict:
     proj = load_project(project_id, projects_root)
-    pdir, mem = proj["project_dir"], proj["memory"]
-    spec_abs = os.path.join(REPO, mem["artifacts"]["spec"])
-    if original_video is None and mem.get("artifacts", {}).get("video"):
-        original_video = os.path.join(REPO, mem["artifacts"]["video"])
+    store, mem = proj["store"], proj["memory"]
+    entry = _version_entry(mem, mem["current_version"])
+    expected_sha = entry.get("sha256")
     with tempfile.TemporaryDirectory(prefix="cd-relocation-") as td:
         dest_root = os.path.join(td, os.path.basename(MARKETING_ROOT))
         shutil.copytree(MARKETING_ROOT, dest_root)
-        copied_spec = os.path.join(dest_root, os.path.relpath(spec_abs, MARKETING_ROOT))
+        copied_spec = os.path.join(dest_root, os.path.relpath(store.path(SPEC), MARKETING_ROOT))
         copied_engine = os.path.join(dest_root, os.path.relpath(os.path.join(ROOT, "engine"), MARKETING_ROOT))
         out = os.path.join(td, "relocated.mp4")
         r = subprocess.run([sys.executable, os.path.join(copied_engine, "reel_build.py"),
@@ -750,51 +1118,90 @@ def prove_relocation(project_id: str, projects_root: str = PROJECTS,
         if r.returncode != 0:
             raise RuntimeError("فشل الرندر من المسار المنقول:\n" + r.stderr[-1200:])
         sha = _sha256(out)
-        orig_sha = _sha256(original_video) if original_video and os.path.isfile(original_video) else None
-        report = {"project_id": project_id, "relocated_root": dest_root,
+        report = {"project_id": store.project_id, "version": mem["current_version"],
                   "render_stdout": r.stdout.strip(), "sha256": sha,
-                  "original_sha256": orig_sha,
-                  "identical_to_original": (orig_sha is not None and sha == orig_sha),
-                  "cwd": td, "spec_relative": True}
-    _write_json(os.path.join(pdir, "relocation-report.json"), report)
-    mem["artifacts"]["relocation_report"] = _rel(os.path.join(pdir, "relocation-report.json"))
+                  "expected_sha256": expected_sha,
+                  "identical_to_original": bool(expected_sha and sha == expected_sha),
+                  "spec_relative": True}
+    store.write_json(RELOCATION_REPORT, report)
+    mem["artifacts"]["relocation_report"] = _rel(store.path(RELOCATION_REPORT))
     mem["updated_at"] = _now()
-    _write_json(os.path.join(pdir, "memory.json"), mem)
-    _append_event(pdir, "relocation-proven", {"identical": report["identical_to_original"], "sha256": sha})
+    store.write_json(MEMORY, mem)
+    store.append_event("relocation-proven", {"identical": report["identical_to_original"], "sha256": sha})
     return report
 
 
+def migrate_legacy_project(project_id: str, projects_root: str = PROJECTS) -> dict:
+    store = ProjectStore(project_id, projects_root)
+    mem = store.read_json(MEMORY)
+    if mem.get("schema_version") == 2:
+        return mem
+    plan = store.read_json(PLAN)
+    video_rel = mem.get("artifacts", {}).get("video")
+    sha = None
+    if video_rel:
+        vp = os.path.join(REPO, video_rel)
+        if os.path.isfile(vp):
+            sha = _sha256(vp)
+    mem["schema_version"] = 2
+    mem["current_version"] = 1
+    mem["versions"] = [{"version": 1, "created_at": mem.get("created_at", _now()),
+                        "source": "legacy-migration", "instruction": None,
+                        "status": mem.get("status", "planned"),
+                        "scene_ids": plan.get("selected_scene_ids", []),
+                        "hook": plan.get("schedule", {}).get("hook"),
+                        "video": video_rel, "sha256": sha,
+                        "snapshot": "versions/v0001"}]
+    mem.setdefault("revisions", [])
+    store.write_json(MEMORY, mem)
+    store.snapshot(1)
+    store.append_event("migrated", {"schema_version": 2, "sha256": sha})
+    return mem
+
+
 def main():
-    ap = argparse.ArgumentParser(description="Creative Director v1 — طلب عربي → خطة → spec → رندر")
+    ap = argparse.ArgumentParser(description="Creative Director v1 — brief/JSON → validated plan → render")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("request"); p.add_argument("--project-id")
-    p = sub.add_parser("render"); p.add_argument("project_id"); p.add_argument("--out")
-    p = sub.add_parser("attach-voice"); p.add_argument("project_id"); p.add_argument("audio")
+    p = sub.add_parser("apply-creative"); p.add_argument("project_id")
+    p = sub.add_parser("render"); p.add_argument("project_id"); p.add_argument("--force", action="store_true")
+    p = sub.add_parser("attach-voice"); p.add_argument("project_id")
     p.add_argument("--approval-note", required=True); p.add_argument("--profile-id", default="ar-eg-calm-confident")
-    p = sub.add_parser("revise"); p.add_argument("project_id"); p.add_argument("note")
+    p = sub.add_parser("revise"); p.add_argument("project_id"); p.add_argument("instruction", nargs="?")
+    p = sub.add_parser("rollback"); p.add_argument("project_id"); p.add_argument("version", type=int)
     p = sub.add_parser("show"); p.add_argument("project_id")
-    p = sub.add_parser("prove-relocation"); p.add_argument("project_id"); p.add_argument("--video")
+    p = sub.add_parser("prove-relocation"); p.add_argument("project_id")
+    p = sub.add_parser("migrate"); p.add_argument("project_id")
     a = ap.parse_args()
     if a.cmd == "plan":
         r = create_project(a.request, a.project_id)
         print(json.dumps({"project_dir": r["project_dir"], "scene_ids": r["plan"]["selected_scene_ids"],
                           "duration": r["brief"]["duration_sec"], "status": r["memory"]["status"]},
                          ensure_ascii=False, indent=2))
+    elif a.cmd == "apply-creative":
+        r = apply_creative(a.project_id)
+        print(json.dumps({"version": r["version"], "scene_ids": r["plan"]["selected_scene_ids"]}, ensure_ascii=False))
     elif a.cmd == "render":
-        r = render_project(a.project_id, a.out)
+        r = render_project(a.project_id, force=a.force)
         print(json.dumps(r, ensure_ascii=False, indent=2))
     elif a.cmd == "attach-voice":
-        attach_voice(a.project_id, a.audio, a.approval_note, profile_id=a.profile_id)
-        print("تم إرفاق الصوت وربط الكابشنات بالقياس الفعلي")
+        attach_voice(a.project_id, a.approval_note, profile_id=a.profile_id)
+        print("تم إرفاق الصوت بعد مطابقة التفريغ البشري وقياس الطاقة")
     elif a.cmd == "revise":
-        revise_project(a.project_id, a.note)
-        print("تم تسجيل المراجعة")
+        r = revise_project(a.project_id, a.instruction)
+        print(json.dumps({"version": r["version"], "scene_ids": r["plan"]["selected_scene_ids"]}, ensure_ascii=False))
+    elif a.cmd == "rollback":
+        mem = rollback_project(a.project_id, a.version)
+        print(json.dumps({"current_version": mem["current_version"], "status": mem["status"]}, ensure_ascii=False))
     elif a.cmd == "show":
         proj = load_project(a.project_id)
         print(json.dumps(proj["memory"], ensure_ascii=False, indent=2))
     elif a.cmd == "prove-relocation":
-        r = prove_relocation(a.project_id, original_video=a.video)
+        r = prove_relocation(a.project_id)
         print(json.dumps(r, ensure_ascii=False, indent=2))
+    elif a.cmd == "migrate":
+        mem = migrate_legacy_project(a.project_id)
+        print(json.dumps({"current_version": mem["current_version"], "schema_version": mem["schema_version"]}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

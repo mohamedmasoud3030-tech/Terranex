@@ -99,18 +99,21 @@ python3 -m unittest tests.test_scene_library -v   # 18 اختبارًا
 تغطي: البحث العربي/الإنجليزي، استرجاع «الخروف على الميزان»، إزالة التكرار، أن توقيتات الـstoryboard
 من الفهرس حرفيًا، رفض المشاهد غير الصالحة/المجهولة، وسلامة الفهرس (مسارات حقيقية، SHA-256 فريد).
 
-## 8) Creative Director v1 — من طلب عربي إلى خطة قابلة للتنفيذ
+## 8) Creative Director v1.1 — من طلب عربي / JSON إبداعي إلى خطة قابلة للتنفيذ
 
 `engine/creative_director.py` يبني على هذا الفهرس: يفهم طلبًا مصريًا محدودًا (متابعة/تغذية/وزن)،
-يختار المشاهد الصالحة ويرتّبها، يولّد hook وسكربت وstoryboard وspec نسبي المسارات، ثم يرندر عبر
-`reel_build`. كل توقيت مصدره الفهرس عبر `scene_id`؛ لا توقيتات مختلقة. ذاكرة المشروع في
-`output/creative-projects/<id>/` وتُستعاد بـ`show <id>`.
+أو يقبل `creative-input.json` يكتبه وكيل Arena. يختار المشاهد الصالحة ويرتّبها، يولّد hook وسكربت
+وستوريبورد وspec نسبي المسارات، ثم يرندر عبر `reel_build`. كل توقيت مصدره الفهرس عبر `scene_id`؛
+لا توقيتات مختلقة. ذاكرة المشروع وإصداراته في `output/creative-projects/<id>/` وتُستعاد بـ`show <id>`.
 
 ```bash
 python3 engine/creative_director.py plan "اعمل إعلان 20 ثانية …" --project-id cd-followup-20s
-python3 engine/creative_director.py render cd-followup-20s --out …/10-…-مسودة-بصرية.mp4
-python3 engine/creative_director.py prove-relocation cd-followup-20s   # رندر من مسار مؤقت + مقارنة SHA
+python3 engine/creative_director.py apply-creative cd-feeding-15s   # يقرأ creative-input.json
+python3 engine/creative_director.py revise cd-followup-20s "غيّر البداية، قلل لقطة الوزن، وقدم التغذية"
+python3 engine/creative_director.py render cd-followup-20s
+python3 engine/creative_director.py prove-relocation cd-followup-20s
 ```
 
-بدون تعليق معتمد = **مسودة بصرية صامتة** موسومة. عند توفر صوت معتمد: `attach-voice` يربط الكابشنات
-بقياس الطاقة الفعلي. مسارات `spec-library.json` أصبحت نسبية من مجلد الـspec (قابلة للنقل).
+بدون تعليق معتمد = **مسودة بصرية صامتة** موسومة، ولا تحصل على قرار نشر. عند توفر صوت معتمد:
+`voice-input.wav` + `voice-transcript.json` بتفريغ بشري مطابق؛ `attach-voice` يرفض اختلاف النص ثم
+يربط الكابشنات بقياس الطاقة. مسارات `spec-library.json` نسبية من مجلد الـspec (قابلة للنقل).

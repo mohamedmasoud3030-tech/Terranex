@@ -1,0 +1,30 @@
+{
+  "score": 91,
+  "hard": [],
+  "soft": [
+    {
+      "code": "S3",
+      "kind": "soft",
+      "match": "كلمنا على واتساب",
+      "msg": "CTA مباشر — يُفضّل الرد في التعليقات أولًا",
+      "fix": "خليه CTA تاني أو ابدأ بالرد في التعليقات."
+    }
+  ],
+  "chars": 182,
+  "cta_count": 2,
+  "tags": 3,
+  "scope": "text-only",
+  "text_decision": "انشر",
+  "decision": "نص فقط — ليس قرار نشر",
+  "publication": {
+    "ready": false,
+    "decision": "غير جاهز للنشر",
+    "blockers": [
+      "لا يوجد تعليق صوتي معتمد مطابق للسكربت",
+      "مطابقة النص المنطوق غير موثقة بتفريغ بشري",
+      "قرار النشر الفعلي من المالك غير مسجل"
+    ],
+    "text_success": true,
+    "technical_success": true
+  }
+}

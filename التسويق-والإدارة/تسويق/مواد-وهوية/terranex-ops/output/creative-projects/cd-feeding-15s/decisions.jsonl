@@ -1,0 +1,4 @@
+{"at": "2026-11-05T13:16:56+00:00", "kind": "created", "project_id": "cd-feeding-15s", "scene_ids": ["s01-03", "s01-08", "s01-07", "s04-02"]}
+{"at": "2026-11-05T13:17:45+00:00", "kind": "rendered", "version": 1, "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-feeding-15s/v0001.mp4", "qa_pass": true, "sha256": "e7b0b72274a7ca522b179e3fb5d28602da78f35ab0e9e224e8d906abc2b0ece8", "publication_ready": false}
+{"at": "2026-11-05T13:19:26+00:00", "kind": "creative-applied", "version": 2, "scene_ids": ["s01-07", "s01-08", "s01-03", "s04-02"]}
+{"at": "2026-11-05T13:20:17+00:00", "kind": "rendered", "version": 2, "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-feeding-15s/v0002.mp4", "qa_pass": true, "sha256": "20ad93edaa2932732ca3bf3f0fbd5f2bdba5523c1cdb7f3a3ba9b1517d3e74ec", "publication_ready": false}

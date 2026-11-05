@@ -1,0 +1,33 @@
+{
+  "pass": true,
+  "fails": [],
+  "warns": [
+    "مسودة بصرية صامتة — ليست إعلانًا نهائيًا؛ يلزم تعليق معتمد قبل النشر"
+  ],
+  "meta": {
+    "duration": 18.0,
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30.0,
+    "has_audio": false,
+    "visual_draft": true,
+    "black_share": 0.0
+  },
+  "expected_duration_sec": 18.0,
+  "visual_draft": true,
+  "technical_pass": true,
+  "status": "visual-draft",
+  "publication": {
+    "ready": false,
+    "decision": "غير جاهز للنشر",
+    "blockers": [
+      "لا يوجد تعليق صوتي معتمد مطابق للسكربت",
+      "مطابقة النص المنطوق غير موثقة بتفريغ بشري",
+      "قرار النشر الفعلي من المالك غير مسجل"
+    ],
+    "text_success": true,
+    "technical_success": true
+  }
+}

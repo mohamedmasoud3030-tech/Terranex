@@ -1,10 +1,9 @@
 {
   "project_id": "cd-followup-20s",
-  "relocated_root": "/tmp/cd-relocation-flg6im7z/تسويق",
-  "render_stdout": "OK /tmp/cd-relocation-flg6im7z/relocated.mp4 · 601 إطار · 20.0ث · 11907KB",
-  "sha256": "30246ea67d39208d4618ed1ee00e95cd04432048c3a7f196a0248636dcdcec91",
-  "original_sha256": "30246ea67d39208d4618ed1ee00e95cd04432048c3a7f196a0248636dcdcec91",
+  "version": 2,
+  "render_stdout": "OK /tmp/cd-relocation-2aedrn8r/relocated.mp4 · 600 إطار · 20.0ث · 12190KB",
+  "sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98",
+  "expected_sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98",
   "identical_to_original": true,
-  "cwd": "/tmp/cd-relocation-flg6im7z",
   "spec_relative": true
 }
