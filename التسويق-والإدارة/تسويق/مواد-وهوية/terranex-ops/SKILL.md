@@ -102,7 +102,18 @@ SCORE: critic.py
 | سيناريو تصوري | `python engine/make_scenario.py --spec spec.json --outdir frames --video teaser.mp4` |
 | فحص | `python engine/critic.py --file copy.txt` |
 | بناء ريل بالهوية الثابتة | `python engine/reel_build.py --spec spec.json --voice vo.mp3 --out x.mp4` |
+| فهرس المشاهد | `python engine/scene_library.py search "استعلام"` · `storyboard --scenes … --out spec.json` |
+| مدير إبداعي v1 | `python engine/creative_director.py plan "<طلب عربي>" --project-id …` ← `render …` ← `prove-relocation …` |
+| إرفاق صوت معتمد | `python engine/creative_director.py attach-voice <id> vo.wav --approval-note "…"` (يربط الكابشنات بقياس الطاقة) |
+| فحص مسودة بصرية | `python engine/qa_video.py --video v.mp4 --profile reels --visual-draft` (تحذير، ليس إعلانًا نهائيًا) |
 | تعلّم | `python engine/learn.py --csv data/week.csv` |
+
+## Creative Director v1 (من طلب عربي إلى إعلان قابل للتنفيذ)
+- المدعوم في v1: **متابعة الحيوانات / التغذية / الوزن الحقلي**. أي موضوع آخر يُرفض بصراحة، لا تخمين.
+- يختار من `scene-library/index.json` فقط (مشاهد `usable`، بدون وجوه/ختام)، ويرتّب بالملاءمة والجودة والتنوع. كل توقيت مصدره الفهرس؛ القصّ الطويل = excerpt محسوب داخل حدود المشهد ومُسجّل.
+- ذاكرة المشروع: `output/creative-projects/<id>/` فيها `brief/plan/spec/storyboard/memory/decisions/render-report/critic-report/relocation-report`. تُستعاد في جلسة جديدة عبر `show <id>`.
+- **الصوت:** لا يولّد صوتًا. بدون ملف معتمد = **مسودة بصرية صامتة** موسومة في الخاتمة وQA. عند توفر صوت معتمد: `attach-voice` يقيس حدود الجمل بالطاقة ويربط الكابشنات بالصوت الفعلي، لا بمدة المشهد.
+- المسارات في الـspec نسبية من مجلد الـspec؛ `prove-relocation` ينسخ شجرة التسويق لمسار مؤقت ويعيد الرندر ويقارن SHA-256.
 
 ## بوابات بشرية دائمة
 النشر الفعلي · التواصل مع أي عميل · الدمج في `main` — **كلها بموافقة المستخدم الصريحة فقط.**

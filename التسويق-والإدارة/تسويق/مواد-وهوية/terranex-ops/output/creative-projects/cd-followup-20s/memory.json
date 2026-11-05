@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "project_id": "cd-followup-20s",
+  "created_at": "2026-11-05T12:35:19+00:00",
+  "updated_at": "2026-11-05T12:48:45+00:00",
+  "base_commit": "113a3dd25565f0ed2658da75b42adb73a33cde7d",
+  "branch": "arena/f2829137-terranex",
+  "status": "visual-draft",
+  "request": "اعمل إعلان 20 ثانية يوضح إننا بنتابع الحيوانات على أرض الواقع، بأسلوب مؤسسي احترافي، ولقطات متنوعة، وتعليق صوتي مصري هادي، وخاتمة فيها دعوة للتواصل.",
+  "brief": {
+    "raw_request": "اعمل إعلان 20 ثانية يوضح إننا بنتابع الحيوانات على أرض الواقع، بأسلوب مؤسسي احترافي، ولقطات متنوعة، وتعليق صوتي مصري هادي، وخاتمة فيها دعوة للتواصل.",
+    "language": "ar-EG",
+    "topic": "field-followup",
+    "message": "متابعة الحيوانات على أرض الواقع من المزرعة",
+    "duration_sec": 20.0,
+    "audience": "جمهور عام مهتم بالمزرعة والمتابعة الحقيقية",
+    "style": "مؤسسي احترافي بنبرة مصرية هادئة",
+    "voice": {
+      "requested": true,
+      "language": "ar-EG",
+      "tone": "هادي واثق",
+      "profile_id": "ar-eg-calm-confident",
+      "status": "pending-authorized-asset"
+    },
+    "cta": {
+      "type": "contact",
+      "text": "للتفاصيل… كلمنا على واتساب.",
+      "phone": "01010154221"
+    },
+    "variety_requested": true,
+    "assumptions": [
+      "الجمهور غير مذكور صراحةً؛ استُخدم جمهور عام بدون استهداف استثماري أو وعود."
+    ],
+    "warnings": [],
+    "constraints": [
+      "real-footage-only",
+      "no-faces-without-consent",
+      "no-profit-promises",
+      "no-city-name",
+      "no-invented-scenes-or-timings"
+    ]
+  },
+  "schedule": {
+    "topic": "field-followup",
+    "duration_sec": 20.0,
+    "endcard_sec": 3.0,
+    "hook": "الحيوانات… متابعة حقيقية.",
+    "hook_sec": 2.0,
+    "content_budget_sec": 17.0,
+    "shots": [
+      {
+        "scene_id": "s01-02",
+        "source_id": "src-01",
+        "role": "establish",
+        "source_start": 9.733,
+        "source_end": 10.767,
+        "planned_duration": 1.034,
+        "timeline_start": 0.0,
+        "timeline_end": 1.034,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 9.733,
+        "indexed_scene_end": 10.767,
+        "text": "رأس حقيقي… مش مجرد صورة.",
+        "motion": "لقطة قريبة ثابتة؛ دخول هادئ للنص فقط.",
+        "tags": [
+          "animal",
+          "sheep",
+          "farm"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-02.jpg",
+        "treatment": {
+          "crop": {
+            "bottom": 0.14
+          }
+        }
+      },
+      {
+        "scene_id": "s04-02",
+        "source_id": "src-04",
+        "role": "followup",
+        "source_start": 4.858,
+        "source_end": 10.141,
+        "planned_duration": 5.283,
+        "timeline_start": 1.034,
+        "timeline_end": 6.317,
+        "excerpt_policy": "centered-excerpt-within-indexed-scene",
+        "indexed_scene_start": 4.0,
+        "indexed_scene_end": 11.0,
+        "text": "بنتابع الحيوانات على أرض الواقع.",
+        "motion": "لقطة متابعة عن قرب؛ شريط إثبات يغطي العلامة المحروقة.",
+        "tags": [
+          "animal",
+          "sheep",
+          "scale",
+          "farm",
+          "person-hand"
+        ],
+        "quality": 0.9,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-02.jpg",
+        "treatment": {
+          "crop": {
+            "left": 0.09,
+            "right": 0.02
+          },
+          "proof_bar": true
+        }
+      },
+      {
+        "scene_id": "s01-03",
+        "source_id": "src-01",
+        "role": "herd",
+        "source_start": 10.767,
+        "source_end": 12.267,
+        "planned_duration": 1.5,
+        "timeline_start": 6.317,
+        "timeline_end": 7.817,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 10.767,
+        "indexed_scene_end": 12.267,
+        "text": "من الحظيرة…",
+        "motion": "لقطة واسعة للقطيع؛ انتقال قطع بسيط.",
+        "tags": [
+          "animal",
+          "cows",
+          "farm",
+          "feeding"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-03.jpg",
+        "treatment": {
+          "crop": {
+            "bottom": 0.14
+          }
+        }
+      },
+      {
+        "scene_id": "s01-08",
+        "source_id": "src-01",
+        "role": "feeding",
+        "source_start": 19.0,
+        "source_end": 21.033,
+        "planned_duration": 2.033,
+        "timeline_start": 7.817,
+        "timeline_end": 9.85,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 19.0,
+        "indexed_scene_end": 21.033,
+        "text": "للتغذية…",
+        "motion": "لقطة تغذية أقرب؛ إبقاء الحيوان داخل الكادر.",
+        "tags": [
+          "animal",
+          "cows",
+          "feeding",
+          "farm"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
+        "treatment": {
+          "crop": {
+            "top": 0.07
+          }
+        }
+      },
+      {
+        "scene_id": "s01-07",
+        "source_id": "src-01",
+        "role": "farm",
+        "source_start": 17.133,
+        "source_end": 19.0,
+        "planned_duration": 1.867,
+        "timeline_start": 9.85,
+        "timeline_end": 11.717,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 17.133,
+        "indexed_scene_end": 19.0,
+        "text": "وللمزرعة.",
+        "motion": "لقطة ري/محصول كسياق للمزرعة؛ لا ادعاء بفحص بيطري.",
+        "tags": [
+          "farm",
+          "irrigation"
+        ],
+        "quality": 0.8,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-07.jpg",
+        "treatment": {
+          "crop": {
+            "top": 0.07
+          }
+        }
+      },
+      {
+        "scene_id": "s04-04",
+        "source_id": "src-04",
+        "role": "followup-close",
+        "source_start": 13.758,
+        "source_end": 19.041,
+        "planned_duration": 5.283,
+        "timeline_start": 11.717,
+        "timeline_end": 17.0,
+        "excerpt_policy": "centered-excerpt-within-indexed-scene",
+        "indexed_scene_start": 13.5,
+        "indexed_scene_end": 19.3,
+        "text": "متابعة وتوثيق… خطوة بخطوة.",
+        "motion": "زاوية متابعة أخرى؛ لا تكرار نفس اللقطة.",
+        "tags": [
+          "animal",
+          "sheep",
+          "scale",
+          "farm",
+          "person-hand"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-04.jpg",
+        "treatment": {
+          "crop": {
+            "left": 0.09,
+            "right": 0.02
+          },
+          "proof_bar": true
+        }
+      }
+    ],
+    "voice_phrases": [
+      {
+        "role": "establish",
+        "text": "رأس حقيقي… مش مجرد صورة.",
+        "from": 2.0,
+        "to": 6.091
+      },
+      {
+        "role": "followup",
+        "text": "بنتابع الحيوانات على أرض الواقع.",
+        "from": 6.091,
+        "to": 10.182
+      },
+      {
+        "role": "herd",
+        "text": "من الحظيرة…",
+        "from": 10.182,
+        "to": 11.818
+      },
+      {
+        "role": "feeding",
+        "text": "للتغذية…",
+        "from": 11.818,
+        "to": 12.636
+      },
+      {
+        "role": "farm",
+        "text": "وللمزرعة.",
+        "from": 12.636,
+        "to": 13.454
+      },
+      {
+        "role": "followup-close",
+        "text": "متابعة وتوثيق… خطوة بخطوة.",
+        "from": 13.454,
+        "to": 16.727
+      },
+      {
+        "role": "cta",
+        "text": "للتفاصيل… كلمنا على واتساب.",
+        "from": 16.727,
+        "to": 20.0
+      }
+    ],
+    "caption_timing_source": "reading-budget-estimate",
+    "audio_status": "silent-visual-draft"
+  },
+  "selected_scene_ids": [
+    "s01-02",
+    "s04-02",
+    "s01-03",
+    "s01-08",
+    "s01-07",
+    "s04-04"
+  ],
+  "artifacts": {
+    "brief": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/brief.json",
+    "plan": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/plan.json",
+    "spec": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/spec.json",
+    "storyboard": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/storyboard.png",
+    "caption": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/caption.txt",
+    "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/2026-11-05/10-متابعة-الحيوانات-20ث-مسودة-بصرية.mp4",
+    "render_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/render-report.json",
+    "critic_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/critic-report.json",
+    "relocation_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/relocation-report.json"
+  },
+  "decisions": [
+    "استخدام فهرس المشاهد الحقيقي فقط",
+    "مسودة بصرية صامتة حتى يتوفر تعليق معتمد"
+  ],
+  "revisions": []
+}

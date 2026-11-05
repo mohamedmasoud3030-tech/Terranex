@@ -81,7 +81,10 @@ def share_of(path: str, filt: str, pattern: str) -> float:
     return min(1.0, total / d)
 
 
-def qa(path: str, profile: str = "reels", strict_lufs: bool = False) -> dict:
+def qa(path: str, profile: str = "reels", strict_lufs: bool = False,
+       visual_draft: bool = False) -> dict:
+    """فحص الجودة. visual_draft=True يسمح بمسودة بصرية صامتة مع تحذير صريح،
+    ولا يسقط شرط الصوت للإعلان النهائي. باقي البوابات كما هي."""
     fails, warns = [], []
     meta = probe(path)
 
@@ -100,7 +103,11 @@ def qa(path: str, profile: str = "reels", strict_lufs: bool = False) -> dict:
     if min(w, h) < 540 or max(w, h) < 960:
         fails.append(f"الدقة {w}×{h} أصغر من 540×960")
     if not meta.get("has_audio"):
-        fails.append("مفيش مسار صوتي")
+        if visual_draft:
+            warns.append("مسودة بصرية صامتة — ليست إعلانًا نهائيًا؛ يلزم تعليق معتمد قبل النشر")
+            meta["visual_draft"] = True
+        else:
+            fails.append("مفيش مسار صوتي")
     if profile != "any" and w and h:
         ratio = w / h
         want = {"reels": (0.54, 0.58, "9:16"), "deck": (1.75, 1.80, "16:9")}[profile]
@@ -138,10 +145,12 @@ def main():
     ap.add_argument("--profile", choices=["reels", "deck", "any"], default="reels")
     ap.add_argument("--strict-lufs", action="store_true",
                     help="اعتبار الجهارة خارج −15±3 فشلًا بدل تحذير")
+    ap.add_argument("--visual-draft", action="store_true",
+                    help="السماح بمسودة بصرية صامتة مع تحذير (ليس إعلانًا نهائيًا)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
-    r = qa(a.video, a.profile, a.strict_lufs)
+    r = qa(a.video, a.profile, a.strict_lufs, visual_draft=a.visual_draft)
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=2))
     else:
