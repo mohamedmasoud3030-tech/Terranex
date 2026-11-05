@@ -126,7 +126,7 @@ _AR_DIGITS = str.maketrans({chr(0x0660 + i): str(i) for i in range(10)})
 _AR_DIGITS.update({chr(0x06F0 + i): str(i) for i in range(10)})
 _WORD_NUM = {"عشرة": 10, "عشر": 10, "خمستاشر": 15, "خمسة عشر": 15, "عشرين": 20,
              "ثلاثين": 30, "تلاتين": 30, "اربعة": 4, "أربعة": 4, "خمسة": 5}
-_DUR_RE = re.compile(r"(\d++(?:[.]\d++)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec)")
+_DUR_RE = re.compile(r"(?>(\d++(?:[.]\d++)?)\s*(?:ثانية|ثواني|ث|ثانيةً|second|seconds|sec))")
 
 
 def _latin_digits(s: str) -> str:
@@ -359,7 +359,7 @@ def _choose_shots(idx: dict, beats: list) -> list:
         cands = [s for s in scenes if s["scene_id"] not in used and beat["tags"] <= set(s["tags"])]
         if not cands:
             raise ValueError(f"لا يوجد مشهد صالح للدور {beat['role']} في الفهرس")
-        best = max(cands, key=lambda s: _shot_score(s, beat, used_sources, used_sig))
+        best = max(cands, key=lambda s, b=beat: _shot_score(s, b, used_sources, used_sig))
         used.add(best["scene_id"])
         used_sources[best["source_id"]] = used_sources.get(best["source_id"], 0) + 1
         used_sig.add(tuple(sorted(best["tags"])))
@@ -822,51 +822,59 @@ def _choose_replacement(idx: dict, first: dict, used: set) -> dict:
     return candidates[0]
 
 
+def _op_replace_beginning(shots: list, op: dict, idx: dict) -> bool:
+    used = {s["scene_id"] for s in shots}
+    sc = _choose_replacement(idx, shots[0], used)
+    shots[0].update({"scene_id": sc["scene_id"], "role": "establish-alt",
+                     "text": "من المزرعة… متابعة حقيقية.",
+                     "motion": "بداية مختلفة من الفهرس؛ قطع هادئ.",
+                     "planned_duration": round(sc["end"] - sc["start"], 3),
+                     "tags": sc["tags"]})
+    return True
+
+
+def _op_promote_tag(shots: list, op: dict, idx: dict) -> bool:
+    tag, pos = op["tag"], int(op.get("position", 0))
+    i = next((i for i, s in enumerate(shots) if tag in s.get("tags", []) and s.get("role") == tag), None)
+    if i is None:
+        i = next((i for i, s in enumerate(shots) if tag in s.get("tags", [])), None)
+    if i is not None:
+        shot = shots.pop(i)
+        shots.insert(min(pos, len(shots)), shot)
+        return False
+    used = {x["scene_id"] for x in shots}
+    cand = [s for s in idx["scenes"] if _usable(s) and tag in s["tags"] and s["scene_id"] not in used]
+    if not cand:
+        raise ValueError(f"لا يوجد مشهد بالوسم {tag}")
+    sc = cand[0]
+    shots.insert(min(pos, len(shots)), {"scene_id": sc["scene_id"], "role": f"promoted-{tag}",
+                                        "text": "التغذية… من قلب المزرعة.",
+                                        "motion": "تقديم لقطة التغذية.",
+                                        "planned_duration": round(sc["end"] - sc["start"], 3),
+                                        "tags": sc["tags"]})
+    return False
+
+
+def _op_reduce_tag(shots: list, op: dict, idx: dict) -> bool:
+    tag = op["tag"]
+    tagged = [s for s in shots if tag in s.get("tags", [])]
+    if not tagged:
+        raise ValueError(f"لا توجد لقطة بالوسم {tag} لتقليلها")
+    target = max(tagged, key=lambda s: s["planned_duration"]) if op.get("target") == "longest" else tagged[0]
+    target["max_duration"] = round(max(0.5, target["planned_duration"] * float(op.get("factor", 0.7))), 3)
+    return False
+
+
 def _apply_ops(shots: list, ops: list, idx: dict) -> tuple:
     shots = copy.deepcopy(shots)
+    handlers = {"replace_beginning": _op_replace_beginning, "promote_tag": _op_promote_tag,
+                "reduce_tag_duration": _op_reduce_tag, "set_hook": lambda s, o, i: True}
     hook_changed = False
     for op in ops:
-        kind = op.get("op")
-        if kind == "replace_beginning":
-            used = {s["scene_id"] for s in shots}
-            sc = _choose_replacement(idx, shots[0], used)
-            shots[0].update({"scene_id": sc["scene_id"], "role": "establish-alt",
-                             "text": "من المزرعة… متابعة حقيقية.",
-                             "motion": "بداية مختلفة من الفهرس؛ قطع هادئ.",
-                             "planned_duration": round(sc["end"] - sc["start"], 3),
-                             "tags": sc["tags"]})
-            hook_changed = True
-        elif kind == "promote_tag":
-            tag = op["tag"]
-            pos = int(op.get("position", 0))
-            i = next((i for i, s in enumerate(shots) if tag in s.get("tags", []) and s.get("role") == tag), None)
-            if i is None:
-                i = next((i for i, s in enumerate(shots) if tag in s.get("tags", [])), None)
-            if i is None:
-                cand = [s for s in idx["scenes"] if _usable(s) and tag in s["tags"] and s["scene_id"] not in {x["scene_id"] for x in shots}]
-                if not cand:
-                    raise ValueError(f"لا يوجد مشهد بالوسم {tag}")
-                sc = cand[0]
-                shots.insert(min(pos, len(shots)), {"scene_id": sc["scene_id"], "role": f"promoted-{tag}",
-                                                    "text": "التغذية… من قلب المزرعة.",
-                                                    "motion": "تقديم لقطة التغذية.",
-                                                    "planned_duration": round(sc["end"] - sc["start"], 3),
-                                                    "tags": sc["tags"]})
-            else:
-                shot = shots.pop(i)
-                shots.insert(min(pos, len(shots)), shot)
-        elif kind == "reduce_tag_duration":
-            tag = op["tag"]
-            factor = float(op.get("factor", 0.7))
-            tagged = [s for s in shots if tag in s.get("tags", [])]
-            if not tagged:
-                raise ValueError(f"لا توجد لقطة بالوسم {tag} لتقليلها")
-            target = max(tagged, key=lambda s: s["planned_duration"]) if op.get("target") == "longest" else tagged[0]
-            target["max_duration"] = round(max(0.5, target["planned_duration"] * factor), 3)
-        elif kind == "set_hook":
-            hook_changed = True
-        else:
-            raise ValueError(f"عملية تعديل غير مدعومة: {kind}")
+        handler = handlers.get(op.get("op"))
+        if handler is None:
+            raise ValueError(f"عملية تعديل غير مدعومة: {op.get('op')}")
+        hook_changed = handler(shots, op, idx) or hook_changed
     return shots, hook_changed
 
 
