@@ -35,9 +35,9 @@
 - إثبات النقل من مسار مؤقت: مطابق لـ v2.
 
 ## 4) الفحوص
-- اختبارات المحرك: 64/64.
+- اختبارات المحرك: 65/65.
 - selfcheck: 18/18.
 - QA التقني للمسودات: pass مع تحذير صامت.
 - critic: نجاح نص فقط؛ ليس قرار نشر.
-- SonarCloud على PR #195: **PASS** بعد إصلاح Path Traversal وتعقيد الدوال (انظر `security-review-pr195.md`).
+- SonarCloud على PR #195: **PASS** مع 0 annotations بعد إصلاح Path Traversal وتعقيد الدوال (انظر `security-review-pr195.md`).
 - Vercel: **FAIL** بسبب عضوية/صلاحيات الفريق، ليس فشل كود.

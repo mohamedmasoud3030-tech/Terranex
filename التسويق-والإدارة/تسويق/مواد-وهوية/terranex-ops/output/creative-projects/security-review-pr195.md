@@ -1,6 +1,6 @@
 # مراجعة أمان PR #195 — ما كان ظاهرًا وما أُصلح فعلًا
 
-**الحالة النهائية:** SonarCloud Code Analysis على PR #195 **PASS** (آخر تحقق على `2757b62`، check-run `127288980889`). لم تُعطّل أي قاعدة ولم تُستبعد أي ملفات من التحليل؛ `.sonarcloud.properties` كما هو.
+**الحالة النهائية:** SonarCloud Code Analysis على PR #195 **PASS** (آخر تحقق على `b5fbd0a`، check-run `127316169001`) مع **0 annotations**. لم تُعطّل أي قاعدة ولم تُستبعد أي ملفات من التحليل؛ `.sonarcloud.properties` كما هو.
 
 ## 1) لماذا كان التقييم E؟
 كانت هناك ثغرات Security Hotspot/Vulnerability من نوع **Path Traversal via file content**: Engine كان يقرأ مسارات/أسماء من JSON ثم يفتحها أو يمررها إلى FFmpeg بدون حصر كافٍ. لاحقًا ظهرت أيضًا Cognitive Complexity أعلى من الحد في دوال المخرج الإبداعي.
@@ -22,8 +22,8 @@
 - `tests/test_reel_build.py` يغطي symlink/traversal/crop.
 
 ## 4) ما تبقى بعد آخر فحص
-- 0 failure annotations.
-- تحذيرات غير حاجزة: نمط مدة regex (super-linear) واقتراحات شكلية في الاختبارات. لا تؤثر على Security Rating.
+- 0 failure annotations و0 warning annotations على آخر commit.
+- تحذير regex السابق أُزيل بمسح خطي للمدة بدل نمط backtracking، مع اختبارات للأرقام العربية والكلمية.
 
 ## 5) Vercel منفصل عن الكود
 Vercel **FAIL** لأن مؤلف الـ commit ليس عضوًا في فريق Vercel الذي يملك المشروع. remedies المعروضة: جعل الريبو public أو ترقية Pro؛ كلاهما خارج الصلاحية/القيود (لا أدوات مدفوعة). هذا ليس فشل build في الكود.
