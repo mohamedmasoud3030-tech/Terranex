@@ -9,6 +9,13 @@ on:
     paths:
       - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
       - '.github/workflows/marketing-ops.yml'
+  push:
+    branches:
+      - main
+      - 'arena/f2829137-terranex'
+    paths:
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
+      - '.github/workflows/marketing-ops.yml'
   workflow_dispatch:
 
 permissions:
@@ -29,7 +36,8 @@ jobs:
           python-version: '3.11'
 
       - name: Install locked engine + dev dependencies (wheels only)
-        run: python -m pip install --only-binary :all: -r requirements-ci.txt
+        run: |
+          python -m pip install --only-binary :all: -r requirements-ci.txt
 
       - name: Unit tests with coverage
         run: python -m coverage run -m unittest discover -s tests -p 'test_*.py'
