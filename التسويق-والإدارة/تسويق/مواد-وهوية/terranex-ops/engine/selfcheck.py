@@ -373,6 +373,14 @@ def check_no_city_in_engines() -> None:
            not offenders, "؛ ".join(offenders))
 
 
+def check_reel_tests() -> None:
+    """اختبارات reel_build (قصّ آمن/إخفاء علامة/تزامن/أمان مسارات/توافق قوالب)."""
+    r = run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"])
+    tail = (r.stderr or "").strip().splitlines()
+    note = tail[-1] if tail else ""
+    record("اختبارات reel_build (قصّ/علامة/تزامن/مسارات/توافق)", r.returncode == 0, note)
+
+
 def main():
     quick = "--quick" in sys.argv
     check_deps()
@@ -396,6 +404,7 @@ def main():
             check_montage(tmp, reel)
             check_campaign(tmp)
             check_measure(tmp)
+            check_reel_tests()
         check_calendar(tmp)
     sys.exit(_report())
 
