@@ -85,8 +85,9 @@ class ProjectStore:
     def read_text(self, name: str) -> str:
         return self.path(name).read_text(encoding="utf-8")
 
-    def write_text(self, name: str, text: str) -> None:
-        self.path(name).write_text(text, encoding="utf-8")
+    def write_caption(self, text: str) -> None:
+        # Fixed filename: no caller-supplied path component reaches this sink.
+        (self.dir / CAPTION).write_text(text, encoding="utf-8")
 
     def append_event(self, kind: str, data: dict) -> None:
         from datetime import datetime, timezone

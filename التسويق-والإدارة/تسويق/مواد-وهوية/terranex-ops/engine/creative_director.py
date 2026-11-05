@@ -307,33 +307,24 @@ def rank_candidates(idx: dict, brief: dict) -> list:
     return out
 
 
-def _waterfill(weights: list, caps: list, budget: float, mins: list | None = None) -> list:
-    n = len(weights)
-    mins = list(mins) if mins is not None else [0.0] * n
-    if budget + 1e-9 < sum(mins):
-        raise ValueError("المدة المطلوبة أقصر من الحد الأدنى للمشاهد المختارة")
-    if budget > sum(caps) + 1e-9:
-        raise ValueError("المدة المطلوبة تتجاوز إجمالي المشاهد المتاحة بدون تكرار")
-    alloc = list(mins)
-    remaining = budget - sum(mins)
-    active = [i for i in range(n) if caps[i] > mins[i] + 1e-9]
-    while remaining > 1e-9 and active:
-        tw = sum(weights[i] for i in active)
-        progressed = False
-        for i in list(active):
-            share = remaining * weights[i] / tw
-            room = caps[i] - alloc[i]
-            if share >= room - 1e-9:
-                alloc[i] = caps[i]
-                remaining -= room
-                active.remove(i)
-                progressed = True
-        if not progressed:
-            for i in active:
-                alloc[i] += remaining * weights[i] / tw
-            remaining = 0.0
+def _fill_step(weights, caps, alloc, active, remaining):
+    tw = sum(weights[i] for i in active)
+    next_active, progressed = [], False
+    for i in active:
+        share = remaining * weights[i] / tw
+        room = caps[i] - alloc[i]
+        if share >= room - 1e-9:
+            alloc[i] = caps[i]
+            remaining -= room
+            progressed = True
+        else:
+            next_active.append(i)
+    return remaining, next_active, progressed
+
+
+def _round_alloc(alloc, caps, mins, budget):
     diff = round(budget - sum(alloc), 3)
-    for i in range(n - 1, -1, -1):
+    for i in range(len(alloc) - 1, -1, -1):
         new = round(alloc[i] + diff, 3)
         if mins[i] - 1e-9 <= new <= caps[i] + 1e-9:
             alloc[i] = new
@@ -341,33 +332,50 @@ def _waterfill(weights: list, caps: list, budget: float, mins: list | None = Non
     return [round(x, 3) for x in alloc]
 
 
+def _waterfill(weights: list, caps: list, budget: float, mins: list | None = None) -> list:
+    mins = list(mins) if mins is not None else [0.0] * len(weights)
+    if budget + 1e-9 < sum(mins):
+        raise ValueError("المدة المطلوبة أقصر من الحد الأدنى للمشاهد المختارة")
+    if budget > sum(caps) + 1e-9:
+        raise ValueError("المدة المطلوبة تتجاوز إجمالي المشاهد المتاحة بدون تكرار")
+    alloc = list(mins)
+    remaining = budget - sum(mins)
+    active = [i for i in range(len(weights)) if caps[i] > mins[i] + 1e-9]
+    while remaining > 1e-9 and active:
+        remaining, active, progressed = _fill_step(weights, caps, alloc, active, remaining)
+        if not progressed:
+            tw = sum(weights[i] for i in active)
+            for i in active:
+                alloc[i] += remaining * weights[i] / tw
+            remaining = 0.0
+    return _round_alloc(alloc, caps, mins, budget)
+
+
 def _choose_shots(idx: dict, beats: list) -> list:
     scenes = [s for s in idx["scenes"] if _usable(s)]
     used, used_sources, used_sig = set(), {}, set()
     chosen = []
     for beat in beats:
-        best, best_score = None, -1e9
-        for sc in scenes:
-            sid = sc["scene_id"]
-            if sid in used or not beat["tags"] <= set(sc["tags"]):
-                continue
-            tags = set(sc["tags"])
-            dur = sc["end"] - sc["start"]
-            score = float(sc.get("quality", 0.5)) * 4 + len(tags & beat["tags"])
-            score -= 0.3 * used_sources.get(sc["source_id"], 0)
-            if tuple(sorted(tags)) in used_sig:
-                score -= 0.3
-            if beat.get("short_bonus") and dur < 2.0:
-                score += 1.5
-            if score > best_score:
-                best, best_score = sc, score
-        if best is None:
+        cands = [s for s in scenes if s["scene_id"] not in used and beat["tags"] <= set(s["tags"])]
+        if not cands:
             raise ValueError(f"لا يوجد مشهد صالح للدور {beat['role']} في الفهرس")
+        best = max(cands, key=lambda s: _shot_score(s, beat, used_sources, used_sig))
         used.add(best["scene_id"])
         used_sources[best["source_id"]] = used_sources.get(best["source_id"], 0) + 1
         used_sig.add(tuple(sorted(best["tags"])))
         chosen.append((beat, best))
     return chosen
+
+
+def _shot_score(sc: dict, beat: dict, used_sources: dict, used_sig: set) -> float:
+    tags = set(sc["tags"])
+    score = float(sc.get("quality", 0.5)) * 4 + len(tags & beat["tags"])
+    score -= 0.3 * used_sources.get(sc["source_id"], 0)
+    if tuple(sorted(tags)) in used_sig:
+        score -= 0.3
+    if beat.get("short_bonus") and sc["end"] - sc["start"] < 2.0:
+        score += 1.5
+    return score
 
 
 def _excerpt(sc: dict, d: float) -> tuple:
@@ -492,33 +500,41 @@ def _lint_texts(texts: list) -> None:
             raise ValueError(f"نص طويل جدًا للكادر: {t}")
 
 
+def _validate_clip(shot: dict, clip: dict, by_id: dict) -> None:
+    sid = shot["scene_id"]
+    if sid not in by_id:
+        raise ValueError(f"scene_id مختلق: {sid}")
+    sc = by_id[sid]
+    if not _usable(sc):
+        raise ValueError(f"مشهد غير صالح: {sid}")
+    if clip["scene_id"] != sid:
+        raise ValueError("عدم تطابق scene_id بين الخطة والـspec")
+    a, b = clip["start"], clip["end"]
+    if not (sc["start"] - TOL <= a < b <= sc["end"] + TOL):
+        raise ValueError(f"توقيت خارج حدود المشهد المفهرس: {sid} [{a},{b}]")
+    if os.path.isabs(clip["path"]):
+        raise ValueError("مسار مطلق في الـspec — غير قابل للنقل")
+
+
+def _validate_caption_windows(caps: list, total: float) -> None:
+    prev = 0.0
+    for cap in caps:
+        if not (0 <= cap["from"] < cap["to"] <= total + TOL) or cap["from"] < prev - TOL:
+            raise ValueError("نوافذ الكابشن غير صالحة")
+        prev = cap["to"]
+
+
 def validate_plan(idx: dict, brief: dict, sched: dict, spec: dict) -> None:
     by_id = {s["scene_id"]: s for s in idx["scenes"]}
     ids = [s["scene_id"] for s in sched["shots"]]
     if len(set(ids)) != len(ids):
         raise ValueError("مشهد مكرر في الخطة")
     for shot, clip in zip(sched["shots"], spec["clips"]):
-        sid = shot["scene_id"]
-        if sid not in by_id:
-            raise ValueError(f"scene_id مختلق: {sid}")
-        sc = by_id[sid]
-        if not _usable(sc):
-            raise ValueError(f"مشهد غير صالح: {sid}")
-        if clip["scene_id"] != sid:
-            raise ValueError("عدم تطابق scene_id بين الخطة والـspec")
-        a, b = clip["start"], clip["end"]
-        if not (sc["start"] - TOL <= a < b <= sc["end"] + TOL):
-            raise ValueError(f"توقيت خارج حدود المشهد المفهرس: {sid} [{a},{b}]")
-        if os.path.isabs(clip["path"]):
-            raise ValueError("مسار مطلق في الـspec — غير قابل للنقل")
+        _validate_clip(shot, clip, by_id)
     total = sum(c["end"] - c["start"] for c in spec["clips"]) + spec["endcard_sec"]
     if total > brief["duration_sec"] + TOL:
         raise ValueError(f"الخطة تتجاوز المدة المطلوبة: {total:.2f} > {brief['duration_sec']}")
-    prev = 0.0
-    for cap in spec["captions"]:
-        if not (0 <= cap["from"] < cap["to"] <= total + TOL) or cap["from"] < prev - TOL:
-            raise ValueError("نوافذ الكابشن غير صالحة")
-        prev = cap["to"]
+    _validate_caption_windows(spec["captions"], total)
     texts = [spec["hook"]] + [c["text"] for c in spec["captions"]] + list(spec.get("endcard", {}).values())
     _lint_texts(texts)
     if len(spec["hook"].split()) > 8:
@@ -531,7 +547,7 @@ def _reject_unknown(obj: dict, allowed: set, label: str) -> None:
         raise ValueError(f"حقول غير مدعومة في {label}: {sorted(extra)}")
 
 
-def validate_creative(idx: dict, brief: dict, creative: dict) -> dict:
+def _creative_shape(creative: dict, brief: dict) -> tuple:
     if creative.get("schema_version") != 1:
         raise ValueError("creative JSON يدعم schema_version=1 فقط")
     _reject_unknown(creative, {"schema_version", "topic", "note", "hook", "endcard_sec", "shots",
@@ -547,32 +563,41 @@ def validate_creative(idx: dict, brief: dict, creative: dict) -> dict:
     shots_in = creative.get("shots")
     if not isinstance(shots_in, list) or not (1 <= len(shots_in) <= 12):
         raise ValueError("shots يجب أن تكون قائمة من 1 إلى 12 لقطة")
+    return shots_in, float(creative.get("endcard_sec", 3.0 if brief.get("cta") else 0.0))
+
+
+def _creative_shot(s: dict, i: int, by_id: dict) -> tuple:
+    sid = s.get("scene_id")
+    if sid not in by_id:
+        raise ValueError(f"scene_id مختلق: {sid}")
+    sc = by_id[sid]
+    if not _usable(sc):
+        raise ValueError(f"مشهد غير صالح: {sid}")
+    d = float(s.get("duration_sec", sc["end"] - sc["start"]))
+    if not (0.2 <= d <= sc["end"] - sc["start"] + TOL):
+        raise ValueError(f"مدة لقطة خارج حدود المشهد: {sid}")
+    if "source_start" in s or "source_end" in s:
+        a = float(s.get("source_start", sc["start"]))
+        b = float(s.get("source_end", a + d))
+        if not (sc["start"] - TOL <= a < b <= sc["end"] + TOL) or abs((b - a) - d) > TOL:
+            raise ValueError(f"توقيت مصدر خارج حدود الفهرس: {sid}")
+    return {"scene_id": sid, "role": s.get("role", f"creative-{i+1}"),
+            "text": s.get("text", ""), "motion": s.get("motion", "قطع بسيط؛ بدون حركة كاميرا مُضافة."),
+            "planned_duration": round(d, 3), "weight": float(s.get("weight", 1.0))}, d
+
+
+def validate_creative(idx: dict, brief: dict, creative: dict) -> dict:
+    shots_in, endcard_sec = _creative_shape(creative, brief)
     by_id = {s["scene_id"]: s for s in idx["scenes"]}
-    endcard_sec = float(creative.get("endcard_sec", 3.0 if brief.get("cta") else 0.0))
     budget = round(brief["duration_sec"] - endcard_sec, 3)
-    shots, total = [], 0.0
-    seen = set()
+    shots, total, seen = [], 0.0, set()
     for i, s in enumerate(shots_in):
         sid = s.get("scene_id")
-        if sid not in by_id:
-            raise ValueError(f"scene_id مختلق: {sid}")
         if sid in seen:
             raise ValueError(f"مشهد مكرر: {sid}")
         seen.add(sid)
-        sc = by_id[sid]
-        if not _usable(sc):
-            raise ValueError(f"مشهد غير صالح: {sid}")
-        d = float(s.get("duration_sec", sc["end"] - sc["start"]))
-        if not (0.2 <= d <= sc["end"] - sc["start"] + TOL):
-            raise ValueError(f"مدة لقطة خارج حدود المشهد: {sid}")
-        if "source_start" in s or "source_end" in s:
-            a = float(s.get("source_start", sc["start"]))
-            b = float(s.get("source_end", a + d))
-            if not (sc["start"] - TOL <= a < b <= sc["end"] + TOL) or abs((b - a) - d) > TOL:
-                raise ValueError(f"توقيت مصدر خارج حدود الفهرس: {sid}")
-        shots.append({"scene_id": sid, "role": s.get("role", f"creative-{i+1}"),
-                      "text": s.get("text", ""), "motion": s.get("motion", "قطع بسيط؛ بدون حركة كاميرا مُضافة."),
-                      "planned_duration": round(d, 3), "weight": float(s.get("weight", 1.0))})
+        shot, d = _creative_shot(s, i, by_id)
+        shots.append(shot)
         total += d
     if abs(total - budget) > TOL:
         raise ValueError(f"مجموع اللقطات {total:.3f} لا يطابق الميزانية {budget:.3f}")
@@ -584,10 +609,9 @@ def validate_creative(idx: dict, brief: dict, creative: dict) -> dict:
     if brief.get("cta") and creative.get("cta", {}).get("text"):
         voice = voice + [{"role": "cta", "text": creative["cta"]["text"]}]
     _voice_windows(voice, brief["duration_sec"], hook_sec)
-    timeline = _timeline_from_shots(shots, idx)
     sched = {"topic": brief["topic"], "duration_sec": brief["duration_sec"], "endcard_sec": endcard_sec,
              "hook": hook, "hook_sec": hook_sec, "content_budget_sec": budget,
-             "shots": timeline, "voice_phrases": voice,
+             "shots": _timeline_from_shots(shots, idx), "voice_phrases": voice,
              "caption_timing_source": "reading-budget-estimate", "audio_status": "silent-visual-draft"}
     endcard = creative.get("endcard") or _default_endcard(brief)
     if brief.get("cta") and B.PHONE not in endcard.get("cta", ""):
@@ -671,7 +695,7 @@ def _save_current(store: ProjectStore, mem: dict, brief: dict, plan: dict, spec:
     store.write_json(BRIEF, brief)
     store.write_json(PLAN, plan)
     store.write_json(SPEC, spec)
-    store.write_text(CAPTION, _caption_text(sched))
+    store.write_caption(_caption_text(sched))
     _storyboard_png(brief, sched, str(store.path(STORYBOARD)))
     mem["brief"] = brief
     mem["schedule"] = sched
@@ -846,30 +870,36 @@ def _apply_ops(shots: list, ops: list, idx: dict) -> tuple:
     return shots, hook_changed
 
 
+def _shot_caps(shots: list, by_id: dict) -> list:
+    return [min(by_id[s["scene_id"]]["end"] - by_id[s["scene_id"]]["start"],
+                s.get("max_duration", 1e9)) for s in shots]
+
+
+def _add_balance_scene(shots: list, idx: dict, used: set, prefer_tags: set) -> None:
+    cand = [s for s in idx["scenes"] if _usable(s) and s["scene_id"] not in used]
+    cand.sort(key=lambda s: (-(len(prefer_tags & set(s["tags"]))), -float(s.get("quality", 0.5)), s["scene_id"]))
+    if not cand:
+        raise ValueError("المادة المتاحة لا تكفي إعادة التوازن بعد التعديل")
+    sc = cand[0]
+    used.add(sc["scene_id"])
+    insert_at = next((i for i, s in enumerate(shots) if "scale" in s.get("tags", [])), len(shots))
+    shots.insert(insert_at, {"scene_id": sc["scene_id"], "role": "added-for-balance",
+                             "text": "ومن المزرعة… خطوة بخطوة.",
+                             "motion": "لقطة إضافية من الفهرس لحفظ المدة.",
+                             "planned_duration": round(sc["end"] - sc["start"], 3),
+                             "tags": sc["tags"], "weight": 1.0})
+
+
 def _rebalance(shots: list, idx: dict, budget: float, prefer_tags: set) -> list:
     by_id = {s["scene_id"]: s for s in idx["scenes"]}
     for s in shots:
         sc = by_id[s["scene_id"]]
         s["tags"] = sc["tags"]
         s["weight"] = s.get("weight", 1.0) * (2.0 if prefer_tags & set(sc["tags"]) else 1.0)
-    def caps():
-        return [min(by_id[s["scene_id"]]["end"] - by_id[s["scene_id"]]["start"],
-                    s.get("max_duration", 1e9)) for s in shots]
     used = {s["scene_id"] for s in shots}
-    while sum(caps()) < budget - 1e-9:
-        cand = [s for s in idx["scenes"] if _usable(s) and s["scene_id"] not in used]
-        cand.sort(key=lambda s: (-(len(prefer_tags & set(s["tags"]))), -float(s.get("quality", 0.5)), s["scene_id"]))
-        if not cand:
-            raise ValueError("المادة المتاحة لا تكفي إعادة التوازن بعد التعديل")
-        sc = cand[0]
-        used.add(sc["scene_id"])
-        insert_at = next((i for i, s in enumerate(shots) if "scale" in s.get("tags", [])), len(shots))
-        shots.insert(insert_at, {"scene_id": sc["scene_id"], "role": "added-for-balance",
-                                 "text": "ومن المزرعة… خطوة بخطوة.",
-                                 "motion": "لقطة إضافية من الفهرس لحفظ المدة.",
-                                 "planned_duration": round(sc["end"] - sc["start"], 3),
-                                 "tags": sc["tags"], "weight": 1.0})
-    cs = caps()
+    while sum(_shot_caps(shots, by_id)) < budget - 1e-9:
+        _add_balance_scene(shots, idx, used, prefer_tags)
+    cs = _shot_caps(shots, by_id)
     durations = _waterfill([s.get("weight", 1.0) for s in shots], cs, budget, [min(1.0, c) for c in cs])
     for s, d in zip(shots, durations):
         s["planned_duration"] = d
