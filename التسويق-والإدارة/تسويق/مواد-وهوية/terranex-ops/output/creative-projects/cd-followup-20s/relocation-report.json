@@ -1,0 +1,9 @@
+{
+  "project_id": "cd-followup-20s",
+  "version": 2,
+  "render_stdout": "OK /tmp/cd-relocation-2aedrn8r/relocated.mp4 · 600 إطار · 20.0ث · 12190KB",
+  "sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98",
+  "expected_sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98",
+  "identical_to_original": true,
+  "spec_relative": true
+}

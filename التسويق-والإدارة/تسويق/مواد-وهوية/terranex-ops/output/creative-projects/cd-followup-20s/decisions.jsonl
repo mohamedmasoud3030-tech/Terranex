@@ -1,0 +1,8 @@
+{"at": "2026-11-05T12:35:19+00:00", "kind": "created", "project_id": "cd-followup-20s", "scene_ids": ["s01-02", "s04-02", "s01-03", "s01-08", "s01-07", "s04-04"]}
+{"at": "2026-11-05T12:36:42+00:00", "kind": "rendered", "video": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/التسويق-والإدارة/تسويق/فيديوهات-المنتجة/2026-11-05/10-متابعة-الحيوانات-20ث-مسودة-بصرية.mp4", "qa_pass": true, "duration": 20.0, "visual_draft": true}
+{"at": "2026-11-05T12:38:05+00:00", "kind": "rendered", "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/2026-11-05/10-متابعة-الحيوانات-20ث-مسودة-بصرية.mp4", "qa_pass": true, "duration": 20.0, "visual_draft": true}
+{"at": "2026-11-05T12:48:45+00:00", "kind": "relocation-proven", "identical": true, "sha256": "30246ea67d39208d4618ed1ee00e95cd04432048c3a7f196a0248636dcdcec91"}
+{"at": "2026-11-05T13:16:43+00:00", "kind": "migrated", "schema_version": 2, "sha256": "30246ea67d39208d4618ed1ee00e95cd04432048c3a7f196a0248636dcdcec91"}
+{"at": "2026-11-05T13:20:40+00:00", "kind": "revised", "version": 2, "instruction": "غيّر البداية، قلل لقطة الوزن، وقدم التغذية", "scene_ids": ["s04-03", "s01-08", "s04-02", "s01-03", "s01-07", "s04-04"]}
+{"at": "2026-11-05T13:21:54+00:00", "kind": "rendered", "version": 2, "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-followup-20s/v0002.mp4", "qa_pass": true, "sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98", "publication_ready": false}
+{"at": "2026-11-05T13:23:22+00:00", "kind": "relocation-proven", "identical": true, "sha256": "413b8d45258042da0ebb4fde0660e74e0d5d4b96ace304047b97e15852ee4e98"}

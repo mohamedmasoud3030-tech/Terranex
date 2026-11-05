@@ -81,12 +81,7 @@ def share_of(path: str, filt: str, pattern: str) -> float:
     return min(1.0, total / d)
 
 
-def qa(path: str, profile: str = "reels", strict_lufs: bool = False) -> dict:
-    fails, warns = [], []
-    meta = probe(path)
-
-    if not meta.get("duration"):
-        return {"pass": False, "fails": ["تعذّر قراءة الملف أو فاقد مدة"], "warns": [], "meta": meta}
+def _check_format(meta: dict, profile: str, fails: list) -> None:
     d = meta["duration"]
     if d < 3:
         fails.append(f"مدة قصيرة جدًا ({d:.1f}ث < 3ث)")
@@ -99,36 +94,52 @@ def qa(path: str, profile: str = "reels", strict_lufs: bool = False) -> dict:
     w, h = meta.get("width", 0), meta.get("height", 0)
     if min(w, h) < 540 or max(w, h) < 960:
         fails.append(f"الدقة {w}×{h} أصغر من 540×960")
-    if not meta.get("has_audio"):
-        fails.append("مفيش مسار صوتي")
     if profile != "any" and w and h:
         ratio = w / h
         want = {"reels": (0.54, 0.58, "9:16"), "deck": (1.75, 1.80, "16:9")}[profile]
         if not (want[0] <= ratio <= want[1]):
             fails.append(f"الأبعاد {w}×{h} مش {want[2]} (profile={profile})")
 
-    if meta.get("has_audio"):
-        luf = loudness(path)
-        meta["loudness_lufs"] = luf
-        if luf is None:
-            warns.append("تعذّر قياس الجهارة")
-        elif not (-25 <= luf <= -9):
-            fails.append(f"الجهارة {luf} LUFS خارج المقبول كليًا (−25..−9)")
-        elif not (-18 <= luf <= -12):
-            (fails if strict_lufs else warns).append(
-                f"الجهارة {luf} LUFS — المعيار −15±3")
-        sil = share_of(path, "silencedetect=n=-35dB:d=0.6", r"silence_duration: ([\d.]+)")
-        meta["silence_share"] = round(sil, 3)
-        if sil >= 0.95:
-            fails.append(f"الصوت صامت شبه بالكامل ({sil:.0%})")
-        elif sil > 0.4:
-            warns.append(f"نسبة صمت مرتفعة ({sil:.0%})")
 
+def _check_audio(path: str, meta: dict, strict_lufs: bool, visual_draft: bool,
+                 fails: list, warns: list) -> None:
+    if not meta.get("has_audio"):
+        if visual_draft:
+            warns.append("مسودة بصرية صامتة — ليست إعلانًا نهائيًا؛ يلزم تعليق معتمد قبل النشر")
+            meta["visual_draft"] = True
+        else:
+            fails.append("مفيش مسار صوتي")
+        return
+    luf = loudness(path)
+    meta["loudness_lufs"] = luf
+    if luf is None:
+        warns.append("تعذّر قياس الجهارة")
+    elif not (-25 <= luf <= -9):
+        fails.append(f"الجهارة {luf} LUFS خارج المقبول كليًا (−25..−9)")
+    elif not (-18 <= luf <= -12):
+        (fails if strict_lufs else warns).append(f"الجهارة {luf} LUFS — المعيار −15±3")
+    sil = share_of(path, "silencedetect=n=-35dB:d=0.6", r"silence_duration: ([\d.]+)")
+    meta["silence_share"] = round(sil, 3)
+    if sil >= 0.95:
+        fails.append(f"الصوت صامت شبه بالكامل ({sil:.0%})")
+    elif sil > 0.4:
+        warns.append(f"نسبة صمت مرتفعة ({sil:.0%})")
+
+
+def qa(path: str, profile: str = "reels", strict_lufs: bool = False,
+       visual_draft: bool = False) -> dict:
+    """فحص الجودة. visual_draft=True يسمح بمسودة بصرية صامتة مع تحذير صريح،
+    ولا يسقط شرط الصوت للإعلان النهائي. باقي البوابات كما هي."""
+    fails, warns = [], []
+    meta = probe(path)
+    if not meta.get("duration"):
+        return {"pass": False, "fails": ["تعذّر قراءة الملف أو فاقد مدة"], "warns": [], "meta": meta}
+    _check_format(meta, profile, fails)
+    _check_audio(path, meta, strict_lufs, visual_draft, fails, warns)
     blk = share_of(path, "blackdetect=d=0.4:pix_th=0.10", r"black_duration:([\d.]+)")
     meta["black_share"] = round(blk, 3)
     if blk > 0.15:
         warns.append(f"كوادر سوداء ({blk:.0%}) — لو مقصودة (فاصل) تجاهل التحذير")
-
     return {"pass": not fails, "fails": fails, "warns": warns, "meta": meta}
 
 
@@ -138,10 +149,12 @@ def main():
     ap.add_argument("--profile", choices=["reels", "deck", "any"], default="reels")
     ap.add_argument("--strict-lufs", action="store_true",
                     help="اعتبار الجهارة خارج −15±3 فشلًا بدل تحذير")
+    ap.add_argument("--visual-draft", action="store_true",
+                    help="السماح بمسودة بصرية صامتة مع تحذير (ليس إعلانًا نهائيًا)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
-    r = qa(a.video, a.profile, a.strict_lufs)
+    r = qa(a.video, a.profile, a.strict_lufs, visual_draft=a.visual_draft)
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=2))
     else:

@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -23,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+from safe_paths import confine  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # جذر مساحة التسويق (تسويق/) — يُسمح بمراجعته بالمسارات النسبية بدل المسارات المطلقة القديمة.
@@ -51,7 +53,7 @@ def _safe_input_path(path: str, *roots: str) -> str:
         root = os.path.realpath(r)
         try:
             if rp == root or os.path.commonpath([rp, root]) == root:
-                return rp
+                return confine(rp, root)
         except ValueError:
             continue
     raise SystemExit(f"input path outside allowed roots: {path}")
@@ -261,22 +263,34 @@ def cap_layer(text: str) -> Image.Image:
     return img
 
 
-def endcard_layer() -> Image.Image:
+def endcard_layer(endcard: dict | None = None) -> Image.Image:
+    """بطاقة ختام بالهوية الثابتة. النصوص الافتراضية محفوظة للقوالب القديمة.
+
+    يمكن للـCreative Director تمرير headline/subtitle/cta/disclosure صراحةً؛
+    المسودة الصامتة يجب ألا تدّعي وجود تعليق صوتي.
+    """
+    ec = endcard or {}
+    headline = ec.get("headline", "ملك حقيقي")
+    subtitle = ec.get("subtitle", "ومتابعة بعينك")
+    cta = ec.get("cta", f"واتساب {B.PHONE}")
+    disclosure = ec.get("disclosure", "تعليق صوتي · مدعوم بإضافات AI")
+    for t in (headline, subtitle, cta, disclosure):
+        lint_text(t)
     img = Image.new("RGBA", (W, H), B.hex2rgb(B.C["bg_dark"]) + (253,))
     box = B.place_logo(img, W // 2, int(H * 0.245), int(W * 0.50), "full")
     d = ImageDraw.Draw(img)
     y = box[3] + int(H * 0.075)
-    B.text(d, (W // 2, y), "ملك حقيقي", B.font("black", 82), (255, 255, 255, 255), anchor="mm")
-    B.text(d, (W // 2, y + 82), "ومتابعة بعينك", B.font("bold", 52),
+    B.text(d, (W // 2, y), headline, B.font("black", 82), (255, 255, 255, 255), anchor="mm")
+    B.text(d, (W // 2, y + 82), subtitle, B.font("bold", 52),
            B.hex2rgb(B.C["gold"]) + (255,), anchor="mm")
-    B.text(d, (W // 2, y + 172), f"واتساب {B.PHONE}", B.font("black", 52),
+    B.text(d, (W // 2, y + 172), cta, B.font("black", 52),
            (255, 255, 255, 255), anchor="mm")
     o = ornament((860, 150), 0.5)
     if o is not None:
         img.alpha_composite(o, ((W - 860) // 2, int(H * 0.842)))
     B.text(d, (W // 2, int(H * 0.788)), "#TerraNex", B.font("black", 58),
            B.hex2rgb(B.C["gold"]) + (255,), anchor="mm", direction="ltr")
-    B.text(d, (W // 2, int(H * 0.834)), "تعليق صوتي · مدعوم بإضافات AI", B.font("medium", 27),
+    B.text(d, (W // 2, int(H * 0.834)), disclosure, B.font("medium", 27),
            (208, 222, 204, 215), anchor="mm")
     B.text(d, (W // 2, int(H * 0.872)), "المحتوى البصري تصوير حقيقي", B.font("medium", 26),
            (172, 192, 172, 205), anchor="mm")
@@ -323,7 +337,9 @@ def mix_audio(spec: dict, voice: str, original: str, total: float, out: str) -> 
 
 
 def build(spec_path: str, voice: str | None, out: str) -> dict:
-    spec_path = _safe_input_path(spec_path, os.getcwd())
+    # الـspec يجب أن يعيش داخل مساحة التسويق، لكن لا يشترط أن يكون CWD هو مجلد التشغيل.
+    # هذا يجعل الرندر يعمل بعد استعادة المستودع في مسار مختلف ومن أي CWD.
+    spec_path = _safe_input_path(spec_path, MARKETING_ROOT)
     if os.path.basename(out).startswith("-") or os.path.basename(out) == "":
         raise SystemExit(f"unsafe output path: {out}")
     out = os.path.abspath(out)
@@ -379,7 +395,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
             proof_ranges.append((tacc, tacc + cd))
         tacc += cd
     caps = [(float(c["from"]), float(c["to"]), cap_layer(c["text"])) for c in spec["captions"]]
-    end = endcard_layer()
+    end = endcard_layer(spec.get("endcard"))
 
     dec = subprocess.Popen([ff(), "-v", "error", "-i", seq, "-f", "rawvideo",
                             "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE,
@@ -457,6 +473,8 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     if enc.wait() != 0:
         raise SystemExit("encode failed:\n" + err[-1200:])
 
+    # تنظيف مقاطع التركيب الوسيطة بعد نجاح الرندر (لا تترك .seg بحجم مضاعف).
+    shutil.rmtree(tmpdir, ignore_errors=True)
     return {"out": out, "frames": n, "duration": round(total, 2),
             "kb": os.path.getsize(out) // 1024, "clips": len(clips)}
 

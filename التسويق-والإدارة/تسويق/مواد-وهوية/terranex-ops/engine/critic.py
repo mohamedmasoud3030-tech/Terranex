@@ -94,9 +94,11 @@ def check(text: str, platform: str = "facebook") -> dict:
     hard = [h for h in hits if h["kind"] == "hard"]
     soft = [h for h in hits if h["kind"] == "soft"]
     score = max(0, 100 - 34 * len(hard) - 9 * len(soft))
-    decision = "ارفض" if hard or score < 70 else ("عدّل" if score < 85 else "انشر")
-    return {"score": score, "decision": decision, "hard": hard, "soft": soft,
-            "chars": len(t), "cta_count": cta, "tags": len(tags)}
+    text_decision = "ارفض" if hard or score < 70 else ("عدّل" if score < 85 else "انشر")
+    # هذا قرار النص فقط. جاهزية النشر تحتاج فيديو/صوت/موافقة مالك ولا تُحسم هنا.
+    return {"score": score, "decision": text_decision, "text_decision": text_decision,
+            "scope": "text-only", "publication_ready": False,
+            "hard": hard, "soft": soft, "chars": len(t), "cta_count": cta, "tags": len(tags)}
 
 
 def main():
@@ -118,7 +120,8 @@ def main():
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=2))
         return
-    print(f"\nالقرار: {r['decision']}   |   الدرجة: {r['score']}/100   |   {r['chars']} حرف")
+    print(f"\nقرار النص فقط (ليس قرار نشر): {r['text_decision']}   |   الدرجة: {r['score']}/100   |   {r['chars']} حرف")
+    print("جاهزية النشر تحتاج فحص الفيديو والصوت وموافقة المالك — لا تُحسم من النص وحده.")
     if r["hard"]:
         print("\n⛔ Hard Ban:")
         for h in r["hard"]:

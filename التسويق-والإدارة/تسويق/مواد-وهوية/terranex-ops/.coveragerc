@@ -1,0 +1,11 @@
+[run]
+source = engine
+relative_files = True
+branch = True
+
+[report]
+skip_empty = True
+show_missing = False
+
+[xml]
+output = output/coverage/coverage.xml

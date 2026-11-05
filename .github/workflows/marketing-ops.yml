@@ -1,0 +1,59 @@
+name: Marketing Ops
+
+# نطاق محركات التسويق فقط — لا يلمس تطبيق الاستثمار ولا بوابة Vercel.
+# يولّد تقرير تغطية Cobertura XML كـ artifact. ملاحظة: SonarCloud Automatic Analysis
+# لا يستورد التقارير؛ لعرض التغطية في Sonar يجب تفعيل CI-based analysis من المالك.
+
+on:
+  pull_request:
+    paths:
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
+      - '.github/workflows/marketing-ops.yml'
+  push:
+    branches:
+      - main
+      - 'arena/f2829137-terranex'
+    paths:
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
+      - '.github/workflows/marketing-ops.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install hash-locked engine + dev dependencies (wheels only)
+        run: |
+          python -m pip install --require-hashes --only-binary :all: -r requirements-ci.txt
+
+      - name: Unit tests with coverage
+        run: python -m coverage run -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Selfcheck
+        run: python engine/selfcheck.py
+
+      - name: Coverage summary + Cobertura XML
+        run: |
+          python -m coverage report --skip-empty
+          python -m coverage xml
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terranex-ops-coverage
+          path: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/coverage/coverage.xml'
+          if-no-files-found: warn

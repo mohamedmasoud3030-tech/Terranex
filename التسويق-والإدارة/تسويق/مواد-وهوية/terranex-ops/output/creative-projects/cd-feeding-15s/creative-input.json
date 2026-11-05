@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "topic": "feeding",
+  "note": "نسخة إبداعية من وكيل Arena: تبدأ من الأرض/الري ثم تقطع للتغذية القريبة، وتؤخر لقطة المتابعة كإثبات ختامي.",
+  "hook": {"text": "من الأرض… للعلف.", "duration_sec": 1.5},
+  "endcard_sec": 3.0,
+  "shots": [
+    {"scene_id": "s01-07", "role": "farm-open", "text": "من أرض المزرعة.", "motion": "افتتاحية واسعة للري؛ قطع هادئ.", "duration_sec": 1.867},
+    {"scene_id": "s01-08", "role": "feeding-close", "text": "العلف قدّام عينك.", "motion": "لقطة تغذية قريبة؛ بدون زوم مُضاف.", "duration_sec": 2.033},
+    {"scene_id": "s01-03", "role": "herd", "text": "والحظيرة بتتغذى.", "motion": "لقطة حظيرة واسعة.", "duration_sec": 1.5},
+    {"scene_id": "s04-02", "role": "followup", "text": "ومتابعة على أرض الواقع.", "motion": "إثبات متابعة عن قرب؛ شريط إثبات.", "duration_sec": 6.6}
+  ],
+  "cta": {"text": "للتفاصيل… كلمنا على واتساب."},
+  "endcard": {
+    "headline": "ملك حقيقي",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "مسودة بصرية للمراجعة · بدون تعليق صوتي"
+  }
+}

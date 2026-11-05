@@ -1,0 +1,21 @@
+{
+  "pass": true,
+  "fails": [],
+  "warns": [
+    "مسودة بصرية صامتة — ليست إعلانًا نهائيًا؛ يلزم تعليق معتمد قبل النشر"
+  ],
+  "meta": {
+    "duration": 20.0,
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30.0,
+    "has_audio": false,
+    "visual_draft": true,
+    "black_share": 0.0
+  },
+  "expected_duration_sec": 20.0,
+  "visual_draft": true,
+  "status": "visual-draft"
+}

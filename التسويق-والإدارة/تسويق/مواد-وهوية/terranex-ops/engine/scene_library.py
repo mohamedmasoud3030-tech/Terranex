@@ -376,9 +376,10 @@ def storyboard(scene_ids, out_spec: str, hook: str = "", hook_sec: float = 0.0,
             raise SystemExit(f"مشهد غير صالح للاستخدام: {sid}")
         src = idx["sources"][s["source_id"]]
         dur = round(s["end"] - s["start"], 3)
-        # مسار مطلق حقيقي من الفهرس (لا مسار مختلق) — يقبله reel_build دون تعديل
-        clip = {"path": os.path.join(REPO, src["path"]), "start": s["start"], "end": s["end"],
-                "scene_id": sid}
+        # مسار نسبي من مجلد الـspec إلى المصدر الحقيقي — قابل للنقل مع المستودع.
+        source_abs = os.path.join(REPO, src["path"])
+        rel = os.path.relpath(source_abs, os.path.dirname(os.path.abspath(out_spec)))
+        clip = {"path": rel, "start": s["start"], "end": s["end"], "scene_id": sid}
         clip.update(s.get("treatment", {}))      # crop/proof_bar من وسوم المشهد
         clips.append(clip)
         windows.append((round(cursor, 3), round(cursor + dur, 3)))

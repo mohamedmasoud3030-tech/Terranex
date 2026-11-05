@@ -102,7 +102,24 @@ SCORE: critic.py
 | سيناريو تصوري | `python engine/make_scenario.py --spec spec.json --outdir frames --video teaser.mp4` |
 | فحص | `python engine/critic.py --file copy.txt` |
 | بناء ريل بالهوية الثابتة | `python engine/reel_build.py --spec spec.json --voice vo.mp3 --out x.mp4` |
+| فهرس المشاهد | `python engine/scene_library.py search "استعلام"` · `storyboard --scenes … --out spec.json` |
+| مدير إبداعي v1.1 | `python engine/creative_director.py plan "<طلب عربي>" --project-id …` ← `render …` ← `prove-relocation …` |
+| سيناريو إبداعي JSON | اكتب `creative-input.json` داخل مجلد المشروع ثم `python engine/creative_director.py apply-creative <id>` |
+| تعديل بالكلام | `python engine/creative_director.py revise <id> "غيّر البداية، قلل لقطة الوزن، وقدم التغذية"` ← `render <id>` |
+| رجوع لإصدار سابق | `python engine/creative_director.py rollback <id> <version>` |
+| إرفاق صوت معتمد | ضع `voice-input.wav` + `voice-transcript.json` داخل المشروع ثم `attach-voice <id> --approval-note "…"` |
+| فحص مسودة بصرية | `python engine/qa_video.py --video v.mp4 --profile reels --visual-draft` (تحذير، ليس إعلانًا نهائيًا) |
 | تعلّم | `python engine/learn.py --csv data/week.csv` |
+
+## Creative Director v1.1 (طلب عربي / JSON إبداعي → إنتاج مُتحقَّق منه)
+- المدعوم: **متابعة الحيوانات / التغذية / الوزن الحقلي**. أي موضوع آخر يُرفض بصراحة، لا تخمين.
+- مساران للتأليف: (1) قالب من طلب عربي؛ (2) **JSON إبداعي** يكتبه وكيل Arena (`creative-input.json`) ويحتفظ بالقوالب كبديل. لا يوجد استدعاء API داخلي لنموذج Arena من Python؛ الوكيل يكتب JSON والمحرك يتحقق.
+- يختار من `scene-library/index.json` فقط (مشاهد `usable`، بدون وجوه/ختام). كل توقيت مصدره الفهرس؛ القصّ الطويل = excerpt محسوب داخل حدود المشهد ومُسجّل. مخططات JSON في `engine/schemas/`.
+- **التعديل بالكلام:** `revise <id> "…"` يحوّل أمرًا محدودًا إلى عمليات فعلية على plan/spec/storyboard ثم ينشئ إصدارًا جديدًا. `rollback <id> <version>` يرجّع نسخة سابقة. الإصدارات في `versions/vNNNN/`.
+- ذاكرة المشروع: `output/creative-projects/<id>/` فيها `brief/plan/spec/storyboard/memory/decisions/render-report/critic-report/relocation-report`. تُستعاد في جلسة جديدة عبر `show <id>`.
+- **الصوت:** لا يولّد صوتًا ولا يدّعي TTS مجاني. بدون ملف معتمد = **مسودة بصرية صامتة**. عند توفر صوت: `voice-input.wav` + `voice-transcript.json` بتفريغ بشري مطابق؛ `attach-voice` يرفض اختلاف النص، ثم يقيس حدود الجمل بالطاقة. الطاقة وحدها لا تثبت مطابقة النص المنطوق.
+- **بوابات منفصلة:** نجاح النص (`text-only`) ≠ نجاح الفيديو التقني ≠ جاهزية النشر. المسودة الصامتة لا تحصل أبدًا على قرار نشر؛ `publication.ready=false` حتى يوجد صوت مطابق وموافقة مالك صريحة.
+- المسارات في الـspec نسبية؛ `prove-relocation` ينسخ شجرة التسويق لمسار مؤقت ويعيد الرندر ويقارن SHA-256. ملفات المشروع عبر `creative_store.py` بأسماء مسموحة فقط (لا مسارات CLI حرة).
 
 ## بوابات بشرية دائمة
 النشر الفعلي · التواصل مع أي عميل · الدمج في `main` — **كلها بموافقة المستخدم الصريحة فقط.**
