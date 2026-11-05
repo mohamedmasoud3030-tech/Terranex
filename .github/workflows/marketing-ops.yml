@@ -9,11 +9,6 @@ on:
     paths:
       - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
       - '.github/workflows/marketing-ops.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
-      - '.github/workflows/marketing-ops.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +20,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops
+        working-directory: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops'
     steps:
       - uses: actions/checkout@v7
 
@@ -52,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terranex-ops-coverage
-          path: التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/coverage/coverage.xml
+          path: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/coverage/coverage.xml'
           if-no-files-found: warn
