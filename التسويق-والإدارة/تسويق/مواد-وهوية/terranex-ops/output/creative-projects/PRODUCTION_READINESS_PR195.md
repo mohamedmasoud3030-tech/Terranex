@@ -1,13 +1,14 @@
 # Production Readiness Review — PR #195
 
-**الفرع:** `arena/f2829137-terranex` · **آخر HEAD تمت مراجعته:** `eb4ca75` ثم تعديلات هذه المراجعة.
+**الفرع:** `arena/f2829137-terranex` · **آخر HEAD بعد المراجعة:** `5820f65`.
 **النطاق:** محركات التسويق/المخرج الإبداعي فقط. لا يمس تطبيق الاستثمار، ولا يدمج، ولا ينشر.
 
 ## 1) CI وSonarCloud
-- GitHub Actions: `app` PASS، `database` PASS.
-- SonarCloud Code Analysis: **PASS** مع **0 annotations** على `eb4ca75`.
+- GitHub Actions: `app` PASS، `database` PASS، و`ops` (Marketing Ops) PASS.
+- SonarCloud Code Analysis: **PASS** مع **0 annotations** على `5820f65`.
 - Vercel Preview Comments: PASS.
 - Vercel deployment: **FAIL** بسبب عضوية/صلاحيات فريق Vercel، وليس فشل كود في محركات التسويق.
+- تم تأمين خطوة تثبيت تبعيات CI بقفل hashes كامل (`requirements-ci.txt`) و`--require-hashes --only-binary :all:`، واختُبر التثبيت في بيئة نظيفة.
 
 ## 2) لماذا Coverage على New Code = 0%؟
 السبب الجذري: المشروع يستخدم **SonarCloud Automatic Analysis**، وهذا الوضع **لا يستورد تقارير التغطية** مهما كان ملف `coverage.xml` موجودًا أو مضبوطًا في الخصائص. لذلك 0% هنا فجوة تقرير، وليس دليلًا على عدم وجود اختبارات.
@@ -15,7 +16,8 @@
 ما تم تنفيذه مجانًا:
 - إضافة `coverage.py` (BSD-3-Clause) في `requirements-dev.txt`.
 - إضافة `.coveragerc` يقيس `engine/` مع branch coverage.
-- إضافة workflow جديد `Marketing Ops` يشغّل الاختبارات وselfcheck ويولّد `coverage.xml` كـ artifact، بدون لمس تطبيق الاستثمار وبدون تعطيل أي بوابة.
+- إضافة workflow جديد `Marketing Ops` يشغّل الاختبارات وselfcheck ويولّد `coverage.xml` ويرفعه كـ artifact باسم `terranex-ops-coverage`، بدون لمس تطبيق الاستثمار وبدون تعطيل أي بوابة.
+- قفل تبعيات CI بـ hashes كاملة وتثبيتها بـ `--require-hashes --only-binary :all:`؛ اجتاز التثبيت والاختبارات في بيئة نظيفة.
 
 أرقام التغطية الفعلية من التشغيل المحلي:
 - تغطية إجمالية لكل `engine/`: ~40% (لوجود سكربتات قديمة غير مغطاة).
