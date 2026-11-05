@@ -110,12 +110,14 @@ class TestSecurity(unittest.TestCase):
             inside = os.path.join(root, "a.txt")
             open(inside, "w").close()
             self.assertEqual(confine(inside, root), inside)
+            traversal = os.path.join(root, "..", "outside.txt")
             with self.assertRaises(ValueError):
-                confine(os.path.join(root, "..", "outside.txt"), root)
+                confine(traversal, root)
             link = os.path.join(root, "link")
             os.symlink(td, link)
+            escaped = os.path.join(link, "outside.txt")
             with self.assertRaises(ValueError):
-                confine(os.path.join(link, "outside.txt"), root)
+                confine(escaped, root)
 
 
 class TestLibraryAndPlan(unittest.TestCase):
