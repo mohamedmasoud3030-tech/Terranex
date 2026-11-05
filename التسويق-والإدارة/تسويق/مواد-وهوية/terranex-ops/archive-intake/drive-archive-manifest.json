@@ -1,0 +1,104 @@
+{
+  "checked_at_utc": "2026-11-05T23:20:00Z",
+  "checked_at_owner_tz": "2026-11-06 (Africa/Cairo)",
+  "connector": {
+    "slug": "google_drive",
+    "status_first_check": "disabled",
+    "status_after_owner_enabled": "enabled",
+    "account_owner": {"display_name": "Mohamed Masoud", "email_address": "mohamedmasoud303@gmail.com"}
+  },
+  "discovered_archives": [
+    {
+      "id": "1oUCCJhnWhtklCk_mJKYofNcGNuXRiPm8",
+      "name": "Archive.zip",
+      "mime_type": "application/zip",
+      "size_bytes": 181196089,
+      "size_mib": 172.8,
+      "md5_checksum": "e35aee67957a3f876fa70a6a9f874e7d",
+      "sha256_checksum": "7a2bd417bb12b1d0eba348509b889d5f6a3f0d1af72d17734c943d3d7feed4d2",
+      "created_time": "2026-11-05T22:39:19.293Z",
+      "modified_time": "2026-11-05T22:39:19.293Z",
+      "parents": ["0AD5B1XSRRlCYUk9PVA"],
+      "owned_by_me": true,
+      "shared": false,
+      "capabilities": {"can_download": true, "can_edit": true, "can_copy": true, "can_read_revisions": true},
+      "web_view_link": "https://drive.google.com/file/d/1oUCCJhnWhtklCk_mJKYofNcGNuXRiPm8/view?usp=drivesdk",
+      "web_content_link": "https://drive.google.com/uc?id=1oUCCJhnWhtklCk_mJKYofNcGNuXRiPm8&export=download",
+      "is_target_archive": true,
+      "bytes_actually_read": 0,
+      "contents_inventoried": false
+    },
+    {
+      "id": "1YqGN0RCjcmXti12-daCQHwF2NoF4tGOX",
+      "name": "rentrix (7).zip",
+      "mime_type": "application/x-zip-compressed",
+      "size_bytes": 418379,
+      "created_time": "2026-01-30T12:17:40.559Z",
+      "parents": ["1pEylYaSRn6STGwwXEOS88aUOj0TGFDPu"],
+      "is_target_archive": false,
+      "note": "أرشيف برمجي صغير (تطبيق) داخل مجلد Google AI Studio — ليس أرشيف وسائط الشركة، ولم يُفتح."
+    }
+  ],
+  "loose_media_in_drive_outside_zip": [
+    {"id": "1FxS2C4rtx3TOgnQtt4gHbPjGGd3GQ6WV", "name": "image.png", "size_bytes": 235982,
+     "modified_time": "2026-01-21T17:32:45.609Z", "folder": "Google AI Studio", "downloaded": false},
+    {"id": "1ODR7en5I3uQ1BCRf-h5PAbtGlZ5i366t", "name": "M3.mp4", "size_bytes": 27525952,
+     "modified_time": "2020-10-08T18:07:40.000Z", "downloaded": false,
+     "note": "فيديو قديم خارج الأرشيف؛ لم يُنزَّل ولم يُفحص لأنه ليس جزءًا من Archive.zip."}
+  ],
+  "blockers": [
+    {
+      "id": "B1",
+      "layer": "connector transfer limit",
+      "tool": "google_drive.download_file",
+      "request": {"file_id": "1oUCCJhnWhtklCk_mJKYofNcGNuXRiPm8", "supports_all_drives": true},
+      "error_code": "file_transfer_failed",
+      "error_text": "Arena did not send this download. File metadata reports 181196089 bytes, more than the 100 MiB (104857600 byte) workspace file limit. Tell the user that the file is too large. Share its Drive link if available.",
+      "conclusion": "الملف 172.8 MiB > حد النقل 100 MiB — الموصّل رفض إرسال البايتات."
+    },
+    {
+      "id": "B2",
+      "layer": "sandbox network allowlist",
+      "test": "curl -I --max-time 20 https://drive.google.com/uc?id=1oUCCJhnWhtklCk_mJKYofNcGNuXRiPm8&export=download",
+      "result": "curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to drive.google.com:443",
+      "control_test": {"url": "https://api.github.com", "http_status": 200},
+      "conclusion": "نطاقات Google Drive محجوبة شبكيًا من بيئة Arena؛ الرابط المباشر ورابط التنزيل لا يعملان حتى لو كان الملف عامًا."
+    }
+  ],
+  "honest_status": {
+    "zip_metadata_verified": true,
+    "zip_bytes_downloaded": 0,
+    "zip_extracted": false,
+    "zip_contents_count": null,
+    "claim": "لم تتم معالجة الأرشيف. لا يوجد جرد ولا صور ولا تقييمات مستخرجة من Archive.zip."
+  },
+  "unblock_options": [
+    {
+      "id": "U1",
+      "title": "إرفاق الأرشيف مباشرة في محادثة Arena",
+      "owner_action": "أرفق Archive.zip في الرسالة (أو قسّمه إلى أجزاء ≤ 50 MiB إن رفض النظام الحجم).",
+      "agent_action": "أقرأه من مساحة العمل، أتحقق من SHA-256 مقابل 7a2bd417…، ثم أشغّل archive_audit.py --zip عليه.",
+      "reliability": "الأعلى — لا يعتمد على شبكة Drive ولا على حد الموصّل."
+    },
+    {
+      "id": "U2",
+      "title": "تقسيم الأرشيف على Drive إلى أجزاء أصغر من 100 MiB",
+      "owner_action": "ارفع جزأين مثل Archive.z01 / Archive.z02 أو Archive.part1.zip / part2 (كل جزء ≤ 90 MiB) بجانب الأصل دون تعديل الأصل.",
+      "agent_action": "أنزّل كل جزء عبر الموصّل، أتحقق من بصمة كل جزء، أجمّعها، وأطابق SHA-256 الكلي مع الأصل قبل الفك.",
+      "reliability": "جيدة — تحتاج اختبار نقل الجزء الأول للتأكد من وصول البايتات إلى مساحة العمل."
+    },
+    {
+      "id": "U3",
+      "title": "رفع الملفات مفكوكة في مجلد على Drive",
+      "owner_action": "ارفع الصور/الفيديوهات كأفراد داخل مجلد واحد (كل ملف < 100 MiB).",
+      "agent_action": "أجرد المجلد بالبيانات الوصفية أولًا، ثم أنزّل ملفًا ملفًا وأشغّل نفس خط الفحص.",
+      "reliability": "جيدة للصور والفيديوهات القصيرة؛ الملفات > 100 MiB ستظل محجوبة."
+    }
+  ],
+  "resume_command_after_unblock": ".venv/bin/python archive-intake/archive_audit.py --zip <path>/Archive.zip --out archive-intake/drive-archive --label drive",
+  "guarantees": [
+    "أرشيف Drive الأصلي لم يُعدَّل ولم يُنقل ولم يُحذف — كل الاستدعاءات كانت قراءة بيانات وصفية فقط.",
+    "لا نشر، لا دمج، لا تغيير لهوية الصوت، لا تعديل لتطبيق الاستثمار.",
+    "لن تُدمج أي نتيجة في scene-library الإنتاجية قبل مراجعة المالك."
+  ]
+}
