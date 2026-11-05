@@ -37,18 +37,51 @@ CAP_FONT = 54
 
 
 def _safe_input_path(path: str, *roots: str) -> str:
-    """مسار إدخال آمن: مطلق، موجود، لا يبدأ بشرطة (حقن خيارات ffmpeg)،
-    وداخل أحد الجذور المسموحة (مجلد الـspec أو مجلد العمل)."""
-    ap = os.path.abspath(path)
-    if os.path.basename(ap).startswith("-"):
+    """مسار إدخال آمن: موجود، لا يبدأ بشرطة (حقن خيارات ffmpeg)، وداخل أحد الجذور
+    المسموحة بعد فكّ الروابط الرمزية (realpath) — يسدّ symlink-escape وpath traversal.
+
+    يُرجع المسار الحقيقي (realpath) ليقرأ ffmpeg الملف المقصود فعليًا لا رابطًا خادعًا.
+    """
+    rp = os.path.realpath(path)
+    if os.path.basename(rp).startswith("-") or os.path.basename(path).startswith("-"):
         raise SystemExit(f"unsafe input path (option injection): {path}")
-    if not os.path.exists(ap):
+    if not os.path.exists(rp):
         raise SystemExit(f"input not found: {path}")
     for r in roots:
-        rp = os.path.abspath(r)
-        if os.path.commonpath([ap, rp]) == rp:
-            return ap
+        root = os.path.realpath(r)
+        try:
+            if rp == root or os.path.commonpath([rp, root]) == root:
+                return rp
+        except ValueError:
+            continue
     raise SystemExit(f"input path outside allowed roots: {path}")
+
+
+def _clip_vf(c: dict) -> str:
+    """سلسلة فلاتر القصّ/الملء للقطة.
+
+    الأولوية لحقل crop={top,bottom,left,right} (كنسب من المصدر): نقصّ منطقة العلامة
+    المحروقة أولًا ثم نملأ 1080×1920 ونوسّط — يبقى الحيوان/الميزان في الكادر.
+    إن غاب crop نرجع للسلوك القديم (hide_burnt_logo / crop_bottom_pct) توافقًا مع specs السابقة.
+    """
+    crop = c.get("crop")
+    if crop:
+        ct = max(0.0, min(0.60, float(crop.get("top", 0.0))))
+        cb = max(0.0, min(0.60, float(crop.get("bottom", 0.0))))
+        cl = max(0.0, min(0.40, float(crop.get("left", 0.0))))
+        cr = max(0.0, min(0.40, float(crop.get("right", 0.0))))
+        kw = max(0.20, 1.0 - cl - cr)
+        kh = max(0.20, 1.0 - ct - cb)
+        cropf = f"crop=iw*{kw:.4f}:ih*{kh:.4f}:iw*{cl:.4f}:ih*{ct:.4f}"
+        return (f"{cropf},scale={W}:{H}:force_original_aspect_ratio=increase,"
+                f"crop={W}:{H},unsharp=5:5:0.5:5:5:0.0,fps={FPS},setsar=1")
+    if c.get("hide_burnt_logo", True):
+        cut = float(c.get("crop_bottom_pct", 0.34))
+        fct = 1.0 / max(0.5, 1.0 - cut)
+        return (f"scale={int(W*fct)}:{int(H*fct)}:force_original_aspect_ratio=increase,"
+                f"crop={W}:{H}:0:0,fps={FPS},setsar=1")
+    return (f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+            f"crop={W}:{H},fps={FPS},setsar=1")
 
 
 def ff() -> str:
@@ -318,29 +351,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     segs = []
     for i, c in enumerate(clips):
         p = os.path.join(tmpdir, f"{i:02d}.mp4")
-        # قصّ آمن للمنطقة المحروقة (علامة «TerraNex LLC» أو كابشن قديم) قبل ملء الكادر.
-        # الحقل crop={top,bottom,left,right} كنسب من المصدر: نقصّ منطقة العلامة أولًا
-        # ثم نملأ 1080×1920 ونوسّط — يبقى الحيوان/الميزان في الكادر ولا يُقصّ عشوائيًا.
-        crop = c.get("crop")
-        if crop:
-            ct = max(0.0, min(0.60, float(crop.get("top", 0.0))))
-            cb = max(0.0, min(0.60, float(crop.get("bottom", 0.0))))
-            cl = max(0.0, min(0.40, float(crop.get("left", 0.0))))
-            cr = max(0.0, min(0.40, float(crop.get("right", 0.0))))
-            kw = max(0.20, 1.0 - cl - cr)
-            kh = max(0.20, 1.0 - ct - cb)
-            cropf = f"crop=iw*{kw:.4f}:ih*{kh:.4f}:iw*{cl:.4f}:ih*{ct:.4f}"
-            vf = (f"{cropf},scale={W}:{H}:force_original_aspect_ratio=increase,"
-                  f"crop={W}:{H},unsharp=5:5:0.5:5:5:0.0,fps={FPS},setsar=1")
-        elif c.get("hide_burnt_logo", True):
-            # السلوك القديم (تكبير + قصّ علوي) — يبقى للتوافق مع specs السابقة فقط.
-            cut = float(c.get("crop_bottom_pct", 0.34))
-            fct = 1.0 / max(0.5, 1.0 - cut)
-            vf = (f"scale={int(W*fct)}:{int(H*fct)}:force_original_aspect_ratio=increase,"
-                  f"crop={W}:{H}:0:0,fps={FPS},setsar=1")
-        else:
-            vf = (f"scale={W}:{H}:force_original_aspect_ratio=increase,"
-                  f"crop={W}:{H},fps={FPS},setsar=1")
+        vf = _clip_vf(c)
         subprocess.run([ff(), "-y", "-v", "error", "-ss", str(c["start"]),
                         "-t", str(c["end"] - c["start"]), "-i", c["path"],
                         "-vf", vf,

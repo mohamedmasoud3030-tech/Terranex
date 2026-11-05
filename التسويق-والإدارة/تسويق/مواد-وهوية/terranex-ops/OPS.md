@@ -48,6 +48,7 @@ package_post ← قيد في output/queue.csv بحالة «بانتظار-موا
 | فحص جودة فيديو | `python engine/qa_video.py --video v.mp4 --profile reels` |
 | فحص التزام نص | `python engine/critic.py --file cap.txt` |
 | **بناء ريل بالهوية الثابتة** | `python engine/reel_build.py --spec spec.json --voice vo.mp3 --out x.mp4` |
+| اختبارات reel_build (قصّ/علامة/تزامن/مسارات/توافق) | `python -m unittest discover -s tests -p 'test_*.py'` (مضمّنة في selfcheck) |
 | تجهيز منشور للجدول | `python engine/package_post.py --video v.mp4 --caption cap.txt --platforms "facebook,instagram" --date … --time 20:00 [--variants]` |
 | تقويم محتوى | `python engine/gen_calendar.py --days 7 --out output/calendar.md` |
 | تحليل أداء أسبوعي | `python engine/learn.py --csv data/week-XX.csv [--append]` |
