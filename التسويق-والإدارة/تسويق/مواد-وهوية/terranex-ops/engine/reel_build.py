@@ -25,10 +25,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# جذر مساحة التسويق (تسويق/) — يُسمح بمراجعته بالمسارات النسبية بدل المسارات المطلقة القديمة.
+MARKETING_ROOT = os.path.abspath(os.path.join(ROOT, "..", ".."))
 PERSONAS = os.path.join(ROOT, "context", "personas.json")
 W, H, FPS = 1080, 1920, 30
 
-CAP_CY = 0.663          # منتصف شريط الكابشن — ثابت في كل الفيديو
+CAP_CY = 0.70           # منتصف شريط الكابشن — ثابت في كل الفيديو (داخل شريط الدليل)
 BOTTOM_BAND = 0.870     # بداية الشريط السفلي الذي يغطي أي علامة محروقة في الفوتاج
 CAP_MAX_WORDS = 6       # كلمات لكل سطر
 CAP_FONT = 54
@@ -82,33 +84,68 @@ def require_consent(spec: dict) -> None:
 
 # ---------------- طبقات ----------------
 def topbar() -> Image.Image:
-    """العلامة المائية الرسمية أعلى الفريم: الرمز + TerraNex في قفل واحد ثابت."""
-    th = 168
-    lay = Image.new("RGBA", (W, th), B.hex2rgb(B.C["bg_dark"]) + (252,))
+    """علامة مائية خفيفة أعلى الفريم (B11): تدرّج شفاف + الرمز وTerraNex بمكان/حجم ثابتين.
+
+    بدل الشريط الصلب الثقيل: تعتيم متدرّج يتلاشى لأسفل حتى لا يحجب اللقطة.
+    """
+    th = 150
+    lay = Image.new("RGBA", (W, th), (0, 0, 0, 0))
+    grad = Image.new("L", (1, th))
+    for y in range(th):
+        grad.putpixel((0, y), int(150 * (1 - y / th) ** 1.5))
+    scrim = Image.new("RGBA", (W, th), B.hex2rgb(B.C["bg_dark"]) + (255,))
+    lay.paste(scrim, (0, 0), grad.resize((W, th)))
     d = ImageDraw.Draw(lay)
-    d.rectangle([0, th - 3, W, th], fill=B.hex2rgb(B.C["gold"]) + (150,))
-    emb = B.logo(104, "emblem")
-    lay.alpha_composite(emb, (44, (th - emb.height) // 2 - 4))
-    B.text(d, (44 + emb.width + 22, th // 2 - 4), "TerraNex", B.font("black", 44),
-           B.hex2rgb(B.C["cream"]) + (245,), anchor="lm", direction="ltr")
-    B.text(d, (W - 42, th // 2 - 4), "استثمار حيواني", B.font("medium", 27),
-           B.hex2rgb(B.C["gold"]) + (215,), anchor="rm")
+    emb = B.logo(96, "emblem")
+    ey = (th - emb.height) // 2 - 6
+    lay.alpha_composite(emb, (44, ey))
+    B.text(d, (44 + emb.width + 18, th // 2 - 6), "TerraNex", B.font("black", 40),
+           B.hex2rgb(B.C["cream"]) + (235,), anchor="lm", direction="ltr")
+    B.text(d, (W - 44, th // 2 - 6), "استثمار حيواني", B.font("medium", 26),
+           B.hex2rgb(B.C["gold"]) + (205,), anchor="rm")
     return lay
 
 
 def bottom_band() -> Image.Image:
-    """شريط سفلي متدرّج: يغطي «TerraNex LLC» المحروقة في الفوتاج + منطقة UI الآمنة."""
-    y0 = int(H * BOTTOM_BAND)
+    """تدرّج سفلي خفيف لمنطقة الكابشن والـUI الآمنة — بدل الشريط المعتم الثقيل.
+
+    العلامات المحروقة في الفوتاج تُقصّ الآن عبر crop، فلا حاجة لتغطية معتمة.
+    """
+    y0 = int(H * 0.58)
     h = H - y0
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    # تدرّج سريع ثم معتم تمامًا: العلامة المحروقة في الفوتاج تقع عند 85–92% فيجب تغطيتها كاملة
     grad = Image.new("L", (1, h))
-    ramp = max(1, int(h * 0.30))
     for y in range(h):
-        v = 253 if y >= ramp else int(253 * (y / ramp) ** 0.8)
-        grad.putpixel((0, y), v)
+        grad.putpixel((0, y), int(185 * (y / h) ** 1.7))
     band = Image.new("RGBA", (W, h), B.hex2rgb(B.C["bg_dark"]) + (255,))
     lay.paste(band, (0, y0), grad.resize((W, h)))
+    return lay
+
+
+def proofbar_layer() -> Image.Image:
+    """شريط دليل سفلي (lower-third) للقطات التي تحمل علامة محروقة في منتصف الكادر.
+
+    يغطّي منطقة العلامة («TerraNex LLC» عند ~63%) ويستضيف الكابشن، مع خط ذهبي رفيع.
+    رأس الحيوان وفعل الوزن يبقيان ظاهرين فوق الشريط — لا القصّ ولا التمويه.
+    """
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    top, bot = int(H * 0.56), int(H * 0.80)
+    core0, core1 = int(H * 0.60), int(H * 0.76)   # معتم تمامًا فوق منطقة العلامة (~63%)
+    h = bot - top
+    grad = Image.new("L", (1, h))
+    for y in range(h):
+        yy = top + y
+        if yy < core0:
+            a = int(255 * ((yy - top) / (core0 - top)) ** 1.3)
+        elif yy <= core1:
+            a = 255
+        else:
+            a = int(255 * (1 - (yy - core1) / (bot - core1)) ** 1.3)
+        grad.putpixel((0, y), a)
+    bar = Image.new("RGBA", (W, h), B.hex2rgb(B.C["bg_dark"]) + (255,))
+    lay.paste(bar, (0, top), grad.resize((W, h)))
+    d = ImageDraw.Draw(lay)
+    B.hairline(d, 0, W, core0, B.C["gold"], 2, 180)
     return lay
 
 
@@ -130,28 +167,40 @@ def ornament(size, opacity=0.55):
     return lay
 
 
+def _balanced_lines(text: str, f, max_w: int) -> list:
+    """سطر واحد إن اتسع، وإلا سطرين متوازنين (لا كلمة يتيمة في سطر لوحدها)."""
+    if B.measure(text, f) <= max_w:
+        return [text]
+    words = text.split()
+    best, best_w = None, None
+    for k in range(1, len(words)):
+        l1, l2 = " ".join(words[:k]), " ".join(words[k:])
+        w1, w2 = B.measure(l1, f), B.measure(l2, f)
+        if w1 <= max_w and w2 <= max_w:
+            score = max(w1, w2)
+            if best_w is None or score < best_w:
+                best, best_w = [l1, l2], score
+    return best or B.wrap(text, f, max_w, max_lines=2)
+
+
 def hook_layer(text: str) -> Image.Image:
     lint_text(text)
     f = B.font("black", 88)
-    lines = B.wrap(text, f, int(W * 0.84), max_lines=2)
+    lines = _balanced_lines(text, f, int(W * 0.86))
     tw = max(int(B.measure(l, f)) for l in lines)
-    lh = int(f.size * 1.30)
-    pw, ph = min(W - 56, tw + 84), len(lines) * lh + 56
-    y0 = int(H * 0.285)
+    lh = int(f.size * 1.26)
+    pw, ph = min(W - 56, tw + 80), len(lines) * lh + 52
+    y0 = int(H * 0.295)
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d0 = ImageDraw.Draw(img)
-    d0.rounded_rectangle([(W - pw) // 2, y0, (W + pw) // 2, y0 + ph], radius=26,
-                         fill=B.hex2rgb(B.C["bg_dark"]) + (212,),
-                         outline=B.hex2rgb(B.C["gold"]) + (105,), width=2)
+    d0.rounded_rectangle([(W - pw) // 2, y0, (W + pw) // 2, y0 + ph], radius=24,
+                         fill=B.hex2rgb(B.C["bg_dark"]) + (165,))
     d = ImageDraw.Draw(img)
-    y = y0 + 28 + lh // 2
+    y = y0 + 26 + lh // 2
     for ln in lines:
         B.text(d, (W // 2, y), ln, f, (255, 255, 255, 255), anchor="mm",
                stroke=3, stroke_fill=B.hex2rgb(B.C["green_deep"]) + (255,))
         y += lh
-    o = ornament((820, 140), 0.8)
-    if o is not None:
-        img.alpha_composite(o, ((W - 820) // 2, y0 + ph + 26))
     return img
 
 
@@ -159,18 +208,17 @@ def cap_layer(text: str) -> Image.Image:
     """شريط الكابشن المترجم — نفس المكان والحجم في كل سطر (لا عشوائية)."""
     lint_text(text)
     f = B.font("black", CAP_FONT)
-    lines = B.wrap(text, f, int(W * 0.84), max_lines=2)
+    lines = _balanced_lines(text, f, int(W * 0.86))
     if len(lines) > 1 and sum(len(l.split()) for l in lines) > CAP_MAX_WORDS * 2:
         lines = lines[:1]
     tw = max(int(B.measure(l, f)) for l in lines)
     lh = int(f.size * 1.28)
-    pw, ph = min(W - 48, tw + 72), len(lines) * lh + 44
+    pw, ph = min(W - 48, tw + 72), len(lines) * lh + 40
     y0 = int(H * CAP_CY) - ph // 2
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d0 = ImageDraw.Draw(img)
-    d0.rounded_rectangle([(W - pw) // 2, y0, (W + pw) // 2, y0 + ph], radius=18,
-                         fill=B.hex2rgb(B.C["bg_dark"]) + (200,),
-                         outline=B.hex2rgb(B.C["gold"]) + (70,), width=2)
+    d0.rounded_rectangle([(W - pw) // 2, y0, (W + pw) // 2, y0 + ph], radius=16,
+                         fill=B.hex2rgb(B.C["bg_dark"]) + (120,))
     d = ImageDraw.Draw(img)
     y = y0 + 22 + lh // 2
     for ln in lines:
@@ -219,7 +267,9 @@ def mix_audio(spec: dict, voice: str, original: str, total: float, out: str) -> 
 
     fc = ("[0:a]aformat=sample_rates=48000:channel_layouts=stereo,apad=whole_dur=%.2f,"
           "asplit=2[voA][voB];" % total)
-    fc += ("[1:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=%.3f[o20];" % a)
+    fade_out = max(0.0, total - 0.9)
+    fc += ("[1:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=%.3f,"
+           "afade=t=in:st=0:d=0.5,afade=t=out:st=%.2f:d=0.9[o20];" % (a, fade_out))
     fc += ("[o20][voA]sidechaincompress=threshold=0.03:ratio=8:attack=5:release=250[duck];")
     if tail_len > 0.3:
         # تايل من نهاية المقطع الأصلي لتفادي صمت ميت في إطار الختام
@@ -251,7 +301,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     for c in spec["clips"]:
         if not os.path.isabs(c["path"]):
             c["path"] = os.path.normpath(os.path.join(base, c["path"]))
-        c["path"] = _safe_input_path(c["path"], base)
+        c["path"] = _safe_input_path(c["path"], base, MARKETING_ROOT)
 
     require_consent(spec)
     lint_text(spec.get("hook", ""))
@@ -268,10 +318,22 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     segs = []
     for i, c in enumerate(clips):
         p = os.path.join(tmpdir, f"{i:02d}.mp4")
-        # hide_burnt_logo: نُكبّر 1.16× ونقصّ من الأعلى — يُزيل العلامة المحروقة
-        # («TerraNex LLC») الموجودة أسفل المصدر بدل تغطيتها. الحل الأنظف وأقل تدخلًا.
-        if c.get("hide_burnt_logo", True):
-            # نكبّر ثم نأخذ أعلى الكادر فقط: العلامة المحروقة في أسفل المصدر تُقصّ نهائيًا
+        # قصّ آمن للمنطقة المحروقة (علامة «TerraNex LLC» أو كابشن قديم) قبل ملء الكادر.
+        # الحقل crop={top,bottom,left,right} كنسب من المصدر: نقصّ منطقة العلامة أولًا
+        # ثم نملأ 1080×1920 ونوسّط — يبقى الحيوان/الميزان في الكادر ولا يُقصّ عشوائيًا.
+        crop = c.get("crop")
+        if crop:
+            ct = max(0.0, min(0.60, float(crop.get("top", 0.0))))
+            cb = max(0.0, min(0.60, float(crop.get("bottom", 0.0))))
+            cl = max(0.0, min(0.40, float(crop.get("left", 0.0))))
+            cr = max(0.0, min(0.40, float(crop.get("right", 0.0))))
+            kw = max(0.20, 1.0 - cl - cr)
+            kh = max(0.20, 1.0 - ct - cb)
+            cropf = f"crop=iw*{kw:.4f}:ih*{kh:.4f}:iw*{cl:.4f}:ih*{ct:.4f}"
+            vf = (f"{cropf},scale={W}:{H}:force_original_aspect_ratio=increase,"
+                  f"crop={W}:{H},unsharp=5:5:0.5:5:5:0.0,fps={FPS},setsar=1")
+        elif c.get("hide_burnt_logo", True):
+            # السلوك القديم (تكبير + قصّ علوي) — يبقى للتوافق مع specs السابقة فقط.
             cut = float(c.get("crop_bottom_pct", 0.34))
             fct = 1.0 / max(0.5, 1.0 - cut)
             vf = (f"scale={int(W*fct)}:{int(H*fct)}:force_original_aspect_ratio=increase,"
@@ -298,6 +360,13 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     hook_until = float(spec.get("hook_sec", 3.0))
     top = topbar()
     band = bottom_band()
+    proofbar = proofbar_layer()
+    proof_ranges, tacc = [], 0.0
+    for c in clips:
+        cd = c["end"] - c["start"]
+        if c.get("proof_bar"):
+            proof_ranges.append((tacc, tacc + cd))
+        tacc += cd
     caps = [(float(c["from"]), float(c["to"]), cap_layer(c["text"])) for c in spec["captions"]]
     end = endcard_layer()
 
@@ -310,7 +379,11 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     if voice:
         voice = _safe_input_path(voice, base, os.getcwd())
         mixed = os.path.join(tmpdir, "mix.wav")
-        mix_audio(spec, voice, clips[0]["path"], total, mixed)
+        # أرضية الصوت الأصلي: من اللقطة المحدّدة في audio.ambient_from (افتراضي الأولى).
+        # للإعلان المؤسسي نختار لقطة المزرعة الحقيقية لا صوت البرومو الترويجي.
+        amb_idx = int(spec.get("audio", {}).get("ambient_from", 0))
+        amb_idx = max(0, min(len(clips) - 1, amb_idx))
+        mix_audio(spec, voice, clips[amb_idx]["path"], total, mixed)
         cmd += ["-i", mixed]
     cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
             "-profile:v", "high", "-level", "4.1", "-movflags", "+faststart"]
@@ -331,6 +404,8 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
         img = Image.frombytes("RGB", (W, H), buf).convert("RGBA")
         img.alpha_composite(top)
         img.alpha_composite(band)
+        if any(a <= t < b for a, b in proof_ranges):
+            img.alpha_composite(proofbar)
         if hook is not None and t < hook_until:
             a = min(1.0, t / 0.28) * (1.0 if t < hook_until - 0.35
                                       else max(0.0, (hook_until - t) / 0.35))
@@ -353,9 +428,16 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
 
     dec.stdout.close()
     dec.wait()
-    while n / FPS < total:          # إطار الختام بعد نهاية اللقطات
+    last = img.convert("RGB") if n > 0 else None
+    end_rgb = end.convert("RGB")
+    while n / FPS < total:          # إطار الختام بعد نهاية اللقطات (ذوبان ناعم 0.35ث)
+        ec_t = n / FPS - dur
         try:
-            enc.stdin.write(end.convert("RGB").tobytes())
+            if last is not None and ec_t < 0.35:
+                fr = Image.blend(last, end_rgb, min(1.0, ec_t / 0.35))
+                enc.stdin.write(fr.tobytes())
+            else:
+                enc.stdin.write(end_rgb.tobytes())
         except BrokenPipeError:
             break
         n += 1
