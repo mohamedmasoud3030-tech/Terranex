@@ -1,0 +1,117 @@
+{
+  "project_id": "ad2-look-and-ask",
+  "voice_id": "voice-00",
+  "voiced_status": "COMPLETE_VOICED_AD_RENDERED_AND_VERIFIED",
+  "authorization": {
+    "approved_by": "المالك في الجلسة بتاريخ 2026-11-06",
+    "instruction": "ولد نصوص و عبارات جديده مختلفه متنوعه",
+    "audition_tool": "add_voice (language='ar-EG', gender='masculine', use_case='narration') -> voice-00",
+    "voice_file": "vo-ad2-voice00.mp3",
+    "voice_sha256": "7678174b12d71d57aae1208cbc3614ec415e9d5510ca4996abed42db467111da"
+  },
+  "script_stats": {
+    "dialect": "ar-EG (مصري طبيعي متنوع الصياغات، بلا حشو وبلا تكرار)",
+    "total_words": 124,
+    "vo_span_sec": [
+      0.2,
+      61.06
+    ],
+    "video_duration_sec": 62.7,
+    "speaking_rate": "1.00x (سرعة طبيعية كاملة دون أي تسريع أو مط صوتي)",
+    "critic_hard_bans": 0
+  },
+  "segments": [
+    {
+      "beat": 1,
+      "start": 0.2,
+      "end": 3.86,
+      "shot": "S01 (gh-a28)",
+      "text": "قبل ما تطلب لحمة، فيه تفاصيل تستاهل تسأل عنها."
+    },
+    {
+      "beat": 2,
+      "start": 4.08,
+      "end": 8.92,
+      "shot": "S02 (gh-a43)",
+      "text": "بص الأول على الحيوان نفسه، حالته ونشاطه في المكان عاملين إيه؟"
+    },
+    {
+      "beat": 3,
+      "start": 9.14,
+      "end": 12.25,
+      "shot": "S03 (gh-a17)",
+      "text": "شوف إقباله على العلف ووقفته قدام عينك،"
+    },
+    {
+      "beat": 4,
+      "start": 12.47,
+      "end": 16.4,
+      "shot": "S04-S05 (gh-a16 + gh-a38)",
+      "text": "واتأكد كمان من فحص السن ورقم الأذن قبل الاختيار."
+    },
+    {
+      "beat": 5,
+      "start": 16.62,
+      "end": 21.56,
+      "shot": "S06 (gh-a02)",
+      "text": "بعدها يجي سؤال الميزان، الوزن بيتوضح إزاي وقت تحديد الطلب؟"
+    },
+    {
+      "beat": 6,
+      "start": 21.78,
+      "end": 27.1,
+      "shot": "S07 (gh-a27)",
+      "text": "الميزان موجود في الموقع، فاطلب دايمًا توضيح طريقة تسجيل الوزن الخاصة بطلبك."
+    },
+    {
+      "beat": 7,
+      "start": 27.32,
+      "end": 34.48,
+      "shot": "S08-S09 (gh-a35 + gh-a25)",
+      "text": "وخد بالك من نقطة بتفرّق كتير، الكلام عن وزن قائم على الميزان ولا وزن لحمة بعد التجهيز؟"
+    },
+    {
+      "beat": 8,
+      "start": 34.7,
+      "end": 41.94,
+      "shot": "S10-S11 (gh-a09 + 06-تحضير-بيتي)",
+      "text": "كمان اسأل عن قطعيات الضاني البرقي المتاحة وإيه أنسب استخدام ليها في مطبخك، سواء صواني فرن أو طواجن،"
+    },
+    {
+      "beat": 9,
+      "start": 42.16,
+      "end": 44.97,
+      "shot": "S12 (gh-a13)",
+      "text": "واعرف الطلب بيتقسم ويتعبأ بأي شكل."
+    },
+    {
+      "beat": 10,
+      "start": 45.19,
+      "end": 49.86,
+      "shot": "S13 (gh-a26)",
+      "text": "وقبل ما تحسم الاستلام أو التوصيل، راجع كل التفصيلات دي مسبقًا،"
+    },
+    {
+      "beat": 11,
+      "start": 50.08,
+      "end": 55.37,
+      "shot": "S14 (gh-a39)",
+      "text": "الميعاد المتاح، طريقة التسليم، ومواصفات طلبك خطوة بخطوة على واتساب."
+    },
+    {
+      "beat": 12,
+      "start": 55.59,
+      "end": 59.36,
+      "shot": "S15 (gh-a21)",
+      "text": "اسأل عن التفاصيل اللي تهمك، وحدد طلبك على بيّنة."
+    },
+    {
+      "beat": 13,
+      "start": 59.58,
+      "end": 61.06,
+      "shot": "Endcard",
+      "text": "تواصل مع تيرانيكس."
+    }
+  ],
+  "rerender_command": "python3 engine/reel_build.py --spec output/creative-projects/ad2-look-and-ask/spec.json --voice output/creative-projects/ad2-look-and-ask/vo-ad2-voice00.mp3 --out /tmp/ad2_rb_voiced.mp4"
+}

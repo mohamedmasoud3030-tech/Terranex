@@ -1,0 +1,171 @@
+{
+  "project_id": "ad2-look-and-ask",
+  "title": "قبل ما تطلب… بص واسأل",
+  "total_duration_sec": 55.8,
+  "body_duration_sec": 52.6,
+  "endcard_duration_sec": 3.2,
+  "unique_clips_count": 14,
+  "repeated_clips_count": 0,
+  "prior_sequence_overlap": 0,
+  "timeline": [
+    {
+      "beat": 1,
+      "window_sec": [0.0, 3.6],
+      "asset": "gh-a28.mp4",
+      "source_trim_sec": [2.0, 5.6],
+      "axis": "opening",
+      "caption": "قبل ما تطلب… بص واسأل الأول",
+      "caption_window_sec": [0.15, 3.45],
+      "vo_line": "قبل ما تطلب لحمة، فيه تفاصيل تستاهل تسأل عنها."
+    },
+    {
+      "beat": 2,
+      "window_sec": [3.6, 7.4],
+      "asset": "gh-a43.mp4",
+      "source_trim_sec": [24.5, 28.3],
+      "axis": "opening",
+      "caption": "السؤال الصح بيوضح اختيارك من الأول",
+      "caption_window_sec": [3.75, 7.25],
+      "vo_line": "لأن السؤال الصح قبل الطلب بيخلّي اختيارك واضح من الأول."
+    },
+    {
+      "beat": 3,
+      "window_sec": [7.4, 11.2],
+      "asset": "gh-a17.mp4",
+      "source_trim_sec": [2.0, 5.8],
+      "axis": "Q1_animal_condition",
+      "caption": "الحيوان اللي قدامك حالته ونشاطه إيه؟",
+      "caption_window_sec": [7.55, 11.05],
+      "vo_line": "أول حاجة تبص عليها: الحيوان اللي قدامك حالته إيه؟"
+    },
+    {
+      "beat": 4,
+      "window_sec": [11.2, 14.9],
+      "asset": "gh-a16.mp4",
+      "source_trim_sec": [2.4, 6.1],
+      "crop": { "top": 0.10 },
+      "axis": "Q1_animal_condition",
+      "caption": "وقفته وإقباله على العلف باينين قدامك؟",
+      "caption_window_sec": [11.35, 14.75],
+      "vo_line": "حركته في المكان، إقباله على العلف، ووقفته قدام عينك،"
+    },
+    {
+      "beat": 5,
+      "window_sec": [14.9, 17.7],
+      "asset": "gh-a38.mp4",
+      "source_trim_sec": [14.5, 17.3],
+      "crop": { "top": 0.12 },
+      "axis": "Q1_animal_condition",
+      "caption": "وفحص السن والترقيم موضحين قبل الاختيار؟",
+      "caption_window_sec": [15.05, 17.55],
+      "vo_line": "وكمان فحص السن ورقم الأذن قبل ما تحدد."
+    },
+    {
+      "beat": 6,
+      "window_sec": [17.7, 21.3],
+      "asset": "gh-a02.jpeg",
+      "source_trim_sec": [0.0, 3.6],
+      "crop": { "bottom": 0.22 },
+      "zoom": 1.05,
+      "axis": "Q2_weight_clarification",
+      "caption": "الوزن بيتوضح إزاي وقت تحديد الطلب؟",
+      "caption_window_sec": [17.85, 21.15],
+      "vo_line": "تاني سؤال مهم: الوزن بيتوضح إزاي وقت الطلب؟"
+    },
+    {
+      "beat": 7,
+      "window_sec": [21.3, 25.3],
+      "asset": "gh-a27.mp4",
+      "source_trim_sec": [4.0, 8.0],
+      "axis": "Q2_weight_clarification",
+      "caption": "اسأل إزاي بيتسجل وزن طلبك بالميزان",
+      "caption_window_sec": [21.45, 25.15],
+      "vo_line": "الميزان موجود في الموقع، فاسأل إزاي بيتسجل وزن طلبك بوضوح."
+    },
+    {
+      "beat": 8,
+      "window_sec": [25.3, 29.2],
+      "asset": "gh-a35.mp4",
+      "source_trim_sec": [8.5, 12.4],
+      "axis": "Q3_live_vs_prepared_weight",
+      "caption": "المعروض وزن قائم ولا لحمة مجهزة؟",
+      "caption_window_sec": [25.45, 29.05],
+      "vo_line": "وفرّق دايمًا: الرقم اللي بتسمعه وزن قائم على الميزان،"
+    },
+    {
+      "beat": 9,
+      "window_sec": [29.2, 33.0],
+      "asset": "gh-a25.mp4",
+      "source_trim_sec": [5.2, 9.0],
+      "axis": "Q3_live_vs_prepared_weight",
+      "caption": "تفرقة أساسية لازم تتسمّى من البداية",
+      "caption_window_sec": [29.35, 32.85],
+      "vo_line": "ولا وزن لحمة بعد التجهيز؟ النقطة دي لازم تتسمّى بصراحة."
+    },
+    {
+      "beat": 10,
+      "window_sec": [33.0, 37.0],
+      "asset": "06-تحضير-بيتي-على-أصوله.mp4",
+      "source_trim_sec": [1.2, 5.2],
+      "axis": "Q4_cuts_and_cooking_use",
+      "caption": "إيه القطع المتاحة وأنسب استخدام ليها؟",
+      "caption_window_sec": [33.15, 36.85],
+      "vo_line": "بعدها اسأل عن القطع المتاحة من الضاني البرقي وأنسب استخدام ليها،"
+    },
+    {
+      "beat": 11,
+      "window_sec": [37.0, 41.0],
+      "asset": "gh-a13.jpeg",
+      "source_trim_sec": [0.0, 4.0],
+      "crop": { "left": 0.20, "right": 0.16 },
+      "zoom": 1.05,
+      "axis": "Q5_preparation_and_packing",
+      "caption": "والطلب بيتقسم ويتعبأ بأي شكل؟",
+      "caption_window_sec": [37.15, 40.85],
+      "vo_line": "سواء صواني في الفرن أو طواجن، وإزاي الطلب بيتقسم ويتعبأ."
+    },
+    {
+      "beat": 12,
+      "window_sec": [41.0, 45.0],
+      "asset": "gh-a26.mp4",
+      "source_trim_sec": [8.8, 12.8],
+      "axis": "Q6_pickup_or_delivery_verification",
+      "caption": "وقبل الاستلام أو التوصيل تأكد إيه؟",
+      "caption_window_sec": [41.15, 44.85],
+      "vo_line": "وقبل ما تأكد الاستلام أو التوصيل، استفسر عن كل تفصيلة مسبقًا:"
+    },
+    {
+      "beat": 13,
+      "window_sec": [45.0, 49.0],
+      "asset": "gh-a39.mp4",
+      "source_trim_sec": [5.5, 9.5],
+      "crop": { "top": 0.18 },
+      "axis": "Q6_pickup_or_delivery_verification",
+      "caption": "راجع الميعاد وطريقة التسليم وتفاصيل طلبك",
+      "caption_window_sec": [45.15, 48.85],
+      "vo_line": "الميعاد المتاح، طريقة التسليم، وتفاصيل طلبك كاملة على واتساب."
+    },
+    {
+      "beat": 14,
+      "window_sec": [49.0, 52.6],
+      "asset": "gh-a21.mp4",
+      "source_trim_sec": [1.6, 5.2],
+      "axis": "closing_cta",
+      "caption": "حدد طلبك على بيّنة وتواصل معانا",
+      "caption_window_sec": [49.15, 52.35],
+      "vo_line": "اسأل عن التفاصيل اللي تهمك، وحدد طلبك على بيّنة. تواصل مع TerraNex."
+    },
+    {
+      "beat": 15,
+      "window_sec": [52.6, 55.8],
+      "asset": "endcard",
+      "dissolve_sec": 0.35,
+      "axis": "brand_endcard",
+      "headline": "قبل ما تطلب…",
+      "subtitle": "بص واسأل على بيّنة",
+      "cta": "واتساب 01010154221",
+      "disclosure": "صوت الموقع الحقيقي · بدون تعليق صوتي مركّب",
+      "vo_tail_note": "نهاية الجملة الختامية عند ~54.2ث يليها 1.6ث هدوء طبيعي من صوت المزرعة حتى 55.8ث"
+    }
+  ]
+}
