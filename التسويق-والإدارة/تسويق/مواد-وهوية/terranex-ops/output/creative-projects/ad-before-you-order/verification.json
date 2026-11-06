@@ -1,0 +1,29 @@
+{
+  "status": "BLOCKED_VOICE_00_GENERATION",
+  "voice_tests": {
+    "run": 17,
+    "result": "PASS"
+  },
+  "reel_tests": {
+    "run": 21,
+    "result": "PASS",
+    "skipped": 1
+  },
+  "full_selfcheck": {
+    "passed": 17,
+    "total": 18,
+    "result": "INCOMPLETE",
+    "detail": "Full test-suite gate failed on missing unmaterialized historical source/previews in this partial checkout; no engine changes made."
+  },
+  "source_integrity": "7/7 selected original SHA-256 match canonical archive",
+  "output_duration_sec": null,
+  "target_edit_duration_sec": 55,
+  "final_mp4_created": false,
+  "audio_generated": false,
+  "audio_listened": false,
+  "sync_reviewed": false,
+  "final_visual_review": false,
+  "published": false,
+  "app_modified": false,
+  "engine_modified": false
+}
