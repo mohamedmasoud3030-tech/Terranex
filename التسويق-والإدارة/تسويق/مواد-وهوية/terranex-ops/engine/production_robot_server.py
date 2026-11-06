@@ -96,7 +96,10 @@ class Api(BaseHTTPRequestHandler):
                 meta = body.get("voice_metadata")
                 if not isinstance(meta, dict):
                     raise B.Blocked("approved voice metadata required")
-                voice = B.confined(body["voice_path"], B.MARKETING)
+                if "voice_path" in body:
+                    raise B.Blocked("client-controlled audio paths are forbidden")
+                voice = B.WORK / "voices" / "approved-voice-00.mp3"
+                voice = B.confined(voice, B.WORK / "voices")
                 spec = B.make_spec(job["plan"], meta)
                 B.verify_narration(voice, meta, job["plan"]["duration_seconds"])
                 job["status"] = "rendering"
@@ -130,7 +133,12 @@ class Api(BaseHTTPRequestHandler):
             if role not in B.ROLES or suffix not in B.EXTS or not 0 < n <= B.MAX_BYTES:
                 raise B.Blocked("invalid upload role, type or size")
             B.WORK.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile(dir=B.WORK, suffix=suffix, delete=False) as stream:
+            # Never pass client-controlled suffix to tempfile, even if allowlisted.
+            if suffix in (".jpg", ".jpeg", ".png", ".webp"):
+                safe_extension = ".jpg"
+            else:
+                safe_extension = ".mp4"
+            with tempfile.NamedTemporaryFile(dir=B.WORK, suffix=safe_extension, delete=False) as stream:
                 temp = Path(stream.name)
                 while n:
                     chunk = self.rfile.read(min(n, 1024*1024))
@@ -150,7 +158,7 @@ class Api(BaseHTTPRequestHandler):
 def serve(host="127.0.0.1", port=8765):
     if len(os.environ.get("TERRANEX_BOT_TOKEN", "")) < 24:
         raise B.Blocked("TERRANEX_BOT_TOKEN is required (24+ characters)")
-    if host not in ("127.0.0.1", "localhost", "::1") and os.environ.get("TERRANEX_ALLOW_REMOTE") != "1":
-        raise B.Blocked("public binding refused; use TLS reverse proxy")
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        raise B.Blocked("server only listens on loopback; use a separately authenticated TLS reverse proxy")
     print("TerraNex robot API ready: " + str(host) + ":" + str(port), flush=True)
     ThreadingHTTPServer((host, port), Api).serve_forever()

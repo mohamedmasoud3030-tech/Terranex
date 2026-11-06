@@ -33,7 +33,7 @@
 - POST /v1/assets/{id}/review مع JSON يحتوى human_reviewed=true وdescription وduration.
 - POST /v1/jobs يرسل brief JSON ويرجع storyboard وmissing وreview_needed.
 - GET /v1/jobs/{id} يعرض الحالة.
-- POST /v1/jobs/{id}/render يرسل voice_path وvoice_metadata المعتمَدين من voice_identity.
+- POST /v1/jobs/{id}/render يرسل voice_metadata فقط؛ يسحب الملف الخاص الثابت من output/production-robot/voices/approved-voice-00.mp3 بعد فحص هويته وبصمته، ولا يقبل مسارات صوت من العميل.
 - GET /v1/jobs/{id}/video ينزل الملف النهائي بعد نجاح الرندر، وبنفس التوثيق.
 
 يعمل على localhost افتراضيًا. أي فتح خارجي يتطلب TLS reverse proxy موثق. الخادم الحالي **كود على GitHub غير منشور على VPS**.

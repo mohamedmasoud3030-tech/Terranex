@@ -202,7 +202,7 @@ def verify_narration(voice, meta, length):
     if not match:
         raise Blocked("voice duration not measurable")
     seconds = int(match[1])*3600 + int(match[2])*60 + float(match[3])
-    if seconds < length * 0.8 or seconds > length+0.4:
+    if seconds < length - 3 or seconds > length+0.4:
         raise Blocked("narration is too short/long: no long empty audio gaps")
     for match in re.finditer(r"silence_duration:\s*([\d.]+)", result.stderr):
         if float(match[1]) > 2.6:
@@ -282,7 +282,7 @@ def main():
     try:
         if args.cmd == "plan":
             result = make_plan(json.loads(Path(args.brief).read_text(encoding="utf-8")), assets())
-            write_json(args.out, result)
+            write_json(confined(args.out, WORK), result)
             print(json.dumps({"missing": result["missing"], "review_needed": result["review_needed"],
                               "ready_for_render": result["ready_for_render"]}, ensure_ascii=False))
             return 0 if result["ready_for_render"] else 2
