@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updated": "2026-10-19",
+  "version": 2,
+  "updated": "2026-11-06",
   "policy": {
     "owner_on_screen": "ممنوع ظهور المالك في أي فيديو/صورة بدون طلب صريح مكتوب منه شخصيًا في نفس الجلسة",
     "owner_voice": "صوت المالك لا يُستخدم إلا بتسجيل حقيقي منه وموافقة صريحة على النشر",
@@ -23,19 +23,43 @@
   ],
   "voice_bank": {
     "default_narrator": {
-      "id": "ar-eg-calm-confident",
+      "id": "voice-00",
       "engine": "arena-session-tts",
       "voice_id": "voice-00",
       "language": "ar-EG",
-      "tone": "مصري هادي واثق",
+      "tone": "رجالي مصري هادئ وبسيط وواثق",
       "status": "معتمد كصوت أساسي ثابت للتعليق الصوتي (19/10)",
       "approved_by": "المالك — اختيار من نموذجين في جلسة 19/10",
-      "usage_rule": "أي فيديو يحتاج تعليقًا صوتيًا يستخدم هذا الصوت افتراضيًا، ولا يُبدّل إلا بطلب صريح"
+      "usage_rule": "الصوت الافتراضي الوحيد؛ لا بديل مشابه ولا إعادة استخدام كلمات 09b في نص جديد. تسمية arena-session-tts سجل تاريخي وليست مزودًا قابلاً للاستدعاء.",
+      "gender": "male",
+      "generation_status": "unavailable-source-not-recovered",
+      "provider": null,
+      "model_id": null,
+      "generation_settings": null,
+      "reference_asset": {
+        "path": "output/campaigns/حملة-الإعلان-المؤسسي-ممول-١/vo-09b.mp3",
+        "sha256": "e1b833613b56019a292ee723b68ff23526bd4887d285b5e2bf61ef29da336d41",
+        "kind": "historical-render-reference-only",
+        "duration_sec": 13.608
+      }
     },
     "owner_voice": {
       "id": "owner-eng-abdallah",
       "status": "غير متاح — يحتاج تسجيلًا حقيقيًا من المهندس عبدالله",
-      "usage_rule": "لا استنساخ ولا توليد. يُستخدم التسجيل الأصلي فقط وبعد إذنه"
-    }
+      "usage_rule": "هوية ثانية فقط. لا استنساخ ولا توليد حتى وجود أصل خاص وموافقة عبدالله بدر الكتابية الصريحة على الاستخدام المحدد. لا نموذج ولا عينة في Git أو التقارير.",
+      "voice_id": "owner-eng-abdallah",
+      "asset_status": "not-found-in-accessible-sources",
+      "asset_kind": "unknown",
+      "generation_status": "blocked-pending-private-asset-and-written-consent",
+      "is_default": false,
+      "consent_status": "not-verified",
+      "private_storage_required": true
+    },
+    "allowed_voice_ids": [
+      "voice-00",
+      "owner-eng-abdallah"
+    ],
+    "default_voice_id": "voice-00",
+    "allow_fallback": false
   }
 }

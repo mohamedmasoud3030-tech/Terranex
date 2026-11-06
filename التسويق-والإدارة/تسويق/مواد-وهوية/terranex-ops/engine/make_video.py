@@ -5,7 +5,7 @@
   python engine/make_video.py --script output/script.json --voice voice.mp3 --out output/reel.mp4
 
 قواعد الالتزام مطبّقة في المحرّك نفسه:
-  • لا يولّد صوتًا أبدًا (Piper/TTS ممنوع). الصوت يُمرَّر من تسجيل حقيقي فقط.
+  • لا يولّد صوتًا. التعليق المرفق يخضع لبنك الصوتين ومراجعة النص.
   • العربي يُرسم بـPIL + libraqm (شكل واتجاه صحيح)، لا drawtext.
 """
 from __future__ import annotations
@@ -21,6 +21,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+import voice_identity as VI  # noqa: E402
 
 W, H, FPS = 1080, 1920, 25
 
@@ -116,6 +117,8 @@ def draw_scene(canvas: Image.Image, sc: dict, p: float, i: int, total: int):
 
 
 def render(script: dict, out_path: str, voice: str | None = None):
+    if voice:
+        VI.require_narration(script.get("voice"), voice)
     scenes = script["scenes"]
     total_frames = int(float(script.get("duration", sum(s["to"] for s in scenes))) * FPS)
     # اشتقاق مدة كل مشهد
@@ -186,3 +189,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

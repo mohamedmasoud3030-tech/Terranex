@@ -51,9 +51,11 @@
     }
   ],
   "voice": {
-    "id": "ar-eg-calm-confident",
+    "id": "voice-00",
     "tone": "مصري هادي واثق",
-    "provenance": "TTS — §3.5"
+    "provenance": "TTS — §3.5",
+    "reference_only": true,
+    "reuse_for_new_script": false
   },
   "audio": {
     "voice_gain": 1.0,

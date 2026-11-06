@@ -1,0 +1,41 @@
+{
+  "voice_id": "voice-00",
+  "status": "blocked-source-unavailable",
+  "generated_audio": false,
+  "script_review": "reviewed-against-delivered-visuals",
+  "spoken_transcript_verified": false,
+  "source_video_library_file_id": "libfile_1c4dac8a45688191b663bd493a587192",
+  "source_video_sha256": "394feb936bb696ee41d68fb9c94d4dbbfdec3faa7c30bae79ef552be9c454cc1",
+  "duration_sec": 20,
+  "phrases": [
+    {
+      "from": 0.12,
+      "to": 4.65,
+      "text": "الوزن قدامك… مش كلام."
+    },
+    {
+      "from": 4.95,
+      "to": 7.1,
+      "text": "والقطيع قدام عينك."
+    },
+    {
+      "from": 7.4,
+      "to": 10.85,
+      "text": "تغذية… ومتابعة."
+    },
+    {
+      "from": 11.15,
+      "to": 13.85,
+      "text": "فحص ومتابعة."
+    },
+    {
+      "from": 14.15,
+      "to": 16.85,
+      "text": "اسألنا على واتساب."
+    }
+  ],
+  "timing_status": "target-windows-only-not-measured-speech",
+  "endcard_voice": null,
+  "reason": "Original provider/model/settings for voice-00 not recovered; no generation tool available. vo-09b remains reference only.",
+  "publish_approved": false
+}

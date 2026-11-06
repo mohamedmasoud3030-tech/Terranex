@@ -39,6 +39,7 @@ import brand as B            # noqa: E402
 import critic                # noqa: E402
 import qa_video              # noqa: E402
 import reel_build as R       # noqa: E402
+import voice_identity as VI  # noqa: E402
 import scene_library as SL   # noqa: E402
 from safe_paths import confine  # noqa: E402
 from creative_store import (  # noqa: E402
@@ -250,7 +251,7 @@ def parse_brief(text: str) -> dict:
         "raw_request": raw, "language": "ar-EG", "topic": topic, "message": message,
         "duration_sec": dur, "audience": audience, "style": style,
         "voice": {"requested": voice_requested, "language": voice_lang, "tone": voice_tone,
-                  "profile_id": "ar-eg-calm-confident", "status": "pending-authorized-asset"},
+                  "profile_id": "voice-00", "status": "pending-authorized-asset"},
         "cta": cta, "variety_requested": variety,
         "assumptions": assumptions, "warnings": warnings,
         "constraints": ["real-footage-only", "no-faces-without-consent", "no-profit-promises",
@@ -1063,14 +1064,12 @@ def _verify_transcript(transcript: dict, phrases: list) -> None:
 
 
 def attach_voice(project_id: str, approval_note: str, projects_root: str = PROJECTS,
-                 profile_id: str = "ar-eg-calm-confident") -> dict:
+                 profile_id: str = "voice-00") -> dict:
     proj = load_project(project_id, projects_root)
     store, mem, plan, spec = proj["store"], proj["memory"], proj["plan"], proj["spec"]
-    with open(PERSONAS, encoding="utf-8") as f:
-        personas = json.load(f)
-    bank = personas.get("voice_bank", {}).get("default_narrator", {})
-    if profile_id != bank.get("id"):
-        raise ValueError("الصوت المطلوب ليس الصوت المثبت في الهوية")
+    VI.require_profile(profile_id)
+    if profile_id == "owner-eng-abdallah":
+        raise ValueError("صوت عبدالله غير متاح حتى التحقق من الأصل الخاص والموافقة الكتابية")
     if not approval_note.strip():
         raise ValueError("يلزم توثيق إذن استخدام الصوت")
     asset = store.first_existing(VOICE_ASSET_NAMES)
@@ -1080,6 +1079,10 @@ def attach_voice(project_id: str, approval_note: str, projects_root: str = PROJE
         raise ValueError("مطلوب voice-transcript.json بتفريغ بشري معتمد — الطاقة وحدها لا تثبت مطابقة النص")
     transcript = store.read_json(VOICE_TRANSCRIPT)
     _verify_transcript(transcript, plan["schedule"]["voice_phrases"])
+    VI.require_narration({"voice_id": profile_id,
+                          "sha256": _sha256(asset, str(store.dir)),
+                          "approval_note": approval_note,
+                          "transcript_verification": "human-reviewed"}, asset)
     phrases = plan["schedule"]["voice_phrases"]
     windows = measure_phrases(asset, len(phrases))
     total = sum(c["end"] - c["start"] for c in spec["clips"]) + spec["endcard_sec"]
@@ -1242,7 +1245,7 @@ def main():
     p = sub.add_parser("apply-creative"); p.add_argument("project_id")
     p = sub.add_parser("render"); p.add_argument("project_id"); p.add_argument("--force", action="store_true")
     p = sub.add_parser("attach-voice"); p.add_argument("project_id")
-    p.add_argument("--approval-note", required=True); p.add_argument("--profile-id", default="ar-eg-calm-confident")
+    p.add_argument("--approval-note", required=True); p.add_argument("--profile-id", default="voice-00")
     p = sub.add_parser("revise"); p.add_argument("project_id"); p.add_argument("instruction", nargs="?")
     p = sub.add_parser("rollback"); p.add_argument("project_id"); p.add_argument("version", type=int)
     p = sub.add_parser("show"); p.add_argument("project_id")
@@ -1282,3 +1285,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
