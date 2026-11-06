@@ -1,0 +1,101 @@
+{
+  "project": "day03-qa-chat",
+  "title": "أسئلة المربي",
+  "voice": null,
+  "clips": [
+    {
+      "path": "media/c0.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c1.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c2.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c3.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c4.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c5.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c6.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/c7.mp4",
+      "start": 0.0,
+      "end": 2.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    }
+  ],
+  "captions": [],
+  "endcard_sec": 2.4,
+  "endcard": {
+    "headline": "ملك حقيقي",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "بدون تعليق صوتي · صوت المزرعة الحقيقي"
+  },
+  "audio": {
+    "original_gain": 0.34,
+    "ambient_from": 0
+  },
+  "on_screen_persons": [],
+  "consent_persons": []
+}
