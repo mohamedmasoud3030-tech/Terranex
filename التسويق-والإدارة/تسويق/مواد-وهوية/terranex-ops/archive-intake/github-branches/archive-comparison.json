@@ -1,0 +1,32 @@
+{
+  "method": "ضغطنا الملفات الـ43 الفعلية بنفس خوارزمية ZIP (deflate level 6) وقسنا الحجم الناتج",
+  "measured": {
+    "raw_bytes_43_unique": 135696797,
+    "zip_bytes_of_these_43": 134715910,
+    "compression_ratio": 0.9928,
+    "seconds": 3.9
+  },
+  "drive_archive": {
+    "name": "Archive.zip",
+    "bytes": 181196089,
+    "sha256": "7a2bd417bb12b1d0eba348509b889d5f6a3f0d1af72d17734c943d3d7feed4d2",
+    "contents_readable": false,
+    "reason": "الموصّل لا يدعم Range وحد النقل 100 MiB؛ لم نقرأ فهرس الأرشيف"
+  },
+  "comparison": {
+    "zip_of_43_vs_drive_zip_bytes": 46480179,
+    "zip_of_43_vs_drive_zip_mib": 44.33,
+    "drive_zip_is_larger_by_percent": 34.5,
+    "distinct_filenames_in_branches": 48,
+    "unique_contents_in_branches": 43,
+    "raw_bytes_over_48_filenames": 141886019
+  },
+  "inference": "أرشيف Drive أكبر من ضغط نفس المواد بفرق كبير؛ وبما أن JPEG/MP4 لا تنضغط أكثر عمليًا، فالأرجح وجود مواد إضافية لم تُرفع على الفروع.",
+  "confidence": "استنتاج من الحجم فقط — ليس جردًا لمحتوى الأرشيف؛ لا نعلن اكتمال الأرشيف.",
+  "cannot_verify": [
+    "أسماء الملفات داخل Archive.zip",
+    "عددها",
+    "هل الـ43 مجموعة جزئية منه فعلًا"
+  ],
+  "recommended_next": "تشغيل Colab splitter (احتياطي) لجلب الأجزاء وقراءة الفهرس الحقيقي ومطابقة الأسماء"
+}

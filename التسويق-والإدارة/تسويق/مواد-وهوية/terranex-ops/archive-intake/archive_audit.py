@@ -104,21 +104,64 @@ def probe(path):
     d = re.search(r"Duration: (\d+):(\d+):([\d.]+)", err)
     v = re.search(r"Video: .*?, (\d{2,5})x(\d{2,5})", err)
     fps = re.search(r"([\d.]+) fps", err)
+    cw = int(v[1]) if v else None
+    ch = int(v[2]) if v else None
+    dw, dh, rot = display_geometry(cw, ch, err)
     return {
         "duration": (int(d[1]) * 3600 + int(d[2]) * 60 + float(d[3])) if d else None,
-        "width": int(v[1]) if v else None,
-        "height": int(v[2]) if v else None,
+        # width/height = مقاس العرض الحقيقي بعد تطبيق مصفوفة الدوران
+        "width": dw,
+        "height": dh,
+        "coded_width": cw,
+        "coded_height": ch,
+        "rotation_degrees": rot,
         "fps": float(fps[1]) if fps else None,
         "has_audio": " Audio: " in err,
         "codec": (re.search(r"Video: (\w+)", err)[1] if re.search(r"Video: (\w+)", err) else None),
     }
 
 
+def display_geometry(cw, ch, ffmpeg_stderr):
+    """يحسب مقاس العرض الحقيقي بعد مصفوفة الدوران.
+
+    فيديوهات WhatsApp تُخزَّن أفقية ثم تُدار ‎-90°‎ وقت العرض؛ الاطمئنان إلى
+    المقاس المُرمّز يقلب تصنيف الاتجاه رأسًا على عقب ويُفسد كل قرارات القصّ والإخراج.
+    ffmpeg يطبّق الدوران تلقائيًا عند سحب الإطارات، فالمقاس المعروض هو الصحيح للمونتاج.
+    """
+    rot = 0.0
+    m = re.search(r"rotation of (-?[\d.]+) degrees", ffmpeg_stderr)
+    if m:
+        rot = float(m.group(1))
+    else:
+        m = re.search(r"rotation\s*:\s*(-?[\d.]+)", ffmpeg_stderr)
+        if m:
+            rot = float(m.group(1))
+    rot = round(rot) % 360
+    if cw is None or ch is None:
+        return cw, ch, rot
+    if rot in (90, 270):
+        return ch, cw, rot
+    return cw, ch, rot
+
+
+BENIGN_MUXER = ("non monotonically increasing dts",)
+
+
 def decode_check(path):
-    """فك ترميز كامل — أي خطأ يعني ملفًا تالفًا يُستبعد."""
-    p = run([FF, "-v", "error", "-i", path, "-f", "null", "-"], timeout=900)
-    err = p.stderr.decode(errors="ignore").strip()
-    return {"ok": p.returncode == 0 and not err, "errors": err[:600]}
+    """فك ترميز كامل مع فصل تحذيرات الماكسرات غير القاتلة عن أخطاء الفساد الحقيقية.
+
+    فيديوهات WhatsApp بمعدل إطارات متغيّر تُنتج تحذير dts من مخرج null وهو ليس فسادًا؛
+    نمرّر -fps_mode passthrough ونستبعد هذا التحذير تحديدًا، ولا نتسامح مع أي خطأ فك آخر.
+    """
+    p = run([FF, "-v", "error", "-i", path, "-map", "0:v:0",
+             "-fps_mode", "passthrough", "-f", "null", "-"], timeout=900)
+    lines = [l.strip() for l in p.stderr.decode(errors="ignore").splitlines() if l.strip()]
+    benign = [l for l in lines if any(b in l for b in BENIGN_MUXER)]
+    fatal = [l for l in lines if l not in benign]
+    return {"ok": p.returncode == 0 and not fatal,
+            "errors": "\n".join(fatal)[:600],
+            "benign_warnings": len(benign),
+            "warning_sample": benign[0][:200] if benign else None}
 
 
 def image_check(path):
@@ -224,9 +267,17 @@ def motion_estimate(path, a, b):
 
 
 # ---------------- Contact Sheets ----------------
-def contact_sheet(items, out_path, cols=5, title=""):
+def contact_sheet(items, out_path, cols=5, title="", strict=True):
+    """ورقة تجميع. strict=True يرفض المسار المفقود بدل رسم بديل أحمر يصمت عن العطل.
+
+    درس مستفاد: مسار معاينة مزدوج أنتج ورقة BEST-20 فارغة بالكامل بلا أي خطأ ظاهر.
+    """
     if not items:
         return None
+    if strict:
+        missing = [it["preview"] for it in items if not os.path.isfile(it["preview"])]
+        if missing:
+            raise FileNotFoundError(f"{len(missing)} معاينة مفقودة، أولها: {missing[0]}")
     thumb_w, thumb_h = 216, 384
     pad, label_h, head = 10, 46, 54
     rows = (len(items) + cols - 1) // cols
@@ -328,7 +379,15 @@ def main():
             a["scenes"] = 1
         for k, (s, e) in enumerate(spans, start=1):
             mid = s + (e - s) / 2 if e > s else 0.0
-            img = grab_frame(a["abs_path"], mid, PREVIEW_W)
+            if a["kind"] == "image":
+                # الصور تُقرأ بـPIL مباشرة — لا معنى لتمريرها عبر ffmpeg
+                try:
+                    img = Image.open(a["abs_path"]).convert("RGB")
+                    img.thumbnail((720, 720), Image.LANCZOS)
+                except Exception:                          # noqa: BLE001
+                    img = None
+            else:
+                img = grab_frame(a["abs_path"], mid, PREVIEW_W)
             if img is None:
                 rejected.append({"file": a["file"], "scene": k, "reason": "frame-extraction-failed"})
                 continue

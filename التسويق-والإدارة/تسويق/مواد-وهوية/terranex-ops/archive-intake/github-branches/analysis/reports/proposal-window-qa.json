@@ -1,0 +1,223 @@
+[
+  {
+    "ad": "AD-1",
+    "shot": 1,
+    "asset": "gh-a27",
+    "window": [
+      0.6,
+      5.6
+    ],
+    "sampled_at": 3.1,
+    "sharpness_var": 381.31,
+    "display_geometry": "330x584",
+    "preview": "previews/AD-1-shot1.jpg"
+  },
+  {
+    "ad": "AD-1",
+    "shot": 2,
+    "asset": "gh-a25",
+    "window": [
+      1.0,
+      3.0
+    ],
+    "sampled_at": 2.0,
+    "sharpness_var": 117.25,
+    "display_geometry": "330x584",
+    "preview": "previews/AD-1-shot2.jpg"
+  },
+  {
+    "ad": "AD-1",
+    "shot": 3,
+    "asset": "gh-a43",
+    "window": [
+      3.0,
+      7.0
+    ],
+    "sampled_at": 5.0,
+    "sharpness_var": 251.18,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-1-shot3.jpg"
+  },
+  {
+    "ad": "AD-1",
+    "shot": 4,
+    "asset": "gh-a08",
+    "window": [
+      0.0,
+      2.5
+    ],
+    "sampled_at": 1.25,
+    "sharpness_var": 41.65,
+    "display_geometry": "187x330",
+    "preview": "previews/AD-1-shot4.jpg"
+  },
+  {
+    "ad": "AD-1",
+    "shot": 5,
+    "asset": "gh-a33",
+    "window": [
+      10.5,
+      12.5
+    ],
+    "sampled_at": 11.5,
+    "sharpness_var": 133.05,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-1-shot5.jpg"
+  },
+  {
+    "ad": "AD-1",
+    "shot": 6,
+    "asset": "gh-a26",
+    "window": [
+      4.0,
+      5.5
+    ],
+    "sampled_at": 4.75,
+    "sharpness_var": 99.56,
+    "display_geometry": "330x584",
+    "preview": "previews/AD-1-shot6.jpg"
+  },
+  {
+    "ad": "AD-2",
+    "shot": 1,
+    "asset": "gh-a38",
+    "window": [
+      12.0,
+      18.0
+    ],
+    "sampled_at": 15.0,
+    "sharpness_var": 243.7,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-2-shot1.jpg"
+  },
+  {
+    "ad": "AD-2",
+    "shot": 2,
+    "asset": "gh-a16",
+    "window": [
+      0.8,
+      4.8
+    ],
+    "sampled_at": 2.8,
+    "sharpness_var": 353.88,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-2-shot2.jpg"
+  },
+  {
+    "ad": "AD-2",
+    "shot": 3,
+    "asset": "gh-a39",
+    "window": [
+      6.0,
+      9.0
+    ],
+    "sampled_at": 7.5,
+    "sharpness_var": 165.8,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-2-shot3.jpg"
+  },
+  {
+    "ad": "AD-2",
+    "shot": 4,
+    "asset": "gh-a17",
+    "window": [
+      15.5,
+      17.5
+    ],
+    "sampled_at": 16.5,
+    "sharpness_var": 342.51,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-2-shot4.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 1,
+    "asset": "gh-a43",
+    "window": [
+      3.0,
+      9.0
+    ],
+    "sampled_at": 6.0,
+    "sharpness_var": 274.52,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-3-shot1.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 2,
+    "asset": "gh-a08",
+    "window": [
+      0.0,
+      3.0
+    ],
+    "sampled_at": 1.5,
+    "sharpness_var": 41.65,
+    "display_geometry": "187x330",
+    "preview": "previews/AD-3-shot2.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 3,
+    "asset": "gh-a26",
+    "window": [
+      3.5,
+      7.5
+    ],
+    "sampled_at": 5.5,
+    "sharpness_var": 97.65,
+    "display_geometry": "330x584",
+    "preview": "previews/AD-3-shot3.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 4,
+    "asset": "gh-a27",
+    "window": [
+      0.6,
+      5.6
+    ],
+    "sampled_at": 3.1,
+    "sharpness_var": 381.31,
+    "display_geometry": "330x584",
+    "preview": "previews/AD-3-shot4.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 5,
+    "asset": "gh-a25",
+    "window": [
+      5.5,
+      7.5
+    ],
+    "sampled_at": 6.5,
+    "sharpness_var": 103.75,
+    "display_geometry": "330x584",
+    "preview": "previews/AD-3-shot5.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 6,
+    "asset": "gh-a38",
+    "window": [
+      13.0,
+      17.0
+    ],
+    "sampled_at": 15.0,
+    "sharpness_var": 243.7,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-3-shot6.jpg"
+  },
+  {
+    "ad": "AD-3",
+    "shot": 7,
+    "asset": "gh-a33",
+    "window": [
+      10.5,
+      13.5
+    ],
+    "sampled_at": 12.0,
+    "sharpness_var": 155.48,
+    "display_geometry": "330x586",
+    "preview": "previews/AD-3-shot7.jpg"
+  }
+]
