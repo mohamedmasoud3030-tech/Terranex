@@ -1,0 +1,59 @@
+name: TerraNex Production Robot
+
+on:
+  workflow_dispatch:
+    inputs:
+      brief:
+        description: 'Brief file name inside production-robot/briefs/'
+        required: true
+        default: 'farm-to-delivery.json'
+        type: string
+  pull_request:
+    paths:
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/engine/production_robot.py'
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/engine/production_robot_server.py'
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/tests/test_production_robot.py'
+      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/production-robot/**'
+      - '.github/workflows/marketing-production-robot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  storyboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Robot contract tests
+        run: python -m unittest discover -s tests -p 'test_production_robot.py' -v
+      - name: Generate real-media storyboard and missing footage
+        env:
+          BRIEF_NAME: ${{ inputs.brief || 'farm-to-delivery.json' }}
+        run: |
+          python - <<'PY'
+          import os, pathlib, re, subprocess, sys
+          name = os.environ['BRIEF_NAME']
+          if not re.fullmatch(r'[a-zA-Z0-9_-]+\.json', name):
+              sys.exit('Invalid brief filename')
+          out = pathlib.Path('output/production-robot/plan.json')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.call([sys.executable, 'engine/production_robot.py', 'plan',
+              '--brief', 'production-robot/briefs/' + name, '--out', str(out)])
+          if result not in (0, 2):
+              sys.exit(result)
+          print('Blocked plan = missing evidence, not fake output. See plan.json artifact.')
+          PY
+      - name: Upload plan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terranex-production-plan
+          path: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/production-robot/plan.json'
+          if-no-files-found: warn

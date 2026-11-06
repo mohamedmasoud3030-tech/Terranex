@@ -1,0 +1,24 @@
+{
+  "project": "TerraNex من المزرعة للتوصيل",
+  "duration_seconds": 40,
+  "endcard_seconds": 3,
+  "stages": [
+    "farm",
+    "weighing",
+    "slaughter",
+    "cutting",
+    "packing",
+    "delivery"
+  ],
+  "allow_sensitive_preview": false,
+  "allow_stills": false,
+  "choices": {},
+  "script": {
+    "farm": "لقطات حقيقية من المزرعة، ونشوف الحيوان بنفسنا.",
+    "weighing": "وبعدها الوزن على ميزان الشركة.",
+    "slaughter": "وبعد الوزن، مرحلة الذبح الموثقة.",
+    "cutting": "تقطيع وتجهيز حسب الطلب.",
+    "packing": "ثم التعبئة والتغليف.",
+    "delivery": "وفي النهاية التوصيل."
+  }
+}

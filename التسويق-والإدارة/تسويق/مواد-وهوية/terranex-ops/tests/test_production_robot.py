@@ -44,9 +44,9 @@ class ProductionRobotTests(unittest.TestCase):
             B.make_spec(plan, {})
 
     def test_no_unapproved_slaughter(self):
-        p = B.make_plan({"stages": ["slaughter"]}, self.assets)
+        p = B.make_plan({"stages": ["slaughter"], "duration_seconds": 20}, self.assets)
         self.assertIn("sensitive", p["missing"][0]["reason"])
-        p = B.make_plan({"stages": ["slaughter"], "allow_sensitive_preview": True}, self.assets)
+        p = B.make_plan({"stages": ["slaughter"], "duration_seconds": 20, "allow_sensitive_preview": True}, self.assets)
         self.assertEqual(p["review_needed"], ["slaughter"])
         self.assertFalse(p["publish_approved"])
 
@@ -60,10 +60,10 @@ class ProductionRobotTests(unittest.TestCase):
         self.assertEqual(len(p["missing"]), 1)
 
     def test_plan_requires_visual_review(self):
-        p = B.make_plan({"stages": ["weighing"]}, self.assets)
+        p = B.make_plan({"stages": ["weighing"], "duration_seconds": 20}, self.assets)
         self.assertFalse(p["ready_for_render"])
         self.assertEqual(p["review_needed"], ["weighing"])
-        p = B.make_plan({"stages": ["weighing"], "choices": {
+        p = B.make_plan({"stages": ["weighing"], "duration_seconds": 20, "choices": {
             "weighing": {"asset_id": "weight", "start": 2, "window_reviewed": True}}}, self.assets)
         self.assertTrue(p["ready_for_render"])
         s = B.make_spec(p, {})
@@ -75,10 +75,10 @@ class ProductionRobotTests(unittest.TestCase):
         f.write_bytes(b"recorded-delivery")
         asset = B.ingest(f, "delivery", self.work)
         a = B.assets(self.manifest, self.work, self.repo)
-        self.assertFalse(B.make_plan({"stages": ["delivery"]}, a)["ready_for_render"])
+        self.assertFalse(B.make_plan({"stages": ["delivery"], "duration_seconds": 20}, a)["ready_for_render"])
         B.review_upload(asset["id"], "Vehicle arrived and customer received order", 20, self.work)
         a = B.assets(self.manifest, self.work, self.repo)
-        p = B.make_plan({"stages": ["delivery"]}, a)
+        p = B.make_plan({"stages": ["delivery"], "duration_seconds": 20}, a)
         self.assertTrue(p["ready_for_render"])
         self.assertFalse(p["publish_approved"])
 
