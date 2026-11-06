@@ -15,6 +15,8 @@ class ProductionRobotTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.repo = Path(self.temp.name)
+        self.old_marketing_root = B.MARKETING
+        B.MARKETING = self.repo
         self.work = self.repo / "work"
         (self.repo/"raw").mkdir()
         self.entries = []
@@ -35,6 +37,7 @@ class ProductionRobotTests(unittest.TestCase):
         self.assets = B.assets(self.manifest, self.work, self.repo)
 
     def tearDown(self):
+        B.MARKETING = self.old_marketing_root
         self.temp.cleanup()
 
     def test_missing_cutting_and_delivery_are_reported(self):
