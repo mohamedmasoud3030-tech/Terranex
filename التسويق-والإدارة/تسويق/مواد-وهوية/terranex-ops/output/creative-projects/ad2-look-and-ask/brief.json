@@ -1,0 +1,64 @@
+{
+  "project_id": "ad2-look-and-ask",
+  "title": "قبل ما تطلب… بص واسأل",
+  "created_at": "2026-11-06",
+  "branch_source": "origin/feat/marketing-production-robot (7d4205b)",
+  "working_branch": "work/ad-before-you-order",
+  "core_idea": "مساعدة العميل على طرح الأسئلة الصحيحة قبل طلب اللحمة اعتمادًا على تصوير الشركة الحقيقي لإظهار ما هو موثق فعليًا، وتحويل التفاصيل غير المصورة إلى أسئلة استفسار واضحة قبل التأكيد دون اختلاق خدمات أو أرقام.",
+  "target_duration_sec": [50, 65],
+  "actual_duration_sec": 55.8,
+  "suggested_opening": "قبل ما تطلب لحمة، فيه تفاصيل تستاهل تسأل عنها.",
+  "suggested_closing": "اسأل عن التفاصيل اللي تهمك، وحدد طلبك على بيّنة. تواصل مع TerraNex.",
+  "verification_axes": [
+    {
+      "id": "Q1",
+      "question": "الحيوان اللي بتشوفه حالته إيه؟",
+      "evidence_status": "documented_visually",
+      "supported_by": ["gh-a28.mp4", "gh-a43.mp4", "gh-a17.mp4", "gh-a16.mp4", "gh-a38.mp4"],
+      "unverified_excluded": ["شهادات بيطرية غير مرفقة", "ضمانات طبية مطلقة"]
+    },
+    {
+      "id": "Q2",
+      "question": "الوزن بيتوضح إزاي؟",
+      "evidence_status": "scale_documented_readout_unfilmed",
+      "supported_by": ["gh-a02.jpeg", "gh-a27.mp4"],
+      "unverified_excluded": ["قراءة رقمية بالكيلوجرام على شاشة ميزان", "أوزان محددة بلا مصدر"]
+    },
+    {
+      "id": "Q3",
+      "question": "اللي قدامك وزن قائم ولا وزن لحمة بعد التجهيز؟",
+      "evidence_status": "conceptual_clarification_over_scale_footage",
+      "supported_by": ["gh-a35.mp4", "gh-a25.mp4"],
+      "unverified_excluded": ["نسب تصافي", "معادلات تحويل ثابتة", "أرقام وزن"]
+    },
+    {
+      "id": "Q4",
+      "question": "القطع الموجودة إيه، وأنسب استخدام ليها إيه؟",
+      "evidence_status": "documented_visually",
+      "supported_by": ["06-تحضير-بيتي-على-أصوله.mp4", "gh-a13.jpeg", "01-معلومات-الشركة.md (لحم ضأن برقي)"],
+      "unverified_excluded": ["قائمة قطعيات ثابتة مضمونة لكل طلب"]
+    },
+    {
+      "id": "Q5",
+      "question": "الطلب بيتجهز ويتعبأ إزاي؟",
+      "evidence_status": "finished_trays_only_framed_as_inquiry",
+      "supported_by": ["gh-a13.jpeg"],
+      "unverified_excluded": ["تفريغ هواء (فاكيوم)", "درجات حرارة حفظ وتبريد", "تفاصيل مجزر أو تقطيع غير مصورة"]
+    },
+    {
+      "id": "Q6",
+      "question": "إيه التفاصيل اللي لازم تتأكد منها قبل تحديد الاستلام أو التوصيل؟",
+      "evidence_status": "no_delivery_footage_framed_strictly_as_preorder_inquiry",
+      "supported_by": ["01-معلومات-الشركة.md (واتساب 01010154221)", "gh-a26.mp4", "gh-a39.mp4", "gh-a21.mp4"],
+      "unverified_excluded": ["نطاق تغطية توصيل", "سيارات مبردة", "مواعيد تسليم مضمونة"]
+    }
+  ],
+  "hard_constraints": [
+    "استخدام محركات المونتاج الحالية فقط دون بناء أدوات جديدة أو تعديل تطبيق الاستثمار",
+    "عدم ذكر نسب تصافي أو أوزان أو ضمانات أو إجراءات حفظ وتوصيل بلا مصدر واضح",
+    "عدم تكرار أي لقطة أو تسلسل سابق أو كلام من إعلانات قديمة",
+    "عدم استخدام مشاهد مولدة بالذكاء الاصطناعي أو صور خارجية",
+    "عدم إعادة استخدام تسجيل voice-00 القديم وعدم استبداله بصوت مشابه",
+    "عدم نشر أو دفع (push) أي مخرجات دون موافقة صريحة من المستخدم"
+  ]
+}

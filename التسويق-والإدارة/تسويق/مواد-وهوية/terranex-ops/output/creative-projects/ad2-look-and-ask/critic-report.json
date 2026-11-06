@@ -1,0 +1,27 @@
+{
+  "caption_post": {
+    "file": "caption.txt",
+    "score": 100,
+    "decision": "انشر",
+    "text_decision": "انشر",
+    "scope": "text-only",
+    "publication_ready": false,
+    "hard": [],
+    "soft": [],
+    "chars": 220,
+    "cta_count": 1,
+    "tags": 5
+  },
+  "narration_script": {
+    "file": "narration-script-ar.txt",
+    "hard": [],
+    "words": 134,
+    "verified_bans_clear": [
+      "صفر نسب تصافي أو نسب مئوية (B1/B1b)",
+      "صفر أوزان بالكيلوجرام أو أسعار غير موثقة (B5)",
+      "صفر وعود أو ضمانات مطلقة (B2)",
+      "صفر ذكر للمدينة أو الموقع الجغرافي المحظور (B9)",
+      "صفر مصطلحات استثمارية في إعلان منتج اللحوم (S2)"
+    ]
+  }
+}
