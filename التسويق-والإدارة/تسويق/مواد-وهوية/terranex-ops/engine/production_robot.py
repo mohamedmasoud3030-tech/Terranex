@@ -169,7 +169,7 @@ def make_spec(plan, voice_meta):
         raise Blocked("storyboard incomplete; no placeholder scenes allowed")
     clips = []
     for shot in plan["shots"]:
-        f = Path(shot["path"])
+        f = confined(Path(shot["path"]), MARKETING)
         if not f.is_file() or digest(f) != shot["sha256"]:
             raise Blocked("real source file changed or disappeared")
         clips.append({"path": str(f), "start": shot["clip_start"], "end": shot["clip_end"],
@@ -232,7 +232,7 @@ def ingest(source, role, work=WORK):
     import shutil
     if role not in ROLES:
         raise Blocked("unsupported production stage")
-    src = Path(source).resolve()
+    src = confined(Path(source), MARKETING)
     if not src.is_file() or src.suffix.lower() not in EXTS or not 0 < src.stat().st_size <= MAX_BYTES:
         raise Blocked("missing/invalid/oversized source file")
     ident = "up-" + uuid.uuid4().hex[:16]
@@ -262,7 +262,7 @@ def review_upload(ident, description, duration=None, work=WORK):
         raise Blocked("uploaded asset not found")
     if item["kind"] == "video" and (duration is None or not 0 < duration <= 3600):
         raise Blocked("verified video duration required")
-    if digest(item["path"]) != item["sha256"]:
+    if digest(confined(item["path"], Path(work)/"uploads")) != item["sha256"]:
         raise Blocked("asset checksum mismatch")
     item.update({"reviewed": True, "status": "source-reviewed",
                  "description": description[:500], "duration": duration, "quality": 1.0})
@@ -281,7 +281,8 @@ def main():
     args = ap.parse_args()
     try:
         if args.cmd == "plan":
-            result = make_plan(json.loads(Path(args.brief).read_text(encoding="utf-8")), assets())
+            safe_brief = confined(Path(args.brief), OPS / "production-robot" / "briefs")
+            result = make_plan(json.loads(safe_brief.read_text(encoding="utf-8")), assets())
             write_json(confined(args.out, WORK), result)
             print(json.dumps({"missing": result["missing"], "review_needed": result["review_needed"],
                               "ready_for_render": result["ready_for_render"]}, ensure_ascii=False))

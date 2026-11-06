@@ -21,12 +21,17 @@ def run_once(inbox: Path, work: Path = BOT.WORK, brief: Path | None = None) -> d
     received, skipped, errors = [], [], []
     for role in BOT.ROLES:
         folder = inbox / role
+        if folder.is_symlink():
+            errors.append({"stage": role, "reason": "symlinked input directory blocked"})
+            continue
         folder.mkdir(parents=True, exist_ok=True)
+        folder = BOT.confined(folder, inbox)
         for item in sorted(folder.iterdir()):
             if item.is_symlink() or not item.is_file() or item.suffix.lower() not in BOT.EXTS:
                 skipped.append(str(item.name))
                 continue
             try:
+                BOT.confined(item, inbox)
                 if not 0 < item.stat().st_size <= BOT.MAX_BYTES:
                     raise BOT.Blocked("missing/oversized raw footage")
                 hashed = BOT.digest(item)
