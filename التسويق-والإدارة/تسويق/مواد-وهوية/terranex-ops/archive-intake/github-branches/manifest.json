@@ -1,0 +1,1599 @@
+{
+  "schema_version": 1,
+  "intake": "GitHub branches (actual blob bytes, not metadata-only)",
+  "branches": {
+    "patch-1": {
+      "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+      "pr": 196,
+      "base": "main",
+      "media_blobs_in_tree": 78
+    },
+    "patch-2": {
+      "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+      "pr": 197,
+      "base": "main",
+      "media_blobs_in_tree": 68
+    },
+    "patch-3": {
+      "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+      "pr": 198,
+      "base": "patch-1 / patch-2 (PR199)",
+      "media_blobs_in_tree": 82
+    },
+    "patch-4": {
+      "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+      "pr": 200,
+      "base": "patch-2",
+      "media_blobs_in_tree": 69
+    }
+  },
+  "branch_policy": "لم تُدمج الفروع ولا main؛ القراءة عبر refs/intake/* فقط",
+  "counts": {
+    "unique_media_blobs_all": 90,
+    "new_uploads_unique": 43,
+    "new_videos": 30,
+    "new_images": 13,
+    "pre_existing_repo_media_blobs": 47,
+    "exact_duplicate_occurrences_collapsed": 50
+  },
+  "bytes": {
+    "new_uploads_total": 135696797,
+    "new_uploads_mib": 129.41
+  },
+  "raw_storage_policy": "نسخ العمل في media-intake-work/ المستثنى من Git — لا RAW في تاريخ Git",
+  "assets": [
+    {
+      "git_blob_sha": "80ec07790820f336ea0cf8f6769d29fb7ae1826d",
+      "git_size": 192767,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg",
+      "sha256": "f2032f022344823619b6446d68c2daafe20959ffc95f1214e99ee3e0128bd902",
+      "sha256_of_written_copy": "f2032f022344823619b6446d68c2daafe20959ffc95f1214e99ee3e0128bd902",
+      "bytes": 192767,
+      "working_copy": "media-intake-work/01_WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "e141ca5ddfec2c96f89ee8723c76f069b7b4f2ff",
+      "git_size": 109451,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
+      "sha256": "c9c9d71f8a75f73ffed8876a22a74fb9951dbecd7e57a7b832661913b559887d",
+      "sha256_of_written_copy": "c9c9d71f8a75f73ffed8876a22a74fb9951dbecd7e57a7b832661913b559887d",
+      "bytes": 109451,
+      "working_copy": "media-intake-work/02_WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "13bf1bcac96a841de68215ebf721d75e360a1667",
+      "git_size": 132810,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg",
+      "sha256": "4388b66c965fd9ec938110ee6d77eb5cc4e8b5f0de744a1e3411f5f74d8886bc",
+      "sha256_of_written_copy": "4388b66c965fd9ec938110ee6d77eb5cc4e8b5f0de744a1e3411f5f74d8886bc",
+      "bytes": 132810,
+      "working_copy": "media-intake-work/03_WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "836920570214a364aba20386cd20e99028a8ede0",
+      "git_size": 152669,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg",
+      "sha256": "615e2a1e78e6a47e3da8d3b288ad5b5cedc77e2c9faf153d56ab8af61897730f",
+      "sha256_of_written_copy": "615e2a1e78e6a47e3da8d3b288ad5b5cedc77e2c9faf153d56ab8af61897730f",
+      "bytes": 152669,
+      "working_copy": "media-intake-work/04_WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "af934cc08c23828628959c6a83d80358326c69c3",
+      "git_size": 277344,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg"
+        },
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.17 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.17 AM (1).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
+      "sha256": "21a8ee11b967b701d331ec81349c8ba74c0e226ffc9df89130de163ef84b68c5",
+      "sha256_of_written_copy": "21a8ee11b967b701d331ec81349c8ba74c0e226ffc9df89130de163ef84b68c5",
+      "bytes": 277344,
+      "working_copy": "media-intake-work/05_WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
+        "WhatsApp Image 2026-11-05 at 7.21.17 AM (1).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "7b5aa0b25fc04460c28ffac28c4772fb786e17ea",
+      "git_size": 539783,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.14 AM.jpeg"
+        },
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.14 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.14 AM.jpeg"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.14 AM.jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+      "sha256": "9b0f9b408d335cf04719e80de001bac156df1e5aa2f0482a0b8e4e203de2728c",
+      "sha256_of_written_copy": "9b0f9b408d335cf04719e80de001bac156df1e5aa2f0482a0b8e4e203de2728c",
+      "bytes": 539783,
+      "working_copy": "media-intake-work/06_WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-2",
+        "patch-3",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+        "WhatsApp Image 2026-11-05 at 7.21.14 AM.jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "80fad343966413cf7182b84cba6b994bc7c960fb",
+      "git_size": 208224,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg"
+        },
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.13 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.13 AM.jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
+      "sha256": "073ee2811bea9df6195b91751e01c52964d10b927bfc6c27905a4c24b04cfdb3",
+      "sha256_of_written_copy": "073ee2811bea9df6195b91751e01c52964d10b927bfc6c27905a4c24b04cfdb3",
+      "bytes": 208224,
+      "working_copy": "media-intake-work/07_WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
+        "WhatsApp Image 2026-11-05 at 7.21.13 AM.jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "1ec851d7ca96a802ad72507a5f97ec083fc200b4",
+      "git_size": 195570,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+      "sha256": "7f997b324b541a6574e52ab55579db5490f23079591e4d89a74b421d824a962c",
+      "sha256_of_written_copy": "7f997b324b541a6574e52ab55579db5490f23079591e4d89a74b421d824a962c",
+      "bytes": 195570,
+      "working_copy": "media-intake-work/08_WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "0653d37b5c366474e6e15c7c79ad725e40f7be57",
+      "git_size": 184531,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
+      "sha256": "9e847d1b4ce77f34f7e2fe78eb3dbb863d1df2383218719c32e3b1a77a31644f",
+      "sha256_of_written_copy": "9e847d1b4ce77f34f7e2fe78eb3dbb863d1df2383218719c32e3b1a77a31644f",
+      "bytes": 184531,
+      "working_copy": "media-intake-work/09_WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "8af1af510f3a4eefd490110b0f5a82b83ff60eb3",
+      "git_size": 435661,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg"
+        },
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.14 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.14 AM (1).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+      "sha256": "77097d544f6b3fe52cfc222699676d830bc15ba0e7903fbfe925e4cebc42ac7d",
+      "sha256_of_written_copy": "77097d544f6b3fe52cfc222699676d830bc15ba0e7903fbfe925e4cebc42ac7d",
+      "bytes": 435661,
+      "working_copy": "media-intake-work/10_WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+        "WhatsApp Image 2026-11-05 at 7.21.14 AM (1).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "c3af95f8a529e7a5af77be71a52b011a9df0b253",
+      "git_size": 71088,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg",
+      "sha256": "2ca4d1fc5e8f333e063203304ec79178efb3cf8611256b43dafeb44e4b606278",
+      "sha256_of_written_copy": "2ca4d1fc5e8f333e063203304ec79178efb3cf8611256b43dafeb44e4b606278",
+      "bytes": 71088,
+      "working_copy": "media-intake-work/11_WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "63437589b23625e97c15d6eb1345df872768f1a4",
+      "git_size": 99592,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
+      "sha256": "51ed9121e224b0c382c2ae1d039802e05db5929fac30f86665c2189c13629f63",
+      "sha256_of_written_copy": "51ed9121e224b0c382c2ae1d039802e05db5929fac30f86665c2189c13629f63",
+      "bytes": 99592,
+      "working_copy": "media-intake-work/12_WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "a61e7944e01aeae238adb949527285ae4bc67153",
+      "git_size": 145092,
+      "ext": ".jpeg",
+      "kind": "image",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg"
+        }
+      ],
+      "original_path": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
+      "sha256": "51ec3ccc4f98789679e4259acb29ceb05cb52925adf9efb04b5b620d19e52bba",
+      "sha256_of_written_copy": "51ec3ccc4f98789679e4259acb29ceb05cb52925adf9efb04b5b620d19e52bba",
+      "bytes": 145092,
+      "working_copy": "media-intake-work/13_WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg"
+      ]
+    },
+    {
+      "git_blob_sha": "785c46326d418787ce23bb20775732c9df60e317",
+      "git_size": 3581137,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4",
+      "sha256": "52ea3efee46f26c7ba05462202e328014e378fcb9b8ad680de1285d7beb898be",
+      "sha256_of_written_copy": "52ea3efee46f26c7ba05462202e328014e378fcb9b8ad680de1285d7beb898be",
+      "bytes": 3581137,
+      "working_copy": "media-intake-work/14_WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "bee4a18c0ae02c8e11a8c981e85241733e5b29bf",
+      "git_size": 4186086,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4",
+      "sha256": "703f5406b2dbbf01a84cabc2a093746339a4cdef598e5db42b0a6f14385694fc",
+      "sha256_of_written_copy": "703f5406b2dbbf01a84cabc2a093746339a4cdef598e5db42b0a6f14385694fc",
+      "bytes": 4186086,
+      "working_copy": "media-intake-work/15_WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "8a401e9bfc3e2511d9f66bcd006dfb7f4961bdcc",
+      "git_size": 7367943,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+      "sha256": "c31efcb86cffb20a61bd828dc194467c1bf5325d7fcd38dd93c642ae0ce31498",
+      "sha256_of_written_copy": "c31efcb86cffb20a61bd828dc194467c1bf5325d7fcd38dd93c642ae0ce31498",
+      "bytes": 7367943,
+      "working_copy": "media-intake-work/16_WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "72207a2684f707565838b6f785cc7aa5fbe3069f",
+      "git_size": 8669764,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
+      "sha256": "dbafbdd9ba803761bf9cc3db3a61ccf1280943493bbd685a26cde5a87efaf769",
+      "sha256_of_written_copy": "dbafbdd9ba803761bf9cc3db3a61ccf1280943493bbd685a26cde5a87efaf769",
+      "bytes": 8669764,
+      "working_copy": "media-intake-work/17_WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
+      "branches": [
+        "patch-1"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "7f508a7ab2922e11b82af29a13fc76c0f43e8817",
+      "git_size": 4004944,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4",
+      "sha256": "c4aba477e004801d62586222cce796ca1abeca8904d15948397be26567c00cdb",
+      "sha256_of_written_copy": "c4aba477e004801d62586222cce796ca1abeca8904d15948397be26567c00cdb",
+      "bytes": 4004944,
+      "working_copy": "media-intake-work/18_WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "7ce4dc75e1fe3c74028a1458332d46536685b880",
+      "git_size": 3687710,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4",
+      "sha256": "f7efbf3664c5754528df6a6ad217055c9ce9124fd85f43ecb8251418948e3985",
+      "sha256_of_written_copy": "f7efbf3664c5754528df6a6ad217055c9ce9124fd85f43ecb8251418948e3985",
+      "bytes": 3687710,
+      "working_copy": "media-intake-work/19_WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "9ba0ae382c6c6015874938e457f4c9b8ebda0721",
+      "git_size": 4061827,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4",
+      "sha256": "ab2fc135da104f18c1fa21368a052e5bff61d0d5f804310620872304a71add22",
+      "sha256_of_written_copy": "ab2fc135da104f18c1fa21368a052e5bff61d0d5f804310620872304a71add22",
+      "bytes": 4061827,
+      "working_copy": "media-intake-work/20_WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "8c6d701af5b8441cee1cc6b7086c8b2e09ecbb65",
+      "git_size": 4009910,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4",
+      "sha256": "9b404127487ab3324218a1e40a59a2fbe1a9f29a7d88d177a082179a26318302",
+      "sha256_of_written_copy": "9b404127487ab3324218a1e40a59a2fbe1a9f29a7d88d177a082179a26318302",
+      "bytes": 4009910,
+      "working_copy": "media-intake-work/21_WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "66c90d5117805acc2b8faa309c7d5677843b02db",
+      "git_size": 6807233,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4",
+      "sha256": "0971d695c263da7b5ef3369e5f8778f0d2c030b0f87b9e951b9b1ecb4eeee762",
+      "sha256_of_written_copy": "0971d695c263da7b5ef3369e5f8778f0d2c030b0f87b9e951b9b1ecb4eeee762",
+      "bytes": 6807233,
+      "working_copy": "media-intake-work/22_WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "45e9160ddacdc9dc1d15d032e7a0360bb95dc0ff",
+      "git_size": 3388819,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-1",
+          "head_sha": "0b9002d867a4cfdb900005f14d2814d6b70b6834",
+          "pr": 196,
+          "path": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4"
+        },
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4",
+      "sha256": "ecd1b55e77288f73252f9134e882965e24c4cdc051d9de5afe42eca9cf1ffa3f",
+      "sha256_of_written_copy": "ecd1b55e77288f73252f9134e882965e24c4cdc051d9de5afe42eca9cf1ffa3f",
+      "bytes": 3388819,
+      "working_copy": "media-intake-work/23_WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "3df6eef856d2508f66f3812e8f63bee1d071763f",
+      "git_size": 2616456,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4",
+      "sha256": "d91ba95deaf158267dbde0dd6dcf9c61f5980f4310b72fb58a9c1c88f3f54f6f",
+      "sha256_of_written_copy": "d91ba95deaf158267dbde0dd6dcf9c61f5980f4310b72fb58a9c1c88f3f54f6f",
+      "bytes": 2616456,
+      "working_copy": "media-intake-work/24_WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "b8220242e79963c0db7b586928422027e38fde52",
+      "git_size": 2275817,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "sha256": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "sha256_of_written_copy": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "bytes": 2275817,
+      "working_copy": "media-intake-work/25_WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "c9825ddcf4f50f0567b5359fecc29b1656f0dfe3",
+      "git_size": 2899036,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+      "sha256": "e8ca45a824170cf901b322d778015ae54abb5ff9fa567c2ea59d131acc1a92de",
+      "sha256_of_written_copy": "e8ca45a824170cf901b322d778015ae54abb5ff9fa567c2ea59d131acc1a92de",
+      "bytes": 2899036,
+      "working_copy": "media-intake-work/26_WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "b5303542ee29074be40eb1fbc1a1bbdbafc68c8e",
+      "git_size": 2551794,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "sha256": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "sha256_of_written_copy": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "bytes": 2551794,
+      "working_copy": "media-intake-work/27_WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "4014a48c7b7a66f356ff9d927d7024abb7e846bc",
+      "git_size": 4245572,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4",
+      "sha256": "3c3ce3cd9f92c567acc3fd35a3743ed78a0f282d1bc1c68984f06d3bac650951",
+      "sha256_of_written_copy": "3c3ce3cd9f92c567acc3fd35a3743ed78a0f282d1bc1c68984f06d3bac650951",
+      "bytes": 4245572,
+      "working_copy": "media-intake-work/28_WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "a83cea15a88449f8ccb82772e6aa24d6f553ce22",
+      "git_size": 4728210,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4"
+        },
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
+      "sha256": "da21eaef5380e2fed4886b79d5c47b6d799ae8e7a1fa3b8e3d31521bf2140e22",
+      "sha256_of_written_copy": "da21eaef5380e2fed4886b79d5c47b6d799ae8e7a1fa3b8e3d31521bf2140e22",
+      "bytes": 4728210,
+      "working_copy": "media-intake-work/29_WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
+        "WhatsApp Video 2026-11-05 at 7.21.15 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "d49da73afdbf427fb96ccc48d1e59e5d9e7649f8",
+      "git_size": 4398469,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4",
+      "sha256": "d94989aa4d07d5bda291394bbd6f5c2d3eb82f0054049b875f419a16e766aae6",
+      "sha256_of_written_copy": "d94989aa4d07d5bda291394bbd6f5c2d3eb82f0054049b875f419a16e766aae6",
+      "bytes": 4398469,
+      "working_copy": "media-intake-work/30_WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "635a0097996ac1ff6464c94e4d955997382ded94",
+      "git_size": 705245,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
+      "sha256": "777485a762c25a7046a7533a1c7a8a481e30b367c27455499c7bbccca2b351e1",
+      "sha256_of_written_copy": "777485a762c25a7046a7533a1c7a8a481e30b367c27455499c7bbccca2b351e1",
+      "bytes": 705245,
+      "working_copy": "media-intake-work/31_WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "b3967548391f50633adec7d75a1a93c80dff9a26",
+      "git_size": 2635803,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4",
+      "sha256": "8018150b505c63701c52e54c8c611bc4a25bc24bd445c2c3a3e3e088d0a7d51b",
+      "sha256_of_written_copy": "8018150b505c63701c52e54c8c611bc4a25bc24bd445c2c3a3e3e088d0a7d51b",
+      "bytes": 2635803,
+      "working_copy": "media-intake-work/32_WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "88f4f4b311baae56573d371168b579b9ccb970c1",
+      "git_size": 3212424,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+      "sha256": "4c315a8f810546bc3fc3ab2de41d9181744fe96f3a651eb3dacf703c41b232ab",
+      "sha256_of_written_copy": "4c315a8f810546bc3fc3ab2de41d9181744fe96f3a651eb3dacf703c41b232ab",
+      "bytes": 3212424,
+      "working_copy": "media-intake-work/33_WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "8060a6e6048992754b629b60d42e98fe2b2894ce",
+      "git_size": 2577930,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4",
+      "sha256": "cdf36e983e1045b68753247710ea57813c3cd3494d09969b65df7b20be548680",
+      "sha256_of_written_copy": "cdf36e983e1045b68753247710ea57813c3cd3494d09969b65df7b20be548680",
+      "bytes": 2577930,
+      "working_copy": "media-intake-work/34_WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "66a154eaf433f858f64b06e0f5aa843a98690104",
+      "git_size": 2522520,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4",
+      "sha256": "fcc9d518cfc24e28e9642f3dedd5621c722c20da9f2efd118185db71ebbd7afb",
+      "sha256_of_written_copy": "fcc9d518cfc24e28e9642f3dedd5621c722c20da9f2efd118185db71ebbd7afb",
+      "bytes": 2522520,
+      "working_copy": "media-intake-work/35_WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "97e32f534ae088c3b5dbf37f4e307151c83e347e",
+      "git_size": 4353026,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4",
+      "sha256": "752444b590ba0cab38ff4f8f5516fcb4c2224e471c8ea8cfc8a68f71313d2027",
+      "sha256_of_written_copy": "752444b590ba0cab38ff4f8f5516fcb4c2224e471c8ea8cfc8a68f71313d2027",
+      "bytes": 4353026,
+      "working_copy": "media-intake-work/36_WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "9e7402a681d634cc8a8a997f618e3e2fea23ff8c",
+      "git_size": 512218,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-2",
+          "head_sha": "626135f8904f44e774626ac05619222fb6df20c7",
+          "pr": 197,
+          "path": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4"
+        },
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4",
+      "sha256": "71fccd3529ca50a8be5a5fffb33ebb76ebd3de0b4d20ce16838db14f21322b12",
+      "sha256_of_written_copy": "71fccd3529ca50a8be5a5fffb33ebb76ebd3de0b4d20ce16838db14f21322b12",
+      "bytes": 512218,
+      "working_copy": "media-intake-work/37_WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "dcd915a24bf45ebf1bb59eac2055833daa783a09",
+      "git_size": 6529876,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+      "sha256": "8ec0164bfd547e671869ed4693eeb863cc2356012f07e1c809b0d54b2d1f3f29",
+      "sha256_of_written_copy": "8ec0164bfd547e671869ed4693eeb863cc2356012f07e1c809b0d54b2d1f3f29",
+      "bytes": 6529876,
+      "working_copy": "media-intake-work/38_WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+      "branches": [
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "e66c9940d5c50deefe884144d8bd61bccb5542a3",
+      "git_size": 5667943,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+      "sha256": "3144279d4e03bd6dab58126719d70f87702fded56d8fe4669426a872b671c210",
+      "sha256_of_written_copy": "3144279d4e03bd6dab58126719d70f87702fded56d8fe4669426a872b671c210",
+      "bytes": 5667943,
+      "working_copy": "media-intake-work/39_WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+      "branches": [
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "8f8ce6b28f336d8357b8222276535676fad805cb",
+      "git_size": 5387488,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4",
+      "sha256": "cf1aca1b690b7b4e5a7307540838fe68f8210d281a73e1dc622c60d488629314",
+      "sha256_of_written_copy": "cf1aca1b690b7b4e5a7307540838fe68f8210d281a73e1dc622c60d488629314",
+      "bytes": 5387488,
+      "working_copy": "media-intake-work/40_WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4",
+      "branches": [
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "03e6bb57380ed742a171c471c12635a50b829022",
+      "git_size": 6403166,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4",
+      "sha256": "6fafb5e5809e718d59c6301b9815e7810955f7e22c19143a1a05d6615fe8d387",
+      "sha256_of_written_copy": "6fafb5e5809e718d59c6301b9815e7810955f7e22c19143a1a05d6615fe8d387",
+      "bytes": 6403166,
+      "working_copy": "media-intake-work/41_WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4",
+      "branches": [
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "6a7996d18d32f97b7739cceebbe5abf397d6d02f",
+      "git_size": 5340968,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-3",
+          "head_sha": "d08c9ca77fee51c14231ede04da55e103b1742f7",
+          "pr": 198,
+          "path": "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4",
+      "sha256": "9906534cb17f4d3ff6760460356b9add521cac8d57ee500088110d777793218a",
+      "sha256_of_written_copy": "9906534cb17f4d3ff6760460356b9add521cac8d57ee500088110d777793218a",
+      "bytes": 5340968,
+      "working_copy": "media-intake-work/42_WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4",
+      "branches": [
+        "patch-3"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4"
+      ]
+    },
+    {
+      "git_blob_sha": "1dd6ac36831a32b3b52a1c6c4f5d78c5b6c93a6b",
+      "git_size": 13622881,
+      "ext": ".mp4",
+      "kind": "video",
+      "is_new_upload": true,
+      "occurrences": [
+        {
+          "branch": "patch-4",
+          "head_sha": "d532719b343a236fc66fdde1d08553a90c7457f6",
+          "pr": 200,
+          "path": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4"
+        }
+      ],
+      "original_path": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+      "sha256": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+      "sha256_of_written_copy": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+      "bytes": 13622881,
+      "working_copy": "media-intake-work/43_WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+      "branches": [
+        "patch-4"
+      ],
+      "all_paths": [
+        "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4"
+      ]
+    }
+  ],
+  "pre_existing_repo_media_blobs": [
+    "5c3fa6fb8c2992affe558469d1d2e9b0da421047",
+    "6ebb6aff5b7ffd813628d3235060ddd8468cd48b",
+    "aaf37cddb418af9783e874e660376059f40b07e2",
+    "678e8fea3e88e4696e56f92d9229251f5e58ef66",
+    "5054dbe46b5daa5373e37beafe3d5b4f3e5acaf8",
+    "4a0be46cd7f7eff9ec29757ba772b8568c4664b3",
+    "245ae779c4383341582453391f2e050a46fd4c34",
+    "a1e98b1c1e15f95378d76702f590cb50b5e4f436",
+    "f610f8b96bfd8f1815a2df725374d33791f7de97",
+    "566ee68c4c41e02d1bc712295cfe520919c3af0c",
+    "37cc0a92491a142987ec7ba57976c0d6a9853014",
+    "30e328851de6d9fed0cb77e0db53cbd29fb2280a",
+    "b01b6660e6e234b74733db8c1009382ffcefb23d",
+    "6b0b64c7f613920179a78da52cdcb9fa210fac99",
+    "4a69b8d2ebb48969dee6f314d8d78336f4abfbaa",
+    "f72647c51b5bda52e6ed4f4e3ae5cb6a1ad61dd3",
+    "f53c63066b648ace5f14812e2fd6f50a249ebb8b",
+    "d73a40e5161ebcf3a4ce44031405558f8dafd83f",
+    "8f21d0fc4307dee625f2ab3b4e81d5652db6b4c5",
+    "d21652cee8cd8dd67c5753edfe541e34105607f7",
+    "cb6560280d0442240833a241bb798125932f2c4c",
+    "f7066a0a750ac10fdb2d023270323057a47f238c",
+    "2c2523090517cf282fff2cf241b3bbb1ee7d6ae8",
+    "76078b41d0ec4c5eb26516461e7be2d63b5d57bf",
+    "1562cd5239ca2474633bcde38be98bd362c6d719",
+    "9e3c6683bd813512f95a31a4f0dd46b1dc205167",
+    "476e2733252ccd416458e46681f8ea22a4ffce02",
+    "8c5ecc9460a498a7edf0ed056122873cc7120ec5",
+    "904c42fe2561382e5f6f7d9ed1ed99627bc76c88",
+    "b696e16094ffed106b40d1eb9cb2031ae9f5c4e7",
+    "a85b1d35d02c746f518bb59d135360b7a0cfa51a",
+    "914888ebcf70809c8fe31948994ec5cbf38014eb",
+    "bed10a5d706b04bab88a32fc9c65eb97fdf527ab",
+    "51a51f13ee68cd2542da0edb6fb8dc40a4e73e00",
+    "7c047695255d5541c5134ba6f157b2e97c71c2fc",
+    "14bf5691fd9b2b8e900325f57b76eff4d6ca3150",
+    "cfc99065e3018c59c4a8bfc0ec156143e0736f70",
+    "b039bf82ae350dd7f1ef59a6b15f7d6f328e8143",
+    "431d3c8459419a4224df752b59f375a2bfd40321",
+    "9d71ad3067aa11e97646e9c2fcc6fea1be1c46cb",
+    "96fc6338bed951f13aa9a44748b9c873a0401589",
+    "41fd0fba735cf4aa05d8f313e03492166cee004c",
+    "0b8c1b957bd29a2bb08a58afc07fba6971afc14c",
+    "7a9a1c77ad68c567efe999e6f69b7e419e79139a",
+    "dd6272fe6964f0ec619d9c484624900e47cd1e6b",
+    "ae04d4b2645486d3477b248706db5dcd570627ec",
+    "cb29bc528fe58eac01e1a31712254093cff87bd4"
+  ]
+}

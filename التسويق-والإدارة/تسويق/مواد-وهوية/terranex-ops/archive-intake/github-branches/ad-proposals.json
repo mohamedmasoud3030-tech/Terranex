@@ -1,0 +1,363 @@
+{
+  "status": "proposals-only",
+  "produced": false,
+  "voice": "لا صوت في هذه المقترحات؛ هوية voice-00 لم تتغيّر",
+  "geometry_correction": {
+    "finding": "٢٠ من ٣٠ فيديو تحمل displaymatrix ‎-90°‎؛ المقاس المُرمّز أفقي لكن العرض رأسي",
+    "true_orientation": {
+      "portrait": 29,
+      "landscape": 1
+    },
+    "only_landscape_asset": "gh-a20",
+    "consequence": "لا يمكن بناء إعلان أفقي 16:9 من هذه الدفعة؛ كل المقترحات رأسية 1080×1920",
+    "fixed_in": "archive_audit.py::display_geometry + test_display_geometry.py (٨ اختبارات)"
+  },
+  "ads": [
+    {
+      "name": "AD-1 الوزن قدامك",
+      "concept": "إثبات الوزن بميزان يحمل شعار الشركة",
+      "orientation": "vertical",
+      "delivery": "1080x1920",
+      "content_sec": 17.0,
+      "endcard_sec": 3.0,
+      "total_sec": 20.0,
+      "shots": [
+        {
+          "asset": "gh-a27",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+          "kind": "video",
+          "start": 0.6,
+          "end": 5.6,
+          "duration": 5.0,
+          "native": "480x848",
+          "why": "كبش كامل الجسم بجانب ميزان TerraNex بشعار ورقم الشركة — افتتاحية إثبات",
+          "visual_evidence": "مسح ثماني: حدة 384–548 على مدى المقطع؛ الإطار عند 2.95s يُظهر الجسم كاملًا واللوحة مقروءة",
+          "timeline_start": 0.0,
+          "timeline_end": 5.0
+        },
+        {
+          "asset": "gh-a25",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+          "kind": "video",
+          "start": 1.0,
+          "end": 3.0,
+          "duration": 2.0,
+          "native": "480x848",
+          "why": "خروف أمام لوحة الميزان واسم TERRANEX LLC مقروء — تعزيز العلامة",
+          "visual_evidence": "أفضل نقطتين 2.0s=95 و0.7s=80؛ تجنّبنا 3.3s=57",
+          "timeline_start": 5.0,
+          "timeline_end": 7.0
+        },
+        {
+          "asset": "gh-a43",
+          "file": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+          "kind": "video",
+          "start": 3.0,
+          "end": 7.0,
+          "duration": 4.0,
+          "native": "478x850",
+          "why": "القطيع يتحرك في الحظيرة — لقطة حياة ونشاط",
+          "visual_evidence": "6.3s=314 أعلى حدة؛ تجنّبنا 19.0s=39 (ضبابية حركة)",
+          "timeline_start": 7.0,
+          "timeline_end": 11.0
+        },
+        {
+          "asset": "gh-a08",
+          "file": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+          "kind": "image",
+          "start": 0.0,
+          "end": 2.5,
+          "duration": 2.5,
+          "native": "906x1600",
+          "why": "صف التغذية من أعلى — صورة رأسية بتقريب بطيء",
+          "visual_evidence": "صورة 906×1600 Q=0.865، لا أشخاص ولا نصوص محروقة",
+          "timeline_start": 11.0,
+          "timeline_end": 13.5
+        },
+        {
+          "asset": "gh-a33",
+          "file": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+          "kind": "video",
+          "start": 10.5,
+          "end": 12.5,
+          "duration": 2.0,
+          "native": "478x850",
+          "why": "كبش مرقّط كامل الجسم — تنويع بصري قبل الخاتمة",
+          "visual_evidence": "12.5s=137 الأعلى في المقطع؛ العلامة المحروقة أسفل الوسط تستلزم رفع التسميات",
+          "timeline_start": 13.5,
+          "timeline_end": 15.5
+        },
+        {
+          "asset": "gh-a26",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+          "kind": "video",
+          "start": 4.0,
+          "end": 5.5,
+          "duration": 1.5,
+          "native": "480x848",
+          "why": "كبش أبيض برأس أسود واقف بهدوء — خاتمة نظيفة قبل الكارت",
+          "visual_evidence": "4.3s=79 و6.0s=81؛ لقطة ثابتة بلا أشخاص",
+          "timeline_start": 15.5,
+          "timeline_end": 17.0
+        }
+      ],
+      "upscale_factor_range": [
+        2.26,
+        2.26
+      ],
+      "status": "proposal-only-not-produced"
+    },
+    {
+      "name": "AD-2 فحص ومتابعة",
+      "concept": "الرعاية والفحص الحقيقي قبل البيع",
+      "orientation": "vertical",
+      "delivery": "1080x1920",
+      "content_sec": 15.0,
+      "endcard_sec": 3.0,
+      "total_sec": 18.0,
+      "shots": [
+        {
+          "asset": "gh-a38",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+          "kind": "video",
+          "start": 12.0,
+          "end": 18.0,
+          "duration": 6.0,
+          "native": "576x1024",
+          "why": "فحص فم وأسنان الحمل لتقدير العمر — أقوى دليل رعاية جديد",
+          "visual_evidence": "الإطار 15.05s يُظهر اليدين تفتحان الفم بوضوح (حدة 244)",
+          "timeline_start": 0.0,
+          "timeline_end": 6.0
+        },
+        {
+          "asset": "gh-a16",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+          "kind": "video",
+          "start": 0.8,
+          "end": 4.8,
+          "duration": 4.0,
+          "native": "576x1024",
+          "why": "تثبيت هادئ للخروف باليد وجسمه كامل — تعامل موثّق",
+          "visual_evidence": "2.6s=292 أفضل نافذة؛ النافذة 8–12s مرفوضة بصريًا (أرض عارية وقدم)",
+          "timeline_start": 6.0,
+          "timeline_end": 10.0
+        },
+        {
+          "asset": "gh-a39",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+          "kind": "video",
+          "start": 6.0,
+          "end": 9.0,
+          "duration": 3.0,
+          "native": "576x1024",
+          "why": "خروفان على منصة والمزرعة خلفهما — سياق المكان",
+          "visual_evidence": "الإطار 7.5s=166 يُظهر المنصة والمباني",
+          "timeline_start": 10.0,
+          "timeline_end": 13.0
+        },
+        {
+          "asset": "gh-a17",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
+          "kind": "video",
+          "start": 15.5,
+          "end": 17.5,
+          "duration": 2.0,
+          "native": "576x1024",
+          "why": "سياق الحظيرة والنخيل والسماء — لقطة تأسيسية نظيفة",
+          "visual_evidence": "17.3s=330؛ تجنّبنا 10–12s لأن العلف الأحمر قد يُقرأ خطأً كدماء",
+          "timeline_start": 13.0,
+          "timeline_end": 15.0
+        }
+      ],
+      "upscale_factor_range": [
+        1.88,
+        1.88
+      ],
+      "status": "proposal-only-not-produced"
+    },
+    {
+      "name": "AD-3 من المزرعة",
+      "concept": "فيلم علامة قصير يجمع القطيع والتغذية والوزن",
+      "orientation": "vertical",
+      "delivery": "1080x1920",
+      "content_sec": 27.0,
+      "endcard_sec": 3.0,
+      "total_sec": 30.0,
+      "shots": [
+        {
+          "asset": "gh-a43",
+          "file": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+          "kind": "video",
+          "start": 3.0,
+          "end": 9.0,
+          "duration": 6.0,
+          "native": "478x850",
+          "why": "القطيع كاملًا — تأسيسية طويلة",
+          "visual_evidence": "6.3s=314",
+          "timeline_start": 0.0,
+          "timeline_end": 6.0
+        },
+        {
+          "asset": "gh-a08",
+          "file": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+          "kind": "image",
+          "start": 0.0,
+          "end": 3.0,
+          "duration": 3.0,
+          "native": "906x1600",
+          "why": "التغذية صفًا صفًا",
+          "visual_evidence": "906×1600 Q=0.865",
+          "timeline_start": 6.0,
+          "timeline_end": 9.0
+        },
+        {
+          "asset": "gh-a26",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+          "kind": "video",
+          "start": 3.5,
+          "end": 7.5,
+          "duration": 4.0,
+          "native": "480x848",
+          "why": "كبش كامل الجسم بلا أشخاص",
+          "visual_evidence": "4.3–6.0s حدة 79–81",
+          "timeline_start": 9.0,
+          "timeline_end": 13.0
+        },
+        {
+          "asset": "gh-a27",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+          "kind": "video",
+          "start": 0.6,
+          "end": 5.6,
+          "duration": 5.0,
+          "native": "480x848",
+          "why": "الميزان والعلامة — ذروة الإثبات",
+          "visual_evidence": "حدة 384–548",
+          "timeline_start": 13.0,
+          "timeline_end": 18.0
+        },
+        {
+          "asset": "gh-a25",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+          "kind": "video",
+          "start": 5.5,
+          "end": 7.5,
+          "duration": 2.0,
+          "native": "480x848",
+          "why": "لوحة العلامة مقروءة أثناء الوزن",
+          "visual_evidence": "6.0s=91",
+          "timeline_start": 18.0,
+          "timeline_end": 20.0
+        },
+        {
+          "asset": "gh-a38",
+          "file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+          "kind": "video",
+          "start": 13.0,
+          "end": 17.0,
+          "duration": 4.0,
+          "native": "576x1024",
+          "why": "فحص الأسنان — الرعاية قبل البيع",
+          "visual_evidence": "16.4s=374 في المسح الأصلي",
+          "timeline_start": 20.0,
+          "timeline_end": 24.0
+        },
+        {
+          "asset": "gh-a33",
+          "file": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+          "kind": "video",
+          "start": 10.5,
+          "end": 13.5,
+          "duration": 3.0,
+          "native": "478x850",
+          "why": "كبش مرقّط كامل الجسم مع علامة محروقة",
+          "visual_evidence": "12.5s=137",
+          "timeline_start": 24.0,
+          "timeline_end": 27.0
+        }
+      ],
+      "upscale_factor_range": [
+        1.88,
+        2.26
+      ],
+      "status": "proposal-only-not-produced"
+    }
+  ],
+  "comparison_with_current": {
+    "current": {
+      "project": "cd-followup-20s v2 / cd-followup-20s-voiced",
+      "sources": 2,
+      "usable_scenes_before": 5,
+      "total_source_seconds": 186.46,
+      "opener": "ماكرو صوف (حدة 162)",
+      "scale_visible": false,
+      "native_resolution": "720x1280",
+      "watermark": "TerraNex LLC منتصف الكادر"
+    },
+    "new": {
+      "assets": 43,
+      "ad_eligible_after_dedupe": 19,
+      "total_video_seconds": 727.04,
+      "best_opener": "كبش كامل + ميزان بشعار الشركة (حدة 548)",
+      "scale_visible": true,
+      "native_resolution": "478×850 / 480×848 / 576×1024 رأسي",
+      "new_capabilities": [
+        "وزن حقيقي بميزان يحمل العلامة",
+        "فحص أسنان/عمر",
+        "قطيع متحرك",
+        "تغذية صفًا صفًا"
+      ]
+    },
+    "honest_tradeoff": "المادة الجديدة أغنى محتوى بكثير لكن دقتها أقل بسبب ضغط واتساب: تكبير 480×848 إلى 1080×1920 = 2.26×، مقابل 1.5× للمادة القديمة 720×1280. الأنسب مزج: الجديدة للإثبات والمحتوى، والقديمة للقطة البطلة الأعلى دقة.",
+    "quarantine": "ستة أصول ذبح/دماء مستبعدة نهائيًا من كل المقترحات"
+  },
+  "rejected_windows": [
+    {
+      "asset": "gh-a16",
+      "window": [
+        8.0,
+        12.0
+      ],
+      "reason": "أرض عارية وقدم وحافة رأس فقط — لا فعل"
+    },
+    {
+      "asset": "gh-a17",
+      "window": [
+        10.0,
+        12.0
+      ],
+      "reason": "علف بمخلفات حمراء قريبة قد تُقرأ كدماء"
+    },
+    {
+      "asset": "gh-a24",
+      "window": [
+        2.0,
+        5.0
+      ],
+      "reason": "ماعز يرعى بجانب الميزان لا يُوزن؛ حدة 30–68"
+    },
+    {
+      "asset": "gh-a25",
+      "window": [
+        1.5,
+        4.5
+      ],
+      "reason": "يمرّ بأضعف نقطة 3.3s=57 وإضاءة خلفية محروقة"
+    },
+    {
+      "asset": "gh-a33",
+      "window": [
+        5.0,
+        8.0
+      ],
+      "reason": "جسم الحيوان مقطوع والمؤخرة فقط في الكادر"
+    }
+  ],
+  "owner_decisions_needed": [
+    "اعتماد أي مقترح للإنتاج",
+    "موافقة الأشخاص الظاهرين في a05/a29 إن أُريد استخدامهما",
+    "توضيح ماهية العلف الأحمر في a17 قبل أي استخدام قريب له",
+    "سياسة استخدام لقطات كاميرات المراقبة a03/a04",
+    "هل تُفرد حملة منتج منفصلة لمواد اللحوم (a10/a12/a13)"
+  ]
+}

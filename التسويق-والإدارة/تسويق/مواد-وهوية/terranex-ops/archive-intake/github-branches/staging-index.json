@@ -1,0 +1,1507 @@
+{
+  "schema_version": 1,
+  "kind": "staging-index",
+  "compatible_with": "scene-library/index.json",
+  "merge_approved": false,
+  "merge_into_scene_library": false,
+  "source": "فروع GitHub الأربعة — بايتات فعلية عبر git cat-file",
+  "existing_library_untouched": true,
+  "link_to_existing_library": {
+    "existing_sources": [
+      "src-01 (01-بومو-الشركة-الرئيسي)",
+      "src-04 (04-الأربعاء-الوزن-على-الطبيعة)"
+    ],
+    "proposed_new_source_ids": {
+      "gh-a01": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg",
+      "gh-a02": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
+      "gh-a03": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg",
+      "gh-a04": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg",
+      "gh-a05": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
+      "gh-a06": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+      "gh-a07": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
+      "gh-a08": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+      "gh-a09": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
+      "gh-a10": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+      "gh-a11": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg",
+      "gh-a12": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
+      "gh-a13": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
+      "gh-a14": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4",
+      "gh-a15": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4",
+      "gh-a16": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+      "gh-a17": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
+      "gh-a18": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4",
+      "gh-a19": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4",
+      "gh-a20": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4",
+      "gh-a21": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4",
+      "gh-a22": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4",
+      "gh-a23": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4",
+      "gh-a24": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4",
+      "gh-a25": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "gh-a26": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+      "gh-a27": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "gh-a28": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4",
+      "gh-a29": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
+      "gh-a30": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4",
+      "gh-a31": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
+      "gh-a32": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4",
+      "gh-a33": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+      "gh-a34": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4",
+      "gh-a35": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4",
+      "gh-a36": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4",
+      "gh-a37": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4",
+      "gh-a38": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+      "gh-a39": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+      "gh-a40": "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4",
+      "gh-a41": "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4",
+      "gh-a42": "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4",
+      "gh-a43": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4"
+    },
+    "note": "ربط منطقي فقط: كل مشهد مرحلي يحمل source_sha256 ليُدمج لاحقًا كمصدر جديد بعد موافقة المالك."
+  },
+  "counts": {
+    "assets": 43,
+    "ad_eligible_after_dedupe": 19,
+    "visual_duplicate_clusters": 9,
+    "quarantined_slaughter": 6
+  },
+  "quarantine": {
+    "ids": [
+      "gh-a07",
+      "gh-a14",
+      "gh-a15",
+      "gh-a19",
+      "gh-a32",
+      "gh-a34"
+    ],
+    "rule": "محتوى ذبح/دماء — ممنوع في أي إعلان أو معاينة ترويجية"
+  },
+  "scenes": [
+    {
+      "scene_id": "gh-a01-s01",
+      "source_sha256": "f2032f022344823619b6446d68c2daafe20959ffc95f1214e99ee3e0128bd902",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg",
+      "git_blob_sha": "80ec07790820f336ea0cf8f6769d29fb7ae1826d",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 960,
+      "height": 1280,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "animal-handling-market",
+        "buffalo-calf"
+      ],
+      "description": "رجل يمسك رأس جاموسة صغيرة في سوق ماشية، ميزان TerraNex الأصفر خلفه.",
+      "quality": 0.951,
+      "usable": false,
+      "persons_visible": "face",
+      "privacy_flags": [
+        "وجه شخص ظاهر"
+      ],
+      "consent_needed": true,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a01-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a02-s01",
+      "source_sha256": "c9c9d71f8a75f73ffed8876a22a74fb9951dbecd7e57a7b832661913b559887d",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
+      "git_blob_sha": "e141ca5ddfec2c96f89ee8723c76f069b7b4f2ff",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1280,
+      "height": 960,
+      "orientation": "landscape",
+      "rotation_degrees": null,
+      "tags": [
+        "equipment-scale"
+      ],
+      "description": "قفص/ميزان الوزن الأصفر بشعار TERRANEX LLC — أصل إثبات نظيف بلا أشخاص ولا حيوانات.",
+      "quality": 0.913,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a02-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a03-s01",
+      "source_sha256": "4388b66c965fd9ec938110ee6d77eb5cc4e8b5f0de744a1e3411f5f74d8886bc",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg",
+      "git_blob_sha": "13bf1bcac96a841de68215ebf721d75e360a1667",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1320,
+      "height": 767,
+      "orientation": "landscape",
+      "rotation_degrees": null,
+      "tags": [
+        "monitoring-cctv",
+        "sheep-pen"
+      ],
+      "description": "لقطة شاشة كاميرا مراقبة لحظيرة أغنام مع تاريخ ووقت محروقين.",
+      "quality": 0.918,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "لقطة كاميرا مراقبة",
+        "طابع زمني محروق"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a03-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a04-s01",
+      "source_sha256": "615e2a1e78e6a47e3da8d3b288ad5b5cedc77e2c9faf153d56ab8af61897730f",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg",
+      "git_blob_sha": "836920570214a364aba20386cd20e99028a8ede0",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1320,
+      "height": 996,
+      "orientation": "landscape",
+      "rotation_degrees": null,
+      "tags": [
+        "monitoring-cctv-ui",
+        "sheep-pen"
+      ],
+      "description": "لقطة شاشة تطبيق مراقبة (Live View) بعناصر واجهة ظاهرة — لا تصلح كصورة إعلانية.",
+      "quality": 0.884,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "واجهة تطبيق Live View",
+        "طابع زمني"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a04-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a05-s01",
+      "source_sha256": "21a8ee11b967b701d331ec81349c8ba74c0e226ffc9df89130de163ef84b68c5",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
+      "git_blob_sha": "af934cc08c23828628959c6a83d80358326c69c3",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1200,
+      "height": 1600,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "animal-handling-market",
+        "buffalo-calf"
+      ],
+      "description": "نفس مشهد a01 بدقة أعلى (1200×1600) — مكرر بصري.",
+      "quality": 0.959,
+      "usable": false,
+      "persons_visible": "face",
+      "privacy_flags": [
+        "وجه شخص ظاهر"
+      ],
+      "consent_needed": true,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a05-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a06-s01",
+      "source_sha256": "9b0f9b408d335cf04719e80de001bac156df1e5aa2f0482a0b8e4e203de2728c",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+      "git_blob_sha": "7b5aa0b25fc04460c28ffac28c4772fb786e17ea",
+      "branches": [
+        "patch-1",
+        "patch-2",
+        "patch-3",
+        "patch-4"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1600,
+      "height": 1200,
+      "orientation": "landscape",
+      "rotation_degrees": null,
+      "tags": [
+        "animals-clean",
+        "sheep-goats"
+      ],
+      "description": "خروفان/ماعزان واقفان في الهواء الطلق بجانب سياج وأزهار — أنظف صورة حيوانات في الدفعة.",
+      "quality": 0.967,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a06-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a07-s01",
+      "source_sha256": "073ee2811bea9df6195b91751e01c52964d10b927bfc6c27905a4c24b04cfdb3",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
+      "git_blob_sha": "80fad343966413cf7182b84cba6b994bc7c960fb",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 720,
+      "height": 1280,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "slaughter-carcass"
+      ],
+      "description": "ذبيحتان معلقتان على خطاطيف ويد تمسك إحداهما — محتوى حساس يمنع استخدامه إعلانيًا.",
+      "quality": 0.945,
+      "usable": false,
+      "persons_visible": "hand",
+      "privacy_flags": [
+        "ذبائح معلقة",
+        "دماء"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a07-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a08-s01",
+      "source_sha256": "7f997b324b541a6574e52ab55579db5490f23079591e4d89a74b421d824a962c",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+      "git_blob_sha": "1ec851d7ca96a802ad72507a5f97ec083fc200b4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 906,
+      "height": 1600,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "feeding",
+        "sheep"
+      ],
+      "description": "صف أغنام تأكل من الحوض، لقطة علوية تظهر الظهور والصوف.",
+      "quality": 0.865,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a08-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a09-s01",
+      "source_sha256": "9e847d1b4ce77f34f7e2fe78eb3dbb863d1df2383218719c32e3b1a77a31644f",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
+      "git_blob_sha": "0653d37b5c366474e6e15c7c79ad725e40f7be57",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 924,
+      "height": 1600,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "feeding",
+        "sheep"
+      ],
+      "description": "نفس صف التغذية بزاوية قريبة مختلفة.",
+      "quality": 0.853,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a09-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a10-s01",
+      "source_sha256": "77097d544f6b3fe52cfc222699676d830bc15ba0e7903fbfe925e4cebc42ac7d",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+      "git_blob_sha": "8af1af510f3a4eefd490110b0f5a82b83ff60eb3",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1200,
+      "height": 1600,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "raw-meat-product"
+      ],
+      "description": "صينية لحوم مقطعة يحملها شخص — منتج غذائي لا علاقة له بحملة المتابعة.",
+      "quality": 0.952,
+      "usable": false,
+      "persons_visible": "hand",
+      "privacy_flags": [
+        "لحوم نيئة"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a10-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a11-s01",
+      "source_sha256": "2ca4d1fc5e8f333e063203304ec79178efb3cf8611256b43dafeb44e4b606278",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg",
+      "git_blob_sha": "c3af95f8a529e7a5af77be71a52b011a9df0b253",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 720,
+      "height": 1280,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "packaged-meat"
+      ],
+      "description": "صواني لحوم معبأة في عرض/ثلاجة — الصورة ضبابية (حدة 45).",
+      "quality": 0.525,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "لحوم معبأة"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a11-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a12-s01",
+      "source_sha256": "51ed9121e224b0c382c2ae1d039802e05db5929fac30f86665c2189c13629f63",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
+      "git_blob_sha": "63437589b23625e97c15d6eb1345df872768f1a4",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 720,
+      "height": 1280,
+      "orientation": "portrait",
+      "rotation_degrees": null,
+      "tags": [
+        "packaged-meat"
+      ],
+      "description": "صواني لحوم معبأة أوضح من a11.",
+      "quality": 0.806,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "لحوم معبأة"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a12-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a13-s01",
+      "source_sha256": "51ec3ccc4f98789679e4259acb29ceb05cb52925adf9efb04b5b620d19e52bba",
+      "source_file": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
+      "git_blob_sha": "a61e7944e01aeae238adb949527285ae4bc67153",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "image",
+      "start": 0.0,
+      "end": 0.0,
+      "width": 1280,
+      "height": 720,
+      "orientation": "landscape",
+      "rotation_degrees": null,
+      "tags": [
+        "packaged-meat"
+      ],
+      "description": "صواني لحوم معبأة على طاولة — لقطة أفقية.",
+      "quality": 0.873,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "لحوم معبأة"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a13-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a14-s01",
+      "source_sha256": "52ea3efee46f26c7ba05462202e328014e378fcb9b8ad680de1285d7beb898be",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4",
+      "git_blob_sha": "785c46326d418787ce23bb20775732c9df60e317",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 17.83,
+      "width": 464,
+      "height": 832,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "slaughter-graphic",
+        "sheep"
+      ],
+      "description": "عملية ذبح فعلية ودماء على الأرض — يُحجر نهائيًا ولا يدخل أي إعلان.",
+      "quality": 0.702,
+      "usable": false,
+      "persons_visible": "face+body",
+      "privacy_flags": [
+        "ذبح",
+        "بركة دماء",
+        "سكين"
+      ],
+      "consent_needed": true,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a14-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a15-s01",
+      "source_sha256": "703f5406b2dbbf01a84cabc2a093746339a4cdef598e5db42b0a6f14385694fc",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4",
+      "git_blob_sha": "bee4a18c0ae02c8e11a8c981e85241733e5b29bf",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 25.29,
+      "width": 464,
+      "height": 832,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "slaughter-graphic",
+        "sheep"
+      ],
+      "description": "عملية ذبح بشخصين ودماء غزيرة — حجر نهائي.",
+      "quality": 0.815,
+      "usable": false,
+      "persons_visible": "two-persons",
+      "privacy_flags": [
+        "ذبح",
+        "بركة دماء"
+      ],
+      "consent_needed": true,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a15-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a16-s01",
+      "source_sha256": "c31efcb86cffb20a61bd828dc194467c1bf5325d7fcd38dd93c642ae0ce31498",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+      "git_blob_sha": "8a401e9bfc3e2511d9f66bcd006dfb7f4961bdcc",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 41.8,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-handling",
+        "lamb"
+      ],
+      "description": "يدان تمسكان رأس حمل حي أسود وأبيض في الهواء الطلق — تعامل هادئ مع الحيوان.",
+      "quality": 0.578,
+      "usable": true,
+      "persons_visible": "hands",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a16-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a17-s01",
+      "source_sha256": "dbafbdd9ba803761bf9cc3db3a61ccf1280943493bbd685a26cde5a87efaf769",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
+      "git_blob_sha": "72207a2684f707565838b6f785cc7aa5fbe3069f",
+      "branches": [
+        "patch-1"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 39.47,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "farm-pen",
+        "sheep"
+      ],
+      "description": "أغنام في حظيرة/ساحة ترابية مع مبانٍ خلفها — سياق مزرعة حقيقي.",
+      "quality": 0.744,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [
+        "مبانٍ سكنية بالخلفية"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a17-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a18-s01",
+      "source_sha256": "c4aba477e004801d62586222cce796ca1abeca8904d15948397be26567c00cdb",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4",
+      "git_blob_sha": "7f508a7ab2922e11b82af29a13fc76c0f43e8817",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 24.27,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-full-body",
+        "sheep"
+      ],
+      "description": "خروف كامل الجسم واقف على أرضية خرسانية مع حبل — لقطة جانبية نظيفة.",
+      "quality": 0.634,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a18-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a19-s01",
+      "source_sha256": "f7efbf3664c5754528df6a6ad217055c9ce9124fd85f43ecb8251418948e3985",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4",
+      "git_blob_sha": "7ce4dc75e1fe3c74028a1458332d46536685b880",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 22.47,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "slaughter-graphic",
+        "sheep"
+      ],
+      "description": "ذبح على أرضية بلاط ودماء وأقدام عدة أشخاص — حجر نهائي.",
+      "quality": 0.777,
+      "usable": false,
+      "persons_visible": "legs",
+      "privacy_flags": [
+        "ذبح",
+        "دماء على بلاط"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a19-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a20-s01",
+      "source_sha256": "ab2fc135da104f18c1fa21368a052e5bff61d0d5f804310620872304a71add22",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4",
+      "git_blob_sha": "9ba0ae382c6c6015874938e457f4c9b8ebda0721",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 24.8,
+      "width": 848,
+      "height": 480,
+      "orientation": "landscape",
+      "rotation_degrees": 0,
+      "tags": [
+        "animal-handling",
+        "sheep"
+      ],
+      "description": "يدان على ظهر خروف — فحص/تثبيت بسيط، الإطار قصير.",
+      "quality": 0.616,
+      "usable": true,
+      "persons_visible": "hands",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a20-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a21-s01",
+      "source_sha256": "9b404127487ab3324218a1e40a59a2fbe1a9f29a7d88d177a082179a26318302",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4",
+      "git_blob_sha": "8c6d701af5b8441cee1cc6b7086c8b2e09ecbb65",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 24.5,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-full-body",
+        "sheep"
+      ],
+      "description": "خروف يمشي مبتعدًا، الجسم كامل من الخلف على أرض ترابية.",
+      "quality": 0.762,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a21-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a22-s01",
+      "source_sha256": "0971d695c263da7b5ef3369e5f8778f0d2c030b0f87b9e951b9b1ecb4eeee762",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4",
+      "git_blob_sha": "66c90d5117805acc2b8faa309c7d5677843b02db",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 41.8,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-handling",
+        "lamb"
+      ],
+      "description": "نفس محتوى a16 بدقة أقل (848×480) — مكرر بصري.",
+      "quality": 0.524,
+      "usable": false,
+      "persons_visible": "hands",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a22-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a23-s01",
+      "source_sha256": "ecd1b55e77288f73252f9134e882965e24c4cdc051d9de5afe42eca9cf1ffa3f",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4",
+      "git_blob_sha": "45e9160ddacdc9dc1d15d032e7a0360bb95dc0ff",
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 20.63,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "weak-frame"
+      ],
+      "description": "الإطار الأوسط أرضية ترابية وقدم؛ يحتاج مسح نوافذ للعثور على لحظة صالحة.",
+      "quality": 0.79,
+      "usable": false,
+      "persons_visible": "foot",
+      "privacy_flags": [
+        "إطار أرضية"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a23-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a24-s01",
+      "source_sha256": "d91ba95deaf158267dbde0dd6dcf9c61f5980f4310b72fb58a9c1c88f3f54f6f",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4",
+      "git_blob_sha": "3df6eef856d2508f66f3812e8f63bee1d071763f",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 12.28,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "weighing-context",
+        "goat"
+      ],
+      "description": "ماعز أسود وأبيض بجانب ميزان TerraNex الأصفر — سياق وزن حقيقي.",
+      "quality": 0.522,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [
+        "شعار الميزان ظاهر"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a24-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a25-s01",
+      "source_sha256": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "git_blob_sha": "b8220242e79963c0db7b586928422027e38fde52",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 10.6,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "خروف عند الميزان الأصفر ويد تمسكه — نشاط وزن موثّق بعلامة الشركة.",
+      "quality": 0.611,
+      "usable": true,
+      "persons_visible": "hand",
+      "privacy_flags": [
+        "شعار TERRANEX LLC ظاهر"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a25-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a26-s01",
+      "source_sha256": "e8ca45a824170cf901b322d778015ae54abb5ff9fa567c2ea59d131acc1a92de",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+      "git_blob_sha": "c9825ddcf4f50f0567b5359fecc29b1656f0dfe3",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 13.74,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "animals-clean",
+        "sheep"
+      ],
+      "description": "خروفان واقفان في ساحة المزرعة، أجسام كاملة وإضاءة نهارية جيدة.",
+      "quality": 0.573,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a26-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a27-s01",
+      "source_sha256": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "git_blob_sha": "b5303542ee29074be40eb1fbc1a1bbdbafc68c8e",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 11.83,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "رجل يقف بجانب خروف عند ميزان TerraNex — أفضل لقطة وزن عمودية.",
+      "quality": 0.824,
+      "usable": true,
+      "persons_visible": "torso",
+      "privacy_flags": [
+        "شعار الميزان ظاهر"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a27-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a28-s01",
+      "source_sha256": "3c3ce3cd9f92c567acc3fd35a3743ed78a0f282d1bc1c68984f06d3bac650951",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4",
+      "git_blob_sha": "4014a48c7b7a66f356ff9d927d7024abb7e846bc",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 24.27,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-full-body",
+        "sheep"
+      ],
+      "description": "نفس محتوى a18 بدقة أعلى (1024×576) — النسخة المفضّلة.",
+      "quality": 0.644,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a28-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a29-s01",
+      "source_sha256": "da21eaef5380e2fed4886b79d5c47b6d799ae8e7a1fa3b8e3d31521bf2140e22",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
+      "git_blob_sha": "a83cea15a88449f8ccb82772e6aa24d6f553ce22",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 26.67,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-handling",
+        "lamb"
+      ],
+      "description": "رجل يحمل حملًا حيًا بين ذراعيه — لقطة قوية لكن الوجه ظاهر ويحتاج موافقة.",
+      "quality": 0.818,
+      "usable": false,
+      "persons_visible": "face",
+      "privacy_flags": [
+        "وجه شخص ظاهر"
+      ],
+      "consent_needed": true,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a29-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a30-s01",
+      "source_sha256": "d94989aa4d07d5bda291394bbd6f5c2d3eb82f0054049b875f419a16e766aae6",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4",
+      "git_blob_sha": "d49da73afdbf427fb96ccc48d1e59e5d9e7649f8",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 20.63,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "weak-frame"
+      ],
+      "description": "نفس محتوى a23 بدقة أعلى؛ الإطار الأوسط أرضية — يحتاج مسح نوافذ.",
+      "quality": 0.8,
+      "usable": false,
+      "persons_visible": "foot",
+      "privacy_flags": [
+        "إطار أرضية"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a30-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a31-s01",
+      "source_sha256": "777485a762c25a7046a7533a1c7a8a481e30b367c27455499c7bbccca2b351e1",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
+      "git_blob_sha": "635a0097996ac1ff6464c94e4d955997382ded94",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 2.63,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "رجل يُدخل خروفًا في الميزان الأصفر — لحظة وزن واضحة (2.63 ث فقط).",
+      "quality": 0.813,
+      "usable": true,
+      "persons_visible": "body",
+      "privacy_flags": [
+        "شعار الميزان ظاهر"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a31-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a32-s01",
+      "source_sha256": "8018150b505c63701c52e54c8c611bc4a25bc24bd445c2c3a3e3e088d0a7d51b",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4",
+      "git_blob_sha": "b3967548391f50633adec7d75a1a93c80dff9a26",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 12.07,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "slaughter-graphic",
+        "sheep"
+      ],
+      "description": "ذبيحة ملقاة وبركة دماء كبيرة — جودة تقنية عالية لكن المحتوى محجور نهائيًا.",
+      "quality": 0.86,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "ذبيحة",
+        "بركة دماء كبيرة"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a32-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a33-s01",
+      "source_sha256": "4c315a8f810546bc3fc3ab2de41d9181744fe96f3a651eb3dacf703c41b232ab",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+      "git_blob_sha": "88f4f4b311baae56573d371168b579b9ccb970c1",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 15.37,
+      "width": 478,
+      "height": 850,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "خروف عند الميزان مع علامة TerraNex LLC محروقة منتصف الكادر — تحتاج شريط إثبات.",
+      "quality": 0.619,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [
+        "علامة TerraNex LLC محروقة"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a33-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a34-s01",
+      "source_sha256": "cdf36e983e1045b68753247710ea57813c3cd3494d09969b65df7b20be548680",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4",
+      "git_blob_sha": "8060a6e6048992754b629b60d42e98fe2b2894ce",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 15.6,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "slaughter-graphic",
+        "sheep"
+      ],
+      "description": "عملية ذبح قريبة ودماء — حجر نهائي رغم الجودة التقنية العالية.",
+      "quality": 0.844,
+      "usable": false,
+      "persons_visible": "hands",
+      "privacy_flags": [
+        "ذبح",
+        "دماء",
+        "سكين"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a34-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a35-s01",
+      "source_sha256": "fcc9d518cfc24e28e9642f3dedd5621c722c20da9f2efd118185db71ebbd7afb",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4",
+      "git_blob_sha": "66a154eaf433f858f64b06e0f5aa843a98690104",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 15.27,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "weighing-context",
+        "sheep"
+      ],
+      "description": "خروف بني وأبيض عند الميزان الأصفر من الخلف.",
+      "quality": 0.636,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [
+        "شعار الميزان ظاهر"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a35-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a36-s01",
+      "source_sha256": "752444b590ba0cab38ff4f8f5516fcb4c2224e471c8ea8cfc8a68f71313d2027",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4",
+      "git_blob_sha": "97e32f534ae088c3b5dbf37f4e307151c83e347e",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 26.67,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-handling",
+        "lamb"
+      ],
+      "description": "مكرر بصري مطابق لـa29 (hamming=0) بدقة أقل.",
+      "quality": 0.808,
+      "usable": false,
+      "persons_visible": "face",
+      "privacy_flags": [
+        "وجه شخص ظاهر"
+      ],
+      "consent_needed": true,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a36-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a37-s01",
+      "source_sha256": "71fccd3529ca50a8be5a5fffb33ebb76ebd3de0b4d20ce16838db14f21322b12",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4",
+      "git_blob_sha": "9e7402a681d634cc8a8a997f618e3e2fea23ff8c",
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 2.63,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "مكرر بصري لـa31 بدقة أقل.",
+      "quality": 0.803,
+      "usable": false,
+      "persons_visible": "body",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a37-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a38-s01",
+      "source_sha256": "8ec0164bfd547e671869ed4693eeb863cc2356012f07e1c809b0d54b2d1f3f29",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+      "git_blob_sha": "dcd915a24bf45ebf1bb59eac2055833daa783a09",
+      "branches": [
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 32.77,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-inspection",
+        "lamb"
+      ],
+      "description": "فم الحمل يُفحص باليد (تقدير العمر/الأسنان) — أقوى مادة «رعاية وفحص» في الدفعة.",
+      "quality": 0.764,
+      "usable": true,
+      "persons_visible": "torso",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a38-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a39-s01",
+      "source_sha256": "3144279d4e03bd6dab58126719d70f87702fded56d8fe4669426a872b671c210",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+      "git_blob_sha": "e66c9940d5c50deefe884144d8bd61bccb5542a3",
+      "branches": [
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 32.73,
+      "width": 576,
+      "height": 1024,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animals-clean",
+        "sheep"
+      ],
+      "description": "خروفان واقفان على منصة/مقطورة حمراء والمزرعة خلفهما — تكوين نظيف.",
+      "quality": 0.758,
+      "usable": true,
+      "persons_visible": null,
+      "privacy_flags": [
+        "مبانٍ بالخلفية"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a39-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a40-s01",
+      "source_sha256": "cf1aca1b690b7b4e5a7307540838fe68f8210d281a73e1dc622c60d488629314",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4",
+      "git_blob_sha": "8f8ce6b28f336d8357b8222276535676fad805cb",
+      "branches": [
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 32.77,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animal-inspection",
+        "lamb"
+      ],
+      "description": "مكرر بصري لـa38 بدقة أقل.",
+      "quality": 0.754,
+      "usable": false,
+      "persons_visible": "torso",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a40-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a41-s01",
+      "source_sha256": "6fafb5e5809e718d59c6301b9815e7810955f7e22c19143a1a05d6615fe8d387",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4",
+      "git_blob_sha": "03e6bb57380ed742a171c471c12635a50b829022",
+      "branches": [
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 39.47,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "farm-pen",
+        "sheep"
+      ],
+      "description": "مكرر بصري لـa17 بدقة أقل.",
+      "quality": 0.681,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [
+        "مبانٍ سكنية بالخلفية"
+      ],
+      "consent_needed": false,
+      "burned_text": true,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a41-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a42-s01",
+      "source_sha256": "9906534cb17f4d3ff6760460356b9add521cac8d57ee500088110d777793218a",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4",
+      "git_blob_sha": "6a7996d18d32f97b7739cceebbe5abf397d6d02f",
+      "branches": [
+        "patch-3"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 32.73,
+      "width": 480,
+      "height": 848,
+      "orientation": "portrait",
+      "rotation_degrees": 270,
+      "tags": [
+        "animals-clean",
+        "sheep"
+      ],
+      "description": "مكرر بصري لـa39 بدقة أقل.",
+      "quality": 0.726,
+      "usable": false,
+      "persons_visible": null,
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a42-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    },
+    {
+      "scene_id": "gh-a43-s01",
+      "source_sha256": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+      "source_file": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+      "git_blob_sha": "1dd6ac36831a32b3b52a1c6c4f5d78c5b6c93a6b",
+      "branches": [
+        "patch-4"
+      ],
+      "kind": "video",
+      "start": 0.0,
+      "end": 63.45,
+      "width": 478,
+      "height": 850,
+      "orientation": "portrait",
+      "rotation_degrees": 0,
+      "tags": [
+        "animals-group",
+        "lambs"
+      ],
+      "description": "مجموعة حملان في حظيرة، أطول مقطع (63.45 ث) وأعلى جودة عمودية — منجم نوافذ.",
+      "quality": 0.836,
+      "usable": true,
+      "persons_visible": "legs",
+      "privacy_flags": [],
+      "consent_needed": false,
+      "burned_text": false,
+      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/archive-intake/github-branches/analysis/previews/gh-a43-s01.jpg",
+      "tagged_by": "arena-visual-review",
+      "staging": true,
+      "merge_approved": false
+    }
+  ]
+}

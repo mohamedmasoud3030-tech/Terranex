@@ -1,0 +1,128 @@
+{
+  "status": "proposal-only",
+  "generated_audio": false,
+  "adopted": false,
+  "voice_identity": "voice-00 — لم تتغيّر، ولم يُسجَّل أي صوت",
+  "old_script_adopted": false,
+  "v3_adopted": false,
+  "no_numeric_weight_claim": "لا يوجد رقم وزن في أي سطر — لا قراءة رقمية ظاهرة في المادة",
+  "proposals": [
+    {
+      "id": "vo-proposal-1",
+      "name": "مباشر — يناسب النسخة A (إثبات أولًا)",
+      "for_variant": "a",
+      "tone": "هادئ واثق، جملة قصيرة ثم وقفة. مصري عامي بلا مبالغة ولا وعود رقمية.",
+      "lines": [
+        {
+          "from": 0.4,
+          "to": 4.6,
+          "sec": 4.2,
+          "text": "الوزن مش كلام… الوزن قدامك.",
+          "words": 5,
+          "words_per_sec": 1.19
+        },
+        {
+          "from": 5.0,
+          "to": 7.0,
+          "sec": 2.0,
+          "text": "وبنتابع القطيع.",
+          "words": 2,
+          "words_per_sec": 1.0
+        },
+        {
+          "from": 7.4,
+          "to": 10.8,
+          "sec": 3.4,
+          "text": "تغذية… ومتابعة كل يوم.",
+          "words": 4,
+          "words_per_sec": 1.18
+        },
+        {
+          "from": 11.2,
+          "to": 13.9,
+          "sec": 2.7,
+          "text": "وفحص قبل التسليم.",
+          "words": 3,
+          "words_per_sec": 1.11
+        },
+        {
+          "from": 14.3,
+          "to": 16.9,
+          "sec": 2.6,
+          "text": "كلمنا على واتساب.",
+          "words": 3,
+          "words_per_sec": 1.15
+        },
+        {
+          "from": 17.2,
+          "to": 19.6,
+          "sec": 2.4,
+          "text": "تيرانكس… ملك حقيقي.",
+          "words": 3,
+          "words_per_sec": 1.25
+        }
+      ],
+      "total_words": 20,
+      "speaking_sec": 17.3
+    },
+    {
+      "id": "vo-proposal-2",
+      "name": "حكائي دافئ — يناسب النسخة B (الحيوان أولًا)",
+      "for_variant": "b",
+      "tone": "قريب من الناس، يبدأ بالحيوان وينتهي بالدليل. بلا صيغة بيع مباشرة.",
+      "lines": [
+        {
+          "from": 0.4,
+          "to": 2.0,
+          "sec": 1.6,
+          "text": "ده اللي بنربيه.",
+          "words": 3,
+          "words_per_sec": 1.88
+        },
+        {
+          "from": 2.3,
+          "to": 4.9,
+          "sec": 2.6,
+          "text": "وبنتابعه يوم بيوم.",
+          "words": 3,
+          "words_per_sec": 1.15
+        },
+        {
+          "from": 5.3,
+          "to": 8.4,
+          "sec": 3.1,
+          "text": "فحص… ومتابعة.",
+          "words": 2,
+          "words_per_sec": 0.65
+        },
+        {
+          "from": 8.7,
+          "to": 12.8,
+          "sec": 4.1,
+          "text": "تغذية… وتوثيق.",
+          "words": 2,
+          "words_per_sec": 0.49
+        },
+        {
+          "from": 13.0,
+          "to": 16.9,
+          "sec": 3.9,
+          "text": "والوزن؟ قدامك على الميزان.",
+          "words": 4,
+          "words_per_sec": 1.03
+        },
+        {
+          "from": 17.2,
+          "to": 19.6,
+          "sec": 2.4,
+          "text": "تيرانكس… كلمنا.",
+          "words": 2,
+          "words_per_sec": 0.83
+        }
+      ],
+      "total_words": 16,
+      "speaking_sec": 17.7
+    }
+  ],
+  "gate": "بوابة الصوت مغلقة: يلزم استماع المالك + قرار هوية مكتوب + اعتماد النص قبل أي توليد"
+}

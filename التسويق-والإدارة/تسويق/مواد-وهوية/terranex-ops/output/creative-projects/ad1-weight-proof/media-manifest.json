@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "project": "ad1-weight-proof",
+  "raw_media_in_git": true,
+  "why": "Source media is now preserved in the canonical 2026-11 raw archive merged via PR #202; no hardlinks required.",
+  "restore_in_new_session": [
+    "checkout main and this PR: all source media is in the repository under التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/",
+    "Run reel_build with spec-a.json or spec-b.json; project specs point directly at the canonical media archive."
+  ],
+  "verified": "كل ملف أعيد حساب SHA-256 له بعد التجهيز وطابق بيان الاستيعاب",
+  "assets": [
+    {
+      "asset_id": "gh-a02",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a02.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
+      "git_blob_sha": "e141ca5ddfec2c96f89ee8723c76f069b7b4f2ff",
+      "sha256": "c9c9d71f8a75f73ffed8876a22a74fb9951dbecd7e57a7b832661913b559887d",
+      "bytes": 109451,
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "original_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg"
+      ],
+      "display_geometry": [
+        1280,
+        960
+      ],
+      "rotation_degrees": null,
+      "duration": null,
+      "kind": "image",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a02.jpeg"
+    },
+    {
+      "asset_id": "gh-a06",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a06.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+      "git_blob_sha": "7b5aa0b25fc04460c28ffac28c4772fb786e17ea",
+      "sha256": "9b0f9b408d335cf04719e80de001bac156df1e5aa2f0482a0b8e4e203de2728c",
+      "bytes": 539783,
+      "branches": [
+        "patch-1",
+        "patch-2",
+        "patch-3",
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
+        "WhatsApp Image 2026-11-05 at 7.21.14 AM.jpeg"
+      ],
+      "display_geometry": [
+        1600,
+        1200
+      ],
+      "rotation_degrees": null,
+      "duration": null,
+      "kind": "image",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a06.jpeg"
+    },
+    {
+      "asset_id": "gh-a08",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a08.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
+      "git_blob_sha": "1ec851d7ca96a802ad72507a5f97ec083fc200b4",
+      "sha256": "7f997b324b541a6574e52ab55579db5490f23079591e4d89a74b421d824a962c",
+      "bytes": 195570,
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "original_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg"
+      ],
+      "display_geometry": [
+        906,
+        1600
+      ],
+      "rotation_degrees": null,
+      "duration": null,
+      "kind": "image",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a08.jpeg"
+    },
+    {
+      "asset_id": "gh-a09",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a09.jpeg",
+      "file_name": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
+      "git_blob_sha": "0653d37b5c366474e6e15c7c79ad725e40f7be57",
+      "sha256": "9e847d1b4ce77f34f7e2fe78eb3dbb863d1df2383218719c32e3b1a77a31644f",
+      "bytes": 184531,
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "original_paths": [
+        "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg"
+      ],
+      "display_geometry": [
+        924,
+        1600
+      ],
+      "rotation_degrees": null,
+      "duration": null,
+      "kind": "image",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a09.jpeg"
+    },
+    {
+      "asset_id": "gh-a16",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a16.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
+      "git_blob_sha": "8a401e9bfc3e2511d9f66bcd006dfb7f4961bdcc",
+      "sha256": "c31efcb86cffb20a61bd828dc194467c1bf5325d7fcd38dd93c642ae0ce31498",
+      "bytes": 7367943,
+      "branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4"
+      ],
+      "display_geometry": [
+        576,
+        1024
+      ],
+      "rotation_degrees": 270,
+      "duration": 41.8,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a16.mp4"
+    },
+    {
+      "asset_id": "gh-a25",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "git_blob_sha": "b8220242e79963c0db7b586928422027e38fde52",
+      "sha256": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "bytes": 2275817,
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4"
+      ],
+      "display_geometry": [
+        480,
+        848
+      ],
+      "rotation_degrees": 0,
+      "duration": 10.6,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4"
+    },
+    {
+      "asset_id": "gh-a26",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a26.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
+      "git_blob_sha": "c9825ddcf4f50f0567b5359fecc29b1656f0dfe3",
+      "sha256": "e8ca45a824170cf901b322d778015ae54abb5ff9fa567c2ea59d131acc1a92de",
+      "bytes": 2899036,
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4"
+      ],
+      "display_geometry": [
+        480,
+        848
+      ],
+      "rotation_degrees": 0,
+      "duration": 13.74,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a26.mp4"
+    },
+    {
+      "asset_id": "gh-a27",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "git_blob_sha": "b5303542ee29074be40eb1fbc1a1bbdbafc68c8e",
+      "sha256": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "bytes": 2551794,
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4"
+      ],
+      "display_geometry": [
+        480,
+        848
+      ],
+      "rotation_degrees": 0,
+      "duration": 11.83,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4"
+    },
+    {
+      "asset_id": "gh-a31",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a31.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
+      "git_blob_sha": "635a0097996ac1ff6464c94e4d955997382ded94",
+      "sha256": "777485a762c25a7046a7533a1c7a8a481e30b367c27455499c7bbccca2b351e1",
+      "bytes": 705245,
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4"
+      ],
+      "display_geometry": [
+        576,
+        1024
+      ],
+      "rotation_degrees": 270,
+      "duration": 2.63,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a31.mp4"
+    },
+    {
+      "asset_id": "gh-a33",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a33.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
+      "git_blob_sha": "88f4f4b311baae56573d371168b579b9ccb970c1",
+      "sha256": "4c315a8f810546bc3fc3ab2de41d9181744fe96f3a651eb3dacf703c41b232ab",
+      "bytes": 3212424,
+      "branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4"
+      ],
+      "display_geometry": [
+        478,
+        850
+      ],
+      "rotation_degrees": 0,
+      "duration": 15.37,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a33.mp4"
+    },
+    {
+      "asset_id": "gh-a38",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a38.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
+      "git_blob_sha": "dcd915a24bf45ebf1bb59eac2055833daa783a09",
+      "sha256": "8ec0164bfd547e671869ed4693eeb863cc2356012f07e1c809b0d54b2d1f3f29",
+      "bytes": 6529876,
+      "branches": [
+        "patch-3"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4"
+      ],
+      "display_geometry": [
+        576,
+        1024
+      ],
+      "rotation_degrees": 270,
+      "duration": 32.77,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a38.mp4"
+    },
+    {
+      "asset_id": "gh-a43",
+      "staged_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
+      "file_name": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+      "git_blob_sha": "1dd6ac36831a32b3b52a1c6c4f5d78c5b6c93a6b",
+      "sha256": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+      "bytes": 13622881,
+      "branches": [
+        "patch-4"
+      ],
+      "original_paths": [
+        "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4"
+      ],
+      "display_geometry": [
+        478,
+        850
+      ],
+      "rotation_degrees": 0,
+      "duration": 63.45,
+      "kind": "video",
+      "staging_mode": "canonical-main-archive",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4"
+    }
+  ]
+}

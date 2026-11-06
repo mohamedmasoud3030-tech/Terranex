@@ -1,0 +1,539 @@
+{
+  "a": {
+    "concept": "إثبات أولًا: العلامة والميزان في أول ٤٫٨ ثانية بإيقاع متلاحق",
+    "shots": [
+      {
+        "shot": 1,
+        "asset": "gh-a25",
+        "timeline": [
+          0.0,
+          1.5
+        ],
+        "sampled_at": 0.75,
+        "source_window": [
+          5.4,
+          6.9
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "افتتاحية: لوحة TERRANEX LLC مقروءة بالكامل",
+        "rendered_metrics": {
+          "sharpness_var": 254.01,
+          "edge_mean": 3.449,
+          "luma_mean": 121.78,
+          "luma_std": 45.85,
+          "white_clip": 0.0037,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-a-01.jpg"
+      },
+      {
+        "shot": 2,
+        "asset": "gh-a27",
+        "timeline": [
+          1.5,
+          3.3
+        ],
+        "sampled_at": 2.4,
+        "source_window": [
+          1.8,
+          3.6
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "الإثبات البطل: الكبش كاملًا عند الميزان",
+        "rendered_metrics": {
+          "sharpness_var": 487.44,
+          "edge_mean": 5.91,
+          "luma_mean": 103.24,
+          "luma_std": 53.32,
+          "white_clip": 0.0077,
+          "black_clip": 0.0001
+        },
+        "frame": "evidence/frame-a-02.jpg"
+      },
+      {
+        "shot": 3,
+        "asset": "gh-a25",
+        "timeline": [
+          3.3,
+          4.8
+        ],
+        "sampled_at": 4.05,
+        "source_window": [
+          1.2,
+          2.7
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "فعل التثبيت/الوزن من زاوية ثانية",
+        "rendered_metrics": {
+          "sharpness_var": 244.21,
+          "edge_mean": 3.338,
+          "luma_mean": 132.78,
+          "luma_std": 44.06,
+          "white_clip": 0.0045,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-a-03.jpg"
+      },
+      {
+        "shot": 4,
+        "asset": "gh-a43",
+        "timeline": [
+          4.8,
+          7.2
+        ],
+        "sampled_at": 6.0,
+        "source_window": [
+          4.5,
+          6.9
+        ],
+        "source_geometry": [
+          478,
+          850
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.259,
+        "role": "اتساع: القطيع في الحظيرة",
+        "rendered_metrics": {
+          "sharpness_var": 351.38,
+          "edge_mean": 6.121,
+          "luma_mean": 110.93,
+          "luma_std": 70.04,
+          "white_clip": 0.0099,
+          "black_clip": 0.0001
+        },
+        "frame": "evidence/frame-a-04.jpg"
+      },
+      {
+        "shot": 5,
+        "asset": "old-s01-08",
+        "timeline": [
+          7.2,
+          9.0
+        ],
+        "sampled_at": 8.1,
+        "source_window": [
+          19.2,
+          21.0
+        ],
+        "source_geometry": [
+          720,
+          1280
+        ],
+        "rotation_degrees": 0,
+        "upscale": 1.5,
+        "role": "استراحة صورة عالية الدقة: التغذية",
+        "rendered_metrics": {
+          "sharpness_var": 268.68,
+          "edge_mean": 4.834,
+          "luma_mean": 99.52,
+          "luma_std": 58.9,
+          "white_clip": 0.0054,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-a-05.jpg"
+      },
+      {
+        "shot": 6,
+        "asset": "gh-a08",
+        "timeline": [
+          9.0,
+          11.0
+        ],
+        "sampled_at": 10.0,
+        "source_window": [
+          0.0,
+          2.0
+        ],
+        "source_geometry": [
+          906,
+          1600
+        ],
+        "rotation_degrees": null,
+        "upscale": 1.2,
+        "role": "صف التغذية من أعلى — لقطة رسومية",
+        "rendered_metrics": {
+          "sharpness_var": 308.96,
+          "edge_mean": 5.809,
+          "luma_mean": 80.3,
+          "luma_std": 44.65,
+          "white_clip": 0.0,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-a-06.jpg"
+      },
+      {
+        "shot": 7,
+        "asset": "gh-a38",
+        "timeline": [
+          11.0,
+          14.0
+        ],
+        "sampled_at": 12.5,
+        "source_window": [
+          13.5,
+          16.5
+        ],
+        "source_geometry": [
+          576,
+          1024
+        ],
+        "rotation_degrees": 270,
+        "upscale": 1.875,
+        "role": "دليل الرعاية: فحص الأسنان/العمر",
+        "rendered_metrics": {
+          "sharpness_var": 391.67,
+          "edge_mean": 5.05,
+          "luma_mean": 80.34,
+          "luma_std": 51.07,
+          "white_clip": 0.0024,
+          "black_clip": 0.0239
+        },
+        "frame": "evidence/frame-a-07.jpg"
+      },
+      {
+        "shot": 8,
+        "asset": "gh-a26",
+        "timeline": [
+          14.0,
+          15.5
+        ],
+        "sampled_at": 14.75,
+        "source_window": [
+          4.0,
+          5.5
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "كبش نظيف كامل الجسم قبل الختام",
+        "rendered_metrics": {
+          "sharpness_var": 224.64,
+          "edge_mean": 3.485,
+          "luma_mean": 125.76,
+          "luma_std": 48.77,
+          "white_clip": 0.0097,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-a-08.jpg"
+      },
+      {
+        "shot": 9,
+        "asset": "gh-a27",
+        "timeline": [
+          15.5,
+          17.0
+        ],
+        "sampled_at": 16.25,
+        "source_window": [
+          7.8,
+          9.3
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "عودة للميزان — إغلاق الحلقة",
+        "rendered_metrics": {
+          "sharpness_var": 484.46,
+          "edge_mean": 5.256,
+          "luma_mean": 101.63,
+          "luma_std": 51.25,
+          "white_clip": 0.0038,
+          "black_clip": 0.0001
+        },
+        "frame": "evidence/frame-a-09.jpg"
+      }
+    ],
+    "content_sec": 17.0,
+    "total_sec": 20.0,
+    "shot_count": 9,
+    "avg_shot_sec": 1.889,
+    "opening_three_shots_sec": 4.8,
+    "scale_first_appears_at": 0.0,
+    "sharpness": {
+      "min": 224.64,
+      "max": 487.44,
+      "mean": 335.05
+    },
+    "upscale": {
+      "min": 1.2,
+      "max": 2.264
+    },
+    "white_clip_max": 0.0099,
+    "black_clip_max": 0.0239
+  },
+  "b": {
+    "concept": "الحيوان أولًا: الحيوان والرعاية ثم كشف الميزان في الثلث الأخير",
+    "shots": [
+      {
+        "shot": 1,
+        "asset": "gh-a26",
+        "timeline": [
+          0.0,
+          2.0
+        ],
+        "sampled_at": 1.0,
+        "source_window": [
+          3.6,
+          5.6
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "افتتاحية بالحيوان نفسه، بلا ميزان في الكادر",
+        "rendered_metrics": {
+          "sharpness_var": 209.8,
+          "edge_mean": 3.457,
+          "luma_mean": 126.03,
+          "luma_std": 48.63,
+          "white_clip": 0.0093,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-b-01.jpg"
+      },
+      {
+        "shot": 2,
+        "asset": "gh-a43",
+        "timeline": [
+          2.0,
+          5.0
+        ],
+        "sampled_at": 3.5,
+        "source_window": [
+          4.0,
+          7.0
+        ],
+        "source_geometry": [
+          478,
+          850
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.259,
+        "role": "القطيع — حياة المزرعة",
+        "rendered_metrics": {
+          "sharpness_var": 346.9,
+          "edge_mean": 6.053,
+          "luma_mean": 109.07,
+          "luma_std": 69.93,
+          "white_clip": 0.0083,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-b-02.jpg"
+      },
+      {
+        "shot": 3,
+        "asset": "gh-a38",
+        "timeline": [
+          5.0,
+          8.5
+        ],
+        "sampled_at": 6.75,
+        "source_window": [
+          13.0,
+          16.5
+        ],
+        "source_geometry": [
+          576,
+          1024
+        ],
+        "rotation_degrees": 270,
+        "upscale": 1.875,
+        "role": "الرعاية أولًا: فحص الأسنان",
+        "rendered_metrics": {
+          "sharpness_var": 468.6,
+          "edge_mean": 5.693,
+          "luma_mean": 79.73,
+          "luma_std": 48.77,
+          "white_clip": 0.002,
+          "black_clip": 0.0175
+        },
+        "frame": "evidence/frame-b-03.jpg"
+      },
+      {
+        "shot": 4,
+        "asset": "gh-a16",
+        "timeline": [
+          8.5,
+          11.1
+        ],
+        "sampled_at": 9.8,
+        "source_window": [
+          1.0,
+          3.6
+        ],
+        "source_geometry": [
+          576,
+          1024
+        ],
+        "rotation_degrees": 270,
+        "upscale": 1.875,
+        "role": "تعامل هادئ وموثّق",
+        "rendered_metrics": {
+          "sharpness_var": 779.18,
+          "edge_mean": 7.764,
+          "luma_mean": 98.29,
+          "luma_std": 43.44,
+          "white_clip": 0.0018,
+          "black_clip": 0.0028
+        },
+        "frame": "evidence/frame-b-04.jpg"
+      },
+      {
+        "shot": 5,
+        "asset": "old-s01-08",
+        "timeline": [
+          11.1,
+          12.9
+        ],
+        "sampled_at": 12.0,
+        "source_window": [
+          19.2,
+          21.0
+        ],
+        "source_geometry": [
+          720,
+          1280
+        ],
+        "rotation_degrees": 0,
+        "upscale": 1.5,
+        "role": "استراحة صورة عالية الدقة: التغذية",
+        "rendered_metrics": {
+          "sharpness_var": 300.48,
+          "edge_mean": 5.07,
+          "luma_mean": 99.47,
+          "luma_std": 58.83,
+          "white_clip": 0.0052,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-b-05.jpg"
+      },
+      {
+        "shot": 6,
+        "asset": "gh-a27",
+        "timeline": [
+          12.9,
+          14.7
+        ],
+        "sampled_at": 13.8,
+        "source_window": [
+          1.8,
+          3.6
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "كشف الميزان — نقطة التحول",
+        "rendered_metrics": {
+          "sharpness_var": 464.03,
+          "edge_mean": 5.907,
+          "luma_mean": 103.19,
+          "luma_std": 52.88,
+          "white_clip": 0.0065,
+          "black_clip": 0.0001
+        },
+        "frame": "evidence/frame-b-06.jpg"
+      },
+      {
+        "shot": 7,
+        "asset": "gh-a25",
+        "timeline": [
+          14.7,
+          16.2
+        ],
+        "sampled_at": 15.45,
+        "source_window": [
+          5.4,
+          6.9
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "العلامة مقروءة بعد الكشف",
+        "rendered_metrics": {
+          "sharpness_var": 207.16,
+          "edge_mean": 3.256,
+          "luma_mean": 122.95,
+          "luma_std": 45.41,
+          "white_clip": 0.0028,
+          "black_clip": 0.0
+        },
+        "frame": "evidence/frame-b-07.jpg"
+      },
+      {
+        "shot": 8,
+        "asset": "gh-a27",
+        "timeline": [
+          16.2,
+          17.0
+        ],
+        "sampled_at": 16.6,
+        "source_window": [
+          7.8,
+          8.6
+        ],
+        "source_geometry": [
+          480,
+          848
+        ],
+        "rotation_degrees": 0,
+        "upscale": 2.264,
+        "role": "ختم سريع على الميزان",
+        "rendered_metrics": {
+          "sharpness_var": 452.86,
+          "edge_mean": 5.076,
+          "luma_mean": 101.59,
+          "luma_std": 51.42,
+          "white_clip": 0.0032,
+          "black_clip": 0.0002
+        },
+        "frame": "evidence/frame-b-08.jpg"
+      }
+    ],
+    "content_sec": 17.0,
+    "total_sec": 20.0,
+    "shot_count": 8,
+    "avg_shot_sec": 2.125,
+    "opening_three_shots_sec": 8.5,
+    "scale_first_appears_at": 12.9,
+    "sharpness": {
+      "min": 207.16,
+      "max": 779.18,
+      "mean": 403.63
+    },
+    "upscale": {
+      "min": 1.5,
+      "max": 2.264
+    },
+    "white_clip_max": 0.0093,
+    "black_clip_max": 0.0175
+  }
+}

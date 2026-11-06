@@ -31,6 +31,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MARKETING_ROOT = os.path.abspath(os.path.join(ROOT, "..", ".."))
 PERSONAS = os.path.join(ROOT, "context", "personas.json")
 W, H, FPS = 1080, 1920, 30
+IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
 
 CAP_CY = 0.70           # منتصف شريط الكابشن — ثابت في كل الفيديو (داخل شريط الدليل)
 BOTTOM_BAND = 0.870     # بداية الشريط السفلي الذي يغطي أي علامة محروقة في الفوتاج
@@ -67,7 +68,8 @@ def _clip_vf(c: dict) -> str:
     إن غاب crop نرجع للسلوك القديم (hide_burnt_logo / crop_bottom_pct) توافقًا مع specs السابقة.
     """
     crop = c.get("crop")
-    if crop:
+    # crop={} صراحةً تعني «بلا قصّ لكن استخدم السلسلة الحديثة»؛ غياب المفتاح وحده يرجع للقديم.
+    if crop is not None:
         ct = max(0.0, min(0.60, float(crop.get("top", 0.0))))
         cb = max(0.0, min(0.60, float(crop.get("bottom", 0.0))))
         cl = max(0.0, min(0.40, float(crop.get("left", 0.0))))
@@ -75,8 +77,14 @@ def _clip_vf(c: dict) -> str:
         kw = max(0.20, 1.0 - cl - cr)
         kh = max(0.20, 1.0 - ct - cb)
         cropf = f"crop=iw*{kw:.4f}:ih*{kh:.4f}:iw*{cl:.4f}:ih*{ct:.4f}"
-        return (f"{cropf},scale={W}:{H}:force_original_aspect_ratio=increase,"
-                f"crop={W}:{H},unsharp=5:5:0.5:5:5:0.0,fps={FPS},setsar=1")
+        # sharpen=False ممنوع فيه أي تحسين حدّة صناعي (قرار مالك AD-1):
+        # مواد واتساب مضغوطة أصلًا، والـunsharp يبرز بلوكات الضغط ولا يستعيد تفصيلًا مفقودًا.
+        sharp = ",unsharp=5:5:0.5:5:5:0.0" if c.get("sharpen", True) else ""
+        # flags=lanczos يعيد تحجيمًا أنظف من الافتراضي عند التكبير — ليس حدّة صناعية.
+        sf = c.get("scale_flags")
+        flags = f":flags={sf}" if sf in ("lanczos", "bicubic", "bilinear", "spline", "area") else ""
+        return (f"{cropf},scale={W}:{H}:force_original_aspect_ratio=increase{flags},"
+                f"crop={W}:{H}{sharp},fps={FPS},setsar=1")
     if c.get("hide_burnt_logo", True):
         cut = float(c.get("crop_bottom_pct", 0.34))
         fct = 1.0 / max(0.5, 1.0 - cut)
@@ -239,9 +247,14 @@ def hook_layer(text: str) -> Image.Image:
     return img
 
 
-def cap_layer(text: str) -> Image.Image:
-    """شريط الكابشن المترجم — نفس المكان والحجم في كل سطر (لا عشوائية)."""
+def cap_layer(text: str, cy: float | None = None) -> Image.Image:
+    """شريط الكابشن المترجم — نفس المكان والحجم في كل سطر (لا عشوائية).
+
+    cy اختياري على مستوى الـspec كله (لا لكل لقطة) لضبط الشريط الثابت مرة واحدة
+    بحيث لا يغطي الحيوان ولا علامة الميزان. الافتراض يبقى CAP_CY توافقًا مع Specs السابقة.
+    """
     lint_text(text)
+    cy = CAP_CY if cy is None else max(0.30, min(0.90, float(cy)))
     f = B.font("black", CAP_FONT)
     lines = _balanced_lines(text, f, int(W * 0.86))
     if len(lines) > 1 and sum(len(l.split()) for l in lines) > CAP_MAX_WORDS * 2:
@@ -249,7 +262,7 @@ def cap_layer(text: str) -> Image.Image:
     tw = max(int(B.measure(l, f)) for l in lines)
     lh = int(f.size * 1.28)
     pw, ph = min(W - 48, tw + 72), len(lines) * lh + 40
-    y0 = int(H * CAP_CY) - ph // 2
+    y0 = int(H * cy) - ph // 2
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d0 = ImageDraw.Draw(img)
     d0.rounded_rectangle([(W - pw) // 2, y0, (W + pw) // 2, y0 + ph], radius=16,
@@ -368,8 +381,11 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     for i, c in enumerate(clips):
         p = os.path.join(tmpdir, f"{i:02d}.mp4")
         vf = _clip_vf(c)
+        # الصور الثابتة تحتاج -loop 1 وإلا أنتج ffmpeg إطارًا واحدًا فقط وانهارت المدة.
+        is_img = os.path.splitext(c["path"])[1].lower() in IMAGE_EXT
+        loop = ["-loop", "1"] if is_img else []
         subprocess.run([ff(), "-y", "-v", "error", "-ss", str(c["start"]),
-                        "-t", str(c["end"] - c["start"]), "-i", c["path"],
+                        "-t", str(c["end"] - c["start"])] + loop + ["-i", c["path"],
                         "-vf", vf,
                         "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
                         "-pix_fmt", "yuv420p", "-an", p], check=True)
@@ -394,7 +410,9 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
         if c.get("proof_bar"):
             proof_ranges.append((tacc, tacc + cd))
         tacc += cd
-    caps = [(float(c["from"]), float(c["to"]), cap_layer(c["text"])) for c in spec["captions"]]
+    cap_cy = spec.get("caption_cy")
+    caps = [(float(c["from"]), float(c["to"]), cap_layer(c["text"], cap_cy))
+            for c in spec["captions"]]
     end = endcard_layer(spec.get("endcard"))
 
     dec = subprocess.Popen([ff(), "-v", "error", "-i", seq, "-f", "rawvideo",
