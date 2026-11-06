@@ -1,0 +1,242 @@
+{
+  "total": 47,
+  "passed": 47,
+  "failed": [],
+  "checks": [
+    {
+      "check": "a: لا أصل محجور",
+      "pass": true,
+      "detail": "set()"
+    },
+    {
+      "check": "a: لا كاميرات مراقبة",
+      "pass": true,
+      "detail": "set()"
+    },
+    {
+      "check": "a: لا وجه بلا موافقة",
+      "pass": true,
+      "detail": "set()"
+    },
+    {
+      "check": "a: لا أشخاص معلنون بلا إذن",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: المدة 20.0",
+      "pass": true,
+      "detail": "20.0"
+    },
+    {
+      "check": "a: محتوى 17.0 + كارت 3.0",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: بلا حدّة صناعية",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: تحجيم lanczos",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: شريط كابشن واحد ثابت",
+      "pass": true,
+      "detail": "0.84"
+    },
+    {
+      "check": "a: بلا صندوق hook يغطي العلامة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: لا رقم وزن في الكابشن",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: لا ذكر مدينة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: كل النوافذ داخل المصدر",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: التكبير ≤ 2.3×",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: مزج مادة أعلى دقة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: غير مصرح بالنشر",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: مسودة بصرية",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: إفصاح صامت على الكارت",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "a: كل لقطة موثقة ببصمة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: لا أصل محجور",
+      "pass": true,
+      "detail": "set()"
+    },
+    {
+      "check": "b: لا كاميرات مراقبة",
+      "pass": true,
+      "detail": "set()"
+    },
+    {
+      "check": "b: لا وجه بلا موافقة",
+      "pass": true,
+      "detail": "set()"
+    },
+    {
+      "check": "b: لا أشخاص معلنون بلا إذن",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: المدة 20.0",
+      "pass": true,
+      "detail": "20.0"
+    },
+    {
+      "check": "b: محتوى 17.0 + كارت 3.0",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: بلا حدّة صناعية",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: تحجيم lanczos",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: شريط كابشن واحد ثابت",
+      "pass": true,
+      "detail": "0.84"
+    },
+    {
+      "check": "b: بلا صندوق hook يغطي العلامة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: لا رقم وزن في الكابشن",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: لا ذكر مدينة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: كل النوافذ داخل المصدر",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: التكبير ≤ 2.3×",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: مزج مادة أعلى دقة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: غير مصرح بالنشر",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: مسودة بصرية",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: إفصاح صامت على الكارت",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "b: كل لقطة موثقة ببصمة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "vo: لا صوت مولَّد",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "vo: غير معتمد",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "vo: النص القديم غير معتمد",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "vo: v3 غير معتمد",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "vo: مقترحان",
+      "pass": true,
+      "detail": "2"
+    },
+    {
+      "check": "vo: لا رقم وزن",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "media: خام خارج Git",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "media: أوامر استعادة موجودة",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "media: كل أصل له blob وsha",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

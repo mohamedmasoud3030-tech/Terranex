@@ -10,3 +10,12 @@ output/coverage/
 # (الأصول الحالية المتتبعة تبقى كما هي؛ هذا يمنع إضافة نسخ جديدة تلقائيًا)
 output/creative-projects/**/voice-input.*
 output/creative-projects/**/versions/**/*.mp4
+
+# مشروع AD-1: الوسائط الخام روابط صلبة لنسخ الاستيعاب، والمعاينات مخرجات ثقيلة
+# الاثنان خارج Git حسب سياسة ARTIFACT_RETENTION.md — الدليل في Git عبر بيان SHA-256
+output/creative-projects/ad1-weight-proof/media/
+output/creative-projects/ad1-weight-proof/*.mp4
+output/creative-projects/ad1-weight-proof/**/*.seg/
+output/creative-projects/ad1-weight-proof/evidence/frame-*.jpg
+output/creative-projects/ad1-weight-proof/evidence/cmp-*.jpg
+output/creative-projects/ad1-weight-proof/evidence/probe-*.jpg

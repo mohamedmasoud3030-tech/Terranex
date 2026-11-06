@@ -252,3 +252,31 @@ class TestBackwardCompat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestAD1Options(unittest.TestCase):
+    """خيارات AD-1: بلا حدّة صناعية، تحجيم lanczos، شريط كابشن قابل للضبط، صور ثابتة."""
+
+    def test_sharpen_off_removes_unsharp(self):
+        vf = R._clip_vf({"crop": {"top": 0.0}, "sharpen": False})
+        self.assertNotIn("unsharp", vf)
+
+    def test_sharpen_default_unchanged(self):
+        self.assertIn("unsharp", R._clip_vf({"crop": {"top": 0.0}}))
+
+    def test_lanczos_flag_applied(self):
+        self.assertIn("flags=lanczos", R._clip_vf({"crop": {}, "scale_flags": "lanczos"}))
+
+    def test_unknown_scale_flag_ignored(self):
+        vf = R._clip_vf({"crop": {}, "scale_flags": "bogus;rm -rf"})
+        self.assertNotIn("flags=", vf)
+
+    def test_caption_band_moves_but_stays_clamped(self):
+        a = R.cap_layer("الوزن قدامك", 0.84)
+        b = R.cap_layer("الوزن قدامك", 0.70)
+        self.assertNotEqual(a.tobytes(), b.tobytes())
+        self.assertEqual(R.cap_layer("x", 0.99).tobytes(), R.cap_layer("x", 0.90).tobytes())
+
+    def test_image_extensions_recognised(self):
+        self.assertIn(".jpg", R.IMAGE_EXT)
+        self.assertIn(".jpeg", R.IMAGE_EXT)

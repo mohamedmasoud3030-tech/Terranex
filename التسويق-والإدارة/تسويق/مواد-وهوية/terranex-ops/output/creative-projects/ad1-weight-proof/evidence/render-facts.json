@@ -1,0 +1,48 @@
+[
+  {
+    "variant": "a",
+    "file": "preview-a-silent.mp4",
+    "bytes": 16789610,
+    "sha256": "44128acbf760cc4ef31d601b3b4f227e69cfc1554c5fd2b82d08f7025ed3fe2d",
+    "frames": 600,
+    "duration_sec": 20.0,
+    "fps": 30.0,
+    "resolution": [
+      1080,
+      1920
+    ],
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "has_audio": false,
+    "black_share": 0.0,
+    "qa_gate_fails": [
+      "مفيش مسار صوتي"
+    ],
+    "qa_gate_warns": [],
+    "decode_errors": null,
+    "in_git": false
+  },
+  {
+    "variant": "b",
+    "file": "preview-b-silent.mp4",
+    "bytes": 19634982,
+    "sha256": "41d091306c97df0c0d6f8e2d1bb2e33ea36ce732c5d9caa1e93e06a70b0811ad",
+    "frames": 600,
+    "duration_sec": 20.0,
+    "fps": 30.0,
+    "resolution": [
+      1080,
+      1920
+    ],
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "has_audio": false,
+    "black_share": 0.0,
+    "qa_gate_fails": [
+      "مفيش مسار صوتي"
+    ],
+    "qa_gate_warns": [],
+    "decode_errors": null,
+    "in_git": false
+  }
+]
