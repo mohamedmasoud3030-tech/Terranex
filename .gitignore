@@ -73,9 +73,3 @@ __pycache__/
 .env*
 !.env.example
 !.env.*.example
-
-# ملفات ينزّلها موصّل Google Drive إلى مساحة العمل (أجزاء أرشيف/وسائط خام) — لا تُرفع إلى Git
-google_drive/
-
-# نسخ عمل خام للوسائط المسحوبة من فروع GitHub — لا تُرفع إلى Git
-media-intake-work/
