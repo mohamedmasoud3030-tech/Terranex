@@ -277,7 +277,7 @@ def main():
     p = sub.add_parser("ingest"); p.add_argument("--file", required=True); p.add_argument("--role", choices=ROLES, required=True)
     p = sub.add_parser("review"); p.add_argument("--id", required=True); p.add_argument("--description", required=True); p.add_argument("--duration", type=float)
     p = sub.add_parser("render"); p.add_argument("--plan", required=True); p.add_argument("--voice", required=True); p.add_argument("--metadata", required=True); p.add_argument("--out", required=True)
-    p = sub.add_parser("serve"); p.add_argument("--host", default="127.0.0.1"); p.add_argument("--port", default=8765, type=int)
+    p = sub.add_parser("serve"); p.add_argument("--inbox", default=str(WORK/"inbox")); p.add_argument("--every", default=30, type=int)
     args = ap.parse_args()
     try:
         if args.cmd == "plan":
@@ -295,8 +295,8 @@ def main():
                                     Path(args.voice), json.loads(Path(args.metadata).read_text(encoding="utf-8")),
                                     Path(args.out)), ensure_ascii=False))
         if args.cmd == "serve":
-            from production_robot_server import serve
-            serve(args.host, args.port)
+            from production_robot_worker import serve
+            serve(Path(args.inbox), args.every)
         return 0
     except (Blocked, ValueError, OSError) as exc:
         print("BLOCKED: " + str(exc), file=sys.stderr)

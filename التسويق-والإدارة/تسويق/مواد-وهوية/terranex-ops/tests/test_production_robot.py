@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "engine"))
@@ -95,6 +96,26 @@ class ProductionRobotTests(unittest.TestCase):
                     {"stages": ["nonexistent"]}):
             with self.assertRaises(B.Blocked):
                 B.make_plan(bad, self.assets)
+
+    def test_folder_worker_ingests_real_upload_without_duplicate(self):
+        import production_robot_worker as W
+        inbox = self.work / "inbox"
+        folder = inbox / "delivery"
+        folder.mkdir(parents=True)
+        (folder / "real_delivery.mp4").write_bytes(b"original-file-from-camera")
+        brief = self.repo / "brief.json"
+        brief.write_text(json.dumps({"duration_seconds": 20, "stages": ["delivery"]}), encoding="utf-8")
+        with mock.patch.object(B, "ARCHIVE", self.manifest):
+            # pass a fixture archive via monkeypatching only the worker's asset loader
+            original = B.assets
+            def fixture_assets(*args, **kwargs):
+                return original(self.manifest, self.work, self.repo)
+            with unittest.mock.patch.object(B, "assets", side_effect=fixture_assets):
+                first = W.run_once(inbox, work=self.work, brief=brief)
+                second = W.run_once(inbox, work=self.work, brief=brief)
+        self.assertEqual(len(first["received"]), 1)
+        self.assertEqual(len(second["received"]), 0)
+        self.assertEqual(first["missing"][0]["stage"], "delivery")
 
     def test_path_escape_rejected(self):
         with self.assertRaises(B.Blocked):

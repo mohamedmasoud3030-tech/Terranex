@@ -22,21 +22,20 @@
 
 أعد إنشاء الخطة. كل اختيار لفيديو من الأرشيف القديم يظل **مقترحًا** حتى تراجع نافذته وتضع في brief.choices اختيار asset_id، وتوقيت start، وwindow_reviewed=true. عدم المراجعة = لا رندر.
 
-## تشغيل السيرفر
+## تشغيل روبوت السيرفر بدون فتح منفذ شبكة
 
-    TERRANEX_BOT_TOKEN=YOUR_LONG_SECRET_TOKEN python engine/production_robot.py serve --host 127.0.0.1 --port 8765
+ضع الملفات الخام في مجلدات حسب المرحلة داخل output/production-robot/inbox/:
 
-كل طلب يحتاج Authorization Bearer token. المنافذ الخاصة:
+- farm / weighing / feeding / inspection
+- slaughter / cutting / packing / delivery
 
-- GET /v1/health
-- PUT /v1/assets?role=delivery&filename=delivery.mp4 مع بايتات الفيديو في جسم الطلب، والحد 250MiB.
-- POST /v1/assets/{id}/review مع JSON يحتوى human_reviewed=true وdescription وduration.
-- POST /v1/jobs يرسل brief JSON ويرجع storyboard وmissing وreview_needed.
-- GET /v1/jobs/{id} يعرض الحالة.
-- POST /v1/jobs/{id}/render يرسل voice_metadata فقط؛ يسحب الملف الخاص الثابت من output/production-robot/voices/approved-voice-00.mp3 بعد فحص هويته وبصمته، ولا يقبل مسارات صوت من العميل.
-- GET /v1/jobs/{id}/video ينزل الملف النهائي بعد نجاح الرندر، وبنفس التوثيق.
+شغّل عامل الإنتاج على جهازك أو السيرفر المخصص:
 
-يعمل على localhost افتراضيًا. أي فتح خارجي يتطلب TLS reverse proxy موثق. الخادم الحالي **كود على GitHub غير منشور على VPS**.
+    python engine/production_robot.py serve --inbox output/production-robot/inbox --every 30
+
+العامل يراقب الملفات الجديدة، يحفظها في output/production-robot/uploads بدون تغيير الأصل أو رفعه إلى Git، يمنع التكرار باستخدام SHA-256، ويحدّث plan.json وworker-status.json تلقائيًا. كل ملف جديد يبقى بانتظار مراجعة بشرية ثم تحديد نافذة القص، قبل أي Render.
+
+هذا العامل لا يفتح HTTP ولا يعتمد على اتصال خارجي ولا ينشر. لإدارته كخدمة دائمة استخدم systemd أو مدير عمليات مماثل على خادم مصرح به. **الكود مرفوع على GitHub، لكنه غير مشغّل على VPS حاليًا**. GitHub Actions يوفر عامل تخطيط لحظيًا عند الطلب.
 
 ## التعليق الصوتي والتحرير
 
