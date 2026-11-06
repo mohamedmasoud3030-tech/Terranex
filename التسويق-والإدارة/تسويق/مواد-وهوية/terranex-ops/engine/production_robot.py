@@ -111,7 +111,7 @@ def make_plan(brief, found):
             raise Blocked("choice must be an object")
         wanted = pick.get("asset_id")
         matches = [a for a in found if a["id"] == wanted] if wanted else [
-            a for a in found if set(a["tags"]).intersection(TAGS[stage])]
+            a for a in found if stage in a["tags"] or set(a["tags"]).intersection(TAGS[stage])]
         matches.sort(key=lambda a: (a["kind"] == "video", a["quality"]), reverse=True)
         reason, chosen = "no verified filmed stage", None
         for a in matches:
@@ -127,7 +127,7 @@ def make_plan(brief, found):
             if a["source"] == "upload" and not a["reviewed"]:
                 reason = "uploaded footage awaiting human visual review"
                 continue
-            if wanted and not set(a["tags"]).intersection(TAGS[stage]):
+            if wanted and not (stage in a["tags"] or set(a["tags"]).intersection(TAGS[stage])):
                 reason = "chosen media does not document this stage"
                 continue
             start = float(pick.get("start", 0))
