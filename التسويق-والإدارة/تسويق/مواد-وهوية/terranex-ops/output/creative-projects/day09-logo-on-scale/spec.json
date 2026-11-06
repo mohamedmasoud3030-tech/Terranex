@@ -1,0 +1,104 @@
+{
+  "project": "day09-logo-on-scale",
+  "title": "الشعار على الميزان",
+  "voice": {
+    "voice_id": "voice-00",
+    "approval_note": "سكربت جديد خاص بهذا اليوم — لا يكرر أي جملة أو كابشن من أي فيديو آخر. صوت voice-00 المعتمد. اللقطات: صور حقيقية بملف الأرشيف (حركة كاميرا فقط، لا توليد).",
+    "sha256": "9563b8784e9b71b998101274479638ba38c1ecfdbb17c52873f51be4cb9b673a",
+    "transcript_verification": "human-reviewed",
+    "transcript": [
+      "بص على الميزان… مش على الكلام.",
+      "الشعار محفور على الجهاز… اللي بيتوزن عليه.",
+      "يعني اللي بتشوفه… مش صورة مركبة.",
+      "الجهاز موجود… والشغل مكشوف."
+    ]
+  },
+  "clips": [
+    {
+      "path": "media/s1.mp4",
+      "start": 0.0,
+      "end": 3.2,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/s2.mp4",
+      "start": 0.0,
+      "end": 2.8,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/s3.mp4",
+      "start": 0.0,
+      "end": 2.8,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/s4.mp4",
+      "start": 0.0,
+      "end": 2.8,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "../ad2-farm-to-delivery-40s/media/clips/a13-packing-wide.mp4",
+      "start": 0.0,
+      "end": 2.6,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    }
+  ],
+  "captions": [
+    {
+      "from": 0.35,
+      "to": 3.4,
+      "text": "بص على الميزان… مش على الكلام"
+    },
+    {
+      "from": 3.65,
+      "to": 8.0,
+      "text": "الشعار محفور على الجهاز نفسه"
+    },
+    {
+      "from": 8.15,
+      "to": 11.5,
+      "text": "اللي بتشوفه… مش صورة مركبة"
+    },
+    {
+      "from": 11.65,
+      "to": 14.4,
+      "text": "الجهاز موجود… والشغل مكشوف"
+    }
+  ],
+  "endcard_sec": 2.4,
+  "endcard": {
+    "headline": "ملك حقيقي",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "تعليق صوتي · مدعوم بإضافات AI"
+  },
+  "audio": {
+    "original_gain": 0.3,
+    "ambient_from": 0
+  },
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "format": "photo-motion"
+}

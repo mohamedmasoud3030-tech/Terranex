@@ -1,0 +1,114 @@
+{
+  "project": "day08-left-in-market",
+  "title": "سبته في السوق؟",
+  "voice": {
+    "voice_id": "voice-00",
+    "approval_note": "سكربت جديد خاص بهذا اليوم — لا يكرر أي جملة أو كابشن من أي فيديو آخر. صوت voice-00 المعتمد. اللقطات: صور حقيقية بملف الأرشيف (حركة كاميرا فقط، لا توليد).",
+    "sha256": "5a961508071a752d856e183639b38800c46311ec8d997de1242460d75d574563",
+    "transcript_verification": "human-reviewed",
+    "transcript": [
+      "إنت اشتريت راس… وسبته في السوق؟",
+      "ولا شفته وهو بيتوزن؟",
+      "المرة الجاية… خليه قدام عينك.",
+      "مش محتاج تسيب شغلك… عشان تتابع."
+    ]
+  },
+  "clips": [
+    {
+      "path": "media/s1.mp4",
+      "start": 0.0,
+      "end": 3.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/s2.mp4",
+      "start": 0.0,
+      "end": 3.2,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/s3.mp4",
+      "start": 0.0,
+      "end": 3.2,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/s4.mp4",
+      "start": 0.0,
+      "end": 2.8,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "../ad2-farm-to-delivery-40s/media/clips/a10-cutting.mp4",
+      "start": 0.0,
+      "end": 3.0,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "../ad2-farm-to-delivery-40s/media/clips/a12-packing.mp4",
+      "start": 0.0,
+      "end": 3.0,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    }
+  ],
+  "captions": [
+    {
+      "from": 0.35,
+      "to": 3.6,
+      "text": "اشتريت راس… وسبته في السوق؟"
+    },
+    {
+      "from": 4.05,
+      "to": 6.9,
+      "text": "ولا شفته وهو بيتوزن؟"
+    },
+    {
+      "from": 7.05,
+      "to": 10.3,
+      "text": "خليه قدام عينك… المرة الجاية"
+    },
+    {
+      "from": 10.45,
+      "to": 14.0,
+      "text": "من غير ما تسيب شغلك"
+    }
+  ],
+  "endcard_sec": 2.4,
+  "endcard": {
+    "headline": "ملك حقيقي",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "تعليق صوتي · مدعوم بإضافات AI"
+  },
+  "audio": {
+    "original_gain": 0.3,
+    "ambient_from": 0
+  },
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "format": "photo-motion"
+}
