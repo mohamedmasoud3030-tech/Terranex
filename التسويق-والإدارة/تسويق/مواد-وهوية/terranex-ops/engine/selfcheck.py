@@ -120,8 +120,15 @@ def check_video(tmp: str) -> str | None:
     if p0.returncode != 0:
         record("إنتاج ريل 9:16 بصوت", False, "تعذّر توليد صوت الاختبار من ffmpeg")
         return None
+    # This is an AV transport test using a sine tone, not a narrator or a
+    # voice-00 identity sample. Keep production narration guards intact.
+    silent = os.path.join(tmp, "silent.mp4")
     p = run([sys.executable, "engine/make_video.py", "--script", script,
-             "--voice", voice, "--out", reel])
+             "--out", silent])
+    if p.returncode == 0:
+        p = run([ff, "-y", "-v", "error", "-i", silent, "-i", voice,
+                 "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy",
+                 "-c:a", "aac", "-t", "3.2", "-movflags", "+faststart", reel])
     ok = p.returncode == 0 and os.path.exists(reel)
     record("إنتاج ريل 9:16 بصوت", ok, (p.stderr or p.stdout)[-300:] if not ok else "")
     return reel if ok else None
@@ -411,3 +418,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

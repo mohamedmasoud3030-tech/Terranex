@@ -1,41 +1,68 @@
 {
   "voice_id": "voice-00",
-  "status": "blocked-source-unavailable",
+  "status": "rendered-existing-approved-recording",
   "generated_audio": false,
-  "script_review": "reviewed-against-delivered-visuals",
+  "script_review": "unchanged-historical-script-authorized-by-owner",
   "spoken_transcript_verified": false,
   "source_video_library_file_id": "libfile_1c4dac8a45688191b663bd493a587192",
   "source_video_sha256": "394feb936bb696ee41d68fb9c94d4dbbfdec3faa7c30bae79ef552be9c454cc1",
   "duration_sec": 20,
   "phrases": [
     {
-      "from": 0.12,
-      "to": 4.65,
-      "text": "الوزن قدامك… مش كلام."
+      "source_from": 0.15,
+      "source_to": 2.6,
+      "from": 0.15,
+      "to": 2.6,
+      "text": "رأس حقيقي… مش ورق."
     },
     {
-      "from": 4.95,
-      "to": 7.1,
-      "text": "والقطيع قدام عينك."
+      "source_from": 2.78,
+      "source_to": 4.22,
+      "from": 2.8,
+      "to": 4.24,
+      "text": "اللي بتشتريه مش ورق."
     },
     {
-      "from": 7.4,
-      "to": 10.85,
-      "text": "تغذية… ومتابعة."
+      "source_from": 4.28,
+      "source_to": 7.0,
+      "from": 7.3,
+      "to": 10.02,
+      "text": "رأس حقيقي بيتغذى ويتوزن."
     },
     {
-      "from": 11.15,
-      "to": 13.85,
-      "text": "فحص ومتابعة."
+      "source_from": 7.08,
+      "source_to": 10.15,
+      "from": 10.45,
+      "to": 13.520000000000001,
+      "text": "وتقريره بالصور أول بأول."
     },
     {
-      "from": 14.15,
-      "to": 16.85,
-      "text": "اسألنا على واتساب."
+      "source_from": 10.38,
+      "source_to": 13.35,
+      "from": 17.0,
+      "to": 19.97,
+      "text": "ملك حقيقي… ومتابعة بعينك."
     }
   ],
-  "timing_status": "target-windows-only-not-measured-speech",
   "endcard_voice": null,
-  "reason": "Original provider/model/settings for voice-00 not recovered; no generation tool available. vo-09b remains reference only.",
-  "publish_approved": false
+  "reason": "Later owner instruction explicitly authorized reuse of the existing generated voice recording with unchanged words; original TTS provider/model remains unavailable.",
+  "publish_approved": false,
+  "reused_existing_audio": true,
+  "timing_source": "measured-energy-on-historical-recording",
+  "voice_source_sha256": "e1b833613b56019a292ee723b68ff23526bd4887d285b5e2bf61ef29da336d41",
+  "output_video_library_file_id": "libfile_69dc88011f4881919747ef43735b007c",
+  "output_video_sha256": "c00c5d399d505ecd88757050fa1468a3387f46ffdf14a018af20187660b516ae",
+  "output_video": "TerraNex_الوزن_قدامك_20s_VO.mp4",
+  "qa": {
+    "pass": true,
+    "duration_sec": 20,
+    "video": "h264",
+    "audio": "aac",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "sample_rate": 48000,
+    "channels": 2,
+    "lufs": -16.4
+  }
 }

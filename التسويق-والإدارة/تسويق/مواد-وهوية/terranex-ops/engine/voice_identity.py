@@ -7,9 +7,11 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from safe_paths import confine
 
 PERSONAS = Path(__file__).resolve().parent.parent / "context" / "personas.json"
 APPROVED_IDS = frozenset({"voice-00", "owner-eng-abdallah"})
+AUDIO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def voice_bank():
@@ -47,19 +49,34 @@ def require_narration(metadata, audio_path):
         # caller-provided boolean/note must never unlock a real person's voice.
         raise ValueError("صوت عبدالله غير متاح: الأصل الخاص والموافقة الكتابية لم يتم التحقق منهما")
     if (not isinstance(metadata.get("approval_note"), str)
-            or not metadata["approval_note"].strip()
-            or metadata.get("transcript_verification") != "human-reviewed"):
-        raise ValueError("يلزم إذن الاستخدام وتفريغ بشري مطابق للنص الحالي")
-    digest = hashlib.sha256(Path(audio_path).read_bytes()).hexdigest()
+            or not metadata["approval_note"].strip()):
+        raise ValueError("يلزم إذن استخدام موثق للتعليق")
+    audio = confine(str(audio_path), str(AUDIO_ROOT))
+    digest = hashlib.sha256(Path(audio).read_bytes()).hexdigest()
     if metadata.get("sha256") != digest:
         raise ValueError("بصمة ملف التعليق لا تطابق الملف المعتمد")
-    if digest == profile.get("reference_asset", {}).get("sha256"):
-        raise ValueError("vo-09b مرجع تاريخي فقط؛ لا يُعاد تركيبه كتعليق لنص جديد")
+    reference = profile.get("reference_asset", {})
+    if digest == reference.get("sha256"):
+        # The later explicit owner instruction permits this exact recording,
+        # not fresh words from an unknown generator or a similar voice.
+        reuse = reference.get("reuse_authorization", {})
+        transcript = metadata.get("transcript")
+        if (reuse.get("status") != "approved-existing-recording"
+                or reuse.get("scope") != "unchanged-spoken-words-only"
+                or metadata.get("historical_reuse") is not True
+                or metadata.get("transcript_verification") != "historical-script"
+                or not isinstance(transcript, list)
+                or not transcript
+                or transcript != reference.get("transcript")):
+            raise ValueError("vo-09b تاريخي؛ إعادة استخدامه تتطلب تفويض المالك ونفس كلماته الأصلية")
+    elif metadata.get("transcript_verification") != "human-reviewed":
+        raise ValueError("يلزم تفريغ بشري مطابق للنص الجديد")
     return voice_id
 
 
 def require_sidecar(audio_path):
-    sidecar = Path(str(audio_path) + ".voice.json")
+    audio = confine(str(audio_path), str(AUDIO_ROOT))
+    sidecar = Path(confine(audio + ".voice.json", str(AUDIO_ROOT)))
     if not sidecar.is_file():
         raise ValueError("يلزم ملف .voice.json بجوار التعليق يثبت هويته ومراجعة نصه")
-    return require_narration(json.loads(sidecar.read_text(encoding="utf-8")), audio_path)
+    return require_narration(json.loads(sidecar.read_text(encoding="utf-8")), audio)

@@ -19,7 +19,7 @@ import creative_director as CD
 
 class VoiceIdentityTests(unittest.TestCase):
     def setUp(self):
-        self.td = tempfile.TemporaryDirectory()
+        self.td = tempfile.TemporaryDirectory(dir=VI.AUDIO_ROOT)
         self.addCleanup(self.td.cleanup)
         self.asset = Path(self.td.name) / 'fixture.wav'
         self.asset.write_bytes(b'non-speaker-test-fixture')
@@ -95,3 +95,19 @@ class VoiceIdentityTests(unittest.TestCase):
 
     def test_new_brief_uses_canonical_voice(self):
         self.assertEqual(CD.parse_brief('فيديو متابعة الحيوانات 20 ثانية بتعليق صوتي')["voice"]["profile_id"], 'voice-00')
+
+    def test_exact_historical_recording_requires_explicit_reuse_and_same_words(self):
+        profile = copy.deepcopy(VI.require_profile('voice-00'))
+        profile['reference_asset']['sha256'] = self.meta['sha256']
+        self.meta.update(historical_reuse=True, transcript_verification='historical-script',
+                         transcript=profile['reference_asset']['transcript'])
+        with patch.object(VI, 'require_profile', return_value=profile):
+            self.assertEqual(VI.require_narration(self.meta, self.asset), 'voice-00')
+            self.meta['transcript'] = ['different new words']
+            with self.assertRaises(ValueError): VI.require_narration(self.meta, self.asset)
+
+    def test_audio_outside_marketing_root_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            outside = Path(td) / 'outside.wav';outside.write_bytes(self.asset.read_bytes())
+            with self.assertRaisesRegex(ValueError, 'outside allowed root'):
+                VI.require_narration(self.meta, outside)

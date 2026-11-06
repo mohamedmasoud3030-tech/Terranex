@@ -30,7 +30,7 @@
       "tone": "رجالي مصري هادئ وبسيط وواثق",
       "status": "معتمد كصوت أساسي ثابت للتعليق الصوتي (19/10)",
       "approved_by": "المالك — اختيار من نموذجين في جلسة 19/10",
-      "usage_rule": "الصوت الافتراضي الوحيد؛ لا بديل مشابه ولا إعادة استخدام كلمات 09b في نص جديد. تسمية arena-session-tts سجل تاريخي وليست مزودًا قابلاً للاستدعاء.",
+      "usage_rule": "الصوت الافتراضي الوحيد؛ لا بديل مشابه. سمح المالك في 2026-11-06 بإعادة استخدام تسجيل 09b نفسه بكلماته الأصلية فقط؛ ذلك لا يستعيد محرك التوليد ولا يجيز نصًا جديدًا به. تسمية arena-session-tts سجل تاريخي وليست مزودًا قابلاً للاستدعاء.",
       "gender": "male",
       "generation_status": "unavailable-source-not-recovered",
       "provider": null,
@@ -39,8 +39,21 @@
       "reference_asset": {
         "path": "output/campaigns/حملة-الإعلان-المؤسسي-ممول-١/vo-09b.mp3",
         "sha256": "e1b833613b56019a292ee723b68ff23526bd4887d285b5e2bf61ef29da336d41",
-        "kind": "historical-render-reference-only",
-        "duration_sec": 13.608
+        "kind": "historical-render-approved-for-exact-reuse",
+        "duration_sec": 13.608,
+        "reuse_authorization": {
+          "status": "approved-existing-recording",
+          "date": "2026-11-06",
+          "scope": "unchanged-spoken-words-only",
+          "owner_instruction": "استخدم الصوت القديم المولد — رجل هادي بسيط بأسلوب مصري"
+        },
+        "transcript": [
+          "رأس حقيقي… مش ورق.",
+          "اللي بتشتريه مش ورق.",
+          "رأس حقيقي بيتغذى ويتوزن.",
+          "وتقريره بالصور أول بأول.",
+          "ملك حقيقي… ومتابعة بعينك."
+        ]
       }
     },
     "owner_voice": {
