@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+import voice_identity as VI  # noqa: E402
 from safe_paths import confine  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -358,6 +359,9 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     out = os.path.abspath(out)
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
+    if voice:
+        voice = _safe_input_path(voice, os.path.dirname(spec_path), os.getcwd())
+        VI.require_narration(spec.get("voice"), voice)
     # المسارات النسبية في الـspec تُحسب من مجلد الـspec نفسه (لا من CWD)
     base = os.path.dirname(os.path.abspath(spec_path))
     for c in spec["clips"]:
@@ -507,3 +511,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     r = build(a.spec, a.voice, a.out)
     print(f"OK {r['out']} · {r['frames']} إطار · {r['duration']}ث · {r['kb']}KB")
+

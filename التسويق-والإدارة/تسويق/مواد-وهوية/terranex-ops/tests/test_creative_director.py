@@ -282,7 +282,8 @@ class TestMemoryAndRevision(unittest.TestCase):
 
 class TestVoiceSync(unittest.TestCase):
     def setUp(self):
-        self.td = tempfile.TemporaryDirectory()
+        # Production narration assets are confined to the marketing workspace.
+        self.td = tempfile.TemporaryDirectory(dir=CD.ROOT)
         self.proj = CD.create_project(REQ, project_id="voice-proj", projects_root=self.td.name)
         self.store = self.proj["store"] if "store" in self.proj else CS.ProjectStore("voice-proj", self.td.name)
         self.n = len(self.proj["plan"]["schedule"]["voice_phrases"])
@@ -353,3 +354,4 @@ class TestReviewGates(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

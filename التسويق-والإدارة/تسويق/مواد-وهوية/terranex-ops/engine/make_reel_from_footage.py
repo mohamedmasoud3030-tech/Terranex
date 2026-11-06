@@ -21,6 +21,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+import voice_identity as VI  # noqa: E402
 
 W, H = 1080, 1920
 
@@ -119,6 +120,8 @@ def endcard_layer():
 
 
 def render(video, captions, out, voice_over=None, endcard=2.6, keep_audio=True):
+    if voice_over:
+        VI.require_sidecar(voice_over)
     ff = ffmpeg_bin()
     dur = probe(video)
 
@@ -197,7 +200,7 @@ def main():
     ap.add_argument("--video", required=True)
     ap.add_argument("--captions", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--voice-over", default=None, help="مسارات صوت بديلة (مولّدة أو مسجلة)")
+    ap.add_argument("--voice-over", default=None, help="تعليق معتمد فقط مع ملف .voice.json مطابق")
     ap.add_argument("--no-audio", action="store_true")
     ap.add_argument("--endcard", type=float, default=2.6)
     a = ap.parse_args()
@@ -209,3 +212,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
