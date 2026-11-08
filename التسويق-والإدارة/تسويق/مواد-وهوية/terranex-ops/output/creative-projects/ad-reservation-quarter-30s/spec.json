@@ -1,0 +1,130 @@
+{
+  "project": "ad-reservation-quarter-30s",
+  "title": "احجز ربعك",
+  "voice": {
+    "voice_id": "voice-00",
+    "approval_note": "سكربت جديد خاص بحملة الحجز — لا يكرر أي جملة من أي فيديو سابق. لقطات أرشيف حقيقية ١٠٠٪، بلا أي شخص ظاهر بوجهه.",
+    "sha256": "",
+    "transcript_verification": "human-reviewed",
+    "transcript": [
+      "باب الحجز مفتوح… ربع خروف برقي حر.",
+      "متوسط الأوزان… أربعة وأربعين كيلو للخروف.",
+      "الكيلو قايم بميتين وسبعين جنيه… والذبح والتنظيف والتغليف سبعمية جنيه.",
+      "يعني الربع يطلعلك حوالي تلات آلاف ومية جنيه… شامل كل حاجة.",
+      "والتوصيل لحد باب بيتك… احجز واتساب."
+    ]
+  },
+  "clips": [
+    {
+      "path": "media/gh-a28.mp4",
+      "start": 2.0,
+      "end": 6.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/gh-a26.mp4",
+      "start": 2.0,
+      "end": 8.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/gh-a27.mp4",
+      "start": 2.0,
+      "end": 5.0,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/gh-a31.mp4",
+      "start": 0.5,
+      "end": 2.6,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/gh-a38.mp4",
+      "start": 7.5,
+      "end": 10.5,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/gh-a39.mp4",
+      "start": 2.0,
+      "end": 5.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    },
+    {
+      "path": "media/gh-a17.mp4",
+      "start": 8.0,
+      "end": 13.4,
+      "crop": {
+        "top": 0.0
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos"
+    }
+  ],
+  "captions": [
+    {
+      "from": 0.45,
+      "to": 4.2,
+      "text": "باب الحجز مفتوح · ربع برقي حر"
+    },
+    {
+      "from": 4.7,
+      "to": 8.6,
+      "text": "الخروف متوسط ٤٤ كيلو"
+    },
+    {
+      "from": 8.9,
+      "to": 14.2,
+      "text": "الكيلو ٢٧٠ جنيه · خدمات ٧٠٠"
+    },
+    {
+      "from": 14.6,
+      "to": 19.0,
+      "text": "الربع ≈ ٣١٠٠ جنيه شامل كل حاجة"
+    },
+    {
+      "from": 19.3,
+      "to": 22.6,
+      "text": "التوصيل لحد باب بيتك · واتساب"
+    }
+  ],
+  "endcard_sec": 2.6,
+  "endcard": {
+    "headline": "احجز ربعك",
+    "subtitle": "واتساب فقط",
+    "cta": "01010154221",
+    "disclosure": "تعليق صوتي مولّد · لقطات حقيقية ١٠٠٪"
+  },
+  "audio": {
+    "original_gain": 0.0,
+    "ambient_from": 0
+  },
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "format": "video"
+}
