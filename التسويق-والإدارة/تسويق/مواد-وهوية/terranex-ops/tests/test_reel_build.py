@@ -280,3 +280,40 @@ class TestAD1Options(unittest.TestCase):
     def test_image_extensions_recognised(self):
         self.assertIn(".jpg", R.IMAGE_EXT)
         self.assertIn(".jpeg", R.IMAGE_EXT)
+
+
+class TestDeliveryCityConsentGate(unittest.TestCase):
+    """B9 تظل مغلقة افتراضيًا ولا تُفتح إلا بتفويض توصيل صريح وموثق من المالك."""
+
+    def test_city_blocked_by_default(self):
+        import brand as B
+        import critic
+        city = B.CITY_BAN[0]
+        with self.assertRaises(SystemExit):
+            R.lint_text(f"حجز {city}")
+        res = critic.check(f"فتح الحجز في {city}\n#TerraNex #خروف_برقي #ضاني_برقي")
+        self.assertTrue(any(h["code"] == "B9" for h in res["hard"]))
+
+    def test_delivery_city_requires_non_empty_note(self):
+        self.assertFalse(R._delivery_city_authorized({}))
+        self.assertFalse(R._delivery_city_authorized({"consent": {"allow_delivery_city": True}}))
+        self.assertFalse(R._delivery_city_authorized({"consent": {"allow_delivery_city": True, "delivery_city_approval_note": "   "}}))
+        self.assertTrue(R._delivery_city_authorized({
+            "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك"}
+        }))
+
+    def test_authorized_delivery_city_layers_and_critic(self):
+        import brand as B
+        import critic
+        city = B.CITY_BAN[0]
+        hk = R.hook_layer(f"فتح الحجز · {city}", allow_city=True)
+        cp = R.cap_layer(f"توصيل {city}", 0.84, allow_city=True)
+        ec = R.endcard_layer({"headline": city}, allow_city=True)
+        self.assertEqual(hk.size, (1080, 1920))
+        self.assertEqual(cp.size, (1080, 1920))
+        self.assertEqual(ec.size, (1080, 1920))
+        res = critic.check(
+            f"فتح باب الحجز لمحافظة {city}\nربع برقي حر لباب البيت 01010154221\n#TerraNex #خروف_برقي #ضاني_برقي",
+            allow_delivery_city=True,
+        )
+        self.assertEqual(res["hard"], [])

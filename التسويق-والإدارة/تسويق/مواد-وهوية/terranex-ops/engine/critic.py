@@ -45,10 +45,12 @@ def lint_city(text: str) -> list:
     return [m.group(0) for m in re.finditer(CITY_PAT, text or "")]
 
 
-def check(text: str, platform: str = "facebook") -> dict:
+def check(text: str, platform: str = "facebook", allow_delivery_city: bool = False) -> dict:
     t = text.strip()
     hits = []
     for code, kind, pat, msg, fix in RULES:
+        if code == "B9" and allow_delivery_city:
+            continue
         for m in re.finditer(pat, t):
             hits.append({"code": code, "kind": kind, "match": m.group(0), "msg": msg, "fix": fix})
             break
@@ -107,6 +109,7 @@ def main():
     ap.add_argument("--text")
     ap.add_argument("--platform", default="facebook")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--allow-delivery-city", action="store_true")
     a = ap.parse_args()
 
     if a.file:
@@ -116,7 +119,7 @@ def main():
     else:
         text = sys.stdin.read()
 
-    r = check(text, a.platform)
+    r = check(text, a.platform, allow_delivery_city=a.allow_delivery_city)
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=2))
         return
