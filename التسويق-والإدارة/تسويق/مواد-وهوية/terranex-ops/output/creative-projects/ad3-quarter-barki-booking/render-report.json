@@ -1,0 +1,40 @@
+{
+  "ad_id": "AD08",
+  "project_id": "ad3-quarter-barki-booking",
+  "output_mp4": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/2026-11/AD08-حجز-ربع-برقي-حر-لحد-البيت-52ث.mp4",
+  "sha256": "51e67e9ba6c6e986581714dd1b953c6b143c41cb3ec8a3069c0e18c7f1337f0e",
+  "bytes": 36532217,
+  "size_kb": 35675,
+  "technical_qa": {
+    "pass": true,
+    "fails": [],
+    "warns": [],
+    "meta": {
+      "duration": 51.5,
+      "codec": "h264",
+      "pix_fmt": "yuv420p",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "has_audio": true,
+      "loudness_lufs": -15.2,
+      "silence_share": 0.053,
+      "black_share": 0.0
+    }
+  },
+  "voiced_completion_gate": {
+    "voiced_ad_complete": true,
+    "voice_id": "voice-00",
+    "voice_sha256": "099e435a3d89f56e1fe1aa3c73d9da8b5213d711eee3fd2a1ffed5ba30f34db8",
+    "site_audio_bed_complete": true,
+    "visual_and_captions_complete": true,
+    "b9_city_free_verified": true
+  },
+  "publication": {
+    "status": "بانتظار-موافقة",
+    "ready": false,
+    "reasons": [
+      "بانتظار موافقة المالك الصريحة قبل الإطلاق على مدير إعلانات ميتا"
+    ]
+  }
+}

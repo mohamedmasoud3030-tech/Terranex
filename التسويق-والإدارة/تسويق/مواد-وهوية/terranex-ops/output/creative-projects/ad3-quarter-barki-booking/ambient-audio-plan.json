@@ -1,0 +1,39 @@
+{
+  "project_id": "ad3-quarter-barki-booking",
+  "filter_chain": "highpass=150Hz -> lowpass=5800Hz -> sidechaincompress under voice-00 -> loudnorm I=-15.0 TP=-1.5",
+  "selected_segments": [
+    {
+      "source": "gh-a17.mp4",
+      "window_sec": [
+        5.6,
+        35.6
+      ]
+    },
+    {
+      "source": "gh-a43.mp4",
+      "window_sec": [
+        24.2,
+        40.2
+      ]
+    },
+    {
+      "source": "gh-a28.mp4",
+      "window_sec": [
+        2.0,
+        9.0
+      ]
+    }
+  ],
+  "measured_output": {
+    "duration": 51.5,
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30.0,
+    "has_audio": true,
+    "loudness_lufs": -15.2,
+    "silence_share": 0.053,
+    "black_share": 0.0
+  }
+}
