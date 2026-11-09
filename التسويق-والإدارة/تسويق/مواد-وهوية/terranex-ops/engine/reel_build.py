@@ -104,8 +104,19 @@ def ff() -> str:
 
 
 # ---------------- بوابات ----------------
-def lint_text(text: str) -> None:
-    """B9 — المدينة ممنوعة في أي نص يظهر للمشاهد."""
+def _delivery_city_authorized(spec: dict | None) -> bool:
+    """استثناء موثق بطلب صريح من المالك لحملات التوصيل الموجهة لمحافظة محددة."""
+    consent = (spec or {}).get("consent")
+    if not isinstance(consent, dict) or consent.get("allow_delivery_city") is not True:
+        return False
+    note = consent.get("delivery_city_approval_note", "")
+    return isinstance(note, str) and bool(note.strip())
+
+
+def lint_text(text: str, allow_city: bool = False) -> None:
+    """B9 — المدينة ممنوعة افتراضيًا إلا في حملات التوصيل المصرح بها نصًا من المالك."""
+    if allow_city:
+        return
     hits = [c for c in B.CITY_BAN if c in (text or "")]
     if hits:
         raise SystemExit(f"⛔ B9: ذكر المدينة «{hits[0]}» في النص — ممنوع نهائيًا.")
@@ -227,8 +238,8 @@ def _balanced_lines(text: str, f, max_w: int) -> list:
     return best or B.wrap(text, f, max_w, max_lines=2)
 
 
-def hook_layer(text: str) -> Image.Image:
-    lint_text(text)
+def hook_layer(text: str, allow_city: bool = False) -> Image.Image:
+    lint_text(text, allow_city=allow_city)
     f = B.font("black", 88)
     lines = _balanced_lines(text, f, int(W * 0.86))
     tw = max(int(B.measure(l, f)) for l in lines)
@@ -248,13 +259,13 @@ def hook_layer(text: str) -> Image.Image:
     return img
 
 
-def cap_layer(text: str, cy: float | None = None) -> Image.Image:
+def cap_layer(text: str, cy: float | None = None, allow_city: bool = False) -> Image.Image:
     """شريط الكابشن المترجم — نفس المكان والحجم في كل سطر (لا عشوائية).
 
     cy اختياري على مستوى الـspec كله (لا لكل لقطة) لضبط الشريط الثابت مرة واحدة
     بحيث لا يغطي الحيوان ولا علامة الميزان. الافتراض يبقى CAP_CY توافقًا مع Specs السابقة.
     """
-    lint_text(text)
+    lint_text(text, allow_city=allow_city)
     cy = CAP_CY if cy is None else max(0.30, min(0.90, float(cy)))
     f = B.font("black", CAP_FONT)
     lines = _balanced_lines(text, f, int(W * 0.86))
@@ -277,7 +288,7 @@ def cap_layer(text: str, cy: float | None = None) -> Image.Image:
     return img
 
 
-def endcard_layer(endcard: dict | None = None) -> Image.Image:
+def endcard_layer(endcard: dict | None = None, allow_city: bool = False) -> Image.Image:
     """بطاقة ختام بالهوية الثابتة. النصوص الافتراضية محفوظة للقوالب القديمة.
 
     يمكن للـCreative Director تمرير headline/subtitle/cta/disclosure صراحةً؛
@@ -289,7 +300,7 @@ def endcard_layer(endcard: dict | None = None) -> Image.Image:
     cta = ec.get("cta", f"واتساب {B.PHONE}")
     disclosure = ec.get("disclosure", "تعليق صوتي · مدعوم بإضافات AI")
     for t in (headline, subtitle, cta, disclosure):
-        lint_text(t)
+        lint_text(t, allow_city=allow_city)
     img = Image.new("RGBA", (W, H), B.hex2rgb(B.C["bg_dark"]) + (253,))
     box = B.place_logo(img, W // 2, int(H * 0.245), int(W * 0.50), "full")
     d = ImageDraw.Draw(img)
@@ -370,9 +381,10 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
         c["path"] = _safe_input_path(c["path"], base, MARKETING_ROOT)
 
     require_consent(spec)
-    lint_text(spec.get("hook", ""))
+    allow_city = _delivery_city_authorized(spec)
+    lint_text(spec.get("hook", ""), allow_city=allow_city)
     for c in spec.get("captions", []):
-        lint_text(c["text"])
+        lint_text(c["text"], allow_city=allow_city)
 
     clips = spec["clips"]
     dur = sum(c["end"] - c["start"] for c in clips)
@@ -403,7 +415,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     subprocess.run([ff(), "-y", "-v", "error", "-f", "concat", "-safe", "0",
                     "-i", lst, "-c", "copy", seq], check=True)
 
-    hook = hook_layer(spec["hook"]) if spec.get("hook") else None
+    hook = hook_layer(spec["hook"], allow_city=allow_city) if spec.get("hook") else None
     hook_until = float(spec.get("hook_sec", 3.0))
     top = topbar()
     band = bottom_band()
@@ -415,9 +427,9 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
             proof_ranges.append((tacc, tacc + cd))
         tacc += cd
     cap_cy = spec.get("caption_cy")
-    caps = [(float(c["from"]), float(c["to"]), cap_layer(c["text"], cap_cy))
+    caps = [(float(c["from"]), float(c["to"]), cap_layer(c["text"], cap_cy, allow_city=allow_city))
             for c in spec["captions"]]
-    end = endcard_layer(spec.get("endcard"))
+    end = endcard_layer(spec.get("endcard"), allow_city=allow_city)
 
     dec = subprocess.Popen([ff(), "-v", "error", "-i", seq, "-f", "rawvideo",
                             "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE,

@@ -1,7 +1,7 @@
 {
   "voice_id": "voice-00",
-  "sha256": "099e435a3d89f56e1fe1aa3c73d9da8b5213d711eee3fd2a1ffed5ba30f34db8",
-  "approval_note": "طلب المالك الصريح لحملة حجز ربع خروف برقي حر (~3100 ج شامل كل شيء) بصوت الهوية المعتمد voice-00",
+  "sha256": "32b748d559a694ef1b5d957701b3242b6e8a5cf5e4a4f9576a29301ff36a20c2",
+  "approval_note": "طلب المالك الصريح لذكر فتح باب الحجز لمحافظة الإسكندرية بصوت الهوية المعتمد voice-00",
   "transcript_verification": "human-reviewed",
   "script_path": "narration-script-ar.txt",
   "plan_path": "voice-plan.json",

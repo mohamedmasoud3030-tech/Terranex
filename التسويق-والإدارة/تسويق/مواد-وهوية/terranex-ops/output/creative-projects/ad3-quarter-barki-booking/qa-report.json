@@ -3,15 +3,15 @@
   "fails": [],
   "warns": [],
   "meta": {
-    "duration": 51.5,
+    "duration": 54.13,
     "codec": "h264",
     "pix_fmt": "yuv420p",
     "width": 1080,
     "height": 1920,
     "fps": 30.0,
     "has_audio": true,
-    "loudness_lufs": -15.2,
-    "silence_share": 0.053,
+    "loudness_lufs": -15.0,
+    "silence_share": 0.05,
     "black_share": 0.0
   }
 }
