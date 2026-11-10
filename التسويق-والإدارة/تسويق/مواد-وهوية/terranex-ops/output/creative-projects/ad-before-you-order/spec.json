@@ -1,0 +1,171 @@
+{
+  "title": "قبل ما تطلب… بص واسأل",
+  "template": "corporate-no-face",
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "clips": [
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a39.mp4",
+      "start": 9,
+      "end": 15,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": false,
+      "_asset_id": "gh-a39",
+      "_timeline": [
+        0,
+        6
+      ]
+    },
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
+      "start": 24,
+      "end": 33,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": false,
+      "_asset_id": "gh-a43",
+      "_timeline": [
+        6,
+        15
+      ]
+    },
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
+      "start": 3.1,
+      "end": 9.1,
+      "crop": {
+        "top": 0.05,
+        "bottom": 0.46
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": true,
+      "_asset_id": "gh-a25",
+      "_timeline": [
+        15,
+        21.0
+      ]
+    },
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
+      "start": 3.4,
+      "end": 9.4,
+      "crop": {
+        "top": 0.05,
+        "bottom": 0.46
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": true,
+      "_asset_id": "gh-a27",
+      "_timeline": [
+        21.0,
+        27.0
+      ]
+    },
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a10.jpeg",
+      "start": 0,
+      "end": 8,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": false,
+      "_asset_id": "gh-a10",
+      "_timeline": [
+        27.0,
+        35.0
+      ]
+    },
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a12.jpeg",
+      "start": 0,
+      "end": 8,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": false,
+      "_asset_id": "gh-a12",
+      "_timeline": [
+        35.0,
+        43.0
+      ]
+    },
+    {
+      "path": "../../../../../مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a13.jpeg",
+      "start": 0,
+      "end": 9,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "proof_bar": false,
+      "_asset_id": "gh-a13",
+      "_timeline": [
+        43.0,
+        52.0
+      ]
+    }
+  ],
+  "captions": [
+    {
+      "from": 0,
+      "to": 6,
+      "text": "قبل ما تطلب… بص واسأل"
+    },
+    {
+      "from": 6,
+      "to": 15,
+      "text": "إيه المعلومات عن حالة الحيوان؟"
+    },
+    {
+      "from": 15,
+      "to": 21,
+      "text": "الوزن هيتوضح إزاي؟"
+    },
+    {
+      "from": 21,
+      "to": 27,
+      "text": "قائم ولا بعد التجهيز؟"
+    },
+    {
+      "from": 27,
+      "to": 35,
+      "text": "أنهي قطعة تناسب أكلتك؟"
+    },
+    {
+      "from": 35,
+      "to": 43,
+      "text": "إيه التقطيع والتعبئة المتاحين؟"
+    },
+    {
+      "from": 43,
+      "to": 48,
+      "text": "الكمية والسعر والميعاد؟"
+    },
+    {
+      "from": 48,
+      "to": 52,
+      "text": "التوصيل متاح؟ وتفاصيله إيه؟"
+    }
+  ],
+  "caption_cy": 0.7,
+  "endcard_sec": 3,
+  "endcard": {
+    "headline": "حدد طلبك على بيّنة",
+    "subtitle": "تواصل مع TerraNex",
+    "cta": "واتساب 01010154221",
+    "disclosure": "مشروع غير مكتمل · التعليق الجديد غير مولد"
+  },
+  "audio": {
+    "original_gain": 0.0
+  },
+  "visual_draft": true,
+  "publish_approved": false,
+  "_status": "BLOCKED_VOICE_00_GENERATION",
+  "_timings": "Provisional 55-second edit. Re-time to the actual approved narration; no sync or spoken duration claimed.",
+  "_voice": "voice-00 only; no historical reuse; no similar voice; no generated audio exists",
+  "_photos": "Real company product photographs; do not imply these show cutting or packing in progress."
+}
