@@ -22,10 +22,10 @@ RULES = [
     ("B2b", "hard", r"(مضمون|ضمان)\s*(الربح|الأرباح|العائد)", "ضمان ربح", "احذف كلمة ضمان نهائيًا."),
     ("B5", "hard", r"(عائد|ربح)\s*\d", "رقم ربح بدون سياق", "أضف مصدر الرقم أو احذفه."),
     ("B8", "hard", r"(أحسن|افضل|أفضل)\s+من\s+شركة", "مقارنة مباشرة بمنافس", "اتكلم عن نفسك بدون ذكر منافس."),
-    # B9 (19/10 — طلب المالك): ممنوع ذكر المدينة صوتًا أو نصًا في أي محتوى للشركة
+    # B9: ممنوع افتراضيًا؛ الاستثناء محصور في حملة محلية موثقة.
     ("B9", "hard", r"(الإسكندرية|الاسكندرية|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)",
-     "ذكر المدينة «الإسكندرية» ممنوع في محتوى الشركة",
-     "احذف اسم المدينة نهائيًا — استخدم «استثمار حيواني · ثروة حقيقية»."),
+     "ذكر المدينة «الإسكندرية» ممنوع خارج حملة محلية موثقة",
+     "استخدم campaign_local مع ملاحظة موافقة مالك، أو احذف اسم المدينة."),
     ("S4", "soft", r"[😀-🿿]", "إيموجي", "قلّل الإيموجي لأربعة أو أقل في الكابشن."),
     ("S7", "soft", r"(سحب|استرداد)\s*(فلوس|المبلغ).{0,20}(في أي وقت|فورا|فورًا)",
      "وعد سيولة", "اشرح شروط الخروج بدل الوعد المفتوح."),
@@ -40,16 +40,44 @@ PHONE = "01010154221"
 CITY_PAT = r"(الإسكندرية|الاسكندرية|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)"
 
 
+def city_exception_authorized(
+    allow_delivery_city: bool = False,
+    campaign_scope: str = "general",
+    delivery_city_approval_note: str = "",
+) -> bool:
+    """B9 يسمح بذكر المدينة فقط داخل حملة محلية مع موافقة موثقة.
+
+    اسم allow_delivery_city قديم ومحفوظ للتوافق؛ لا يمنح تصريحًا بالتوصيل.
+    """
+    return (
+        allow_delivery_city is True
+        and campaign_scope == "campaign_local"
+        and isinstance(delivery_city_approval_note, str)
+        and bool(delivery_city_approval_note.strip())
+    )
+
+
 def lint_city(text: str) -> list:
     """بوابة B9 — أي ظهور للمدينة في نص/كابشن/سكربت يُرفض قبل التسليم."""
     return [m.group(0) for m in re.finditer(CITY_PAT, text or "")]
 
 
-def check(text: str, platform: str = "facebook", allow_delivery_city: bool = False) -> dict:
+def check(
+    text: str,
+    platform: str = "facebook",
+    allow_delivery_city: bool = False,
+    campaign_scope: str = "general",
+    delivery_city_approval_note: str = "",
+) -> dict:
     t = text.strip()
     hits = []
+    city_allowed = city_exception_authorized(
+        allow_delivery_city=allow_delivery_city,
+        campaign_scope=campaign_scope,
+        delivery_city_approval_note=delivery_city_approval_note,
+    )
     for code, kind, pat, msg, fix in RULES:
-        if code == "B9" and allow_delivery_city:
+        if code == "B9" and city_allowed:
             continue
         for m in re.finditer(pat, t):
             hits.append({"code": code, "kind": kind, "match": m.group(0), "msg": msg, "fix": fix})
@@ -110,6 +138,8 @@ def main():
     ap.add_argument("--platform", default="facebook")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--allow-delivery-city", action="store_true")
+    ap.add_argument("--campaign-scope", default="general", choices=("general", "campaign_local"))
+    ap.add_argument("--delivery-city-approval-note", default="")
     a = ap.parse_args()
 
     if a.file:
@@ -119,7 +149,13 @@ def main():
     else:
         text = sys.stdin.read()
 
-    r = check(text, a.platform, allow_delivery_city=a.allow_delivery_city)
+    r = check(
+        text,
+        a.platform,
+        allow_delivery_city=a.allow_delivery_city,
+        campaign_scope=a.campaign_scope,
+        delivery_city_approval_note=a.delivery_city_approval_note,
+    )
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=2))
         return

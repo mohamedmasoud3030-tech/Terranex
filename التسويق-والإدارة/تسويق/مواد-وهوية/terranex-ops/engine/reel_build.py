@@ -3,7 +3,7 @@
 """reel_build.py — بناء ريل 9:16 من لقطات حقيقية بنظام الهوية الثابت (19/10).
 
 القواعد المثبتة هنا (لا تُكسر):
-  B9  — لا ذكر للمدينة: أي نص فيه «الإسكندرية» يُرفض قبل البناء.
+  B9  — لا ذكر للمدينة افتراضيًا؛ حملة محلية موثقة فقط يمكنها ذكر نطاقها الجغرافي.
   B4  — لقطات حقيقية فقط. AI زخرفة فقط (screen) ولا يُستبدل أي فريم حقيقي.
   B10 — لا يظهر المالك/أي شخص على الشاشة إلا بإذن صريح في الـspec.
   العلامة المائية الرسمية (شعار + TerraNex) في مكان وحجم ثابتين في كل فريم.
@@ -105,7 +105,12 @@ def ff() -> str:
 
 # ---------------- بوابات ----------------
 def _delivery_city_authorized(spec: dict | None) -> bool:
-    """استثناء موثق بطلب صريح من المالك لحملات التوصيل الموجهة لمحافظة محددة."""
+    """استثناء B9 لحملة محلية موثق بطلب صريح من المالك.
+
+    اسم allow_delivery_city قديم ومحفوظ للتوافق؛ لا يمنح تصريحًا بالتوصيل.
+    """
+    if (spec or {}).get("campaign_scope") != "campaign_local":
+        return False
     consent = (spec or {}).get("consent")
     if not isinstance(consent, dict) or consent.get("allow_delivery_city") is not True:
         return False
@@ -119,7 +124,7 @@ def lint_text(text: str, allow_city: bool = False) -> None:
         return
     hits = [c for c in B.CITY_BAN if c in (text or "")]
     if hits:
-        raise SystemExit(f"⛔ B9: ذكر المدينة «{hits[0]}» في النص — ممنوع نهائيًا.")
+        raise SystemExit(f"⛔ B9: ذكر المدينة «{hits[0]}» يحتاج campaign_local وموافقة موثقة.")
 
 
 def require_consent(spec: dict) -> None:
@@ -523,4 +528,3 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     r = build(a.spec, a.voice, a.out)
     print(f"OK {r['out']} · {r['frames']} إطار · {r['duration']}ث · {r['kb']}KB")
-

@@ -6,13 +6,22 @@
     "version": "2.0.0",
     "created_at": "2026-11-06",
     "editorial_mode": "direct-response-booking-offer-voiced-alexandria",
-    "status": "awaiting-owner-publish-approval"
+    "status": "awaiting-owner-publish-approval",
+    "track": "meat_orders",
+    "campaign_scope": "campaign_local",
+    "city_mention_status": "approved_for_local_campaign",
+    "delivery_scope_status": "pending",
+    "commercial_verification_status": "calculation_verified_only",
+    "render_approved": false,
+    "owner_publish_approval": "pending"
   },
   "consent": {
     "faces_visible": false,
     "allow_delivery_city": true,
     "delivery_city_approval_note": "طلب صريح مباشر من المالك في الجلسة (2026-11-06): انا عاوز الفديو يذكر فيه ان باب الحجز فتح لمحافظه الاسكندريه",
-    "note": "12 لقطة حقيقية مفحوصة بدون أي وجوه أو مشاهد ذبح أو دماء، ومع ذكر فتح الحجز لمحافظة الإسكندرية بطلب المالك الصريح."
+    "note": "إذن جغرافي لحملة محلية فقط؛ لا يثبت توفر التوصيل أو شموله في السعر. 12 لقطة حقيقية مفحوصة بدون وجوه أو مشاهد ذبح أو دماء.",
+    "delivery_scope_status": "pending",
+    "delivery_claims_allowed": false
   },
   "voice": {
     "voice_id": "voice-00",

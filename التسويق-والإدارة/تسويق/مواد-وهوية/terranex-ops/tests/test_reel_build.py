@@ -283,7 +283,7 @@ class TestAD1Options(unittest.TestCase):
 
 
 class TestDeliveryCityConsentGate(unittest.TestCase):
-    """B9 تظل مغلقة افتراضيًا ولا تُفتح إلا بتفويض توصيل صريح وموثق من المالك."""
+    """B9 عامة؛ واستثناء المدينة محصور في حملة محلية موثقة."""
 
     def test_city_blocked_by_default(self):
         import brand as B
@@ -298,7 +298,12 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         self.assertFalse(R._delivery_city_authorized({}))
         self.assertFalse(R._delivery_city_authorized({"consent": {"allow_delivery_city": True}}))
         self.assertFalse(R._delivery_city_authorized({"consent": {"allow_delivery_city": True, "delivery_city_approval_note": "   "}}))
+        self.assertFalse(R._delivery_city_authorized({
+            "campaign_scope": "general",
+            "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك"},
+        }))
         self.assertTrue(R._delivery_city_authorized({
+            "campaign_scope": "campaign_local",
             "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك"}
         }))
 
@@ -315,5 +320,26 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         res = critic.check(
             f"فتح باب الحجز لمحافظة {city}\nربع برقي حر لباب البيت 01010154221\n#TerraNex #خروف_برقي #ضاني_برقي",
             allow_delivery_city=True,
+            campaign_scope="campaign_local",
+            delivery_city_approval_note="طلب صريح من المالك",
         )
         self.assertEqual(res["hard"], [])
+
+    def test_critic_city_exception_requires_local_scope_and_note(self):
+        import brand as B
+        import critic
+        city = B.CITY_BAN[0]
+        text = f"فتح باب الحجز لمحافظة {city}\n#TerraNex #خروف_برقي #ضاني_برقي"
+        general = critic.check(
+            text,
+            allow_delivery_city=True,
+            campaign_scope="general",
+            delivery_city_approval_note="طلب صريح من المالك",
+        )
+        self.assertTrue(any(h["code"] == "B9" for h in general["hard"]))
+        local_without_note = critic.check(
+            text,
+            allow_delivery_city=True,
+            campaign_scope="campaign_local",
+        )
+        self.assertTrue(any(h["code"] == "B9" for h in local_without_note["hard"]))
