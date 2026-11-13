@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+import critic  # noqa: E402
 import voice_identity as VI  # noqa: E402
 from safe_paths import confine  # noqa: E402
 
@@ -109,13 +110,18 @@ def _delivery_city_authorized(spec: dict | None) -> bool:
 
     اسم allow_delivery_city قديم ومحفوظ للتوافق؛ لا يمنح تصريحًا بالتوصيل.
     """
-    if (spec or {}).get("campaign_scope") != "campaign_local":
-        return False
+    spec = spec or {}
     consent = (spec or {}).get("consent")
-    if not isinstance(consent, dict) or consent.get("allow_delivery_city") is not True:
+    if not isinstance(consent, dict):
         return False
     note = consent.get("delivery_city_approval_note", "")
-    return isinstance(note, str) and bool(note.strip())
+    return critic.city_exception_authorized(
+        allow_delivery_city=consent.get("allow_delivery_city") is True,
+        campaign_scope=spec.get("campaign_scope", "general"),
+        delivery_city_approval_note=note,
+        track=spec.get("track", "general"),
+        owner_approval=consent.get("owner_approval"),
+    )
 
 
 def lint_text(text: str, allow_city: bool = False) -> None:
@@ -375,6 +381,8 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     out = os.path.abspath(out)
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
+    if "render_approved" in spec and spec.get("render_approved") is not True:
+        raise SystemExit("⛔ الرندر محجوب: render_approved يجب أن يكون true بعد اعتماد المواصفة.")
     if voice:
         voice = _safe_input_path(voice, os.path.dirname(spec_path), os.getcwd())
         VI.require_narration(spec.get("voice"), voice)

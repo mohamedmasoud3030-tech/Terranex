@@ -1,0 +1,184 @@
+{
+  "id": "AD08-S3-local-product-service-v001",
+  "version": "v001",
+  "ad_id": "AD08",
+  "track": "meat_orders",
+  "campaign_scope": "campaign_local",
+  "concept_status": "pre-production-review",
+  "concept": {
+    "name": "الفرق في التفاصيل",
+    "angle": "عرض المنتج الحقيقي وخطوات التجهيز الظاهرة بدل زاوية السعر أو التوصيل.",
+    "hook": "الفرق مش في الكلام… الفرق في التفاصيل اللي تقدر تشوفها.",
+    "difference_from_original": "AD08 الأصلي يبدأ بعرض الحجز والسعر والتوصيل ويعتمد على مونتاج أطول؛ S3 يبدأ بمشهد حقيقي ويثبت وجود الحيوان والمزرعة والوزن المرئي ثم يطلب الاستفسار عن الدفعة الحالية.",
+    "target_duration_sec": {
+      "min": 29,
+      "max": 32,
+      "target": 30
+    },
+    "aspect_ratio": "9:16",
+    "platforms": ["facebook", "instagram"],
+    "audience": "مشتري اللحوم الذي يريد أن يرى المنتج وطريقة التجهيز قبل الحجز"
+  },
+  "source_asset_policy": {
+    "real_company_footage_only": true,
+    "source_review_required": true,
+    "scene_import_approved": false,
+    "publication_approved": false,
+    "original_assets_preserved": true,
+    "excluded_sources": [
+      "gh-a14.mp4",
+      "gh-a15.mp4",
+      "gh-a19.mp4",
+      "gh-a29.mp4",
+      "gh-a32.mp4",
+      "gh-a34.mp4",
+      "gh-a36.mp4"
+    ]
+  },
+  "storyboard": [
+    {
+      "edit_range": "0.0-3.0",
+      "function": "real_hook",
+      "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a28.mp4",
+      "source_range": "2.00-5.58",
+      "visual": "لقطة كاملة نظيفة لرأس حقيقي في سياق المزرعة.",
+      "on_screen_copy": "الفرق مش في الكلام…",
+      "voice_line": "الفرق مش في الكلام…",
+      "reason": "افتتاحية بحركة وموضوع حقيقي، بعيدة عن افتتاحية السعر أو التوصيل.",
+      "evidence_boundary": "تثبت وجود رأس حقيقي فقط؛ لا تثبت كمية متاحة أو سعرًا."
+    },
+    {
+      "edit_range": "3.0-7.0",
+      "function": "farm_context",
+      "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
+      "source_range": "24.50-28.00",
+      "visual": "مجموعة حيوانات داخل الحظيرة.",
+      "on_screen_copy": "في تفاصيل تقدر تشوفها",
+      "voice_line": "الفرق في التفاصيل اللي تقدر تشوفها.",
+      "reason": "ينقل الرسالة من الكلام إلى المشاهدة الفعلية.",
+      "evidence_boundary": "لا يُستخدم كدليل على العدد أو التوفر الحالي."
+    },
+    {
+      "edit_range": "7.0-11.5",
+      "function": "place_proof",
+      "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a17.mp4",
+      "source_range": "2.00-5.51",
+      "visual": "سياق المزرعة والحظيرة بوضوح.",
+      "on_screen_copy": "مشهد حقيقي من المزرعة",
+      "voice_line": "رأس موجود قدامك، ومشهد حقيقي من المزرعة.",
+      "reason": "يؤكد مصدر المادة بصريًا من دون ادعاء رعاية بيطرية أو موعد.",
+      "evidence_boundary": "لا يوصف بأنه فحص بيطري أو متابعة مستمرة من هذه اللقطة وحدها."
+    },
+    {
+      "edit_range": "11.5-15.0",
+      "function": "weighing_action",
+      "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a31.mp4",
+      "source_range": "0.00-2.63",
+      "visual": "رأس يدخل على الميزان الأصفر.",
+      "on_screen_copy": "ووزن بيتعمل على الميزان",
+      "voice_line": "ووزن بيتعمل على الميزان.",
+      "reason": "دليل مرئي مباشر يختلف عن إعادة استخدام لقطة السعر أو الحساب.",
+      "evidence_boundary": "يثبت فعل الوزن فقط؛ لا يظهر رقم وزن ولا يثبت وزنًا حاليًا."
+    },
+    {
+      "edit_range": "15.0-20.5",
+      "function": "product_handling",
+      "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a35.mp4",
+      "source_range": "8.50-12.79",
+      "visual": "رأس بجوار الميزان مع قص/تغطية العلامة المحروقة وفق B11.",
+      "on_screen_copy": "تشوف الخطوات قبل ما تقرر",
+      "voice_line": "تشوف الخطوات قبل ما تقرر.",
+      "reason": "يشرح قيمة المشاهدة من غير سعر أو وعد خدمة غير موثق.",
+      "evidence_boundary": "لا يُستخدم لإثبات جودة صحية أو تجهيز مكتمل."
+    },
+    {
+      "edit_range": "20.5-25.5",
+      "function": "inspection_detail",
+      "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a38.mp4",
+      "source_range": "TBD-after-editorial-shot-review",
+      "visual": "تفصيل فحص ظاهر في اللقطة، إذا اجتاز مراجعة المصدر.",
+      "on_screen_copy": "التفصيل قدامك",
+      "voice_line": "والتفصيل قدامك.",
+      "reason": "لقطة تفصيلية جديدة بصريًا، مع إبقاء الادعاء محدودًا بما يظهر فعلًا.",
+      "evidence_boundary": "لا يوصف بأنه كشف بيطري أو فحص عمر أو صحة قبل مراجعة اللقطة."
+    },
+    {
+      "edit_range": "25.5-30.0",
+      "function": "single_cta_endcard",
+      "source": "brand lockup and approved end-card layout",
+      "source_range": "n/a",
+      "visual": "قفل TerraNex والعلامة المائية الثابتة، بلا صورة مولّدة وبلا سعر أو توصيل.",
+      "on_screen_copy": "ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز\n01010154221",
+      "voice_line": "لو بتسأل عن ربع برقي، ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز.",
+      "reason": "CTA واحد يطلب التفاصيل قبل الحجز، من غير ادعاء توفر أو سعر أو نطاق توصيل.",
+      "evidence_boundary": "لا يذكر المدينة أو التوصيل أو السعر أو كمية متاحة."
+    }
+  ],
+  "script": {
+    "language": "ar-EG",
+    "status": "awaiting-owner-and-commercial-approval",
+    "approval_required_before_recording": true,
+    "text": "الفرق مش في الكلام… الفرق في التفاصيل اللي تقدر تشوفها.\nرأس موجود قدامك، ومشهد حقيقي من المزرعة، ووزن بيتعمل على الميزان.\nتشوف الخطوات قبل ما تقرر.\nلو بتسأل عن ربع برقي، ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز.\nواتساب فقط: 01010154221",
+    "prohibited_in_script": [
+      "44 × 270",
+      "3100 جنيه",
+      "أي سعر أو تكلفة تجهيز",
+      "شامل التوصيل",
+      "لحد باب البيت",
+      "الإسكندرية",
+      "دفعة محدودة",
+      "وزن رقمي غير ظاهر في اللقطة",
+      "عائد أو ربح أو استثمار"
+    ]
+  },
+  "voice": {
+    "voice_id": "voice-00",
+    "status": "not-recorded",
+    "plan": "لا يُولّد تسجيل جديد تلقائيًا. بعد اعتماد النص فقط، يُطلب تسجيل/توليد voice-00 وفق آلية معتمدة، مع sidecar وبصمة SHA-256 وتفريغ بشري مطابق.",
+    "historical_reuse": "غير مناسب؛ تسجيل vo-09b.mp3 مسموح بإعادة استخدامه بكلماته الأصلية فقط، ولا يطابق هذا النص.",
+    "owner_voice": false,
+    "new_voice_approval_required": true
+  },
+  "caption": {
+    "status": "draft-for-approval",
+    "text": "الفرق في التفاصيل اللي تقدر تشوفها.\nشوف رأس حقيقي ومشهد حقيقي من المزرعة ووزن بيتعمل على الميزان.\nاسأل عن تفاصيل الدفعة الحالية قبل الحجز على واتساب: 01010154221\n#TerraNex #ضاني_برقي #حجز_لحوم",
+    "price_free": true,
+    "delivery_claim_free": true,
+    "cta_count": 1
+  },
+  "commercial_status": {
+    "price_display_status": "prohibited",
+    "delivery_included_in_price": "owner_confirmed",
+    "delivery_coverage_status": "pending_verification",
+    "commercial_verification_status": "calculation_verified_only",
+    "delivery_copy_allowed": false,
+    "price_copy_allowed": false,
+    "owner_decision_source": "owner brief received 2026-11-13; delivery inclusion confirmed, coverage not established"
+  },
+  "approval": {
+    "render_approved": false,
+    "owner_publish_approval": "pending",
+    "publication_ready": false,
+    "recording_approved": false,
+    "source_review_approved": false
+  },
+  "qa_gates": [
+    "كل لقطة من مادة الشركة الحقيقية ومراجعة المصدر قبل الاستيراد",
+    "عدم استخدام الملفات المستبعدة أو الوجوه دون موافقة",
+    "critic يمر بلا B1/B2/B4/B5/B6/B7/B8/B9/B10/B11/B12",
+    "لا سعر أو عملية حسابية أو ادعاء توصيل في الصوت أو النص أو الكابشن",
+    "رقم واتساب واحد بالصيغة 01010154221",
+    "CTA واحد فقط",
+    "voice-00 موثق ببصمة وتفريغ مطابق بعد اعتماد النص",
+    "قص/تغطية أي TerraNex LLC محروقة وفق B11",
+    "فحص 9:16 و30fps والصوت والوقفات بعد الرندر فقط",
+    "لا رندر قبل render_approved=true",
+    "لا نشر قبل owner_publish_approval=approved"
+  ],
+  "open_questions": [
+    "اعتماد المالك للفكرة والنص قبل أي تسجيل",
+    "مراجعة المصدر gh-a38 وتحديد نافذة القص",
+    "اعتماد استيراد اللقطات من الأرشيف للمخرج الإعلاني",
+    "التحقق من نطاق التوصيل قبل أي ذكر له في نسخة لاحقة"
+  ]
+}

@@ -285,6 +285,17 @@ class TestAD1Options(unittest.TestCase):
 class TestDeliveryCityConsentGate(unittest.TestCase):
     """B9 عامة؛ واستثناء المدينة محصور في حملة محلية موثقة."""
 
+    APPROVAL = {
+        "decision_id": "TEST-B9-LOCAL-001",
+        "status": "approved",
+        "approved_by": "owner",
+        "approved_at": "2026-11-06",
+        "source": "tests/test_reel_build.py",
+        "scope": "campaign_local",
+        "track": "meat_orders",
+        "approved_claim": "city_mention",
+    }
+
     def test_city_blocked_by_default(self):
         import brand as B
         import critic
@@ -302,9 +313,15 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
             "campaign_scope": "general",
             "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك"},
         }))
+        self.assertFalse(R._delivery_city_authorized({
+            "campaign_scope": "campaign_local", "track": "meat_orders",
+            "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك"},
+        }))
         self.assertTrue(R._delivery_city_authorized({
             "campaign_scope": "campaign_local",
-            "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك"}
+            "track": "meat_orders",
+            "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك",
+                        "owner_approval": self.APPROVAL},
         }))
 
     def test_authorized_delivery_city_layers_and_critic(self):
@@ -322,6 +339,8 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
             allow_delivery_city=True,
             campaign_scope="campaign_local",
             delivery_city_approval_note="طلب صريح من المالك",
+            track="meat_orders",
+            owner_approval=self.APPROVAL,
         )
         self.assertEqual(res["hard"], [])
 
@@ -343,3 +362,40 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
             campaign_scope="campaign_local",
         )
         self.assertTrue(any(h["code"] == "B9" for h in local_without_note["hard"]))
+
+    def test_note_only_does_not_prove_owner_approval(self):
+        import brand as B
+        import critic
+        city = B.CITY_BAN[0]
+        res = critic.check(
+            f"فتح باب الحجز لمحافظة {city}\n#TerraNex #خروف_برقي #ضاني_برقي",
+            allow_delivery_city=True,
+            campaign_scope="campaign_local",
+            track="meat_orders",
+            delivery_city_approval_note="طلب صريح من المالك",
+        )
+        self.assertTrue(any(h["code"] == "B9" for h in res["hard"]))
+
+    def test_investment_and_institutional_local_content_stays_blocked(self):
+        import brand as B
+        import critic
+        city = B.CITY_BAN[0]
+        text = f"فتح الحجز في {city}\n#TerraNex #خروف_برقي #ضاني_برقي"
+        for track in ("investment", "institutional"):
+            res = critic.check(text, allow_delivery_city=True,
+                               campaign_scope="campaign_local", track=track,
+                               delivery_city_approval_note="طلب صريح من المالك",
+                               owner_approval=self.APPROVAL)
+            self.assertTrue(any(h["code"] == "B9" for h in res["hard"]), track)
+
+    def test_render_is_blocked_until_explicit_approval(self):
+        spec = os.path.join(ROOT, "tests", "_render_gate_spec.json")
+        outdir = tempfile.TemporaryDirectory(dir=ROOT)
+        with open(spec, "w", encoding="utf-8") as fh:
+            json.dump({"render_approved": False}, fh)
+        try:
+            with self.assertRaises(SystemExit):
+                R.build(spec, None, os.path.join(outdir.name, "blocked.mp4"))
+        finally:
+            os.remove(spec)
+            outdir.cleanup()

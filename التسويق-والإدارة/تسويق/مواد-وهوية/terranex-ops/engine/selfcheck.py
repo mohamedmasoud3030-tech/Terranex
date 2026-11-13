@@ -329,6 +329,17 @@ def check_identity_rules() -> None:
         allow_delivery_city=True,
         campaign_scope="campaign_local",
         delivery_city_approval_note="طلب صريح من المالك",
+        track="meat_orders",
+        owner_approval={
+            "decision_id": "SELF-CHECK-B9-LOCAL-001",
+            "status": "approved",
+            "approved_by": "owner",
+            "approved_at": "2026-11-06",
+            "source": "selfcheck-fixture",
+            "scope": "campaign_local",
+            "track": "meat_orders",
+            "approved_claim": "city_mention",
+        },
     )
     b9_local_allowed = not any(h["code"] == "B9" for h in local["hard"])
 

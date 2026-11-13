@@ -1,6 +1,6 @@
 {
   "name": "حملة-حجز-ربع-برقي-نوفمبر",
-  "goal": "حجوزات واتساب مباشرة (01010154221) لعرض ربع خروف برقي حر؛ السعر ونطاق التوصيل قيد التحقق التجاري، مع ذكر الإسكندرية كاستثناء جغرافي لحملة محلية",
+  "goal": "حجوزات واتساب مباشرة (01010154221) لعرض ربع خروف برقي حر؛ لا أسعار في الإعلان، وتأكيد شمول التوصيل محفوظ كقرار تجاري مع بقاء نطاق التغطية قيد التحقق",
   "start": "2026-11-07",
   "time": "20:00",
   "platforms": [
@@ -16,9 +16,12 @@
       "track": "meat_orders",
       "campaign_scope": "campaign_local",
       "city_mention_status": "approved_for_local_campaign",
-      "delivery_scope_status": "pending",
+      "delivery_scope_status": "pending_verification",
       "commercial_verification_status": "calculation_verified_only",
-      "approval_status": "awaiting_commercial_and_owner_approval"
+      "approval_status": "awaiting_commercial_and_owner_approval",
+      "price_display_status": "prohibited",
+      "delivery_included_in_price": "owner_confirmed",
+      "delivery_coverage_status": "pending_verification"
     },
     {
       "title": "AD08-حسبة-الميزان-الشفافة",
@@ -28,9 +31,12 @@
       "track": "meat_orders",
       "campaign_scope": "campaign_local",
       "city_mention_status": "approved_for_local_campaign",
-      "delivery_scope_status": "pending",
+      "delivery_scope_status": "pending_verification",
       "commercial_verification_status": "calculation_verified_only",
-      "approval_status": "awaiting_commercial_and_owner_approval"
+      "approval_status": "awaiting_commercial_and_owner_approval",
+      "price_display_status": "prohibited",
+      "delivery_included_in_price": "owner_confirmed",
+      "delivery_coverage_status": "pending_verification"
     },
     {
       "title": "AD08-زاوية-الجودة-والتوصيل",
@@ -40,16 +46,24 @@
       "track": "meat_orders",
       "campaign_scope": "campaign_local",
       "city_mention_status": "approved_for_local_campaign",
-      "delivery_scope_status": "pending",
+      "delivery_scope_status": "pending_verification",
       "commercial_verification_status": "calculation_verified_only",
-      "approval_status": "awaiting_commercial_and_owner_approval"
+      "approval_status": "awaiting_commercial_and_owner_approval",
+      "price_display_status": "prohibited",
+      "delivery_included_in_price": "owner_confirmed",
+      "delivery_coverage_status": "pending_verification"
     }
   ],
   "track": "meat_orders",
   "campaign_scope": "campaign_local",
   "city_mention_status": "approved_for_local_campaign",
-  "delivery_scope_status": "pending",
+  "price_display_status": "prohibited",
+  "delivery_included_in_price": "owner_confirmed",
+  "delivery_coverage_status": "pending_verification",
+  "delivery_scope_status": "pending_verification",
   "commercial_verification_status": "calculation_verified_only",
   "render_approved": false,
-  "owner_publish_approval": "pending"
+  "owner_publish_approval": "pending",
+  "commercial_decision_source": "owner brief received 2026-11-13",
+  "commercial_decision_date": "2026-11-13"
 }
