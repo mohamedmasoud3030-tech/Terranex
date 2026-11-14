@@ -1,6 +1,6 @@
 {
   "name": "حملة-حجز-ربع-برقي-نوفمبر",
-  "goal": "حجوزات واتساب مباشرة (01010154221) لعرض ربع خروف برقي حر؛ لا أسعار في الإعلان، وتأكيد شمول التوصيل محفوظ كقرار تجاري مع بقاء نطاق التغطية قيد التحقق",
+  "goal": "إعلان فتح باب الحجز المخصص لأهل الإسكندرية؛ ذكر الإسكندرية مسموح صوتًا ونصًا وكابشن ضمن استثناء B9 موثق، مع منع الأسعار والحسابات وعدم ادعاء تغطية شاملة أو مواعيد توصيل",
   "start": "2026-11-07",
   "time": "20:00",
   "platforms": [
@@ -21,7 +21,10 @@
       "approval_status": "awaiting_commercial_and_owner_approval",
       "price_display_status": "prohibited",
       "delivery_included_in_price": "owner_confirmed",
-      "delivery_coverage_status": "pending_verification"
+      "delivery_coverage_status": "pending_verification",
+      "city_mention_approval_status": "approved_for_AD08_local_campaign_only",
+      "city_mention_owner_decision_id": "PR212-AD08-B9-20261113T142600+0200",
+      "delivery_copy_allowed": false
     },
     {
       "title": "AD08-حسبة-الميزان-الشفافة",
@@ -36,7 +39,10 @@
       "approval_status": "awaiting_commercial_and_owner_approval",
       "price_display_status": "prohibited",
       "delivery_included_in_price": "owner_confirmed",
-      "delivery_coverage_status": "pending_verification"
+      "delivery_coverage_status": "pending_verification",
+      "city_mention_approval_status": "approved_for_AD08_local_campaign_only",
+      "city_mention_owner_decision_id": "PR212-AD08-B9-20261113T142600+0200",
+      "delivery_copy_allowed": false
     },
     {
       "title": "AD08-زاوية-الجودة-والتوصيل",
@@ -51,7 +57,10 @@
       "approval_status": "awaiting_commercial_and_owner_approval",
       "price_display_status": "prohibited",
       "delivery_included_in_price": "owner_confirmed",
-      "delivery_coverage_status": "pending_verification"
+      "delivery_coverage_status": "pending_verification",
+      "city_mention_approval_status": "approved_for_AD08_local_campaign_only",
+      "city_mention_owner_decision_id": "PR212-AD08-B9-20261113T142600+0200",
+      "delivery_copy_allowed": false
     }
   ],
   "track": "meat_orders",
@@ -65,5 +74,11 @@
   "render_approved": false,
   "owner_publish_approval": "pending",
   "commercial_decision_source": "owner brief received 2026-11-13",
-  "commercial_decision_date": "2026-11-13"
+  "commercial_decision_date": "2026-11-13",
+  "city_mention_approval_status": "approved_for_AD08_local_campaign_only",
+  "city_mention_approval_scope": "AD08 + meat_orders + campaign_local",
+  "city_mention_owner_decision_id": "PR212-AD08-B9-20261113T142600+0200",
+  "city_mention_owner_decision_source": "PR #212 current task instruction: direct owner decision",
+  "city_mention_owner_decision_at": "2026-11-13T14:26:00+02:00",
+  "delivery_copy_allowed": false
 }

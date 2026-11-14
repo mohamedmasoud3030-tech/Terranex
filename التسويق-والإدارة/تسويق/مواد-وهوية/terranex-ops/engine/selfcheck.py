@@ -330,6 +330,7 @@ def check_identity_rules() -> None:
         campaign_scope="campaign_local",
         delivery_city_approval_note="طلب صريح من المالك",
         track="meat_orders",
+        campaign_id="AD08",
         owner_approval={
             "decision_id": "SELF-CHECK-B9-LOCAL-001",
             "status": "approved",
@@ -338,6 +339,7 @@ def check_identity_rules() -> None:
             "source": "selfcheck-fixture",
             "scope": "campaign_local",
             "track": "meat_orders",
+            "campaign_id": "AD08",
             "approved_claim": "city_mention",
         },
     )

@@ -106,7 +106,7 @@ def ff() -> str:
 
 # ---------------- بوابات ----------------
 def _delivery_city_authorized(spec: dict | None) -> bool:
-    """استثناء B9 لحملة محلية موثق بطلب صريح من المالك.
+    """استثناء B9 لـAD08 موثق بسجل قرار مالك منظم.
 
     اسم allow_delivery_city قديم ومحفوظ للتوافق؛ لا يمنح تصريحًا بالتوصيل.
     """
@@ -120,6 +120,7 @@ def _delivery_city_authorized(spec: dict | None) -> bool:
         campaign_scope=spec.get("campaign_scope", "general"),
         delivery_city_approval_note=note,
         track=spec.get("track", "general"),
+        campaign_id=spec.get("ad_id"),
         owner_approval=consent.get("owner_approval"),
     )
 

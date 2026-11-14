@@ -7,8 +7,8 @@
   "concept_status": "pre-production-review",
   "concept": {
     "name": "الفرق في التفاصيل",
-    "angle": "عرض المنتج الحقيقي وخطوات التجهيز الظاهرة بدل زاوية السعر أو التوصيل.",
-    "hook": "الفرق مش في الكلام… الفرق في التفاصيل اللي تقدر تشوفها.",
+    "angle": "إعلان محلي لأهل الإسكندرية يوضح من أول ثوانٍ أن فتح الحجز مخصص لهم، ثم يعرض المنتج الحقيقي وخطوات التجهيز الظاهرة من دون سعر أو ادعاء نطاق توصيل.",
+    "hook": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
     "difference_from_original": "AD08 الأصلي يبدأ بعرض الحجز والسعر والتوصيل ويعتمد على مونتاج أطول؛ S3 يبدأ بمشهد حقيقي ويثبت وجود الحيوان والمزرعة والوزن المرئي ثم يطلب الاستفسار عن الدفعة الحالية.",
     "target_duration_sec": {
       "min": 29,
@@ -16,8 +16,11 @@
       "target": 30
     },
     "aspect_ratio": "9:16",
-    "platforms": ["facebook", "instagram"],
-    "audience": "مشتري اللحوم الذي يريد أن يرى المنتج وطريقة التجهيز قبل الحجز"
+    "platforms": [
+      "facebook",
+      "instagram"
+    ],
+    "audience": "أهل الإسكندرية المهتمون بحجز الربع البرقي"
   },
   "source_asset_policy": {
     "real_company_footage_only": true,
@@ -42,10 +45,10 @@
       "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a28.mp4",
       "source_range": "2.00-5.58",
       "visual": "لقطة كاملة نظيفة لرأس حقيقي في سياق المزرعة.",
-      "on_screen_copy": "الفرق مش في الكلام…",
-      "voice_line": "الفرق مش في الكلام…",
+      "on_screen_copy": "لأهل إسكندرية…\nفتحنا باب الحجز على الربع البرقي من TerraNex!",
+      "voice_line": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
       "reason": "افتتاحية بحركة وموضوع حقيقي، بعيدة عن افتتاحية السعر أو التوصيل.",
-      "evidence_boundary": "تثبت وجود رأس حقيقي فقط؛ لا تثبت كمية متاحة أو سعرًا."
+      "evidence_boundary": "ذكر الإسكندرية هنا تصريح حملة محلية موثق؛ لا يثبت تغطية كل الأحياء أو مواعيد التوصيل."
     },
     {
       "edit_range": "3.0-7.0",
@@ -53,7 +56,7 @@
       "source": "../../../../../مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
       "source_range": "24.50-28.00",
       "visual": "مجموعة حيوانات داخل الحظيرة.",
-      "on_screen_copy": "في تفاصيل تقدر تشوفها",
+      "on_screen_copy": "الفرق في التفاصيل اللي تقدر تشوفها",
       "voice_line": "الفرق في التفاصيل اللي تقدر تشوفها.",
       "reason": "ينقل الرسالة من الكلام إلى المشاهدة الفعلية.",
       "evidence_boundary": "لا يُستخدم كدليل على العدد أو التوفر الحالي."
@@ -108,43 +111,53 @@
       "source": "brand lockup and approved end-card layout",
       "source_range": "n/a",
       "visual": "قفل TerraNex والعلامة المائية الثابتة، بلا صورة مولّدة وبلا سعر أو توصيل.",
-      "on_screen_copy": "ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز\n01010154221",
-      "voice_line": "لو بتسأل عن ربع برقي، ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز.",
+      "on_screen_copy": "لأهل إسكندرية: ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز\n01010154221",
+      "voice_line": "لو بتسأل عن ربع برقي في إسكندرية، ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز.",
       "reason": "CTA واحد يطلب التفاصيل قبل الحجز، من غير ادعاء توفر أو سعر أو نطاق توصيل.",
       "evidence_boundary": "لا يذكر المدينة أو التوصيل أو السعر أو كمية متاحة."
     }
   ],
   "script": {
     "language": "ar-EG",
-    "status": "awaiting-owner-and-commercial-approval",
+    "status": "owner-city-mention-approved-recording-not-approved",
     "approval_required_before_recording": true,
-    "text": "الفرق مش في الكلام… الفرق في التفاصيل اللي تقدر تشوفها.\nرأس موجود قدامك، ومشهد حقيقي من المزرعة، ووزن بيتعمل على الميزان.\nتشوف الخطوات قبل ما تقرر.\nلو بتسأل عن ربع برقي، ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز.\nواتساب فقط: 01010154221",
+    "text": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!\nالفرق في التفاصيل اللي تقدر تشوفها.\nرأس موجود قدامك، ومشهد حقيقي من المزرعة، ووزن بيتعمل على الميزان.\nتشوف الخطوات قبل ما تقرر.\nلو بتسأل عن ربع برقي، ابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز.\nواتساب فقط: 01010154221",
     "prohibited_in_script": [
       "44 × 270",
       "3100 جنيه",
       "أي سعر أو تكلفة تجهيز",
       "شامل التوصيل",
       "لحد باب البيت",
-      "الإسكندرية",
+      "تغطية الإسكندرية بالكامل",
+      "تحديد أحياء أو مواعيد توصيل",
       "دفعة محدودة",
       "وزن رقمي غير ظاهر في اللقطة",
       "عائد أو ربح أو استثمار"
-    ]
+    ],
+    "city_mention": {
+      "status": "approved_by_owner_for_ad08_local_campaign",
+      "spoken": true,
+      "on_screen": true,
+      "caption": true,
+      "scope": "AD08 + meat_orders + campaign_local only"
+    }
   },
   "voice": {
     "voice_id": "voice-00",
-    "status": "not-recorded",
+    "status": "voice-00-recording-not-approved",
     "plan": "لا يُولّد تسجيل جديد تلقائيًا. بعد اعتماد النص فقط، يُطلب تسجيل/توليد voice-00 وفق آلية معتمدة، مع sidecar وبصمة SHA-256 وتفريغ بشري مطابق.",
     "historical_reuse": "غير مناسب؛ تسجيل vo-09b.mp3 مسموح بإعادة استخدامه بكلماته الأصلية فقط، ولا يطابق هذا النص.",
     "owner_voice": false,
-    "new_voice_approval_required": true
+    "new_voice_approval_required": true,
+    "spoken_city_mention": true
   },
   "caption": {
-    "status": "draft-for-approval",
-    "text": "الفرق في التفاصيل اللي تقدر تشوفها.\nشوف رأس حقيقي ومشهد حقيقي من المزرعة ووزن بيتعمل على الميزان.\nاسأل عن تفاصيل الدفعة الحالية قبل الحجز على واتساب: 01010154221\n#TerraNex #ضاني_برقي #حجز_لحوم",
+    "status": "owner-city-mention-approved-draft-for-approval",
+    "text": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!\nالفرق في التفاصيل اللي تقدر تشوفها: رأس حقيقي، مشهد حقيقي من المزرعة، ووزن بيتعمل على الميزان.\nابعتلنا على واتساب وخد تفاصيل الدفعة الحالية قبل ما تحجز: 01010154221\n#TerraNex #ضاني_برقي #حجز_لحوم",
     "price_free": true,
     "delivery_claim_free": true,
-    "cta_count": 1
+    "cta_count": 1,
+    "city_mention": true
   },
   "commercial_status": {
     "price_display_status": "prohibited",
@@ -153,14 +166,24 @@
     "commercial_verification_status": "calculation_verified_only",
     "delivery_copy_allowed": false,
     "price_copy_allowed": false,
-    "owner_decision_source": "owner brief received 2026-11-13; delivery inclusion confirmed, coverage not established"
+    "owner_decision_source": "PR #212 current task instruction, received 2026-11-13T14:26:00+02:00",
+    "city_mention_scope": "AD08 + meat_orders + campaign_local only",
+    "city_mention_does_not_approve": [
+      "recording",
+      "render",
+      "publish",
+      "full-Alexandria-coverage",
+      "neighborhoods",
+      "delivery-schedule"
+    ]
   },
   "approval": {
     "render_approved": false,
     "owner_publish_approval": "pending",
     "publication_ready": false,
     "recording_approved": false,
-    "source_review_approved": false
+    "source_review_approved": false,
+    "city_mention_owner_approval": "approved"
   },
   "qa_gates": [
     "كل لقطة من مادة الشركة الحقيقية ومراجعة المصدر قبل الاستيراد",
@@ -176,9 +199,24 @@
     "لا نشر قبل owner_publish_approval=approved"
   ],
   "open_questions": [
-    "اعتماد المالك للفكرة والنص قبل أي تسجيل",
-    "مراجعة المصدر gh-a38 وتحديد نافذة القص",
-    "اعتماد استيراد اللقطات من الأرشيف للمخرج الإعلاني",
-    "التحقق من نطاق التوصيل قبل أي ذكر له في نسخة لاحقة"
-  ]
+    "اعتماد تسجيل voice-00 للنص بعد مراجعة النطق والتفريغ، من دون اعتبار موافقة ذكر المدينة موافقة على التسجيل.",
+    "مراجعة المصدر gh-a38 وتحديد نافذة القص.",
+    "اعتماد استيراد اللقطات من الأرشيف للمخرج الإعلاني.",
+    "التحقق من نطاق التوصيل والأحياء والمواعيد قبل أي نسخة توصيل لاحقة."
+  ],
+  "consent": {
+    "allow_delivery_city": true,
+    "delivery_city_approval_note": "قرار مباشر وصريح من المالك: هذا إعلان فتح باب الحجز المخصص للإسكندرية.",
+    "owner_approval": {
+      "decision_id": "PR212-AD08-B9-20261113T142600+0200",
+      "status": "approved",
+      "approved_by": "owner",
+      "approved_at": "2026-11-13T14:26:00+02:00",
+      "source": "PR #212 current task instruction: direct owner decision",
+      "scope": "campaign_local",
+      "track": "meat_orders",
+      "campaign_id": "AD08",
+      "approved_claim": "city_mention"
+    }
+  }
 }

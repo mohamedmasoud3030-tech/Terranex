@@ -24,9 +24,9 @@ RULES = [
     ("B5", "hard", r"(عائد|ربح)\s*\d", "رقم ربح بدون سياق", "أضف مصدر الرقم أو احذفه."),
     ("B8", "hard", r"(أحسن|افضل|أفضل)\s+من\s+شركة", "مقارنة مباشرة بمنافس", "اتكلم عن نفسك بدون ذكر منافس."),
     # B9: ممنوع افتراضيًا؛ الاستثناء محصور في حملة محلية موثقة.
-    ("B9", "hard", r"(الإسكندرية|الاسكندرية|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)",
+    ("B9", "hard", r"(الإسكندرية|الاسكندرية|إسكندرية|إسكندريه|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)",
      "ذكر المدينة «الإسكندرية» ممنوع خارج حملة محلية موثقة",
-     "استخدم campaign_local مع ملاحظة موافقة مالك، أو احذف اسم المدينة."),
+     "استخدم owner_approval موثقًا ومربوطًا بـAD08/meat_orders/campaign_local، أو احذف اسم المدينة."),
     ("S4", "soft", r"[😀-🿿]", "إيموجي", "قلّل الإيموجي لأربعة أو أقل في الكابشن."),
     ("S7", "soft", r"(سحب|استرداد)\s*(فلوس|المبلغ).{0,20}(في أي وقت|فورا|فورًا)",
      "وعد سيولة", "اشرح شروط الخروج بدل الوعد المفتوح."),
@@ -38,7 +38,7 @@ HASHTAG_OK = {"#TerraNex", "#استثمار_حيواني", "#ثروة_حيوان
 PHONE = "01010154221"
 
 
-CITY_PAT = r"(الإسكندرية|الاسكندرية|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)"
+CITY_PAT = r"(الإسكندرية|الاسكندرية|إسكندرية|إسكندريه|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)"
 
 
 def city_exception_authorized(
@@ -46,6 +46,7 @@ def city_exception_authorized(
     campaign_scope: str = "general",
     delivery_city_approval_note: str = "",
     track: str = "general",
+    campaign_id: str | None = None,
     owner_approval: dict | None = None,
 ) -> bool:
     """Return whether B9's narrow local meat-order exception is authorized.
@@ -59,6 +60,7 @@ def city_exception_authorized(
         allow_delivery_city is True
         and campaign_scope == "campaign_local"
         and track == "meat_orders"
+        and campaign_id == "AD08"
         and isinstance(delivery_city_approval_note, str)
         and bool(delivery_city_approval_note.strip())
         and isinstance(owner_approval, dict)
@@ -66,7 +68,7 @@ def city_exception_authorized(
         return False
     required = {
         "decision_id", "status", "approved_by", "approved_at", "source",
-        "scope", "track", "approved_claim",
+        "scope", "track", "campaign_id", "approved_claim",
     }
     return (
         required.issubset(owner_approval)
@@ -77,6 +79,7 @@ def city_exception_authorized(
         and bool(str(owner_approval.get("source", "")).strip())
         and owner_approval.get("scope") == "campaign_local"
         and owner_approval.get("track") == "meat_orders"
+        and owner_approval.get("campaign_id") == "AD08"
         and owner_approval.get("approved_claim") == "city_mention"
     )
 
@@ -103,6 +106,7 @@ def check(
     campaign_scope: str = "general",
     delivery_city_approval_note: str = "",
     track: str = "general",
+    campaign_id: str | None = None,
     owner_approval: dict | None = None,
 ) -> dict:
     t = text.strip()
@@ -112,6 +116,7 @@ def check(
         campaign_scope=campaign_scope,
         delivery_city_approval_note=delivery_city_approval_note,
         track=track,
+        campaign_id=campaign_id,
         owner_approval=owner_approval,
     )
     for code, kind, pat, msg, fix in RULES:
@@ -179,6 +184,7 @@ def main():
     ap.add_argument("--campaign-scope", default="general", choices=("general", "campaign_local"))
     ap.add_argument("--delivery-city-approval-note", default="")
     ap.add_argument("--track", default="meat_orders")
+    ap.add_argument("--campaign-id", default=None)
     ap.add_argument("--owner-approval-json", default=None,
                     help="مسار سجل قرار المالك الموثق، وليس ملاحظة نصية")
     a = ap.parse_args()
@@ -201,6 +207,7 @@ def main():
         campaign_scope=a.campaign_scope,
         delivery_city_approval_note=a.delivery_city_approval_note,
         track=a.track,
+        campaign_id=a.campaign_id,
         owner_approval=approval,
     )
     if a.json:

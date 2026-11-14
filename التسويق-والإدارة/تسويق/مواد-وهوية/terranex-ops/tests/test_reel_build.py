@@ -293,6 +293,7 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         "source": "tests/test_reel_build.py",
         "scope": "campaign_local",
         "track": "meat_orders",
+        "campaign_id": "AD08",
         "approved_claim": "city_mention",
     }
 
@@ -302,8 +303,12 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         city = B.CITY_BAN[0]
         with self.assertRaises(SystemExit):
             R.lint_text(f"حجز {city}")
+        with self.assertRaises(SystemExit):
+            R.lint_text("حجز لأهل إسكندرية")
         res = critic.check(f"فتح الحجز في {city}\n#TerraNex #خروف_برقي #ضاني_برقي")
         self.assertTrue(any(h["code"] == "B9" for h in res["hard"]))
+        res_hamza = critic.check("فتح الحجز لأهل إسكندرية\n#TerraNex #خروف_برقي #ضاني_برقي")
+        self.assertTrue(any(h["code"] == "B9" for h in res_hamza["hard"]))
 
     def test_delivery_city_requires_non_empty_note(self):
         self.assertFalse(R._delivery_city_authorized({}))
@@ -319,6 +324,7 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         }))
         self.assertTrue(R._delivery_city_authorized({
             "campaign_scope": "campaign_local",
+            "ad_id": "AD08",
             "track": "meat_orders",
             "consent": {"allow_delivery_city": True, "delivery_city_approval_note": "طلب صريح من المالك",
                         "owner_approval": self.APPROVAL},
@@ -340,6 +346,7 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
             campaign_scope="campaign_local",
             delivery_city_approval_note="طلب صريح من المالك",
             track="meat_orders",
+            campaign_id="AD08",
             owner_approval=self.APPROVAL,
         )
         self.assertEqual(res["hard"], [])
@@ -384,9 +391,23 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         for track in ("investment", "institutional"):
             res = critic.check(text, allow_delivery_city=True,
                                campaign_scope="campaign_local", track=track,
+                               campaign_id="AD08",
                                delivery_city_approval_note="طلب صريح من المالك",
                                owner_approval=self.APPROVAL)
-            self.assertTrue(any(h["code"] == "B9" for h in res["hard"]), track)
+        self.assertTrue(any(h["code"] == "B9" for h in res["hard"]), track)
+
+    def test_valid_approval_is_bound_to_ad08_only(self):
+        import brand as B
+        import critic
+        city = B.CITY_BAN[0]
+        text = f"فتح باب الحجز لأهل {city}\n#TerraNex #خروف_برقي #ضاني_برقي"
+        for campaign_id in (None, "AD07", "OTHER"):
+            res = critic.check(text, allow_delivery_city=True,
+                               campaign_scope="campaign_local", track="meat_orders",
+                               campaign_id=campaign_id,
+                               delivery_city_approval_note="قرار المالك الحالي",
+                               owner_approval=self.APPROVAL)
+            self.assertTrue(any(h["code"] == "B9" for h in res["hard"]), campaign_id)
 
     def test_render_is_blocked_until_explicit_approval(self):
         spec = os.path.join(ROOT, "tests", "_render_gate_spec.json")
