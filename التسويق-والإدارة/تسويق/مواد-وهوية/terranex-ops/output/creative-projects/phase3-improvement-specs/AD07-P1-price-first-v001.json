@@ -1,0 +1,52 @@
+{
+  "id": "AD07-P1-price-first-v001",
+  "source_asset": "../../../../../فيديوهات-المنتجة/2026-11/AD07-احجز-ربعك-30ث.mp4",
+  "track": "meat_orders",
+  "campaign_scope": "campaign_local_pending_city_metadata",
+  "purpose": "اختبار عرض السعر والحسبة دون تحويل الحساب الداخلي إلى وعد تجاري",
+  "target_duration_sec": {
+    "min": 20,
+    "max": 22
+  },
+  "render_approved": false,
+  "verification": {
+    "price_status": "calculation_verified_only",
+    "delivery_scope_status": "pending",
+    "required_before_render": [
+      "تأكيد 44 كجم قائم",
+      "تأكيد 270 جنيهًا للكيلو",
+      "تأكيد 700 جنيه لتجهيز الخروف الكامل",
+      "تأكيد أن 3,100 جنيه هو السعر الحالي",
+      "تحديد هل التوصيل داخل السعر أم منفصل"
+    ]
+  },
+  "preserve": [
+    "لقطة الميزان بالشعار",
+    "الحيوان الحقيقي والتجهيز الحقيقي",
+    "CTA واتساب واحد"
+  ],
+  "variants": [
+    {
+      "id": "P1",
+      "promise": "حسبة واضحة",
+      "opening": "كل رقم له لقطة تثبته",
+      "price_copy": "محجوب حتى اعتماد السعر الحالي"
+    },
+    {
+      "id": "P2",
+      "promise": "ربع جاهز ومقسم",
+      "opening": "محتوى الخدمة دون ادعاء توصيل",
+      "price_copy": "لا يُستخدم قبل التحقق التجاري"
+    }
+  ],
+  "voice": {
+    "voice_id": "voice-00",
+    "new_script_requires_owner_approval": true
+  },
+  "qa_gates": [
+    "لا ادعاء توصيل قبل delivery_scope_status=verified",
+    "لا سعر منشور قبل commercial_verification_status=verified",
+    "critic بدون Hard Ban",
+    "الأصل محفوظ"
+  ]
+}

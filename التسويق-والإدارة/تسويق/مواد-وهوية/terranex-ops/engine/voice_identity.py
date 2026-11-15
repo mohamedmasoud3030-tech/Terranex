@@ -11,6 +11,7 @@ from safe_paths import confine
 
 PERSONAS = Path(__file__).resolve().parent.parent / "context" / "personas.json"
 APPROVED_IDS = frozenset({"voice-00", "owner-eng-abdallah"})
+APPROVED_ALTERNATIVE_IDS = frozenset({"Charon"})
 AUDIO_ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -26,14 +27,21 @@ def voice_bank():
             or bank["owner_voice"].get("voice_id") != "owner-eng-abdallah"
             or bank.get("allow_fallback") is not False):
         raise ValueError("هوية الصوت الافتراضي أو منع البدائل غير صحيح")
+    alternatives = set(bank.get("alternative_voice_ids", []))
+    if alternatives != APPROVED_ALTERNATIVE_IDS:
+        raise ValueError("قائمة الأصوات البديلة غير صحيحة")
     return bank
 
 
 def require_profile(voice_id):
     bank = voice_bank()
-    if not isinstance(voice_id, str) or voice_id not in APPROVED_IDS:
-        raise ValueError("صوت غير معتمد: المسموح voice-00 وowner-eng-abdallah فقط")
-    return bank["default_narrator" if voice_id == "voice-00" else "owner_voice"]
+    if not isinstance(voice_id, str) or voice_id not in APPROVED_IDS | APPROVED_ALTERNATIVE_IDS:
+        raise ValueError("صوت غير معتمد: voice-00 أو owner-eng-abdallah أو البديل المصرح Charon فقط")
+    if voice_id == "voice-00":
+        return bank["default_narrator"]
+    if voice_id == "owner-eng-abdallah":
+        return bank["owner_voice"]
+    return bank["alternative_voices"][voice_id]
 
 
 def require_narration(metadata, audio_path):
@@ -48,6 +56,10 @@ def require_narration(metadata, audio_path):
         # No verified original/model or written consent has been recovered. A
         # caller-provided boolean/note must never unlock a real person's voice.
         raise ValueError("صوت عبدالله غير متاح: الأصل الخاص والموافقة الكتابية لم يتم التحقق منهما")
+    if voice_id == "Charon" and (
+            metadata.get("campaign_id") != "AD08"
+            or metadata.get("scope") != "AD08 internal preview only"):
+        raise ValueError("صوت Charon محصور في المعاينة الداخلية لـAD08")
     if (not isinstance(metadata.get("approval_note"), str)
             or not metadata["approval_note"].strip()):
         raise ValueError("يلزم إذن استخدام موثق للتعليق")
