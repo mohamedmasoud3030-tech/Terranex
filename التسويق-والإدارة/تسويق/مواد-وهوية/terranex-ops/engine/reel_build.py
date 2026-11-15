@@ -149,6 +149,24 @@ def require_consent(spec: dict) -> None:
             )
 
 
+def _render_authorized(spec: dict) -> bool:
+    """Allow final renders, or an explicitly internal-only preview still awaiting publication."""
+    approval = spec.get("approval", {}) if isinstance(spec.get("approval", {}), dict) else {}
+    explicit = any(k in spec for k in ("render_approved", "preview_approved_internal")) or any(
+        k in approval for k in ("render_approved", "preview_approved_internal")
+    )
+    if not explicit:
+        return True  # legacy specs predate the explicit render gate
+    if spec.get("render_approved") is True or approval.get("render_approved") is True:
+        return True
+    return (
+        (spec.get("preview_approved_internal") is True or approval.get("preview_approved_internal") is True)
+        and spec.get("preview_scope", approval.get("preview_scope")) == "internal_only"
+        and approval.get("owner_publish_approval") != "approved"
+        and approval.get("publication_ready") is not True
+    )
+
+
 # ---------------- طبقات ----------------
 def topbar() -> Image.Image:
     """علامة مائية خفيفة أعلى الفريم (B11): تدرّج شفاف + الرمز وTerraNex بمكان/حجم ثابتين.
@@ -382,8 +400,8 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     out = os.path.abspath(out)
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
-    if "render_approved" in spec and spec.get("render_approved") is not True:
-        raise SystemExit("⛔ الرندر محجوب: render_approved يجب أن يكون true بعد اعتماد المواصفة.")
+    if not _render_authorized(spec):
+        raise SystemExit("⛔ الرندر محجوب: يلزم render_approved=true أو preview_approved_internal مع نطاق internal_only.")
     if voice:
         voice = _safe_input_path(voice, os.path.dirname(spec_path), os.getcwd())
         VI.require_narration(spec.get("voice"), voice)

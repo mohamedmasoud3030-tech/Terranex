@@ -1,0 +1,21 @@
+{
+  "voice_id": "Charon",
+  "profile_id": "Charon",
+  "id": "Charon",
+  "language": "ar-EG",
+  "sha256": "ac79297979ea48a979004decbf066184e3053d162f4009789911d679827a8911",
+  "approval_note": "قرار المالك الحالي: استخدام صوت بديل جديد لهذه المعاينة الداخلية لـAD08 فقط.",
+  "scope": "AD08 internal preview only",
+  "alternative_of": "voice-00",
+  "transcript_verification": "human-reviewed",
+  "transcript": [
+    "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
+    "خليك شايف الحيوان قدامك، مش مجرد كلام.",
+    "والوزن بيتعمل قدامك على الميزان. واللي بنفحصه قدامك يتقال زي ما هو.",
+    "تشوف التعامل خطوة بخطوة. للتفاصيل الحالية قبل الحجز، ابعتلنا على واتساب."
+  ],
+  "transcript_review_note": "تمت مقارنة التفريغ الآلي بالنص المعتمد؛ نطق إسكندرية والربع البرقي مفهوم، وظهرت TerraNex منطوقة تيرانكس طبيعيًا بالعربية. رقم واتساب ظاهر على الشاشة فقط.",
+  "source": "manus-tools.generate_speech",
+  "voice_name": "Charon",
+  "campaign_id": "AD08"
+}

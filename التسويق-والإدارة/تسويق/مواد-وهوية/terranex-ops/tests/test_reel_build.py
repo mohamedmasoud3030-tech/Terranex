@@ -420,3 +420,30 @@ class TestDeliveryCityConsentGate(unittest.TestCase):
         finally:
             os.remove(spec)
             outdir.cleanup()
+
+    def test_internal_preview_gate_is_limited_and_buildable(self):
+        with tempfile.TemporaryDirectory(dir=ROOT) as td:
+            src = os.path.join(td, "preview-src.mp4")
+            make_clip(src, [(180, 120, 260, 210)], dur=0.6)
+            spec = {
+                "preview_approved_internal": True,
+                "preview_scope": "internal_only",
+                "approval": {"owner_publish_approval": "pending", "publication_ready": False},
+                "on_screen_persons": [], "consent_persons": [],
+                "clips": [{"path": os.path.basename(src), "start": 0.0, "end": 0.6}],
+                "hook": "رأس حقيقي", "hook_sec": 0.3, "endcard_sec": 0.3,
+                "captions": [{"from": 0.1, "to": 0.5, "text": "دليل بصري"}],
+            }
+            sp = os.path.join(td, "preview-spec.json")
+            with open(sp, "w", encoding="utf-8") as fh:
+                json.dump(spec, fh, ensure_ascii=False)
+            out = os.path.join(td, "preview.mp4")
+            R.build(sp, None, out)
+            self.assertTrue(os.path.isfile(out))
+
+    def test_internal_preview_cannot_bypass_publication_ready(self):
+        spec = {
+            "preview_approved_internal": True, "preview_scope": "internal_only",
+            "approval": {"owner_publish_approval": "approved", "publication_ready": True},
+        }
+        self.assertFalse(R._render_authorized(spec))
