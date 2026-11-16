@@ -1,7 +1,7 @@
 # REPORT — حملة الحجز «احجز ربعك»
 
 **المشروع:** `ad-reservation-quarter-30s` · **التاريخ:** ٦ نوفمبر ٢٠٢٦
-**الملف النهائي:** `فيديوهات-المنتجة/2026-11/AD07-احجز-ربعك-30ث.mp4`
+**الملف النهائي:** `بانتظار-مراجعة-المالك/فيديوهات/2026-11/AD07-احجز-ربعك-30ث.mp4`
 
 ---
 
@@ -103,7 +103,7 @@
 
 ```bash
 cd /home/user/tn_work/camp && python3 build_ad.py
-cd ../../terranex/التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops
+cd ../../terranex/التسويق-والإدارة/04-الإنتاج/terranex-ops
 python3 engine/qa_video.py --video output/creative-projects/ad-reservation-quarter-30s/render/ad-reservation-quarter-30s.mp4 --profile reels
 ```
 

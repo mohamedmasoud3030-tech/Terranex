@@ -181,7 +181,7 @@
 
 ```bash
 git fetch origin refs/heads/mohamedmasoud3030-tech-patch-1:refs/intake/p1 refs/heads/mohamedmasoud3030-tech-patch-2:refs/intake/p2 refs/heads/mohamedmasoud3030-tech-patch-3:refs/intake/p3 refs/heads/mohamedmasoud3030-tech-patch-4:refs/intake/p4
-OPS="التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops"
+OPS="التسويق-والإدارة/04-الإنتاج/terranex-ops"
 python3 -m venv "$OPS/.venv" && "$OPS/.venv/bin/pip" install --require-hashes --only-binary :all: -r "$OPS/requirements-ci.txt"
 "$OPS/.venv/bin/python" "$OPS/archive-intake/extract_github_branches.py"
 "$OPS/.venv/bin/python" "$OPS/output/creative-projects/ad1-weight-proof/stage_media.py"
@@ -213,7 +213,7 @@ for v in a b; do "$OPS/.venv/bin/python" "$OPS/engine/reel_build.py" \
 
 ## ملحق الدمج المعتمد للأصول — 6 نوفمبر 2026
 
-- نقلت PR #202 المواد الأصلية إلى `التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/` ثم دمجتها على `main`.
+- نقلت PR #202 المواد الأصلية إلى `التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/` ثم دمجتها على `main`.
 - مسارات مصادر `spec-a.json` و`spec-b.json` أصبحت تقرأ **الأصول الفعلية في الأرشيف** مباشرة، بلا اعتماد على `media-intake-work` أو فروع الرفع القديمة.
 - تم فصل أدوات الاستيعاب التجريبية غير المدققة أمنيًا عن نطاق الدمج الحالي، مع الإبقاء على تقريرها وأدلتها وتاريخها في PR #201.
 - لا يغير دمج المشروع صفة `visual-draft` ولا يصدر موافقة صوت أو نشر.

@@ -1,6 +1,6 @@
 # مهارات الوكلاء — TerraNex
 
-النظام الرسمي الوحيد: **`terranex-ops`** في `تسويق/مواد-وهوية/terranex-ops/`
+النظام الرسمي الوحيد: **`terranex-ops`** في `04-الإنتاج/terranex-ops/`
 (محرك تنفيذ — 10 أوامر: idea/script/caption/ad/edit/review/pitch/leads/scenario + discovery للاكتشاف الذاتي).
 
 تشغيل أي جلسة جديدة يبدأ من: `bash setup.sh` (تثبيت التبعيات) ثم

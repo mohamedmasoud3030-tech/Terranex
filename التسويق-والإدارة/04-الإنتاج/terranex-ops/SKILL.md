@@ -95,7 +95,7 @@ SCORE: critic.py
 | حملة كاملة من موجز | `python engine/campaign_run.py --brief campaigns/<اسم>.json [--register]` |
 | قياس وتحسين | `python engine/measure.py --csv data/week-NN.csv [--prev w(N-1).csv --append]` |
 | نسخ المنصات | `python engine/make_variants.py --video m.mp4 --outdir output/variants/x` |
-| فوتاج جديد | `python engine/ingest_footage.py` (من `مواد-خام/وارد/`) |
+| فوتاج جديد | `python engine/ingest_footage.py` (من `03-مكتبة-الوسائط/وارد/`) |
 | فحص فيديو | `python engine/qa_video.py --video v.mp4 --profile reels` |
 | تجهيز منشور | `python engine/package_post.py --video v.mp4 --caption c.txt --platforms "facebook,instagram" --date … --time …` |
 | تقويم | `python engine/gen_calendar.py --days 7 --out calendar.md` |

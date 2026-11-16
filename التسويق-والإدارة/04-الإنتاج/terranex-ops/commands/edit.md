@@ -12,7 +12,7 @@
 | **مونتاج متقاطع لعدة لقطات** | `engine/make_montage.py` (MoviePy/MIT) | تركيب 2+ لقطة خام بقصّ وترتيب |
 | **قصّ وقفات المقدم** | `engine/fix_pauses.py` | فيديو كلام طويل فيه تلعثم/وقفات |
 | **نسخ المنصات** | `engine/make_variants.py` | reels/feed45/square من الماستر |
-| **استلام فوتاج جديد** | `engine/ingest_footage.py` | لقطات الموبايل الواردة في مواد-خام/وارد |
+| **استلام فوتاج جديد** | `engine/ingest_footage.py` | لقطات الموبايل الواردة في 03-مكتبة-الوسائط/وارد |
 
 > لمحتوى المقدم البشري الطبيعي: صوّر ← وارد ← `fix_pauses` ← `make_montage` (لو أكثر من لقطة) ← `make_reel_from_footage` (طبقات الهوية) ← `qa_video`.
 
