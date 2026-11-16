@@ -3,7 +3,7 @@
 """reel_build.py — بناء ريل 9:16 من لقطات حقيقية بنظام الهوية الثابت (19/10).
 
 القواعد المثبتة هنا (لا تُكسر):
-  B9  — لا ذكر للمدينة: أي نص فيه «الإسكندرية» يُرفض قبل البناء.
+  B9  — لا ذكر للمدينة افتراضيًا؛ حملة محلية موثقة فقط يمكنها ذكر نطاقها الجغرافي.
   B4  — لقطات حقيقية فقط. AI زخرفة فقط (screen) ولا يُستبدل أي فريم حقيقي.
   B10 — لا يظهر المالك/أي شخص على الشاشة إلا بإذن صريح في الـspec.
   العلامة المائية الرسمية (شعار + TerraNex) في مكان وحجم ثابتين في كل فريم.
@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brand as B  # noqa: E402
+import critic  # noqa: E402
 import voice_identity as VI  # noqa: E402
 from safe_paths import confine  # noqa: E402
 
@@ -110,12 +111,23 @@ def ff() -> str:
 
 # ---------------- بوابات ----------------
 def _delivery_city_authorized(spec: dict | None) -> bool:
-    """استثناء موثق بطلب صريح من المالك لحملات التوصيل الموجهة لمحافظة محددة."""
+    """استثناء B9 لـAD08 موثق بسجل قرار مالك منظم.
+
+    اسم allow_delivery_city قديم ومحفوظ للتوافق؛ لا يمنح تصريحًا بالتوصيل.
+    """
+    spec = spec or {}
     consent = (spec or {}).get("consent")
-    if not isinstance(consent, dict) or consent.get("allow_delivery_city") is not True:
+    if not isinstance(consent, dict):
         return False
     note = consent.get("delivery_city_approval_note", "")
-    return isinstance(note, str) and bool(note.strip())
+    return critic.city_exception_authorized(
+        allow_delivery_city=consent.get("allow_delivery_city") is True,
+        campaign_scope=spec.get("campaign_scope", "general"),
+        delivery_city_approval_note=note,
+        track=spec.get("track", "general"),
+        campaign_id=spec.get("ad_id"),
+        owner_approval=consent.get("owner_approval"),
+    )
 
 
 def lint_text(text: str, allow_city: bool = False) -> None:
@@ -124,7 +136,7 @@ def lint_text(text: str, allow_city: bool = False) -> None:
         return
     hits = [c for c in B.CITY_BAN if c in (text or "")]
     if hits:
-        raise SystemExit(f"⛔ B9: ذكر المدينة «{hits[0]}» في النص — ممنوع نهائيًا.")
+        raise SystemExit(f"⛔ B9: ذكر المدينة «{hits[0]}» يحتاج campaign_local وموافقة موثقة.")
 
 
 def require_consent(spec: dict) -> None:
@@ -140,6 +152,24 @@ def require_consent(spec: dict) -> None:
                 f"⛔ B10: «{p['name_ar']}» لا يظهر بدون إذن صريح.\n"
                 f"   المطلوب: consent_persons: [\"{pid}\"] بعد طلب مكتوب منه في نفس الجلسة."
             )
+
+
+def _render_authorized(spec: dict) -> bool:
+    """Allow final renders, or an explicitly internal-only preview still awaiting publication."""
+    approval = spec.get("approval", {}) if isinstance(spec.get("approval", {}), dict) else {}
+    explicit = any(k in spec for k in ("render_approved", "preview_approved_internal")) or any(
+        k in approval for k in ("render_approved", "preview_approved_internal")
+    )
+    if not explicit:
+        return True  # legacy specs predate the explicit render gate
+    if spec.get("render_approved") is True or approval.get("render_approved") is True:
+        return True
+    return (
+        (spec.get("preview_approved_internal") is True or approval.get("preview_approved_internal") is True)
+        and spec.get("preview_scope", approval.get("preview_scope")) == "internal_only"
+        and approval.get("owner_publish_approval") != "approved"
+        and approval.get("publication_ready") is not True
+    )
 
 
 # ---------------- طبقات ----------------
@@ -375,6 +405,8 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     out = os.path.abspath(out)
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
+    if not _render_authorized(spec):
+        raise SystemExit("⛔ الرندر محجوب: يلزم render_approved=true أو preview_approved_internal مع نطاق internal_only.")
     if voice:
         voice = _safe_input_path(voice, os.path.dirname(spec_path), os.getcwd())
         VI.require_narration(spec.get("voice"), voice)
@@ -528,4 +560,3 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     r = build(a.spec, a.voice, a.out)
     print(f"OK {r['out']} · {r['frames']} إطار · {r['duration']}ث · {r['kb']}KB")
-

@@ -1,0 +1,37 @@
+{
+  "id": "AD06-C1-proof-first-v001",
+  "source_asset": "../../../../../فيديوهات-المنتجة/2026-11/AD06-قبل-ما-تطلب-بص-واسأل-63ث.mp4",
+  "track": "meat_orders",
+  "campaign_scope": "general",
+  "purpose": "تعليم شرائي وإثبات ما يجب أن يسأل عنه المشتري",
+  "target_duration_sec": {
+    "min": 25,
+    "max": 28
+  },
+  "render_approved": false,
+  "preserve": [
+    "الهوك قبل ما تطلب بص واسأل الأول",
+    "لقطات الفحص ورقم الأذن والميزان الحقيقية",
+    "الفرق بين الوزن القائم ووزن التجهيز بصياغة واحدة واضحة",
+    "CTA واتساب واحد فقط"
+  ],
+  "edit_plan": [
+    {"range": "0-2s", "function": "hook_and_visible_proof", "requirement": "يظهر دليل بصري قبل الثانية 2"},
+    {"range": "2-9s", "function": "age_and_ear_tag", "requirement": "لا تكرار للشرح"},
+    {"range": "9-17s", "function": "scale_proof", "requirement": "لقطة ميزان حقيقية"},
+    {"range": "17-23s", "function": "standing_vs_preparation", "requirement": "تعريف واحد واضح"},
+    {"range": "23-28s", "function": "cta", "requirement": "واتساب واحد"}
+  ],
+  "voice": {
+    "voice_id": "voice-00",
+    "mode": "reuse_only_if_transcript_matches",
+    "new_script_requires_owner_approval": true
+  },
+  "qa_gates": [
+    "critic بدون Hard Ban",
+    "أول دليل مرئي قبل الثانية 2",
+    "الكابشن متطابق مع الصوت",
+    "لا ذكر للمدينة خارج campaign_local",
+    "الأصل محفوظ"
+  ]
+}

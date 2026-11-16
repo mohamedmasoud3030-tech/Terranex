@@ -317,13 +317,33 @@ def check_measure(tmp: str) -> None:
 
 
 def check_identity_rules() -> None:
-    """فحص قواعد الهوية المحفورة 19/10: B9 (المدينة) · B10 (إذن المالك) · B11 (العلامة المائية)."""
+    """فحص B9 الافتراضي واستثناء الحملة المحلية، ثم B10/B11."""
     import brand as B
     import critic
     import reel_build as R
 
     ok_b9 = len(critic.lint_city("إحنا في الإسكندرية")) > 0 and not critic.lint_city("استثمار حيواني")
     b9_hard = any(h["code"] == "B9" for h in critic.check("محتوى فيه الإسكندرية")["hard"])
+    local = critic.check(
+        "فتح الحجز لمحافظة الإسكندرية\n#TerraNex #خروف_برقي #ضاني_برقي",
+        allow_delivery_city=True,
+        campaign_scope="campaign_local",
+        delivery_city_approval_note="طلب صريح من المالك",
+        track="meat_orders",
+        campaign_id="AD08",
+        owner_approval={
+            "decision_id": "SELF-CHECK-B9-LOCAL-001",
+            "status": "approved",
+            "approved_by": "owner",
+            "approved_at": "2026-11-06",
+            "source": "selfcheck-fixture",
+            "scope": "campaign_local",
+            "track": "meat_orders",
+            "campaign_id": "AD08",
+            "approved_claim": "city_mention",
+        },
+    )
+    b9_local_allowed = not any(h["code"] == "B9" for h in local["hard"])
 
     owner_blocked = False
     try:
@@ -348,8 +368,8 @@ def check_identity_rules() -> None:
     lg = B.logo(120, "full")
     logo_ok = lg.width >= B.LOGO_MIN_LOCKUP_W
 
-    ok = ok_b9 and b9_hard and owner_blocked and owner_allowed and wm_drawn and logo_ok
-    detail = (f"B9={ok_b9 and b9_hard} · B10={owner_blocked and owner_allowed} · "
+    ok = ok_b9 and b9_hard and b9_local_allowed and owner_blocked and owner_allowed and wm_drawn and logo_ok
+    detail = (f"B9={ok_b9 and b9_hard} · B9-local={b9_local_allowed} · B10={owner_blocked and owner_allowed} · "
               f"watermark={wm_drawn} · logo={lg.width}px")
     record("قواعد الهوية B9/B10/B11 (مدينة · إذن المالك · علامة مائية)", ok, detail)
 
@@ -359,7 +379,7 @@ CITY_ALLOWED_FILES = {"critic.py", "brand.py", "selfcheck.py", "reel_build.py"}
 
 
 def check_no_city_in_engines() -> None:
-    """حارس B9 الثابت: أي محرك بيبني نصًا/فريمًا ممنوع يحتوي على اسم المدينة.
+    """حارس B9: لا مراجع مدينة صلبة في محركات الإنتاج خارج بوابات القاعدة.
 
     يمنع رجوع القاعدة (حصل فعلًا في make_reel_from_footage قبل التصحيح).
     """
@@ -376,7 +396,7 @@ def check_no_city_in_engines() -> None:
             if c in txt:
                 offenders.append(f"{name}:{c}")
                 break
-    record("حارس B9 — لا اسم مدينة في أي محرك إنتاج",
+    record("حارس B9 — لا اسم مدينة صلب خارج بوابات الاستثناء",
            not offenders, "؛ ".join(offenders))
 
 
@@ -418,4 +438,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

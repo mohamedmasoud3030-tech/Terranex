@@ -68,6 +68,22 @@
       "consent_status": "not-verified",
       "private_storage_required": true
     },
+    "alternative_voices": {
+      "Charon": {
+        "id": "Charon",
+        "voice_id": "Charon",
+        "engine": "manus-tools.generate_speech",
+        "language": "ar-EG",
+        "tone": "male, low, informative, clear",
+        "status": "approved alternative for AD08 internal preview only",
+        "approved_by": "owner — current task instruction",
+        "default": false,
+        "scope": "AD08 internal preview; not a replacement for voice-00"
+      }
+    },
+    "alternative_voice_ids": [
+      "Charon"
+    ],
     "allowed_voice_ids": [
       "voice-00",
       "owner-eng-abdallah"

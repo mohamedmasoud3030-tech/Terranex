@@ -36,6 +36,10 @@ class VoiceIdentityTests(unittest.TestCase):
             with self.subTest(voice_id=voice_id), self.assertRaises(ValueError):
                 VI.require_profile(voice_id)
 
+    def test_approved_alternative_voice_profile_is_not_default(self):
+        self.assertEqual(VI.require_profile('Charon')['voice_id'], 'Charon')
+        self.assertEqual(VI.voice_bank()['default_voice_id'], 'voice-00')
+
     def test_third_voice_in_configuration_rejected(self):
         data = json.loads(VI.PERSONAS.read_text())
         data['voice_bank']['allowed_voice_ids'].append('voice-99')
@@ -45,6 +49,15 @@ class VoiceIdentityTests(unittest.TestCase):
 
     def test_reviewed_asset_binding_passes(self):
         self.assertEqual(VI.require_narration(self.meta, self.asset), 'voice-00')
+
+    def test_reviewed_alternative_asset_binding_passes(self):
+        meta = dict(self.meta, voice_id='Charon', campaign_id='AD08', scope='AD08 internal preview only', approval_note='owner approved AD08 internal preview')
+        self.assertEqual(VI.require_narration(meta, self.asset), 'Charon')
+
+    def test_alternative_voice_is_bound_to_ad08_internal_scope(self):
+        meta = dict(self.meta, voice_id='Charon', campaign_id='AD07', scope='AD08 internal preview only', approval_note='owner approved AD08 internal preview')
+        with self.assertRaisesRegex(ValueError, 'AD08'):
+            VI.require_narration(meta, self.asset)
 
     def test_replaced_asset_rejected(self):
         self.asset.write_bytes(b'changed')

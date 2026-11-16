@@ -14,8 +14,6 @@ on:
       - main
       - 'arena/f2829137-terranex'
       - 'restructure/marketing-admin-2026-11-16'
-      - 'test/integration-212-restructure'
-      - 'test/integration-212-first'
     paths:
       - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/**'
       - '.github/workflows/marketing-ops.yml'
