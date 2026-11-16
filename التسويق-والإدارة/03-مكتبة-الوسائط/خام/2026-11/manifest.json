@@ -9,7 +9,7 @@
   "total_bytes": 135696797,
   "full_drive_zip_verified": false,
   "preservation": "Existing Git blobs referenced by SHA; no file re-encoding; no destructive modifications to upload branches",
-  "identity_source_of_truth": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/context/personas.json",
+  "identity_source_of_truth": "التسويق-والإدارة/04-الإنتاج/terranex-ops/context/personas.json",
   "production_scene_library_unchanged": true,
   "restrictions": {
     "quarantined_assets": [
@@ -32,7 +32,7 @@
     {
       "id": "gh-a01",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/مراجعة-خصوصية-وموافقات/gh-a01.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/مراجعة-خصوصية-وموافقات/gh-a01.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.09 AM.jpeg",
       "source_branches": [
         "patch-1",
@@ -69,7 +69,7 @@
     {
       "id": "gh-a02",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a02.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/صور-حيوانات-ومزارع/gh-a02.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM (1).jpeg",
       "source_branches": [
         "patch-1",
@@ -103,7 +103,7 @@
     {
       "id": "gh-a03",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/مراجعة-خصوصية-وموافقات/gh-a03.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/مراجعة-خصوصية-وموافقات/gh-a03.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM (2).jpeg",
       "source_branches": [
         "patch-1",
@@ -141,7 +141,7 @@
     {
       "id": "gh-a04",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/مراجعة-خصوصية-وموافقات/gh-a04.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/مراجعة-خصوصية-وموافقات/gh-a04.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM (3).jpeg",
       "source_branches": [
         "patch-1",
@@ -179,7 +179,7 @@
     {
       "id": "gh-a05",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/مراجعة-خصوصية-وموافقات/gh-a05.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/مراجعة-خصوصية-وموافقات/gh-a05.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.10 AM.jpeg",
       "source_branches": [
         "patch-1",
@@ -216,7 +216,7 @@
     {
       "id": "gh-a06",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a06.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/صور-حيوانات-ومزارع/gh-a06.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.11 AM (1).jpeg",
       "source_branches": [
         "patch-1",
@@ -255,7 +255,7 @@
     {
       "id": "gh-a07",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/حجر-صحي/gh-a07.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/حجر-صحي/gh-a07.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.11 AM.jpeg",
       "source_branches": [
         "patch-1",
@@ -292,7 +292,7 @@
     {
       "id": "gh-a08",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a08.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/صور-حيوانات-ومزارع/gh-a08.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM (1).jpeg",
       "source_branches": [
         "patch-1",
@@ -327,7 +327,7 @@
     {
       "id": "gh-a09",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/صور-حيوانات-ومزارع/gh-a09.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/صور-حيوانات-ومزارع/gh-a09.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM (2).jpeg",
       "source_branches": [
         "patch-1",
@@ -362,7 +362,7 @@
     {
       "id": "gh-a10",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a10.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a10.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
       "source_branches": [
         "patch-1",
@@ -398,7 +398,7 @@
     {
       "id": "gh-a11",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a11.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a11.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.16 AM (1).jpeg",
       "source_branches": [
         "patch-1",
@@ -434,7 +434,7 @@
     {
       "id": "gh-a12",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a12.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a12.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
       "source_branches": [
         "patch-1",
@@ -470,7 +470,7 @@
     {
       "id": "gh-a13",
       "kind": "image",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a13.jpeg",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a13.jpeg",
       "original_file": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
       "source_branches": [
         "patch-1",
@@ -506,7 +506,7 @@
     {
       "id": "gh-a14",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/حجر-صحي/gh-a14.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/حجر-صحي/gh-a14.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM (1).mp4",
       "source_branches": [
         "patch-1",
@@ -545,7 +545,7 @@
     {
       "id": "gh-a15",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/حجر-صحي/gh-a15.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/حجر-صحي/gh-a15.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM (2).mp4",
       "source_branches": [
         "patch-1",
@@ -583,7 +583,7 @@
     {
       "id": "gh-a16",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a16.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a16.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (2).mp4",
       "source_branches": [
         "patch-1",
@@ -618,7 +618,7 @@
     {
       "id": "gh-a17",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a17.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a17.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (3).mp4",
       "source_branches": [
         "patch-1"
@@ -653,7 +653,7 @@
     {
       "id": "gh-a18",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a18.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a18.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.24.55 AM.mp4",
       "source_branches": [
         "patch-1",
@@ -688,7 +688,7 @@
     {
       "id": "gh-a19",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/حجر-صحي/gh-a19.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/حجر-صحي/gh-a19.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.25.06 AM.mp4",
       "source_branches": [
         "patch-1",
@@ -726,7 +726,7 @@
     {
       "id": "gh-a20",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a20.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a20.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.25.18 AM.mp4",
       "source_branches": [
         "patch-1",
@@ -761,7 +761,7 @@
     {
       "id": "gh-a21",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a21.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a21.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.25.33 AM.mp4",
       "source_branches": [
         "patch-1",
@@ -796,7 +796,7 @@
     {
       "id": "gh-a22",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a22.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a22.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.26.17 AM.mp4",
       "source_branches": [
         "patch-1",
@@ -831,7 +831,7 @@
     {
       "id": "gh-a23",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a23.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a23.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.27.00 AM.mp4",
       "source_branches": [
         "patch-1",
@@ -867,7 +867,7 @@
     {
       "id": "gh-a24",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a24.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a24.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (1).mp4",
       "source_branches": [
         "patch-2",
@@ -904,7 +904,7 @@
     {
       "id": "gh-a25",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
       "source_branches": [
         "patch-2",
@@ -941,7 +941,7 @@
     {
       "id": "gh-a26",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a26.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a26.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -976,7 +976,7 @@
     {
       "id": "gh-a27",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1013,7 +1013,7 @@
     {
       "id": "gh-a28",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a28.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a28.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM (3).mp4",
       "source_branches": [
         "patch-2",
@@ -1048,7 +1048,7 @@
     {
       "id": "gh-a29",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/مراجعة-خصوصية-وموافقات/gh-a29.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/مراجعة-خصوصية-وموافقات/gh-a29.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.13 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1085,7 +1085,7 @@
     {
       "id": "gh-a30",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a30.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a30.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (1).mp4",
       "source_branches": [
         "patch-2",
@@ -1121,7 +1121,7 @@
     {
       "id": "gh-a31",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a31.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a31.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (2).mp4",
       "source_branches": [
         "patch-2",
@@ -1158,7 +1158,7 @@
     {
       "id": "gh-a32",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/حجر-صحي/gh-a32.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/حجر-صحي/gh-a32.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.15 AM (4).mp4",
       "source_branches": [
         "patch-2",
@@ -1196,7 +1196,7 @@
     {
       "id": "gh-a33",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a33.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a33.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.22.20 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1233,7 +1233,7 @@
     {
       "id": "gh-a34",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/حجر-صحي/gh-a34.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/حجر-صحي/gh-a34.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.24.35 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1272,7 +1272,7 @@
     {
       "id": "gh-a35",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a35.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a35.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.24.42 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1309,7 +1309,7 @@
     {
       "id": "gh-a36",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/مراجعة-خصوصية-وموافقات/gh-a36.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/مراجعة-خصوصية-وموافقات/gh-a36.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.26.48 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1346,7 +1346,7 @@
     {
       "id": "gh-a37",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a37.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a37.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.26.50 AM.mp4",
       "source_branches": [
         "patch-2",
@@ -1381,7 +1381,7 @@
     {
       "id": "gh-a38",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a38.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a38.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM (1).mp4",
       "source_branches": [
         "patch-3"
@@ -1414,7 +1414,7 @@
     {
       "id": "gh-a39",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a39.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a39.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
       "source_branches": [
         "patch-3"
@@ -1449,7 +1449,7 @@
     {
       "id": "gh-a40",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a40.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a40.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.22.26 AM.mp4",
       "source_branches": [
         "patch-3"
@@ -1482,7 +1482,7 @@
     {
       "id": "gh-a41",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a41.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a41.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.24.21 AM.mp4",
       "source_branches": [
         "patch-3"
@@ -1517,7 +1517,7 @@
     {
       "id": "gh-a42",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a42.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a42.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.25.49 AM.mp4",
       "source_branches": [
         "patch-3"
@@ -1550,7 +1550,7 @@
     {
       "id": "gh-a43",
       "kind": "video",
-      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
+      "archive_path": "التسويق-والإدارة/03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
       "original_file": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
       "source_branches": [
         "patch-4"

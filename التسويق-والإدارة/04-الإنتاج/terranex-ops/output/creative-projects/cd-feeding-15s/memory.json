@@ -68,7 +68,7 @@
           "irrigation"
         ],
         "quality": 0.8,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-07.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-07.jpg",
         "treatment": {
           "crop": {
             "top": 0.07
@@ -96,7 +96,7 @@
           "farm"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-08.jpg",
         "treatment": {
           "crop": {
             "top": 0.07
@@ -124,7 +124,7 @@
           "feeding"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-03.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-03.jpg",
         "treatment": {
           "crop": {
             "bottom": 0.14
@@ -153,7 +153,7 @@
           "person-hand"
         ],
         "quality": 0.9,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-02.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-02.jpg",
         "treatment": {
           "crop": {
             "left": 0.09,
@@ -205,14 +205,14 @@
     "s04-02"
   ],
   "artifacts": {
-    "brief": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/brief.json",
-    "plan": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/plan.json",
-    "spec": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/spec.json",
-    "storyboard": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/storyboard.png",
-    "caption": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/caption.txt",
-    "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-feeding-15s/v0002.mp4",
-    "render_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/render-report.json",
-    "critic_report": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/critic-report.json"
+    "brief": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/brief.json",
+    "plan": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/plan.json",
+    "spec": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/spec.json",
+    "storyboard": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/storyboard.png",
+    "caption": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/caption.txt",
+    "video": "التسويق-والإدارة/04-الإنتاج/معاينات-داخلية/cd-feeding-15s/v0002.mp4",
+    "render_report": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/render-report.json",
+    "critic_report": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/critic-report.json"
   },
   "versions": [
     {
@@ -228,7 +228,7 @@
         "s04-02"
       ],
       "hook": "الحيوانات… متابعة حقيقية.",
-      "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-feeding-15s/v0001.mp4",
+      "video": "التسويق-والإدارة/04-الإنتاج/معاينات-داخلية/cd-feeding-15s/v0001.mp4",
       "sha256": "e7b0b72274a7ca522b179e3fb5d28602da78f35ab0e9e224e8d906abc2b0ece8",
       "snapshot": "versions/v0001"
     },
@@ -245,7 +245,7 @@
         "s04-02"
       ],
       "hook": "من الأرض… للعلف.",
-      "video": "التسويق-والإدارة/تسويق/فيديوهات-المنتجة/creative-director/cd-feeding-15s/v0002.mp4",
+      "video": "التسويق-والإدارة/04-الإنتاج/معاينات-داخلية/cd-feeding-15s/v0002.mp4",
       "sha256": "20ad93edaa2932732ca3bf3f0fbd5f2bdba5523c1cdb7f3a3ba9b1517d3e74ec",
       "snapshot": "versions/v0002"
     }

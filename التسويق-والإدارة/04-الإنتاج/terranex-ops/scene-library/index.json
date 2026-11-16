@@ -5,9 +5,9 @@
       "source_id": "src-01",
       "kind": "video",
       "sha256": "1285810e7cb84cba6811d17859a0b5052259669ec3a168a11cfac15a7f91cfab",
-      "path": "التسويق-والإدارة/تسويق/فيديوهات-جاهزة-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "path": "التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
       "git_tracked": true,
-      "restore": "git checkout -- 'التسويق-والإدارة/تسويق/فيديوهات-جاهزة-للنشر/01-بومو-الشركة-الرئيسي.mp4'  (متتبع في git — يُستعاد تلقائيًا)",
+      "restore": "git checkout -- 'التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4'  (متتبع في git — يُستعاد تلقائيًا)",
       "duration": 25.8,
       "width": 720,
       "height": 1280,
@@ -17,9 +17,9 @@
       "source_id": "src-04",
       "kind": "video",
       "sha256": "c3e9f501624aff2fe3ac25745377d78dae653fa1e4d68989c572e10e96ca9302",
-      "path": "التسويق-والإدارة/تسويق/فيديوهات-جاهزة-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4",
+      "path": "التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4",
       "git_tracked": true,
-      "restore": "git checkout -- 'التسويق-والإدارة/تسويق/فيديوهات-جاهزة-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4'  (متتبع في git — يُستعاد تلقائيًا)",
+      "restore": "git checkout -- 'التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4'  (متتبع في git — يُستعاد تلقائيًا)",
       "duration": 22.13,
       "width": 720,
       "height": 1280,
@@ -41,7 +41,7 @@
       "usable": false,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-01.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-01.jpg",
       "treatment": {}
     },
     {
@@ -59,7 +59,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-02.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-02.jpg",
       "treatment": {
         "crop": {
           "bottom": 0.14
@@ -82,7 +82,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-03.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-03.jpg",
       "treatment": {
         "crop": {
           "bottom": 0.14
@@ -102,7 +102,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-04.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-04.jpg",
       "treatment": {
         "crop": {
           "bottom": 0.14
@@ -123,7 +123,7 @@
       "usable": false,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-05.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-05.jpg",
       "treatment": {}
     },
     {
@@ -140,7 +140,7 @@
       "usable": false,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-06.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-06.jpg",
       "treatment": {}
     },
     {
@@ -157,7 +157,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-07.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-07.jpg",
       "treatment": {
         "crop": {
           "top": 0.07
@@ -180,7 +180,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-08.jpg",
       "treatment": {
         "crop": {
           "top": 0.07
@@ -202,7 +202,7 @@
       "usable": false,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-09.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-09.jpg",
       "treatment": {}
     },
     {
@@ -223,7 +223,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-01.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-01.jpg",
       "treatment": {
         "crop": {
           "left": 0.09,
@@ -250,7 +250,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-02.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-02.jpg",
       "treatment": {
         "crop": {
           "left": 0.09,
@@ -273,7 +273,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-03.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-03.jpg",
       "treatment": {
         "crop": {
           "left": 0.09,
@@ -299,7 +299,7 @@
       "usable": true,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-04.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-04.jpg",
       "treatment": {
         "crop": {
           "left": 0.09,
@@ -322,7 +322,7 @@
       "usable": false,
       "burned_text": true,
       "tagged_by": "arena-vision",
-      "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-05.jpg",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-05.jpg",
       "treatment": {}
     }
   ]

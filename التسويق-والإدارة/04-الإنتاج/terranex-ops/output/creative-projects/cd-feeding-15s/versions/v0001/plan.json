@@ -214,7 +214,7 @@
           "feeding"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-03.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-03.jpg",
         "treatment": {
           "crop": {
             "bottom": 0.14
@@ -242,7 +242,7 @@
           "farm"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-08.jpg",
         "treatment": {
           "crop": {
             "top": 0.07
@@ -268,7 +268,7 @@
           "irrigation"
         ],
         "quality": 0.8,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-07.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-07.jpg",
         "treatment": {
           "crop": {
             "top": 0.07
@@ -297,7 +297,7 @@
           "person-hand"
         ],
         "quality": 0.9,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-02.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-02.jpg",
         "treatment": {
           "crop": {
             "left": 0.09,
@@ -349,6 +349,6 @@
     "s04-02"
   ],
   "authoring_mode": "template",
-  "spec": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/spec.json",
-  "storyboard": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-feeding-15s/storyboard.png"
+  "spec": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/spec.json",
+  "storyboard": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-feeding-15s/storyboard.png"
 }

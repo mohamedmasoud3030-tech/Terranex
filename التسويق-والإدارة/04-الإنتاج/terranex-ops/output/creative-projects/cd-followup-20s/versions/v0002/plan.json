@@ -216,7 +216,7 @@
           "sheep"
         ],
         "quality": 0.5,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-03.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-03.jpg",
         "treatment": {
           "crop": {
             "left": 0.09,
@@ -246,7 +246,7 @@
           "farm"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-08.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-08.jpg",
         "treatment": {
           "crop": {
             "top": 0.07
@@ -275,7 +275,7 @@
           "person-hand"
         ],
         "quality": 0.9,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-02.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-02.jpg",
         "treatment": {
           "crop": {
             "left": 0.09,
@@ -305,7 +305,7 @@
           "feeding"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-03.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-03.jpg",
         "treatment": {
           "crop": {
             "bottom": 0.14
@@ -331,7 +331,7 @@
           "irrigation"
         ],
         "quality": 0.8,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s01-07.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-07.jpg",
         "treatment": {
           "crop": {
             "top": 0.07
@@ -360,7 +360,7 @@
           "person-hand"
         ],
         "quality": 0.85,
-        "preview": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/scene-library/previews/s04-04.jpg",
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-04.jpg",
         "treatment": {
           "crop": {
             "left": 0.09,
@@ -425,8 +425,8 @@
     "s01-07",
     "s04-04"
   ],
-  "spec": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/spec.json",
-  "storyboard": "التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/creative-projects/cd-followup-20s/storyboard.png",
+  "spec": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-followup-20s/spec.json",
+  "storyboard": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-followup-20s/storyboard.png",
   "authoring_mode": "revision",
   "revision_patch": {
     "schema_version": 1,
