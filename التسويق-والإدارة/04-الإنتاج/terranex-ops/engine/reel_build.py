@@ -32,6 +32,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # يُسمح بمراجعته بالمسارات النسبية بدل المسارات المطلقة القديمة.
 # الأصول الخام: 03-مكتبة-الوسائط/خام/ · المخرجات النهائية: 05-التسليم-والنشر/
 MARKETING_ROOT = os.path.abspath(os.path.join(ROOT, "..", ".."))
+# جذور الإدخال المطلوبة فعلًا بعد إعادة الهيكلة (تشديد — لا تشمل 01-الإدارة/99-الأرشيف):
+INPUT_ROOTS = tuple(os.path.join(MARKETING_ROOT, d)
+                    for d in ("03-مكتبة-الوسائط", "04-الإنتاج", "05-التسليم-والنشر"))
 PERSONAS = os.path.join(ROOT, "context", "personas.json")
 W, H, FPS = 1080, 1920, 30
 IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
@@ -366,7 +369,7 @@ def mix_audio(spec: dict, voice: str, original: str, total: float, out: str) -> 
 def build(spec_path: str, voice: str | None, out: str) -> dict:
     # الـspec يجب أن يعيش داخل مساحة التسويق، لكن لا يشترط أن يكون CWD هو مجلد التشغيل.
     # هذا يجعل الرندر يعمل بعد استعادة المستودع في مسار مختلف ومن أي CWD.
-    spec_path = _safe_input_path(spec_path, MARKETING_ROOT)
+    spec_path = _safe_input_path(spec_path, ROOT, MARKETING_ROOT)  # الـspec محصور في منطقة المحرك/النطاق التشغيلي
     if os.path.basename(out).startswith("-") or os.path.basename(out) == "":
         raise SystemExit(f"unsafe output path: {out}")
     out = os.path.abspath(out)
@@ -380,7 +383,7 @@ def build(spec_path: str, voice: str | None, out: str) -> dict:
     for c in spec["clips"]:
         if not os.path.isabs(c["path"]):
             c["path"] = os.path.normpath(os.path.join(base, c["path"]))
-        c["path"] = _safe_input_path(c["path"], base, MARKETING_ROOT)
+        c["path"] = _safe_input_path(c["path"], base, *INPUT_ROOTS)
 
     require_consent(spec)
     allow_city = _delivery_city_authorized(spec)

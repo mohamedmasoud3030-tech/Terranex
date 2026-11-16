@@ -12,7 +12,18 @@
     "faces_visible": false,
     "allow_delivery_city": true,
     "delivery_city_approval_note": "طلب صريح مباشر من المالك في الجلسة (2026-11-06): انا عاوز الفديو يذكر فيه ان باب الحجز فتح لمحافظه الاسكندريه",
-    "note": "12 لقطة حقيقية مفحوصة بدون أي وجوه أو مشاهد ذبح أو دماء، ومع ذكر فتح الحجز لمحافظة الإسكندرية بطلب المالك الصريح."
+    "note": "12 لقطة حقيقية مفحوصة بدون أي وجوه أو مشاهد ذبح أو دماء، ومع ذكر فتح الحجز لمحافظة الإسكندرية بطلب المالك الصريح.",
+    "owner_approval": {
+      "decision_id": "AD08-B9-2026-11-06",
+      "status": "approved",
+      "approved_by": "owner",
+      "approved_at": "2026-11-06",
+      "source": "جلسة المالك 2026-11-06 — delivery_city_approval_note أعلاه + سجل الموافقات (01-الإدارة/قرارات-وموافقات-المالك/سجل-الموافقات.md) بند 6",
+      "scope": "campaign_local",
+      "track": "meat_orders",
+      "campaign_id": "AD08",
+      "approved_claim": "city_mention"
+    }
   },
   "voice": {
     "voice_id": "voice-00",
@@ -185,5 +196,8 @@
       "to": 50.97,
       "text": "للحجز واتساب فقط 01010154221"
     }
-  ]
+  ],
+  "ad_id": "AD08",
+  "track": "meat_orders",
+  "campaign_scope": "campaign_local"
 }

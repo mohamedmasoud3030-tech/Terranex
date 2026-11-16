@@ -19,7 +19,7 @@ import creative_director as CD
 
 class VoiceIdentityTests(unittest.TestCase):
     def setUp(self):
-        self.td = tempfile.TemporaryDirectory(dir=VI.AUDIO_ROOT)
+        self.td = tempfile.TemporaryDirectory(dir=str(VI.AUDIO_ROOTS[1]))  # عيّنات الاختبار داخل الجذور المضيّقة (04-الإنتاج)
         self.addCleanup(self.td.cleanup)
         self.asset = Path(self.td.name) / 'fixture.wav'
         self.asset.write_bytes(b'non-speaker-test-fixture')

@@ -1136,7 +1136,7 @@ def render_project(project_id: str, projects_root: str = PROJECTS, force: bool =
     idx = load_index()
     validate_plan(idx, mem["brief"], plan["schedule"], spec)
     entry = _version_entry(mem, mem["current_version"])
-    video = confine(os.path.join(REPO, entry["video"]), REPO) if entry.get("video") else _video_path(store.project_id, mem["current_version"])
+    video = confine(os.path.join(REPO, entry["video"]), MARKETING_ROOT) if entry.get("video") else _video_path(store.project_id, mem["current_version"])
     if not force and entry.get("sha256") and os.path.isfile(video):
         report = store.read_json(RENDER_REPORT) if store.exists(RENDER_REPORT) else {}
         return {"render": {"out": video, "sha256": entry["sha256"], "cached": True},

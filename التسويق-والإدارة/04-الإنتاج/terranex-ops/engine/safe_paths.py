@@ -27,3 +27,19 @@ def confine(path: str, root: str) -> str:
             raise ValueError(f"unsafe path component: {comp}")
         parts.append(base)
     return os.path.join(root_rp, *parts)
+
+
+def confine_any(path: str, roots) -> str:
+    """مثل confine لكن ضد قائمة جذور مسموحة — للتضييق بعد التنظيم الجديد.
+
+    يقبل المسار إن وقع داخل أي جذر من roots فقط (بعد realpath)، ويرفض الباقي.
+    """
+    rp = os.path.realpath(path)
+    for r in roots:
+        root_rp = os.path.realpath(r)
+        try:
+            if rp == root_rp or os.path.commonpath([rp, root_rp]) == root_rp:
+                return confine(path, r)
+        except ValueError:
+            continue
+    raise ValueError(f"path outside allowed roots: {path}")

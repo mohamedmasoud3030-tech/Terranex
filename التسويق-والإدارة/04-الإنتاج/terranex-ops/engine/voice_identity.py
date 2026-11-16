@@ -7,11 +7,14 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from safe_paths import confine
+from safe_paths import confine, confine_any
 
 PERSONAS = Path(__file__).resolve().parent.parent / "context" / "personas.json"
 APPROVED_IDS = frozenset({"voice-00", "owner-eng-abdallah"})
-AUDIO_ROOT = Path(__file__).resolve().parents[3]
+_SCOPE = Path(__file__).resolve().parents[3]
+AUDIO_ROOT = _SCOPE  # توافق: الجذر التاريخي
+# بعد إعادة الهيكلة اتسع الجذر الضمني؛ نعيد تضييقه إلى الجذور المطلوبة فعلًا:
+AUDIO_ROOTS = (_SCOPE / "03-مكتبة-الوسائط", _SCOPE / "04-الإنتاج")
 
 
 def voice_bank():
@@ -51,7 +54,7 @@ def require_narration(metadata, audio_path):
     if (not isinstance(metadata.get("approval_note"), str)
             or not metadata["approval_note"].strip()):
         raise ValueError("يلزم إذن استخدام موثق للتعليق")
-    audio = confine(str(audio_path), str(AUDIO_ROOT))
+    audio = confine_any(str(audio_path), [str(r) for r in AUDIO_ROOTS])
     digest = hashlib.sha256(Path(audio).read_bytes()).hexdigest()
     if metadata.get("sha256") != digest:
         raise ValueError("بصمة ملف التعليق لا تطابق الملف المعتمد")
@@ -75,8 +78,8 @@ def require_narration(metadata, audio_path):
 
 
 def require_sidecar(audio_path):
-    audio = confine(str(audio_path), str(AUDIO_ROOT))
-    sidecar = Path(confine(audio + ".voice.json", str(AUDIO_ROOT)))
+    audio = confine_any(str(audio_path), [str(r) for r in AUDIO_ROOTS])
+    sidecar = Path(confine_any(audio + ".voice.json", [str(r) for r in AUDIO_ROOTS]))
     if not sidecar.is_file():
         raise ValueError("يلزم ملف .voice.json بجوار التعليق يثبت هويته ومراجعة نصه")
     return require_narration(json.loads(sidecar.read_text(encoding="utf-8")), audio)
