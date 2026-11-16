@@ -1,0 +1,404 @@
+{
+  "id": "AD08-S3-local-product-service-v001",
+  "version": "v001",
+  "ad_id": "AD08",
+  "track": "meat_orders",
+  "campaign_scope": "campaign_local",
+  "concept_status": "pre-production-review",
+  "concept": {
+    "name": "الفرق في التفاصيل",
+    "angle": "إعلان محلي لأهل الإسكندرية يوضح من أول ثوانٍ أن فتح الحجز مخصص لهم، ثم يعرض المنتج الحقيقي وخطوات التجهيز الظاهرة من دون سعر أو ادعاء نطاق توصيل.",
+    "hook": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
+    "difference_from_original": "AD08 الأصلي يبدأ بعرض الحجز والسعر والتوصيل ويعتمد على مونتاج أطول؛ S3 يبدأ بمشهد حقيقي ويثبت وجود الحيوان والمزرعة والوزن المرئي ثم يطلب الاستفسار عن الدفعة الحالية.",
+    "target_duration_sec": {
+      "min": 29,
+      "max": 32,
+      "target": 30
+    },
+    "aspect_ratio": "9:16",
+    "platforms": [
+      "facebook",
+      "instagram"
+    ],
+    "audience": "أهل الإسكندرية المهتمون بحجز الربع البرقي"
+  },
+  "source_asset_policy": {
+    "real_company_footage_only": true,
+    "source_review_required": false,
+    "scene_import_approved": true,
+    "publication_approved": false,
+    "original_assets_preserved": true,
+    "excluded_sources": [
+      "gh-a14.mp4",
+      "gh-a15.mp4",
+      "gh-a19.mp4",
+      "gh-a29.mp4",
+      "gh-a32.mp4",
+      "gh-a34.mp4",
+      "gh-a36.mp4"
+    ],
+    "source_review_approved": true,
+    "source_review_note": "تمت مراجعة الإطارات الفعلية من كائنات Git التاريخية؛ gh-a38 صالح لنافذة الفحص 10.00–14.00 فقط.",
+    "source_restore_records": {
+      "gh-a28": {
+        "sha256": "3c3ce3cd9f92c567acc3fd35a3743ed78a0f282d1bc1c68984f06d3bac650951",
+        "git_blob": "4014a48c7b7a66f356ff9d927d7024abb7e846bc"
+      },
+      "gh-a43": {
+        "sha256": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+        "git_blob": "1dd6ac36831a32b3b52a1c6c4f5d78c5b6c93a6b"
+      },
+      "gh-a17": {
+        "sha256": "dbafbdd9ba803761bf9cc3db3a61ccf1280943493bbd685a26cde5a87efaf769",
+        "git_blob": "72207a2684f707565838b6f785cc7aa5fbe3069f"
+      },
+      "gh-a31": {
+        "sha256": "777485a762c25a7046a7533a1c7a8a481e30b367c27455499c7bbccca2b351e1",
+        "git_blob": "635a0097996ac1ff6464c94e4d955997382ded94"
+      },
+      "gh-a35": {
+        "sha256": "fcc9d518cfc24e28e9642f3dedd5621c722c20da9f2efd118185db71ebbd7afb",
+        "git_blob": "66a154eaf433f858f64b06e0f5aa843a98690104"
+      },
+      "gh-a38": {
+        "sha256": "8ec0164bfd547e671869ed4693eeb863cc2356012f07e1c809b0d54b2d1f3f29",
+        "git_blob": "dcd915a24bf45ebf1bb59eac2055833daa783a09"
+      }
+    }
+  },
+  "storyboard": [
+    {
+      "edit_range": "0.0-4.6",
+      "function": "real_hook",
+      "source": "gh-a28.mp4",
+      "source_range": "2.00-6.60",
+      "visual": "رأس حقيقي منفرد في فناء المزرعة.",
+      "on_screen_copy": "لأهل إسكندرية…\nفتحنا باب الحجز على الربع البرقي من TerraNex!",
+      "voice_line": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
+      "evidence_boundary": "ذكر المدينة استثناء B9 موثق لـAD08 فقط؛ لا يثبت تغطية الأحياء أو مواعيد التوصيل."
+    },
+    {
+      "edit_range": "4.6-8.28",
+      "function": "animal_context",
+      "source": "gh-a43.mp4",
+      "source_range": "24.50-28.18",
+      "visual": "حيوانات حقيقية داخل الحظيرة.",
+      "on_screen_copy": "خليك شايف الحيوان قدامك، مش مجرد كلام.",
+      "voice_line": "خليك شايف الحيوان قدامك، مش مجرد كلام.",
+      "evidence_boundary": "لا يثبت العدد أو التوفر الحالي."
+    },
+    {
+      "edit_range": "8.28-10.94",
+      "function": "weighing_action",
+      "source": "gh-a31.mp4",
+      "source_range": "0.00-2.66",
+      "visual": "الحيوان يُقاد باتجاه الميزان الأصفر.",
+      "on_screen_copy": "والوزن بيتعمل قدامك على الميزان.",
+      "voice_line": "والوزن بيتعمل قدامك على الميزان.",
+      "evidence_boundary": "يثبت فعل الوزن فقط؛ لا يظهر رقم وزن."
+    },
+    {
+      "edit_range": "10.94-14.06",
+      "function": "inspection_detail",
+      "source": "gh-a38.mp4",
+      "source_range": "10.00-13.12",
+      "visual": "تفصيل الفحص الظاهر في الفم/الأسنان.",
+      "on_screen_copy": "واللي بنفحصه قدامك يتقال زي ما هو.",
+      "voice_line": "واللي بنفحصه قدامك يتقال زي ما هو.",
+      "evidence_boundary": "لا يوصف ككشف بيطري أو إثبات عمر/صحة."
+    },
+    {
+      "edit_range": "14.06-16.40",
+      "function": "handling",
+      "source": "gh-a35.mp4",
+      "source_range": "8.50-10.84",
+      "visual": "تعامل حقيقي مع الحيوان.",
+      "on_screen_copy": "تشوف التعامل خطوة بخطوة.",
+      "voice_line": "تشوف التعامل خطوة بخطوة.",
+      "evidence_boundary": "لا يثبت اكتمال التجهيز أو الجودة الصحية."
+    },
+    {
+      "edit_range": "16.40-20.04",
+      "function": "single_cta_over_real_footage",
+      "source": "gh-a17.mp4",
+      "source_range": "2.00-5.64",
+      "visual": "ختام عند المعلف مع CTA فوق اللقطة الحقيقية.",
+      "on_screen_copy": "للتفاصيل الحالية قبل الحجز:\nواتساب فقط 01010154221",
+      "voice_line": "للتفاصيل الحالية قبل الحجز، ابعتلنا على واتساب.",
+      "evidence_boundary": "لا سعر أو حساب أو ادعاء تغطية أو موعد توصيل."
+    }
+  ],
+  "script": {
+    "language": "ar-EG",
+    "status": "owner-city-mention-approved-script-ready-voice-00-recording-pending",
+    "approval_required_before_recording": true,
+    "text": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!\nخليك شايف الحيوان قدامك، مش مجرد كلام.\nوالوزن بيتعمل قدامك على الميزان.\nواللي بنفحصه قدامك يتقال زي ما هو.\nتشوف التعامل خطوة بخطوة. للتفاصيل الحالية قبل الحجز، ابعتلنا على واتساب.",
+    "prohibited_in_script": [
+      "44 × 270",
+      "3100 جنيه",
+      "أي سعر أو تكلفة تجهيز",
+      "شامل التوصيل",
+      "لحد باب البيت",
+      "تغطية الإسكندرية بالكامل",
+      "تحديد أحياء أو مواعيد توصيل",
+      "دفعة محدودة",
+      "وزن رقمي غير ظاهر في اللقطة",
+      "عائد أو ربح أو استثمار"
+    ],
+    "city_mention": {
+      "status": "approved_by_owner_for_ad08_local_campaign",
+      "spoken": true,
+      "on_screen": true,
+      "caption": true,
+      "scope": "AD08 + meat_orders + campaign_local only"
+    },
+    "evidence_linked": true,
+    "voice_turns": [
+      {
+        "text": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
+        "style": "clear, warm and confident"
+      },
+      {
+        "text": "خليك شايف الحيوان قدامك، مش مجرد كلام.",
+        "style": "natural Egyptian conversational"
+      },
+      {
+        "text": "والوزن بيتعمل قدامك على الميزان. واللي بنفحصه قدامك يتقال زي ما هو.",
+        "style": "calm and precise"
+      },
+      {
+        "text": "تشوف التعامل خطوة بخطوة. للتفاصيل الحالية قبل الحجز، ابعتلنا على واتساب.",
+        "style": "warm, single clear CTA"
+      }
+    ]
+  },
+  "voice": {
+    "voice_id": "Charon",
+    "profile_id": "Charon",
+    "status": "alternative-recorded-human-reviewed",
+    "alternative_of": "voice-00",
+    "language": "ar-EG",
+    "engine": "manus-tools.generate_speech",
+    "recording_path": "AD08-S3-alternative-voice-Charon.wav",
+    "sidecar_path": "AD08-S3-alternative-voice-Charon.wav.voice.json",
+    "sha256": "ac79297979ea48a979004decbf066184e3053d162f4009789911d679827a8911",
+    "scope": "AD08 internal preview only",
+    "approved_by": "owner — current task instruction",
+    "recording_approval_scope": "internal preview; not publication or final render",
+    "spoken_city_mention": true,
+    "transcript_verification": "human-reviewed",
+    "transcript": [
+      "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
+      "خليك شايف الحيوان قدامك، مش مجرد كلام.",
+      "والوزن بيتعمل قدامك على الميزان. واللي بنفحصه قدامك يتقال زي ما هو.",
+      "تشوف التعامل خطوة بخطوة. للتفاصيل الحالية قبل الحجز، ابعتلنا على واتساب."
+    ],
+    "approval_note": "قرار المالك الحالي: استخدام صوت بديل جديد لهذه المعاينة الداخلية لـAD08 فقط.",
+    "campaign_id": "AD08"
+  },
+  "caption": {
+    "text": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!\nشوف الحيوان والوزن والفحص قدامك، من غير كلام عام أو حسابات بلا دليل.\nللتفاصيل الحالية قبل الحجز: واتساب فقط 01010154221\n#TerraNex #ضاني_برقي #حجز_لحوم",
+    "cta_count": 1,
+    "price_free": true,
+    "delivery_claim_free": true
+  },
+  "commercial_status": {
+    "price_display_status": "prohibited",
+    "delivery_included_in_price": "owner_confirmed",
+    "delivery_coverage_status": "pending_verification",
+    "commercial_verification_status": "calculation_verified_only",
+    "delivery_copy_allowed": false,
+    "price_copy_allowed": false,
+    "owner_decision_source": "PR #212 current task instruction, received 2026-11-13T14:26:00+02:00",
+    "city_mention_scope": "AD08 + meat_orders + campaign_local only",
+    "city_mention_does_not_approve": [
+      "recording",
+      "render",
+      "publish",
+      "full-Alexandria-coverage",
+      "neighborhoods",
+      "delivery-schedule"
+    ]
+  },
+  "approval": {
+    "render_approved": false,
+    "owner_publish_approval": "pending",
+    "publication_ready": false,
+    "recording_approved": true,
+    "source_review_approved": true,
+    "city_mention_owner_approval": "approved",
+    "preview_approved_internal": true,
+    "preview_scope": "internal_only",
+    "preview_rendered_with_audio": true,
+    "preview_status": "internal_audio_preview_passed"
+  },
+  "qa_gates": [
+    "كل لقطة من مادة الشركة الحقيقية ومراجعة المصدر قبل الاستيراد",
+    "لا شاشات كتابة فقط: CTA فوق لقطة حقيقية، والختام النصي المنفصل ملغى",
+    "لا لقطة مكررة؛ gh-a38 للفحص فقط 10.00–14.00",
+    "critic يمر بلا B1/B2/B4/B5/B6/B7/B8/B9/B10/B11/B12",
+    "لا سعر أو عملية حسابية أو ادعاء توصيل",
+    "CTA واحد فقط بالرقم 01010154221",
+    "voice-00 مطلوب بتسجيل جديد؛ لا يُعاد استخدام تسجيل قديم لكلمات جديدة",
+    "فحص التزامن والصمت والصوت بعد توفر تسجيل voice-00 الموثق",
+    "المعاينة الداخلية فقط؛ لا نشر ولا دمج ولا اعتماد نسخة نهائية"
+  ],
+  "open_questions": [
+    "اعتماد تسجيل voice-00 للنص بعد مراجعة النطق والتفريغ، من دون اعتبار موافقة ذكر المدينة موافقة على التسجيل.",
+    "مراجعة المصدر gh-a38 وتحديد نافذة القص.",
+    "اعتماد استيراد اللقطات من الأرشيف للمخرج الإعلاني.",
+    "التحقق من نطاق التوصيل والأحياء والمواعيد قبل أي نسخة توصيل لاحقة."
+  ],
+  "consent": {
+    "allow_delivery_city": true,
+    "delivery_city_approval_note": "قرار مباشر وصريح من المالك: هذا إعلان فتح باب الحجز المخصص للإسكندرية.",
+    "owner_approval": {
+      "decision_id": "PR212-AD08-B9-20261113T142600+0200",
+      "status": "approved",
+      "approved_by": "owner",
+      "approved_at": "2026-11-13T14:26:00+02:00",
+      "source": "PR #212 current task instruction: direct owner decision",
+      "scope": "campaign_local",
+      "track": "meat_orders",
+      "campaign_id": "AD08",
+      "approved_claim": "city_mention"
+    }
+  },
+  "hook": "لأهل إسكندرية… فتحنا باب الحجز على الربع البرقي من TerraNex!",
+  "hook_sec": 4.6,
+  "clips": [
+    {
+      "id": "S01",
+      "asset_id": "gh-a28",
+      "path": "preview-media/gh-a28.mp4",
+      "start": 2.0,
+      "end": 6.6,
+      "source_start": 2.0,
+      "source_end": 6.6,
+      "crop": {},
+      "sharpen": false
+    },
+    {
+      "id": "S02",
+      "asset_id": "gh-a43",
+      "path": "preview-media/gh-a43.mp4",
+      "start": 24.5,
+      "end": 28.18,
+      "source_start": 24.5,
+      "source_end": 28.18,
+      "crop": {},
+      "sharpen": false
+    },
+    {
+      "id": "S03",
+      "asset_id": "gh-a31",
+      "path": "preview-media/gh-a31.mp4",
+      "start": 0.0,
+      "end": 2.66,
+      "source_start": 0.0,
+      "source_end": 2.66,
+      "crop": {},
+      "sharpen": false
+    },
+    {
+      "id": "S04",
+      "asset_id": "gh-a38",
+      "path": "preview-media/gh-a38.mp4",
+      "start": 10.0,
+      "end": 13.12,
+      "source_start": 10.0,
+      "source_end": 13.12,
+      "crop": {},
+      "sharpen": false
+    },
+    {
+      "id": "S05",
+      "asset_id": "gh-a35",
+      "path": "preview-media/gh-a35.mp4",
+      "start": 8.5,
+      "end": 10.84,
+      "source_start": 8.5,
+      "source_end": 10.84,
+      "crop": {},
+      "sharpen": false
+    },
+    {
+      "id": "S06",
+      "asset_id": "gh-a17",
+      "path": "preview-media/gh-a17.mp4",
+      "start": 2.0,
+      "end": 5.64,
+      "source_start": 2.0,
+      "source_end": 5.64,
+      "crop": {},
+      "sharpen": false
+    }
+  ],
+  "endcard_sec": 0.0,
+  "captions": [
+    {
+      "from": 0.0,
+      "to": 4.6,
+      "text": "لأهل إسكندرية…\nفتحنا باب الحجز على الربع البرقي من TerraNex!"
+    },
+    {
+      "from": 4.6,
+      "to": 8.28,
+      "text": "خليك شايف الحيوان قدامك، مش مجرد كلام."
+    },
+    {
+      "from": 8.28,
+      "to": 10.94,
+      "text": "والوزن بيتعمل قدامك على الميزان."
+    },
+    {
+      "from": 10.94,
+      "to": 14.06,
+      "text": "واللي بنفحصه قدامك يتقال زي ما هو."
+    },
+    {
+      "from": 14.06,
+      "to": 16.4,
+      "text": "تشوف التعامل خطوة بخطوة."
+    },
+    {
+      "from": 16.4,
+      "to": 20.04,
+      "text": "للتفاصيل الحالية قبل الحجز:\nواتساب فقط 01010154221"
+    }
+  ],
+  "endcard": {
+    "headline": "",
+    "subtitle": "",
+    "cta": "",
+    "disclosure": ""
+  },
+  "audio": {
+    "ambient_from": 0,
+    "original_gain": 0.2,
+    "status": "voice_blocked_pending_project_voice-00_source"
+  },
+  "preview_gate": {
+    "approved": true,
+    "scope": "internal_only",
+    "limits": [
+      "AD08 only",
+      "alternative voice Charon only for this internal preview",
+      "no publication",
+      "no merge",
+      "no final render approval",
+      "voice-00 remains the project default"
+    ],
+    "blocked_by": []
+  },
+  "preview_approved_internal": true,
+  "preview_scope": "internal_only",
+  "render_approved": false,
+  "preview_artifacts": {
+    "video": "AD08-S3-internal-preview-Charon.mp4",
+    "audio": "AD08-S3-alternative-voice-Charon.wav",
+    "audio_sidecar": "AD08-S3-alternative-voice-Charon.wav.voice.json",
+    "qa_report": "AD08-S3-Charon-qa.json",
+    "review_report": "AD08-S3-preview-report.md"
+  }
+}

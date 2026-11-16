@@ -1,0 +1,50 @@
+{
+  "id": "AD08-S1-local-price-v001",
+  "source_asset": "../../../../../فيديوهات-المنتجة/2026-11/AD08-حجز-ربع-برقي-الإسكندرية-54ث.mp4",
+  "track": "meat_orders",
+  "campaign_scope": "campaign_local",
+  "city_mention_status": "approved_for_local_campaign",
+  "purpose": "نسخة محلية تذكر الإسكندرية جغرافيًا دون اعتماد تلقائي للتوصيل",
+  "target_duration_sec": {
+    "min": 22,
+    "max": 25
+  },
+  "render_approved": false,
+  "verification": {
+    "commercial_verification_status": "calculation_verified_only",
+    "delivery_scope_status": "pending",
+    "blocked_claims": [
+      "يوصلك لحد باب بيتك",
+      "شامل التوصيل",
+      "التوصيل داخل السعر"
+    ],
+    "required_before_render": [
+      "اعتماد السعر التجاري الحالي",
+      "اعتماد نطاق التوصيل ورسومه أو تأكيد عدم استخدام ادعاء التوصيل"
+    ]
+  },
+  "preserve": [
+    "لقطات الحيوانات والميزان الحقيقية",
+    "ذكر الإسكندرية باعتبارها نطاق الحملة المحلية فقط",
+    "الهوية البصرية الواحدة",
+    "voice-00 وبصمته الموثقة إذا بقي النص نفسه"
+  ],
+  "structure": [
+    {"range": "0-2s", "function": "local_hook", "copy": "فتح باب الحجز لأهل الإسكندرية"},
+    {"range": "2-9s", "function": "product_proof", "copy": "ربع برقي حر بلقطات حقيقية"},
+    {"range": "9-17s", "function": "scale_and_preparation", "copy": "معلومات لا تتضمن سعرًا غير معتمد"},
+    {"range": "17-22s", "function": "single_cta", "copy": "اسأل عن الدفعة الحالية على واتساب"}
+  ],
+  "voice": {
+    "voice_id": "voice-00",
+    "source_sidecar": "../ad3-quarter-barki-booking/vo-ad3-voice00.mp3.voice.json",
+    "sha256_verified": true,
+    "new_script_requires_owner_approval": true
+  },
+  "qa_gates": [
+    "critic مع campaign_local وملاحظة موافقة غير فارغة",
+    "لا ادعاء توصيل قبل التحقق",
+    "لا رندر قبل render_approved=true",
+    "الأصل محفوظ"
+  ]
+}

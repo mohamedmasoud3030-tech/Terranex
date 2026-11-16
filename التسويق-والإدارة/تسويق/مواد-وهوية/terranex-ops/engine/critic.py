@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import re
 import sys
@@ -22,10 +23,10 @@ RULES = [
     ("B2b", "hard", r"(مضمون|ضمان)\s*(الربح|الأرباح|العائد)", "ضمان ربح", "احذف كلمة ضمان نهائيًا."),
     ("B5", "hard", r"(عائد|ربح)\s*\d", "رقم ربح بدون سياق", "أضف مصدر الرقم أو احذفه."),
     ("B8", "hard", r"(أحسن|افضل|أفضل)\s+من\s+شركة", "مقارنة مباشرة بمنافس", "اتكلم عن نفسك بدون ذكر منافس."),
-    # B9 (19/10 — طلب المالك): ممنوع ذكر المدينة صوتًا أو نصًا في أي محتوى للشركة
-    ("B9", "hard", r"(الإسكندرية|الاسكندرية|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)",
-     "ذكر المدينة «الإسكندرية» ممنوع في محتوى الشركة",
-     "احذف اسم المدينة نهائيًا — استخدم «استثمار حيواني · ثروة حقيقية»."),
+    # B9: ممنوع افتراضيًا؛ الاستثناء محصور في حملة محلية موثقة.
+    ("B9", "hard", r"(الإسكندرية|الاسكندرية|إسكندرية|إسكندريه|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)",
+     "ذكر المدينة «الإسكندرية» ممنوع خارج حملة محلية موثقة",
+     "استخدم owner_approval موثقًا ومربوطًا بـAD08/meat_orders/campaign_local، أو احذف اسم المدينة."),
     ("S4", "soft", r"[😀-🿿]", "إيموجي", "قلّل الإيموجي لأربعة أو أقل في الكابشن."),
     ("S7", "soft", r"(سحب|استرداد)\s*(فلوس|المبلغ).{0,20}(في أي وقت|فورا|فورًا)",
      "وعد سيولة", "اشرح شروط الخروج بدل الوعد المفتوح."),
@@ -37,7 +38,60 @@ HASHTAG_OK = {"#TerraNex", "#استثمار_حيواني", "#ثروة_حيوان
 PHONE = "01010154221"
 
 
-CITY_PAT = r"(الإسكندرية|الاسكندرية|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)"
+CITY_PAT = r"(الإسكندرية|الاسكندرية|إسكندرية|إسكندريه|اسكندرية|اسكندريه|Alexandria|ALEXANDRIA)"
+
+
+def city_exception_authorized(
+    allow_delivery_city: bool = False,
+    campaign_scope: str = "general",
+    delivery_city_approval_note: str = "",
+    track: str = "general",
+    campaign_id: str | None = None,
+    owner_approval: dict | None = None,
+) -> bool:
+    """Return whether B9's narrow local meat-order exception is authorized.
+
+    The note is explanatory context only. Authorization requires a traceable
+    owner decision record; a free-form note must never act as proof of consent.
+    ``allow_delivery_city`` is retained for compatibility but does not authorize
+    delivery or broaden the exception to investment/institutional content.
+    """
+    if not (
+        allow_delivery_city is True
+        and campaign_scope == "campaign_local"
+        and track == "meat_orders"
+        and campaign_id == "AD08"
+        and isinstance(delivery_city_approval_note, str)
+        and bool(delivery_city_approval_note.strip())
+        and isinstance(owner_approval, dict)
+    ):
+        return False
+    required = {
+        "decision_id", "status", "approved_by", "approved_at", "source",
+        "scope", "track", "campaign_id", "approved_claim",
+    }
+    return (
+        required.issubset(owner_approval)
+        and bool(str(owner_approval.get("decision_id", "")).strip())
+        and owner_approval.get("status") == "approved"
+        and owner_approval.get("approved_by") == "owner"
+        and _valid_approval_timestamp(owner_approval.get("approved_at"))
+        and bool(str(owner_approval.get("source", "")).strip())
+        and owner_approval.get("scope") == "campaign_local"
+        and owner_approval.get("track") == "meat_orders"
+        and owner_approval.get("campaign_id") == "AD08"
+        and owner_approval.get("approved_claim") == "city_mention"
+    )
+
+
+def _valid_approval_timestamp(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
 
 
 def lint_city(text: str) -> list:
@@ -45,11 +99,28 @@ def lint_city(text: str) -> list:
     return [m.group(0) for m in re.finditer(CITY_PAT, text or "")]
 
 
-def check(text: str, platform: str = "facebook", allow_delivery_city: bool = False) -> dict:
+def check(
+    text: str,
+    platform: str = "facebook",
+    allow_delivery_city: bool = False,
+    campaign_scope: str = "general",
+    delivery_city_approval_note: str = "",
+    track: str = "general",
+    campaign_id: str | None = None,
+    owner_approval: dict | None = None,
+) -> dict:
     t = text.strip()
     hits = []
+    city_allowed = city_exception_authorized(
+        allow_delivery_city=allow_delivery_city,
+        campaign_scope=campaign_scope,
+        delivery_city_approval_note=delivery_city_approval_note,
+        track=track,
+        campaign_id=campaign_id,
+        owner_approval=owner_approval,
+    )
     for code, kind, pat, msg, fix in RULES:
-        if code == "B9" and allow_delivery_city:
+        if code == "B9" and city_allowed:
             continue
         for m in re.finditer(pat, t):
             hits.append({"code": code, "kind": kind, "match": m.group(0), "msg": msg, "fix": fix})
@@ -110,6 +181,12 @@ def main():
     ap.add_argument("--platform", default="facebook")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--allow-delivery-city", action="store_true")
+    ap.add_argument("--campaign-scope", default="general", choices=("general", "campaign_local"))
+    ap.add_argument("--delivery-city-approval-note", default="")
+    ap.add_argument("--track", default="meat_orders")
+    ap.add_argument("--campaign-id", default=None)
+    ap.add_argument("--owner-approval-json", default=None,
+                    help="مسار سجل قرار المالك الموثق، وليس ملاحظة نصية")
     a = ap.parse_args()
 
     if a.file:
@@ -119,7 +196,20 @@ def main():
     else:
         text = sys.stdin.read()
 
-    r = check(text, a.platform, allow_delivery_city=a.allow_delivery_city)
+    approval = None
+    if a.owner_approval_json:
+        with open(a.owner_approval_json, encoding="utf-8") as f:
+            approval = json.load(f)
+    r = check(
+        text,
+        a.platform,
+        allow_delivery_city=a.allow_delivery_city,
+        campaign_scope=a.campaign_scope,
+        delivery_city_approval_note=a.delivery_city_approval_note,
+        track=a.track,
+        campaign_id=a.campaign_id,
+        owner_approval=approval,
+    )
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=2))
         return
