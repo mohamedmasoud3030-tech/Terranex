@@ -7,14 +7,17 @@ name: Marketing Ops
 on:
   pull_request:
     paths:
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
+      - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/**'
       - '.github/workflows/marketing-ops.yml'
   push:
     branches:
       - main
       - 'arena/f2829137-terranex'
+      - 'restructure/marketing-admin-2026-11-16'
+      - 'test/integration-212-restructure'
+      - 'test/integration-212-first'
     paths:
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/**'
+      - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/**'
       - '.github/workflows/marketing-ops.yml'
   workflow_dispatch:
 
@@ -27,7 +30,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops'
+        working-directory: 'التسويق-والإدارة/04-الإنتاج/terranex-ops'
     steps:
       - uses: actions/checkout@v7
 
@@ -55,5 +58,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terranex-ops-coverage
-          path: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/coverage/coverage.xml'
+          path: 'التسويق-والإدارة/04-الإنتاج/terranex-ops/output/coverage/coverage.xml'
           if-no-files-found: warn

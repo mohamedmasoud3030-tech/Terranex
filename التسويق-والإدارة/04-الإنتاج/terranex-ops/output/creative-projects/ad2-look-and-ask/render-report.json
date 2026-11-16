@@ -1,0 +1,43 @@
+{
+  "project_id": "ad2-look-and-ask",
+  "output_mp4": "التسويق-والإدارة/05-التسليم-والنشر/بانتظار-مراجعة-المالك/فيديوهات/2026-11/AD06-قبل-ما-تطلب-بص-واسأل-63ث.mp4",
+  "sha256": "345300ed633eb190ec538c79e824628e043edfd0438902b8984c5d7cb2714d3f",
+  "bytes": 50297967,
+  "size_kb": 49119,
+  "technical_qa": {
+    "profile": "reels",
+    "strict_lufs": true,
+    "pass": true,
+    "fails": [],
+    "warns": [],
+    "meta": {
+      "duration": 62.7,
+      "codec": "h264",
+      "profile": "High@L4.1",
+      "pix_fmt": "yuv420p",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "has_audio": true,
+      "audio_codec": "aac (LC) 48000Hz stereo 195kbps",
+      "loudness_lufs": -15.1,
+      "silence_share": 0.027,
+      "black_share": 0.0
+    }
+  },
+  "voiced_completion_gate": {
+    "voiced_ad_complete": true,
+    "voice_id": "voice-00",
+    "voice_sha256": "7678174b12d71d57aae1208cbc3614ec415e9d5510ca4996abed42db467111da",
+    "site_audio_bed_complete": true,
+    "visual_and_captions_complete": true
+  },
+  "publication": {
+    "status": "بانتظار-موافقة",
+    "ready": false,
+    "reasons": [
+      "بانتظار موافقة المالك الصريحة قبل أي نشر"
+    ]
+  },
+  "ad_id": "AD06"
+}
