@@ -1,0 +1,119 @@
+{
+  "title": "creative-director-weight-18s",
+  "template": "corporate-no-face",
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "clips": [
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "start": 9.733,
+      "end": 10.767,
+      "scene_id": "s01-02",
+      "_indexed_scene": [
+        9.733,
+        10.767
+      ],
+      "_excerpt_policy": "full-indexed-scene",
+      "crop": {
+        "bottom": 0.14
+      }
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4",
+      "start": 4.167,
+      "end": 10.833,
+      "scene_id": "s04-02",
+      "_indexed_scene": [
+        4.0,
+        11.0
+      ],
+      "_excerpt_policy": "centered-excerpt-within-indexed-scene",
+      "crop": {
+        "left": 0.09,
+        "right": 0.02
+      },
+      "proof_bar": true
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "start": 10.767,
+      "end": 12.267,
+      "scene_id": "s01-03",
+      "_indexed_scene": [
+        10.767,
+        12.267
+      ],
+      "_excerpt_policy": "full-indexed-scene",
+      "crop": {
+        "bottom": 0.14
+      }
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4",
+      "start": 13.5,
+      "end": 19.3,
+      "scene_id": "s04-04",
+      "_indexed_scene": [
+        13.5,
+        19.3
+      ],
+      "_excerpt_policy": "full-indexed-scene",
+      "crop": {
+        "left": 0.09,
+        "right": 0.02
+      },
+      "proof_bar": true
+    }
+  ],
+  "hook": "الحيوانات… متابعة حقيقية.",
+  "hook_sec": 1.8,
+  "captions": [
+    {
+      "from": 1.8,
+      "to": 5.467,
+      "text": "رأس حقيقي… مش مجرد صورة."
+    },
+    {
+      "from": 5.467,
+      "to": 9.134,
+      "text": "الوزن الحقلي… زي ما هو."
+    },
+    {
+      "from": 9.134,
+      "to": 11.734,
+      "text": "وتغذية… قبل وبعدها."
+    },
+    {
+      "from": 11.734,
+      "to": 14.867,
+      "text": "متابعة وتوثيق… خطوة بخطوة."
+    },
+    {
+      "from": 14.867,
+      "to": 18.0,
+      "text": "للتفاصيل… كلمنا على واتساب."
+    }
+  ],
+  "endcard_sec": 3.0,
+  "endcard": {
+    "headline": "ملك حقيقي",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "مسودة بصرية للمراجعة · بدون تعليق صوتي"
+  },
+  "visual_draft": true,
+  "audio": {
+    "original_gain": 0.12,
+    "ambient_from": 0,
+    "duck": true,
+    "lufs": -15
+  },
+  "_library_derived": true,
+  "_scene_ids": [
+    "s01-02",
+    "s04-02",
+    "s01-03",
+    "s04-04"
+  ],
+  "_caption_timing_source": "reading-budget-estimate"
+}

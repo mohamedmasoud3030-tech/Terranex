@@ -1,0 +1,117 @@
+{
+  "title": "creative-director-feeding-15s",
+  "template": "corporate-no-face",
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "clips": [
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "start": 17.133,
+      "end": 19.0,
+      "scene_id": "s01-07",
+      "_indexed_scene": [
+        17.133,
+        19.0
+      ],
+      "_excerpt_policy": "full-indexed-scene",
+      "crop": {
+        "top": 0.07
+      }
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "start": 19.0,
+      "end": 21.033,
+      "scene_id": "s01-08",
+      "_indexed_scene": [
+        19.0,
+        21.033
+      ],
+      "_excerpt_policy": "full-indexed-scene",
+      "crop": {
+        "top": 0.07
+      }
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "start": 10.767,
+      "end": 12.267,
+      "scene_id": "s01-03",
+      "_indexed_scene": [
+        10.767,
+        12.267
+      ],
+      "_excerpt_policy": "full-indexed-scene",
+      "crop": {
+        "bottom": 0.14
+      }
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4",
+      "start": 4.2,
+      "end": 10.8,
+      "scene_id": "s04-02",
+      "_indexed_scene": [
+        4.0,
+        11.0
+      ],
+      "_excerpt_policy": "centered-excerpt-within-indexed-scene",
+      "crop": {
+        "left": 0.09,
+        "right": 0.02
+      },
+      "proof_bar": true
+    }
+  ],
+  "hook": "من الأرض… للعلف.",
+  "hook_sec": 1.5,
+  "captions": [
+    {
+      "from": 1.5,
+      "to": 4.094,
+      "text": "من أرض المزرعة."
+    },
+    {
+      "from": 4.094,
+      "to": 6.688,
+      "text": "العلف قدّام عينك."
+    },
+    {
+      "from": 6.688,
+      "to": 8.75,
+      "text": "والحظيرة بتتغذى."
+    },
+    {
+      "from": 8.75,
+      "to": 11.875,
+      "text": "ومتابعة على أرض الواقع."
+    },
+    {
+      "from": 11.875,
+      "to": 15.0,
+      "text": "للتفاصيل… كلمنا على واتساب."
+    }
+  ],
+  "endcard_sec": 3.0,
+  "endcard": {
+    "headline": "ملك حقيقي",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "مسودة بصرية للمراجعة · بدون تعليق صوتي"
+  },
+  "visual_draft": true,
+  "audio": {
+    "original_gain": 0.12,
+    "ambient_from": 0,
+    "duck": true,
+    "lufs": -15
+  },
+  "_library_derived": true,
+  "_scene_ids": [
+    "s01-07",
+    "s01-08",
+    "s01-03",
+    "s04-02"
+  ],
+  "_caption_timing_source": "reading-budget-estimate"
+}

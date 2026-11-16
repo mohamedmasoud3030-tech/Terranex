@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "sources": {
+    "src-01": {
+      "source_id": "src-01",
+      "kind": "video",
+      "sha256": "1285810e7cb84cba6811d17859a0b5052259669ec3a168a11cfac15a7f91cfab",
+      "path": "التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "git_tracked": true,
+      "restore": "git checkout -- 'التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4'  (متتبع في git — يُستعاد تلقائيًا)",
+      "duration": 25.8,
+      "width": 720,
+      "height": 1280,
+      "fps": 30.0
+    },
+    "src-04": {
+      "source_id": "src-04",
+      "kind": "video",
+      "sha256": "c3e9f501624aff2fe3ac25745377d78dae653fa1e4d68989c572e10e96ca9302",
+      "path": "التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4",
+      "git_tracked": true,
+      "restore": "git checkout -- 'التسويق-والإدارة/05-التسليم-والنشر/جاهز-للنشر/04-الأربعاء-الوزن-على-الطبيعة.mp4'  (متتبع في git — يُستعاد تلقائيًا)",
+      "duration": 22.13,
+      "width": 720,
+      "height": 1280,
+      "fps": 30.0
+    }
+  },
+  "scenes": [
+    {
+      "scene_id": "s01-01",
+      "source_id": "src-01",
+      "start": 0.0,
+      "end": 9.733,
+      "tags": [
+        "person",
+        "burned-text"
+      ],
+      "description": "متحدث ببدلة رمادية في مكتب، وجه ظاهر بلا موافقة موثقة + كابشن عربي محروق — غير صالح (B10).",
+      "quality": 0.2,
+      "usable": false,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-01.jpg",
+      "treatment": {}
+    },
+    {
+      "scene_id": "s01-02",
+      "source_id": "src-01",
+      "start": 9.733,
+      "end": 10.767,
+      "tags": [
+        "animal",
+        "sheep",
+        "farm"
+      ],
+      "description": "خروف أبيض ينظر إلى الكاميرا داخل حظيرة المزرعة (لقطة قريبة). علامة TerraNex LLC محروقة أسفل اليمين.",
+      "quality": 0.85,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-02.jpg",
+      "treatment": {
+        "crop": {
+          "bottom": 0.14
+        }
+      }
+    },
+    {
+      "scene_id": "s01-03",
+      "source_id": "src-01",
+      "start": 10.767,
+      "end": 12.267,
+      "tags": [
+        "animal",
+        "cows",
+        "farm",
+        "feeding"
+      ],
+      "description": "أبقار بنية وبيضاء تقف عند حاجز التغذية في الحظيرة (لقطة واسعة).",
+      "quality": 0.85,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-03.jpg",
+      "treatment": {
+        "crop": {
+          "bottom": 0.14
+        }
+      }
+    },
+    {
+      "scene_id": "s01-04",
+      "source_id": "src-01",
+      "start": 12.267,
+      "end": 13.167,
+      "tags": [
+        "farm"
+      ],
+      "description": "حقل أخضر واسع — لقطة عامة للأرض الزراعية.",
+      "quality": 0.7,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-04.jpg",
+      "treatment": {
+        "crop": {
+          "bottom": 0.14
+        }
+      }
+    },
+    {
+      "scene_id": "s01-05",
+      "source_id": "src-01",
+      "start": 13.167,
+      "end": 15.5,
+      "tags": [
+        "person",
+        "burned-text"
+      ],
+      "description": "متحدث بقميص أسود أمام نافذة، وجه ظاهر بلا موافقة + نص محروق — غير صالح (B10).",
+      "quality": 0.2,
+      "usable": false,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-05.jpg",
+      "treatment": {}
+    },
+    {
+      "scene_id": "s01-06",
+      "source_id": "src-01",
+      "start": 15.5,
+      "end": 17.133,
+      "tags": [
+        "person",
+        "burned-text"
+      ],
+      "description": "متحدث بقميص مخطط داخليًا، وجه ظاهر بلا موافقة + شعار محروق — غير صالح (B10).",
+      "quality": 0.2,
+      "usable": false,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-06.jpg",
+      "treatment": {}
+    },
+    {
+      "scene_id": "s01-07",
+      "source_id": "src-01",
+      "start": 17.133,
+      "end": 19.0,
+      "tags": [
+        "farm",
+        "irrigation"
+      ],
+      "description": "رشاشات ري تسقي محصولًا أخضر (الري بالرش). شعار صغير أعلى اليمين.",
+      "quality": 0.8,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-07.jpg",
+      "treatment": {
+        "crop": {
+          "top": 0.07
+        }
+      }
+    },
+    {
+      "scene_id": "s01-08",
+      "source_id": "src-01",
+      "start": 19.0,
+      "end": 21.033,
+      "tags": [
+        "animal",
+        "cows",
+        "feeding",
+        "farm"
+      ],
+      "description": "أبقار بنية وبيضاء تأكل العلف/التبن عند الحاجز (لقطة تغذية قريبة).",
+      "quality": 0.85,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-08.jpg",
+      "treatment": {
+        "crop": {
+          "top": 0.07
+        }
+      }
+    },
+    {
+      "scene_id": "s01-09",
+      "source_id": "src-01",
+      "start": 21.033,
+      "end": 25.8,
+      "tags": [
+        "person",
+        "burned-text",
+        "endcard"
+      ],
+      "description": "متحدث ثم إطار ختامي (شعار + واتساب + اسم مدينة مخالف B9) — غير صالح.",
+      "quality": 0.1,
+      "usable": false,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-09.jpg",
+      "treatment": {}
+    },
+    {
+      "scene_id": "s04-01",
+      "source_id": "src-04",
+      "start": 0.0,
+      "end": 4.0,
+      "tags": [
+        "animal",
+        "sheep",
+        "scale",
+        "farm",
+        "person-hand",
+        "burned-text"
+      ],
+      "description": "بداية الوزن الحقلي: خروف مُمسك به على أرضية خرسانية، يد شخص تمسك رأسه، كابشن عربي محروق أعلى الكادر (يفضّل ما بعده).",
+      "quality": 0.55,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-01.jpg",
+      "treatment": {
+        "crop": {
+          "left": 0.09,
+          "right": 0.02,
+          "top": 0.1
+        },
+        "proof_bar": true
+      }
+    },
+    {
+      "scene_id": "s04-02",
+      "source_id": "src-04",
+      "start": 4.0,
+      "end": 11.0,
+      "tags": [
+        "animal",
+        "sheep",
+        "scale",
+        "farm",
+        "person-hand"
+      ],
+      "description": "لقطة الوزن الحقلي الرئيسية: خروف كامل الجسم مُمسك به على أرضية خرسانية في الهواء الطلق، يد شخص تمسك رأسه/أذنه وحول الرأس حبل. العلامة TerraNex LLC محروقة منتصف الكادر (~63%). لا تظهر منصة ميزان بوضوح في الكادر — المشهد هو نشاط الوزن الحقلي الموثق.",
+      "quality": 0.9,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-02.jpg",
+      "treatment": {
+        "crop": {
+          "left": 0.09,
+          "right": 0.02
+        },
+        "proof_bar": true
+      }
+    },
+    {
+      "scene_id": "s04-03",
+      "source_id": "src-04",
+      "start": 11.0,
+      "end": 13.5,
+      "tags": [
+        "animal",
+        "sheep"
+      ],
+      "description": "لقطة قريبة جدًا لجسم/صوف الخروف أثناء الوزن الحقلي (تفاصيل الصوف).",
+      "quality": 0.5,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-03.jpg",
+      "treatment": {
+        "crop": {
+          "left": 0.09,
+          "right": 0.02
+        },
+        "proof_bar": true
+      }
+    },
+    {
+      "scene_id": "s04-04",
+      "source_id": "src-04",
+      "start": 13.5,
+      "end": 19.3,
+      "tags": [
+        "animal",
+        "sheep",
+        "scale",
+        "farm",
+        "person-hand"
+      ],
+      "description": "الوزن الحقلي: شخص واقف (بنطال أبيض) يمسك رأس الخروف الممدد على الأرضية الخرسانية، نباتات خضراء جانبًا. العلامة TerraNex LLC محروقة منتصف الكادر.",
+      "quality": 0.85,
+      "usable": true,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-04.jpg",
+      "treatment": {
+        "crop": {
+          "left": 0.09,
+          "right": 0.02
+        },
+        "proof_bar": true
+      }
+    },
+    {
+      "scene_id": "s04-05",
+      "source_id": "src-04",
+      "start": 19.3,
+      "end": 22.13,
+      "tags": [
+        "burned-text",
+        "endcard"
+      ],
+      "description": "إطار ختامي: شعار TerraNex + واتساب + اسم مدينة (مخالف B9/B11) — غير صالح.",
+      "quality": 0.1,
+      "usable": false,
+      "burned_text": true,
+      "tagged_by": "arena-vision",
+      "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-05.jpg",
+      "treatment": {}
+    }
+  ]
+}

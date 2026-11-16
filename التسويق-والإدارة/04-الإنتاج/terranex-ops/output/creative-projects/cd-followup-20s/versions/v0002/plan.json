@@ -1,0 +1,450 @@
+{
+  "brief": {
+    "raw_request": "اعمل إعلان 20 ثانية يوضح إننا بنتابع الحيوانات على أرض الواقع، بأسلوب مؤسسي احترافي، ولقطات متنوعة، وتعليق صوتي مصري هادي، وخاتمة فيها دعوة للتواصل.",
+    "language": "ar-EG",
+    "topic": "field-followup",
+    "message": "متابعة الحيوانات على أرض الواقع من المزرعة",
+    "duration_sec": 20.0,
+    "audience": "جمهور عام مهتم بالمزرعة والمتابعة الحقيقية",
+    "style": "مؤسسي احترافي بنبرة مصرية هادئة",
+    "voice": {
+      "requested": true,
+      "language": "ar-EG",
+      "tone": "هادي واثق",
+      "profile_id": "ar-eg-calm-confident",
+      "status": "pending-authorized-asset"
+    },
+    "cta": {
+      "type": "contact",
+      "text": "للتفاصيل… كلمنا على واتساب.",
+      "phone": "01010154221"
+    },
+    "variety_requested": true,
+    "assumptions": [
+      "الجمهور غير مذكور صراحةً؛ استُخدم جمهور عام بدون استهداف استثماري أو وعود."
+    ],
+    "warnings": [],
+    "constraints": [
+      "real-footage-only",
+      "no-faces-without-consent",
+      "no-profit-promises",
+      "no-city-name",
+      "no-invented-scenes-or-timings"
+    ]
+  },
+  "search_ranking": [
+    {
+      "scene_id": "s04-02",
+      "score": 11.8,
+      "matched_tags": [
+        "animal",
+        "farm"
+      ],
+      "tags": [
+        "animal",
+        "farm",
+        "person-hand",
+        "scale",
+        "sheep"
+      ],
+      "quality": 0.9,
+      "source_id": "src-04",
+      "start": 4.0,
+      "end": 11.0
+    },
+    {
+      "scene_id": "s01-02",
+      "score": 11.7,
+      "matched_tags": [
+        "animal",
+        "farm"
+      ],
+      "tags": [
+        "animal",
+        "farm",
+        "sheep"
+      ],
+      "quality": 0.85,
+      "source_id": "src-01",
+      "start": 9.733,
+      "end": 10.767
+    },
+    {
+      "scene_id": "s01-03",
+      "score": 11.7,
+      "matched_tags": [
+        "animal",
+        "farm"
+      ],
+      "tags": [
+        "animal",
+        "cows",
+        "farm",
+        "feeding"
+      ],
+      "quality": 0.85,
+      "source_id": "src-01",
+      "start": 10.767,
+      "end": 12.267
+    },
+    {
+      "scene_id": "s01-08",
+      "score": 11.7,
+      "matched_tags": [
+        "animal",
+        "farm"
+      ],
+      "tags": [
+        "animal",
+        "cows",
+        "farm",
+        "feeding"
+      ],
+      "quality": 0.85,
+      "source_id": "src-01",
+      "start": 19.0,
+      "end": 21.033
+    },
+    {
+      "scene_id": "s04-04",
+      "score": 11.7,
+      "matched_tags": [
+        "animal",
+        "farm"
+      ],
+      "tags": [
+        "animal",
+        "farm",
+        "person-hand",
+        "scale",
+        "sheep"
+      ],
+      "quality": 0.85,
+      "source_id": "src-04",
+      "start": 13.5,
+      "end": 19.3
+    },
+    {
+      "scene_id": "s04-01",
+      "score": 11.1,
+      "matched_tags": [
+        "animal",
+        "farm"
+      ],
+      "tags": [
+        "animal",
+        "burned-text",
+        "farm",
+        "person-hand",
+        "scale",
+        "sheep"
+      ],
+      "quality": 0.55,
+      "source_id": "src-04",
+      "start": 0.0,
+      "end": 4.0
+    },
+    {
+      "scene_id": "s01-07",
+      "score": 6.6,
+      "matched_tags": [
+        "farm"
+      ],
+      "tags": [
+        "farm",
+        "irrigation"
+      ],
+      "quality": 0.8,
+      "source_id": "src-01",
+      "start": 17.133,
+      "end": 19.0
+    },
+    {
+      "scene_id": "s01-04",
+      "score": 6.4,
+      "matched_tags": [
+        "farm"
+      ],
+      "tags": [
+        "farm"
+      ],
+      "quality": 0.7,
+      "source_id": "src-01",
+      "start": 12.267,
+      "end": 13.167
+    },
+    {
+      "scene_id": "s04-03",
+      "score": 6.0,
+      "matched_tags": [
+        "animal"
+      ],
+      "tags": [
+        "animal",
+        "sheep"
+      ],
+      "quality": 0.5,
+      "source_id": "src-04",
+      "start": 11.0,
+      "end": 13.5
+    }
+  ],
+  "schedule": {
+    "topic": "field-followup",
+    "duration_sec": 20.0,
+    "endcard_sec": 3.0,
+    "hook": "من المزرعة… متابعة حقيقية.",
+    "hook_sec": 2.0,
+    "content_budget_sec": 17.0,
+    "shots": [
+      {
+        "scene_id": "s04-03",
+        "source_id": "src-04",
+        "role": "establish-alt",
+        "source_start": 11.0,
+        "source_end": 13.5,
+        "planned_duration": 2.5,
+        "timeline_start": 0.0,
+        "timeline_end": 2.5,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 11.0,
+        "indexed_scene_end": 13.5,
+        "text": "من المزرعة… متابعة حقيقية.",
+        "motion": "بداية مختلفة من الفهرس؛ قطع هادئ.",
+        "tags": [
+          "animal",
+          "sheep"
+        ],
+        "quality": 0.5,
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-03.jpg",
+        "treatment": {
+          "crop": {
+            "left": 0.09,
+            "right": 0.02
+          },
+          "proof_bar": true
+        }
+      },
+      {
+        "scene_id": "s01-08",
+        "source_id": "src-01",
+        "role": "feeding",
+        "source_start": 19.0,
+        "source_end": 21.033,
+        "planned_duration": 2.033,
+        "timeline_start": 2.5,
+        "timeline_end": 4.533,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 19.0,
+        "indexed_scene_end": 21.033,
+        "text": "للتغذية…",
+        "motion": "لقطة تغذية أقرب؛ إبقاء الحيوان داخل الكادر.",
+        "tags": [
+          "animal",
+          "cows",
+          "feeding",
+          "farm"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-08.jpg",
+        "treatment": {
+          "crop": {
+            "top": 0.07
+          }
+        }
+      },
+      {
+        "scene_id": "s04-02",
+        "source_id": "src-04",
+        "role": "followup",
+        "source_start": 5.651,
+        "source_end": 9.349,
+        "planned_duration": 3.698,
+        "timeline_start": 4.533,
+        "timeline_end": 8.231,
+        "excerpt_policy": "centered-excerpt-within-indexed-scene",
+        "indexed_scene_start": 4.0,
+        "indexed_scene_end": 11.0,
+        "text": "بنتابع الحيوانات على أرض الواقع.",
+        "motion": "لقطة متابعة عن قرب؛ شريط إثبات يغطي العلامة المحروقة.",
+        "tags": [
+          "animal",
+          "sheep",
+          "scale",
+          "farm",
+          "person-hand"
+        ],
+        "quality": 0.9,
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-02.jpg",
+        "treatment": {
+          "crop": {
+            "left": 0.09,
+            "right": 0.02
+          },
+          "proof_bar": true
+        }
+      },
+      {
+        "scene_id": "s01-03",
+        "source_id": "src-01",
+        "role": "herd",
+        "source_start": 10.767,
+        "source_end": 12.267,
+        "planned_duration": 1.5,
+        "timeline_start": 8.231,
+        "timeline_end": 9.731,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 10.767,
+        "indexed_scene_end": 12.267,
+        "text": "من الحظيرة…",
+        "motion": "لقطة واسعة للقطيع؛ انتقال قطع بسيط.",
+        "tags": [
+          "animal",
+          "cows",
+          "farm",
+          "feeding"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-03.jpg",
+        "treatment": {
+          "crop": {
+            "bottom": 0.14
+          }
+        }
+      },
+      {
+        "scene_id": "s01-07",
+        "source_id": "src-01",
+        "role": "farm",
+        "source_start": 17.133,
+        "source_end": 19.0,
+        "planned_duration": 1.867,
+        "timeline_start": 9.731,
+        "timeline_end": 11.598,
+        "excerpt_policy": "full-indexed-scene",
+        "indexed_scene_start": 17.133,
+        "indexed_scene_end": 19.0,
+        "text": "وللمزرعة.",
+        "motion": "لقطة ري/محصول كسياق للمزرعة؛ لا ادعاء بفحص بيطري.",
+        "tags": [
+          "farm",
+          "irrigation"
+        ],
+        "quality": 0.8,
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s01-07.jpg",
+        "treatment": {
+          "crop": {
+            "top": 0.07
+          }
+        }
+      },
+      {
+        "scene_id": "s04-04",
+        "source_id": "src-04",
+        "role": "followup-close",
+        "source_start": 13.699,
+        "source_end": 19.101,
+        "planned_duration": 5.402,
+        "timeline_start": 11.598,
+        "timeline_end": 17.0,
+        "excerpt_policy": "centered-excerpt-within-indexed-scene",
+        "indexed_scene_start": 13.5,
+        "indexed_scene_end": 19.3,
+        "text": "متابعة وتوثيق… خطوة بخطوة.",
+        "motion": "زاوية متابعة أخرى؛ لا تكرار نفس اللقطة.",
+        "tags": [
+          "animal",
+          "sheep",
+          "scale",
+          "farm",
+          "person-hand"
+        ],
+        "quality": 0.85,
+        "preview": "التسويق-والإدارة/04-الإنتاج/terranex-ops/scene-library/previews/s04-04.jpg",
+        "treatment": {
+          "crop": {
+            "left": 0.09,
+            "right": 0.02
+          },
+          "proof_bar": true
+        }
+      }
+    ],
+    "voice_phrases": [
+      {
+        "role": "establish-alt",
+        "text": "من المزرعة… متابعة حقيقية.",
+        "from": 2.0,
+        "to": 5.095
+      },
+      {
+        "role": "feeding",
+        "text": "للتغذية…",
+        "from": 5.095,
+        "to": 6.619
+      },
+      {
+        "role": "followup",
+        "text": "بنتابع الحيوانات على أرض الواقع.",
+        "from": 6.619,
+        "to": 10.238
+      },
+      {
+        "role": "herd",
+        "text": "من الحظيرة…",
+        "from": 10.238,
+        "to": 12.286
+      },
+      {
+        "role": "farm",
+        "text": "وللمزرعة.",
+        "from": 12.286,
+        "to": 13.81
+      },
+      {
+        "role": "followup-close",
+        "text": "متابعة وتوثيق… خطوة بخطوة.",
+        "from": 13.81,
+        "to": 16.905
+      },
+      {
+        "role": "cta",
+        "text": "للتفاصيل… كلمنا على واتساب.",
+        "from": 16.905,
+        "to": 20.0
+      }
+    ],
+    "caption_timing_source": "reading-budget-estimate",
+    "audio_status": "silent-visual-draft"
+  },
+  "selected_scene_ids": [
+    "s04-03",
+    "s01-08",
+    "s04-02",
+    "s01-03",
+    "s01-07",
+    "s04-04"
+  ],
+  "spec": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-followup-20s/spec.json",
+  "storyboard": "التسويق-والإدارة/04-الإنتاج/terranex-ops/output/creative-projects/cd-followup-20s/storyboard.png",
+  "authoring_mode": "revision",
+  "revision_patch": {
+    "schema_version": 1,
+    "operations": [
+      {
+        "op": "replace_beginning"
+      },
+      {
+        "op": "promote_tag",
+        "tag": "feeding",
+        "position": 1
+      },
+      {
+        "op": "reduce_tag_duration",
+        "tag": "scale",
+        "factor": 0.7,
+        "target": "longest"
+      }
+    ]
+  }
+}
