@@ -1,0 +1,275 @@
+{
+  "title": "ad1-weight-proof-a",
+  "template": "corporate-no-face",
+  "on_screen_persons": [],
+  "consent_persons": [],
+  "clips": [
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
+      "start": 5.4,
+      "end": 6.9,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a25",
+      "_role": "افتتاحية: لوحة TERRANEX LLC مقروءة بالكامل",
+      "_source_sha256": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "_git_blob_sha": "b8220242e79963c0db7b586928422027e38fde52",
+      "_source_geometry": [
+        480,
+        848
+      ],
+      "_rotation": 0,
+      "_upscale_to_1080x1920": 2.264,
+      "_staging_only": false,
+      "_timeline": [
+        0,
+        1.5
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
+      "start": 1.8,
+      "end": 3.6,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a27",
+      "_role": "الإثبات البطل: الكبش كاملًا عند الميزان",
+      "_source_sha256": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "_git_blob_sha": "b5303542ee29074be40eb1fbc1a1bbdbafc68c8e",
+      "_source_geometry": [
+        480,
+        848
+      ],
+      "_rotation": 0,
+      "_upscale_to_1080x1920": 2.264,
+      "_staging_only": false,
+      "_timeline": [
+        1.5,
+        3.3
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
+      "start": 1.2,
+      "end": 2.7,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a25",
+      "_role": "فعل التثبيت/الوزن من زاوية ثانية",
+      "_source_sha256": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "_git_blob_sha": "b8220242e79963c0db7b586928422027e38fde52",
+      "_source_geometry": [
+        480,
+        848
+      ],
+      "_rotation": 0,
+      "_upscale_to_1080x1920": 2.264,
+      "_staging_only": false,
+      "_timeline": [
+        3.3,
+        4.8
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
+      "start": 4.5,
+      "end": 6.9,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a43",
+      "_role": "اتساع: القطيع في الحظيرة",
+      "_source_sha256": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+      "_git_blob_sha": "1dd6ac36831a32b3b52a1c6c4f5d78c5b6c93a6b",
+      "_source_geometry": [
+        478,
+        850
+      ],
+      "_rotation": 0,
+      "_upscale_to_1080x1920": 2.259,
+      "_staging_only": false,
+      "_timeline": [
+        4.8,
+        7.2
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../05-التسليم-والنشر/جاهز-للنشر/01-بومو-الشركة-الرئيسي.mp4",
+      "start": 19.2,
+      "end": 21,
+      "crop": {
+        "top": 0.07
+      },
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "old-s01-08",
+      "_role": "استراحة صورة عالية الدقة: التغذية",
+      "_source_geometry": [
+        720,
+        1280
+      ],
+      "_upscale_to_1080x1920": 1.5,
+      "_why_mixed": "أعلى دقة متاحة (720×1280، تكبير 1.5×) وإضاءة أنظف من مواد واتساب",
+      "_timeline": [
+        7.2,
+        9
+      ]
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/صور-حيوانات-ومزارع/gh-a08.jpeg",
+      "start": 0,
+      "end": 2,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a08",
+      "_role": "صف التغذية من أعلى — لقطة رسومية",
+      "_source_sha256": "7f997b324b541a6574e52ab55579db5490f23079591e4d89a74b421d824a962c",
+      "_git_blob_sha": "1ec851d7ca96a802ad72507a5f97ec083fc200b4",
+      "_source_geometry": [
+        906,
+        1600
+      ],
+      "_rotation": null,
+      "_upscale_to_1080x1920": 1.2,
+      "_staging_only": false,
+      "_timeline": [
+        9,
+        11
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a38.mp4",
+      "start": 13.5,
+      "end": 16.5,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a38",
+      "_role": "دليل الرعاية: فحص الأسنان/العمر",
+      "_source_sha256": "8ec0164bfd547e671869ed4693eeb863cc2356012f07e1c809b0d54b2d1f3f29",
+      "_git_blob_sha": "dcd915a24bf45ebf1bb59eac2055833daa783a09",
+      "_source_geometry": [
+        576,
+        1024
+      ],
+      "_rotation": 270,
+      "_upscale_to_1080x1920": 1.875,
+      "_staging_only": false,
+      "_timeline": [
+        11,
+        14
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a26.mp4",
+      "start": 4,
+      "end": 5.5,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a26",
+      "_role": "كبش نظيف كامل الجسم قبل الختام",
+      "_source_sha256": "e8ca45a824170cf901b322d778015ae54abb5ff9fa567c2ea59d131acc1a92de",
+      "_git_blob_sha": "c9825ddcf4f50f0567b5359fecc29b1656f0dfe3",
+      "_source_geometry": [
+        480,
+        848
+      ],
+      "_rotation": 0,
+      "_upscale_to_1080x1920": 2.264,
+      "_staging_only": false,
+      "_timeline": [
+        14,
+        15.5
+      ],
+      "_archived_in_main": true
+    },
+    {
+      "path": "../../../../../03-مكتبة-الوسائط/خام/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
+      "start": 7.8,
+      "end": 9.3,
+      "crop": {},
+      "sharpen": false,
+      "scale_flags": "lanczos",
+      "_asset_id": "gh-a27",
+      "_role": "عودة للميزان — إغلاق الحلقة",
+      "_source_sha256": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "_git_blob_sha": "b5303542ee29074be40eb1fbc1a1bbdbafc68c8e",
+      "_source_geometry": [
+        480,
+        848
+      ],
+      "_rotation": 0,
+      "_upscale_to_1080x1920": 2.264,
+      "_staging_only": false,
+      "_timeline": [
+        15.5,
+        17
+      ],
+      "_archived_in_main": true
+    }
+  ],
+  "captions": [
+    {
+      "from": 0.3,
+      "to": 4.7,
+      "text": "الوزن قدامك… مش كلام."
+    },
+    {
+      "from": 5,
+      "to": 7.1,
+      "text": "وبنتابع القطيع."
+    },
+    {
+      "from": 7.4,
+      "to": 8.9,
+      "text": "تغذية… ومتابعة."
+    },
+    {
+      "from": 11.2,
+      "to": 13.9,
+      "text": "وفحص قبل التسليم."
+    },
+    {
+      "from": 14.3,
+      "to": 16.9,
+      "text": "كلمنا على واتساب."
+    }
+  ],
+  "caption_cy": 0.84,
+  "endcard_sec": 3,
+  "endcard": {
+    "headline": "الوزن قدامك",
+    "subtitle": "ومتابعة بعينك",
+    "cta": "واتساب 01010154221",
+    "disclosure": "معاينة بصرية للمراجعة · بدون تعليق صوتي"
+  },
+  "visual_draft": true,
+  "publish_approved": false,
+  "_project": "ad1-weight-proof",
+  "_variant": "a",
+  "_concept": "إثبات أولًا: العلامة والميزان في أول ٤٫٨ ثانية بإيقاع متلاحق",
+  "_content_sec": 17,
+  "_total_sec": 20,
+  "_text_status": "نص شاشة مسودة فقط — ليس نص تعليق صوتي معتمدًا، ولا النص القديم ولا v3",
+  "_voice_identity": "voice-00 لم تتغيّر — لا صوت في هذه المعاينة",
+  "_caption_band": {
+    "cy": 0.84,
+    "verified_by": "PROBE-02-caption-band.jpg",
+    "reason": "0.70 كان يغطي أرجل الحيوان ويدي الفحص؛ 0.84 نظيف في كل اللقطات"
+  },
+  "_hook_omitted": "صندوق الـhook عند 0.295 يغطي لوحة الميزان — حُذف عمدًا",
+  "_no_weight_number": "لا قراءة رقمية للوزن ظاهرة في المادة، فلا رقم في أي نص",
+  "_source_policy": "Official archive in main (PR #202), hash-verified; no temporary staging required",
+  "_archive_manifest": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/manifest.json"
+}
