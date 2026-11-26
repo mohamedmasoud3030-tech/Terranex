@@ -1,3 +1,4 @@
+import { ASSET_STATE_LABEL } from '@/features/assets/labels';
 import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -19,16 +20,6 @@ import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
 import { Section } from '@/shared/ui';
 
 export const dynamic = 'force-dynamic';
-
-const ASSET_STATE: Record<string, string> = {
-  CANDIDATE: 'مرشح',
-  DUE_DILIGENCE: 'فحص نافي للجهالة',
-  ACQUIRING: 'قيد الاستحواذ',
-  HELD: 'مُحتفظ به / تحت السيطرة',
-  DEVELOPING: 'قيد التطوير',
-  EXITING: 'قيد التخارج',
-  DISPOSED: 'تم التصرف',
-};
 
 const PERIOD_STATUS: Record<string, string> = { OPEN: 'مفتوحة', CLOSED: 'مغلقة' };
 
@@ -198,7 +189,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
         </div>
         {assets.length === 0 ? <p className="muted">لا توجد أصول عقارية مسجّلة بعد.</p> : (
           <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">الأصول العقارية: الاسم والحالة التشغيلية والاستراتيجية</caption><thead><tr><th scope="col">الأصل</th><th scope="col">الحالة</th><th scope="col">الاستراتيجية</th></tr></thead><tbody>
-            {assets.map((asset) => <tr key={asset.property_asset_id}><td data-label="الأصل">{asset.name}</td><td data-label="الحالة"><span className="status">{ASSET_STATE[asset.operational_state] ?? asset.operational_state}</span></td><td data-label="الاستراتيجية">{asset.strategy ?? '—'}</td></tr>)}
+            {assets.map((asset) => <tr key={asset.property_asset_id}><td data-label="الأصل">{asset.name}</td><td data-label="الحالة"><span className="status">{ASSET_STATE_LABEL[asset.operational_state] ?? asset.operational_state}</span></td><td data-label="الاستراتيجية">{asset.strategy ?? '—'}</td></tr>)}
           </tbody></table></div>
         )}
       </Section>

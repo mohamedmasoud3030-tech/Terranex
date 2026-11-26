@@ -40,7 +40,7 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock` | 910 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
 | `/projects/[projectId]/operations` | 1486 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
-| `/projects/[projectId]/overview` | 222 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/overview` | 213 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 161 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/pilot` | 665 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
 | `/projects/[projectId]/procurement` | 674 | 4 | 4 | 0 | 6 | 0 | 0 | 10 | 0 | ✓ | ✓ |
