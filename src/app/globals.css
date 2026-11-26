@@ -1845,3 +1845,64 @@ form.inline button { flex: 0 0 auto; }
 .theme-icon-sun, .theme-label-to-light { display: none; }
 :root[data-theme="dark"] .theme-icon-sun, :root[data-theme="dark"] .theme-label-to-light { display: inline; }
 :root[data-theme="dark"] .theme-icon-moon, :root[data-theme="dark"] .theme-label-to-dark { display: none; }
+
+/* ===================================================== 11. POLISH (stage 2)
+   Richer surfaces without touching markup: accent stripe on KPI tiles, a soft
+   hero on page headers, larger radii, calmer table chrome. */
+.card, .table-wrap, .stat, .insight-panel, .sector-card { border-radius: var(--r-xl); }
+.stat { overflow: hidden; padding-block-start: calc(var(--sp-4) + 3px); }
+.stat::before {
+  content: ""; position: absolute; inset-inline: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-strong));
+  opacity: 0.85;
+}
+.stat-negative::before { background: var(--danger); }
+.stat-positive::before { background: var(--success); }
+.stat-value { font-size: calc(var(--fs-700) + 0.25rem); }
+.page-header.card {
+  background: linear-gradient(135deg, var(--brand-softer) 0%, var(--surface) 70%);
+  border-radius: var(--r-xl);
+}
+.table-wrap th { position: sticky; top: 0; z-index: 1; }
+.table-wrap { box-shadow: 0 1px 2px rgba(16, 33, 27, 0.05), 0 6px 18px rgba(16, 33, 27, 0.04); }
+.button { border-radius: var(--r-lg); }
+body { background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%) fixed; }
+:root[data-theme="dark"] .table-wrap { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+
+/* ===================================================== 12. DENSITY
+   The owner wants no wasted space: tighter rhythm, wider content, two columns
+   on wide screens where the content is short, compact tables and empty states. */
+.app-frame { grid-template-columns: 232px minmax(0, 1fr); }
+.app-sidebar { padding: var(--sp-4) var(--sp-3); gap: var(--sp-4); }
+.side-nav a { padding: 8px 12px; }
+.app-content { padding: var(--sp-4) var(--sp-5); }
+.app-content > main { max-width: 1760px; }
+.stack { gap: var(--sp-3); }
+.stack-lg { gap: var(--sp-4); }
+.card { padding: var(--sp-4) var(--sp-5); }
+.stat { padding: var(--sp-3) var(--sp-4); padding-block-start: calc(var(--sp-3) + 3px); }
+.stat-value { font-size: var(--fs-700); }
+.stat-grid { gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+th, td { padding: 6px 10px; }
+table { font-size: 0.875rem; }
+.card.empty, .empty { text-align: start; padding: var(--sp-3) var(--sp-4); gap: var(--sp-1); }
+.link-list a { padding-block: 8px; }
+.sector-cards, .insight-panels { gap: var(--sp-3); }
+.sector-card, .insight-panel { padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); }
+.page-header.card { padding: var(--sp-3) var(--sp-5); }
+
+@media (min-width: 1200px) {
+  .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; align-items: start; }
+  .dash-grid > * { grid-column: 1 / -1; }
+  .dash-grid > section.card:not(:has(table)):not(:has(.sector-cards)) { grid-column: auto; }
+  .dash-grid > section.card:last-child { grid-column: 1 / -1; }
+}
+@media (min-width: 1500px) {
+  .project-grid-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Workspace section map: groups flow side by side, label inline, chips small. */
+.workspace-nav-grouped { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); align-items: center; }
+.workspace-nav-group { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.workspace-nav-group > .tab-strip { flex-wrap: wrap; overflow: visible; gap: 6px; }
+.workspace-nav.tab-strip .workspace-nav-item { padding: 5px 12px; }

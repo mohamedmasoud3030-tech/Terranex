@@ -90,7 +90,7 @@ export default async function Home() {
   const criticalSignals = integritySignals.filter((signal) => signal.severity === 'CRITICAL');
 
   return (
-    <section className="stack-lg">
+    <section className="stack-lg dash-grid">
       <PageHeader
         eyebrow={org.name}
         title="لوحة الإدارة التنفيذية"
