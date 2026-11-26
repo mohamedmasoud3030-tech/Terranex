@@ -6,6 +6,8 @@ import { getActiveOrganization } from '@/features/organizations/context';
 import { OrganizationSwitcher } from '@/features/organizations/switcher';
 import { AppNav } from '@/shared/ui/app-nav';
 import { BrandMark } from '@/shared/ui/sector';
+import { SideNav } from '@/shared/ui/side-nav';
+import { ThemeToggle } from '@/shared/ui/theme-toggle';
 
 /**
  * AppShell: authentication gate + one-row top bar + `main#content` landmark.
@@ -25,16 +27,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     </>
   );
   return (
-    <div className="shell">
+    <div className="app-frame">
       <a className="skip-link" href="#content">تخطي إلى المحتوى</a>
-      <header className="app-topbar">
+      <aside className="app-sidebar">
         <Link href="/" className="brand" aria-label="تيرانكس — الصفحة الرئيسية">
           <BrandMark />
-          تيرانكس
+          <span className="brand-text">
+            <small>بيئة تطوير</small>
+            تيرانكس
+          </span>
         </Link>
-        <AppNav tools={tools} />
-      </header>
-      <main id="content">{children}</main>
+        <SideNav />
+        <div className="sidebar-foot">
+          <ThemeToggle />
+          {tools}
+        </div>
+      </aside>
+      <div className="shell app-content">
+        <header className="app-topbar app-topbar-mobile">
+          <Link href="/" className="brand" aria-label="تيرانكس — الصفحة الرئيسية">
+            <BrandMark />
+            تيرانكس
+          </Link>
+          <AppNav tools={<>{tools}<ThemeToggle /></>} />
+        </header>
+        <main id="content">{children}</main>
+      </div>
     </div>
   );
 }

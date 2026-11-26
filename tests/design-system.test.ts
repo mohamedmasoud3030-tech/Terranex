@@ -7,8 +7,8 @@ const css = readFileSync('src/app/globals.css', 'utf8');
  * The `:root { … }` token block — the only place a literal colour may live.
  * Extracted by brace matching, not by the first `}`, because the block is long.
  */
-function extractTokenBlock(source: string): string {
-  const start = source.indexOf(':root {');
+function extractTokenBlock(source: string, marker = ':root {'): string {
+  const start = source.indexOf(marker);
   if (start === -1) return '';
   let depth = 0;
   for (let i = source.indexOf('{', start); i < source.length; i += 1) {
@@ -22,7 +22,9 @@ function extractTokenBlock(source: string): string {
 }
 
 const tokenBlock = extractTokenBlock(css);
-const outsideTokens = css.replace(tokenBlock, '');
+// The dark theme is the same tokens re-valued, so it is a token block too.
+const darkTokenBlock = extractTokenBlock(css, ':root[data-theme="dark"] {');
+const outsideTokens = css.replace(tokenBlock, '').replace(darkTokenBlock, '');
 
 describe('design system tokens', () => {
   it('keeps every literal colour inside the :root token block', () => {
