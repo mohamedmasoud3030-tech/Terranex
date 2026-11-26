@@ -61,7 +61,8 @@ import {
   SellingCostForm,
 } from './revenue-forms';
 import { WorkspaceChrome } from '@/features/workspace/chrome';
-import { Section, EmptyState, InPageTabs } from '@/shared/ui';
+import { Section, EmptyState, InPageTabs, Stat, StatGrid } from '@/shared/ui';
+import { BarList, countBy } from '@/shared/ui/insight';
 
 export const dynamic = 'force-dynamic';
 
@@ -240,6 +241,47 @@ export default async function OperationsPage({
         sector={project.sector}
         lifecycleState={project.lifecycle_state}
       />
+      <Section title="الموقف في لمحة" description="أعداد وأرقام من السجلات المسجلة فقط. كل عملة تُعرض على حدة.">
+        <StatGrid label="ملخص العمليات العقارية">
+          <Stat label="الأصول العقارية" value={assets.length} href="#assets" />
+          <Stat label="القطع" value={parcels.length} />
+          <Stat
+            label="مراحل منتهية"
+            value={`${phases.filter((p) => p.operational_state === 'COMPLETED').length} / ${phases.length}`}
+          />
+          <Stat
+            label="معالم منتهية"
+            value={`${milestones.filter((m) => m.operational_state === 'COMPLETED').length} / ${milestones.length}`}
+          />
+        </StatGrid>
+        <div className="insight-panels">
+          <article className="insight-panel">
+            <h3>الأصول حسب الحالة</h3>
+            <BarList items={countBy(assets, (a) => a.operational_state, ASSET_STATE).map((i) => ({ ...i, tone: 'rev' as const }))} />
+            {assets.length === 0 ? <p className="muted">لا توجد أصول مسجلة بعد.</p> : null}
+          </article>
+          {costCurrencies.map((currency) => {
+            const rows = costRollups
+              .filter((r) => r.field !== 'variance_minor_units')
+              .map((r) => ({ r, total: r.rollup.totals.find((t) => t.currency === currency) }));
+            return (
+              <article className="insight-panel" key={currency}>
+                <h3>التكلفة — {currency || 'عملة غير مسجلة'}</h3>
+                <BarList
+                  caption="ميزانية مقابل ملتزم وفعلي، بنفس العملة."
+                  items={rows.map(({ r, total }, idx) => ({
+                    key: r.field,
+                    label: r.label,
+                    value: total ? Math.max(0, Number(total.minorUnits)) : 0,
+                    display: total && total.presentable ? formatMinorUnits(total.minorUnits.toString(), currency) : '—',
+                    tone: (['cash', 'exp', 'rev'] as const)[idx],
+                  }))}
+                />
+              </article>
+            );
+          })}
+        </div>
+      </Section>
       <InPageTabs
         label="أقسام العمليات العقارية"
         items={[

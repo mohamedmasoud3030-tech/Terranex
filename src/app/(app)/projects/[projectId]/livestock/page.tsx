@@ -60,7 +60,8 @@ import {
 } from '@/features/livestock/queries';
 import { getProject } from '@/features/projects/queries';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
-import { InPageTabs, Section } from '@/shared/ui';
+import { InPageTabs, Section, Stat, StatGrid } from '@/shared/ui';
+import { BarList } from '@/shared/ui/insight';
 import { newCommandNonce } from '@/features/livestock/idempotency';
 import {
   ActivateForm,
@@ -712,6 +713,47 @@ export default async function LivestockPage({
         internalReference={project.internal_reference}
         lifecycleState={project.lifecycle_state}
       />
+      <Section title="الموقف في لمحة" description="أعداد من السجلات المسجلة فقط، بلا تقدير.">
+        <StatGrid label="ملخص الثروة الحيوانية">
+          <Stat label="الدفعات النشطة" value={operationalActiveCohorts.length} hint={`${cohorts.length} دفعة إجمالًا`} href="#batches" />
+          <Stat
+            label="العدد الحالي (الدفعات النشطة)"
+            value={operationalActiveCohorts.reduce((sum, c) => sum + (currentQuantityByCohort.get(c.id) ?? 0), 0)}
+            hint="رأس، من سجل حركة العدد"
+            href="#headcount"
+          />
+          <Stat label="القطعان" value={herds.length} href="#herds" />
+          <Stat label="مواقع التشغيل" value={sites.length} href="#sites" />
+        </StatGrid>
+        <div className="insight-panels">
+          <article className="insight-panel">
+            <h3>العدد الحالي لكل دفعة</h3>
+            <BarList
+              items={operationalActiveCohorts.map((c) => ({
+                key: c.id,
+                label: c.cohort_reference,
+                value: currentQuantityByCohort.get(c.id) ?? 0,
+                display: `${currentQuantityByCohort.get(c.id) ?? 0} رأس`,
+                tone: 'rev' as const,
+              }))}
+            />
+            {operationalActiveCohorts.length === 0 ? <p className="muted">لا توجد دفعات نشطة بعد.</p> : null}
+          </article>
+          <article className="insight-panel">
+            <h3>الدفعات حسب الحالة</h3>
+            <BarList
+              items={Object.entries(COHORT_STATE_LABEL)
+                .map(([state, label]) => ({
+                  key: state,
+                  label,
+                  value: cohorts.filter((c) => c.lifecycle_state === state).length,
+                }))
+                .filter((i) => i.value > 0)}
+            />
+            {cohorts.length === 0 ? <p className="muted">لا توجد دفعات مسجلة.</p> : null}
+          </article>
+        </div>
+      </Section>
       <InPageTabs
         label="أقسام الثروة الحيوانية"
         items={[

@@ -6,6 +6,7 @@ import { getParties } from '@/features/funding/queries';
 import { formatMinorUnits } from '@/shared/money';
 import { ForbiddenCard, WorkspaceChrome } from '@/features/workspace/chrome';
 import { EmptyState, InPageTabs, Section } from '@/shared/ui';
+import { BarList, countBy } from '@/shared/ui/insight';
 import {
   type CropAssignmentRead,
   type CropCycleCostSourceRead,
@@ -456,6 +457,29 @@ export default async function AgriculturePage({
         internalReference={project.internal_reference}
         lifecycleState={project.lifecycle_state}
       />
+      <Section title="الدورات والحقول بصريًا" description="من السجلات المسجلة فقط، بلا تقدير.">
+        <div className="insight-panels">
+          <article className="insight-panel">
+            <h3>دورات المحصول حسب الحالة</h3>
+            <BarList
+              items={countBy(cycles, (c) => c.operational_state, CYCLE_STATE_LABEL).map((i) => ({ ...i, tone: 'rev' as const }))}
+            />
+            {cycles.length === 0 ? <p className="muted">لا توجد دورات محصول مسجلة بعد.</p> : null}
+          </article>
+          <article className="insight-panel">
+            <h3>الحقول لكل مزرعة</h3>
+            <BarList
+              items={farms.map((f) => ({
+                key: f.id,
+                label: f.name,
+                value: fields.filter((x) => x.farm_id === f.id).length,
+                display: `${fields.filter((x) => x.farm_id === f.id).length} حقل`,
+              }))}
+            />
+            {farms.length === 0 ? <p className="muted">لا توجد مزارع مسجلة بعد.</p> : null}
+          </article>
+        </div>
+      </Section>
       <InPageTabs
         label="أقسام الزراعة"
         items={[
