@@ -370,13 +370,30 @@ export const getHarvestLots = (projectId: string) =>
     'harvest_date',
   );
 
+const HARVEST_INVENTORY_COLUMNS =
+  'harvest_lot_id,organization_id,project_id,lot_reference,quantity_unit,grade,storage_id,storage_name,current_balance,last_movement_date';
+
 export const getHarvestInventoryByLocation = (projectId: string) =>
   many<HarvestInventoryByLocationRead>(
     'harvest_inventory_by_location_read',
-    'harvest_lot_id,organization_id,project_id,lot_reference,quantity_unit,grade,storage_id,storage_name,current_balance,last_movement_date',
+    HARVEST_INVENTORY_COLUMNS,
     projectId,
     'last_movement_date',
   );
+
+/** Harvest stock by storage location across every agriculture project of the organization. */
+export async function getOrganizationHarvestInventory(
+  organizationId: string,
+): Promise<HarvestInventoryByLocationRead[]> {
+  const s = await createClient();
+  const { data, error } = await s
+    .from('harvest_inventory_by_location_read')
+    .select(HARVEST_INVENTORY_COLUMNS)
+    .eq('organization_id', organizationId)
+    .order('last_movement_date', { ascending: false });
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as unknown as HarvestInventoryByLocationRead[];
+}
 
 export const getHarvestInventoryMovements = (projectId: string) =>
   many<HarvestInventoryMovementRead>(

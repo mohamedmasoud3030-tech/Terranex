@@ -192,11 +192,12 @@ export const getProcurementCommitments = (projectId: string) => many<Procurement
   { projectId }, 'committed_at',
 );
 
-export async function getProcurementEvidence(projectId: string): Promise<ProcurementEvidenceRead[]> {
+const EVIDENCE_COLUMNS =
+  'evidence_link_id,organization_id,project_id,document_id,evidence_version_id,classification,title,version_number,original_filename,mime_type,size_bytes,sha256,storage_bucket,storage_object_name,uploaded_by,uploaded_at,purchase_order_id,purchase_receipt_id,supplier_invoice_id,linked_by,linked_at';
+
+async function evidenceWithLinks(scope: { projectId?: string; organizationId?: string }): Promise<ProcurementEvidenceRead[]> {
   const rows = await many<Omit<ProcurementEvidenceRead, 'download_url'>>(
-    'procurement_evidence_read',
-    'evidence_link_id,organization_id,project_id,document_id,evidence_version_id,classification,title,version_number,original_filename,mime_type,size_bytes,sha256,storage_bucket,storage_object_name,uploaded_by,uploaded_at,purchase_order_id,purchase_receipt_id,supplier_invoice_id,linked_by,linked_at',
-    { projectId }, 'uploaded_at',
+    'procurement_evidence_read', EVIDENCE_COLUMNS, scope, 'uploaded_at',
   );
   if (rows.length === 0) return [];
   const supabase = await createClient();
@@ -205,6 +206,11 @@ export async function getProcurementEvidence(projectId: string): Promise<Procure
   if (error) throwOperatorQuery(error);
   return rows.map((row, index) => ({ ...row, download_url: data?.[index]?.signedUrl ?? null }));
 }
+
+export const getProcurementEvidence = (projectId: string) => evidenceWithLinks({ projectId });
+
+/** Procurement evidence documents across every project of the organization. */
+export const getOrganizationProcurementEvidence = (organizationId: string) => evidenceWithLinks({ organizationId });
 
 /** Supplier invoices across every project of the organization (read-only list). */
 export const getOrganizationSupplierInvoices = (organizationId: string) => many<SupplierInvoiceRead>(

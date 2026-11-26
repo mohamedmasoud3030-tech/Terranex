@@ -20,3 +20,6 @@ export function formatDate(value?: string | null) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ar-EG');
 }
+export const EVIDENCE_CLASSIFICATION_LABEL: Record<string, string> = {
+  CONTRACT: 'عقد تجاري', PURCHASE_ORDER: 'أمر شراء', RECEIPT: 'دليل استلام', SUPPLIER_INVOICE: 'فاتورة مورد',
+};
