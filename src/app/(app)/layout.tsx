@@ -38,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </span>
         </Link>
         <SideNav />
+        <div id="sidebar-project-slot" />
         <div className="sidebar-foot">
           <ThemeToggle />
           {tools}

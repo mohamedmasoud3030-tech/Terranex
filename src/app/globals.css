@@ -1906,3 +1906,16 @@ table { font-size: 0.875rem; }
 .workspace-nav-group { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
 .workspace-nav-group > .tab-strip { flex-wrap: wrap; overflow: visible; gap: 6px; }
 .workspace-nav.tab-strip .workspace-nav-item { padding: 5px 12px; }
+
+/* Project sections in the sidebar (portalled from the project layout). */
+.side-project { display: grid; gap: var(--sp-2); border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.side-project-title { font-weight: 800; font-size: var(--fs-300); color: var(--brand-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 6px; }
+.side-group { display: grid; gap: 1px; }
+.side-group-label { font-size: 0.72rem; font-weight: 700; color: var(--muted-2); padding: 6px 12px 2px; }
+.side-group a { padding: 5px 12px; border-radius: var(--r-md); text-decoration: none; color: var(--ink-2); font-size: var(--fs-300); font-weight: 600; }
+.side-group a:hover { background: var(--paper-2); color: var(--ink); }
+.side-group a[aria-current="page"] { background: var(--brand-soft); color: var(--brand-ink); }
+.app-sidebar { gap: var(--sp-3); }
+/* On desktop the sidebar carries the project's sections; the in-page strip is
+   the same list (same source), so it is shown only where there is no sidebar. */
+@media (min-width: 961px) { .app-frame .workspace-nav-grouped { display: none; } }
