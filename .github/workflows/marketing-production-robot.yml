@@ -10,10 +10,10 @@ on:
         type: string
   pull_request:
     paths:
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/engine/production_robot.py'
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/engine/production_robot_server.py'
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/tests/test_production_robot.py'
-      - 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/production-robot/**'
+      - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/engine/production_robot.py'
+      - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/engine/production_robot_server.py'
+      - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/tests/test_production_robot.py'
+      - 'التسويق-والإدارة/04-الإنتاج/terranex-ops/production-robot/**'
       - '.github/workflows/marketing-production-robot.yml'
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops'
+        working-directory: 'التسويق-والإدارة/04-الإنتاج/terranex-ops'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
@@ -55,5 +55,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terranex-production-plan
-          path: 'التسويق-والإدارة/تسويق/مواد-وهوية/terranex-ops/output/production-robot/plan.json'
+          path: 'التسويق-والإدارة/04-الإنتاج/terranex-ops/output/production-robot/plan.json'
           if-no-files-found: warn
