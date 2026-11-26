@@ -14,6 +14,7 @@ const ICONS: Record<string, string> = {
   transactions: 'M2.5 5.5h10l-2.3-2.3M13.5 10.5h-10l2.3 2.3',
   documents: 'M4 2h5l3 3v9H4zM9 2v3h3M6 8.5h4M6 11h4',
   inventory: 'M2.5 5.5 8 2.5l5.5 3v5L8 13.5l-5.5-3zM2.5 5.5 8 8.5l5.5-3M8 8.5v5',
+  vat: 'M3 13 13 3M4.5 5.5a1 1 0 1 0 0-.01M11.5 11.5a1 1 0 1 0 0-.01',
   reports: 'M2.5 13.5h11M4.5 13.5V8M8 13.5V3.5M11.5 13.5V6',
   settings: 'M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7',
 };
@@ -28,6 +29,7 @@ const LINKS: ReadonlyArray<{ href: string; label: string; icon: keyof typeof ICO
   { href: '/transactions', label: 'حركات البنك', icon: 'transactions', match: (p) => p.startsWith('/transactions') },
   { href: '/documents', label: 'المستندات', icon: 'documents', match: (p) => p.startsWith('/documents') },
   { href: '/inventory', label: 'المخزون', icon: 'inventory', match: (p) => p.startsWith('/inventory') },
+  { href: '/vat', label: 'الضريبة', icon: 'vat', match: (p) => p.startsWith('/vat') },
   { href: '/reports', label: 'التقارير', icon: 'reports', match: (p) => p.startsWith('/reports') },
   { href: '/settings', label: 'الإعدادات', icon: 'settings', match: (p) => p.startsWith('/settings') },
   { href: '/intake', label: 'إدخال مشروع', icon: 'intake', match: (p) => p.startsWith('/intake') },
