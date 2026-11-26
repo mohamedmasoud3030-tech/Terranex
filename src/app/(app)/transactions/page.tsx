@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { EmptyState, PageHeader, Section, Stat, StatGrid, StatusBadge } from '@/shared/ui';
 import { BarList } from '@/shared/ui/insight';
+import { EntryLinks } from '@/features/workspace/entry-links';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getOrganizationStatementLines } from '@/features/finance/queries';
@@ -48,6 +49,8 @@ export default async function TransactionsPage() {
           <Stat key={`o-${t.currency}`} label={`الصادر (${t.currency})`} value={presentRollup(t)} tone="negative" />
         ))}
       </StatGrid>
+      <EntryLinks title="استيراد كشف حساب أو تسجيل دفعة" projects={projects} label="التكاليف والنقدية" hrefFor={(p) => `/projects/${p.id}/costs`} />
+
       {lines.length === 0 ? (
         <EmptyState title="لا توجد حركات بنكية بعد" description="تظهر هنا بعد استيراد كشف حساب من داخل المشروع." action={<Link className="button" href="/projects">فتح المشاريع</Link>} />
       ) : (

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { EmptyState, PageHeader, Section, Stat, StatGrid } from '@/shared/ui';
+import { EntryLinks } from '@/features/workspace/entry-links';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getOrganizationHarvestInventory } from '@/features/agriculture/queries';
@@ -37,6 +38,8 @@ export default async function InventoryPage() {
         <Stat label="مواقع تخزين" value={new Set(rows.map((r) => r.storage_id)).size} />
         <Stat label="وحدات القياس" value={units.length === 0 ? '—' : units.join('، ')} />
       </StatGrid>
+      <EntryLinks title="تسجيل حصاد أو حركة مخزون" projects={projects.filter((p) => p.sector === 'AGRICULTURE')} label="الزراعة" hrefFor={(p) => `/projects/${p.id}/agriculture`} />
+
       {rows.length === 0 ? (
         <EmptyState title="لا يوجد مخزون مسجَّل" description="يظهر بعد تسجيل حصاد وتخزينه من صفحة الزراعة في المشروع." action={<Link className="button" href="/projects">فتح المشاريع</Link>} />
       ) : (

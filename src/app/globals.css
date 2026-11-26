@@ -1919,3 +1919,6 @@ table { font-size: 0.875rem; }
 /* On desktop the sidebar carries the project's sections; the in-page strip is
    the same list (same source), so it is shown only where there is no sidebar. */
 @media (min-width: 961px) { .app-frame .workspace-nav-grouped { display: none; } }
+
+/* Entry shortcuts on organization list pages. */
+.entry-links { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px dashed var(--line); border-radius: var(--r-lg); background: var(--brand-softer); }

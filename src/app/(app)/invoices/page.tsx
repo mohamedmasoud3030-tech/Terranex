@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { EmptyState, PageHeader, Section, Stat, StatGrid, StatusBadge } from '@/shared/ui';
 import { BarList } from '@/shared/ui/insight';
+import { EntryLinks } from '@/features/workspace/entry-links';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getOrganizationSupplierInvoices } from '@/features/procurement/queries';
@@ -54,6 +55,8 @@ export default async function InvoicesPage() {
           <Stat key={`p-${t.currency}`} label={`المدفوع (${t.currency})`} value={presentRollup(t)} />
         ))}
       </StatGrid>
+
+      <EntryLinks title="تسجيل فاتورة مورد" projects={projects} label="المشتريات" hrefFor={(p) => `/projects/${p.id}/procurement`} />
 
       {invoices.length === 0 ? (
         <EmptyState

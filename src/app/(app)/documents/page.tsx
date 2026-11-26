@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { EmptyState, PageHeader, Section, Stat, StatGrid } from '@/shared/ui';
 import { BarList } from '@/shared/ui/insight';
+import { EntryLinks } from '@/features/workspace/entry-links';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getOrganizationProcurementEvidence } from '@/features/procurement/queries';
@@ -34,6 +35,8 @@ export default async function DocumentsPage() {
         <Stat label="عدد الملفات" value={docs.length} />
         <Stat label="مستندات مميزة" value={new Set(docs.map((d) => d.document_id)).size} />
       </StatGrid>
+      <EntryLinks title="رفع مستند" projects={projects} label="المشتريات" hrefFor={(p) => `/projects/${p.id}/procurement`} />
+
       {docs.length === 0 ? (
         <EmptyState title="لا توجد مستندات بعد" description="ارفع دليلًا من صفحة المشتريات داخل المشروع." action={<Link className="button" href="/projects">فتح المشاريع</Link>} />
       ) : (

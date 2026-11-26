@@ -20,10 +20,10 @@ has drifted from the code is worse than no count at all.
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
 | `/assets` | 206 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/documents` | 78 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/documents` | 81 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
-| `/inventory` | 74 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/invoices` | 114 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/inventory` | 77 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/invoices` | 117 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/journal` | 49 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
 | `/` (home) | 341 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
@@ -55,7 +55,7 @@ has drifted from the code is worse than no count at all.
 | `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/reports` | 89 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/settings` | 47 | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/transactions` | 92 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/transactions` | 95 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/vat` | 43 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/login` | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
