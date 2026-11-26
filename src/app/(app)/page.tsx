@@ -120,7 +120,7 @@ export default async function Home() {
       {integritySignals.length ? (
         <Section
           title="يحتاج انتباهك — إشارات السلامة والاستثناءات"
-          description="إشارات رقابية ناتجة من read models المالية، وليست تنبؤات."
+          description="إشارات رقابية مبنية على السجلات المالية المسجلة، وليست تنبؤات."
         >
           <div className="milestones">
             {integritySignals.slice(0, 8).map((signal) => (
@@ -128,8 +128,7 @@ export default async function Home() {
                 <div>
                   <strong>{signal.signal_label_ar}</strong>
                   <p className="muted">
-                    <code>{signal.signal_code}</code>
-                    {signal.currency ? ` · ${signal.currency}` : ''}
+                    <span title={signal.signal_code}>{signal.currency ?? 'كل العملات'}</span>
                   </p>
                 </div>
                 <div>
@@ -311,6 +310,7 @@ export default async function Home() {
 
       <Section
         title="المشاريع الاستثمارية"
+        className="dash-wide"
         description="كل مشروع يحتفظ بدورته وأصوله ودفتره المالي بشكل مستقل."
         actions={<Link className="button secondary sm" href="/projects">كل المشاريع</Link>}
       >

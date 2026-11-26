@@ -1895,7 +1895,7 @@ table { font-size: 0.875rem; }
   .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; align-items: start; }
   .dash-grid > * { grid-column: 1 / -1; }
   .dash-grid > section.card:not(:has(table)):not(:has(.sector-cards)) { grid-column: auto; }
-  .dash-grid > section.card:last-child { grid-column: 1 / -1; }
+  .dash-grid > section.card.dash-wide { grid-column: 1 / -1; }
 }
 @media (min-width: 1500px) {
   .project-grid-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
