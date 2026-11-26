@@ -1,0 +1,319 @@
+{
+  "branch": "feat/marketing-production-robot",
+  "commit": "7d4205babc89710c0c224a69187631028680cd40",
+  "assets": [
+    {
+      "id": "gh-a39",
+      "kind": "video",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a39.mp4",
+      "original_file": "WhatsApp Video 2026-11-05 at 7.21.14 AM.mp4",
+      "source_branches": [
+        "patch-3"
+      ],
+      "source_prs": [
+        198
+      ],
+      "git_blob_sha": "e66c9940d5c50deefe884144d8bd61bccb5542a3",
+      "sha256": "3144279d4e03bd6dab58126719d70f87702fded56d8fe4669426a872b671c210",
+      "bytes": 5667943,
+      "display_geometry": {
+        "width": 576,
+        "height": 1024,
+        "orientation": "portrait",
+        "rotation_degrees": 270
+      },
+      "duration_sec": 32.73,
+      "category": [
+        "animals-clean",
+        "sheep"
+      ],
+      "description": "خروفان واقفان على منصة/مقطورة حمراء والمزرعة خلفهما — تكوين نظيف.",
+      "quality": 0.758,
+      "privacy_flags": [
+        "مبانٍ بالخلفية"
+      ],
+      "consent_required": false,
+      "ad_eligible_at_intake": true,
+      "status": "editorial-review-required",
+      "publish_approved": false,
+      "selected_window": [
+        9,
+        15
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    },
+    {
+      "id": "gh-a43",
+      "kind": "video",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a43.mp4",
+      "original_file": "WhatsApp Video 2026-11-05 at 7.27.47 AM.mp4",
+      "source_branches": [
+        "patch-4"
+      ],
+      "source_prs": [
+        200
+      ],
+      "git_blob_sha": "1dd6ac36831a32b3b52a1c6c4f5d78c5b6c93a6b",
+      "sha256": "3025ab60078a35d619d98fd77e71314cf8a902f63cf7e12aa1339efdab5d698e",
+      "bytes": 13622881,
+      "display_geometry": {
+        "width": 478,
+        "height": 850,
+        "orientation": "portrait",
+        "rotation_degrees": 0
+      },
+      "duration_sec": 63.45,
+      "category": [
+        "animals-group",
+        "lambs"
+      ],
+      "description": "مجموعة حملان في حظيرة، أطول مقطع (63.45 ث) وأعلى جودة عمودية — منجم نوافذ.",
+      "quality": 0.836,
+      "privacy_flags": [],
+      "consent_required": false,
+      "ad_eligible_at_intake": true,
+      "status": "editorial-review-required",
+      "publish_approved": false,
+      "selected_window": [
+        24,
+        33
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    },
+    {
+      "id": "gh-a25",
+      "kind": "video",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a25.mp4",
+      "original_file": "WhatsApp Video 2026-11-05 at 7.21.09 AM (2).mp4",
+      "source_branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "source_prs": [
+        197,
+        200
+      ],
+      "git_blob_sha": "b8220242e79963c0db7b586928422027e38fde52",
+      "sha256": "9522fdef8daab43523d6eb8bebdd8cc0adfeda22cfa2c7ad53c9d0c2712b9c7b",
+      "bytes": 2275817,
+      "display_geometry": {
+        "width": 480,
+        "height": 848,
+        "orientation": "portrait",
+        "rotation_degrees": 0
+      },
+      "duration_sec": 10.6,
+      "category": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "خروف عند الميزان الأصفر ويد تمسكه — نشاط وزن موثّق بعلامة الشركة.",
+      "quality": 0.611,
+      "privacy_flags": [
+        "شعار TERRANEX LLC ظاهر"
+      ],
+      "consent_required": false,
+      "ad_eligible_at_intake": true,
+      "status": "editorial-review-required",
+      "publish_approved": false,
+      "selected_window": [
+        3.1,
+        9.1
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    },
+    {
+      "id": "gh-a27",
+      "kind": "video",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/فيديوهات-حيوانات-ومزارع/gh-a27.mp4",
+      "original_file": "WhatsApp Video 2026-11-05 at 7.21.10 AM.mp4",
+      "source_branches": [
+        "patch-2",
+        "patch-4"
+      ],
+      "source_prs": [
+        197,
+        200
+      ],
+      "git_blob_sha": "b5303542ee29074be40eb1fbc1a1bbdbafc68c8e",
+      "sha256": "ca484f6568af2a73ffeed389500f140d2ba15f4278f408798647e9b12cb2a5fb",
+      "bytes": 2551794,
+      "display_geometry": {
+        "width": 480,
+        "height": 848,
+        "orientation": "portrait",
+        "rotation_degrees": 0
+      },
+      "duration_sec": 11.83,
+      "category": [
+        "weighing-activity",
+        "sheep"
+      ],
+      "description": "رجل يقف بجانب خروف عند ميزان TerraNex — أفضل لقطة وزن عمودية.",
+      "quality": 0.824,
+      "privacy_flags": [
+        "شعار الميزان ظاهر"
+      ],
+      "consent_required": false,
+      "ad_eligible_at_intake": true,
+      "status": "editorial-review-required",
+      "publish_approved": false,
+      "selected_window": [
+        3.4,
+        9.4
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    },
+    {
+      "id": "gh-a10",
+      "kind": "image",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a10.jpeg",
+      "original_file": "WhatsApp Image 2026-11-05 at 7.21.12 AM.jpeg",
+      "source_branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "source_prs": [
+        196,
+        198
+      ],
+      "git_blob_sha": "8af1af510f3a4eefd490110b0f5a82b83ff60eb3",
+      "sha256": "77097d544f6b3fe52cfc222699676d830bc15ba0e7903fbfe925e4cebc42ac7d",
+      "bytes": 435661,
+      "display_geometry": {
+        "width": 1200,
+        "height": 1600,
+        "orientation": "portrait",
+        "rotation_degrees": null
+      },
+      "duration_sec": null,
+      "category": [
+        "raw-meat-product"
+      ],
+      "description": "صينية لحوم مقطعة يحملها شخص — منتج غذائي لا علاقة له بحملة المتابعة.",
+      "quality": 0.952,
+      "privacy_flags": [
+        "لحوم نيئة"
+      ],
+      "consent_required": false,
+      "ad_eligible_at_intake": false,
+      "status": "separate-campaign-review",
+      "publish_approved": false,
+      "selected_window": [
+        0,
+        8
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    },
+    {
+      "id": "gh-a12",
+      "kind": "image",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a12.jpeg",
+      "original_file": "WhatsApp Image 2026-11-05 at 7.21.16 AM.jpeg",
+      "source_branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "source_prs": [
+        196,
+        198
+      ],
+      "git_blob_sha": "63437589b23625e97c15d6eb1345df872768f1a4",
+      "sha256": "51ed9121e224b0c382c2ae1d039802e05db5929fac30f86665c2189c13629f63",
+      "bytes": 99592,
+      "display_geometry": {
+        "width": 720,
+        "height": 1280,
+        "orientation": "portrait",
+        "rotation_degrees": null
+      },
+      "duration_sec": null,
+      "category": [
+        "packaged-meat"
+      ],
+      "description": "صواني لحوم معبأة أوضح من a11.",
+      "quality": 0.806,
+      "privacy_flags": [
+        "لحوم معبأة"
+      ],
+      "consent_required": false,
+      "ad_eligible_at_intake": false,
+      "status": "separate-campaign-review",
+      "publish_approved": false,
+      "selected_window": [
+        0,
+        8
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    },
+    {
+      "id": "gh-a13",
+      "kind": "image",
+      "archive_path": "التسويق-والإدارة/تسويق/مواد-خام/أرشيف/2026-11/منتجات-لحوم-حملة-منفصلة/gh-a13.jpeg",
+      "original_file": "WhatsApp Image 2026-11-05 at 7.21.17 AM.jpeg",
+      "source_branches": [
+        "patch-1",
+        "patch-3"
+      ],
+      "source_prs": [
+        196,
+        198
+      ],
+      "git_blob_sha": "a61e7944e01aeae238adb949527285ae4bc67153",
+      "sha256": "51ec3ccc4f98789679e4259acb29ceb05cb52925adf9efb04b5b620d19e52bba",
+      "bytes": 145092,
+      "display_geometry": {
+        "width": 1280,
+        "height": 720,
+        "orientation": "landscape",
+        "rotation_degrees": null
+      },
+      "duration_sec": null,
+      "category": [
+        "packaged-meat"
+      ],
+      "description": "صواني لحوم معبأة على طاولة — لقطة أفقية.",
+      "quality": 0.873,
+      "privacy_flags": [
+        "لحوم معبأة"
+      ],
+      "consent_required": false,
+      "ad_eligible_at_intake": false,
+      "status": "separate-campaign-review",
+      "publish_approved": false,
+      "selected_window": [
+        0,
+        9
+      ],
+      "review": "source contact sheet and selected-window samples inspected; final frame-by-frame review pending",
+      "limitations": "No numeric weight reading established. No service, health, freshness, storage or delivery guarantee inferred."
+    }
+  ],
+  "new_sequence": [
+    "gh-a39",
+    "gh-a43",
+    "gh-a25",
+    "gh-a27",
+    "gh-a10",
+    "gh-a12",
+    "gh-a13"
+  ],
+  "prior_ad1_sequences_checked": true,
+  "prior_40s_project_used_only_as_hash_verified_source_transport": true,
+  "all_previous_campaigns_exhaustively_checked": false,
+  "voice_blocker": {
+    "generation_status": "unavailable-source-not-recovered",
+    "provider": null,
+    "model_id": null,
+    "generation_settings": null,
+    "session_tts_tool_available": false,
+    "old_recording_reused": false
+  },
+  "publication_ready": false
+}
