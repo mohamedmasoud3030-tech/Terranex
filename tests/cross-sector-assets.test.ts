@@ -22,6 +22,7 @@ const gate = readFileSync(
 );
 const queries = readFileSync('src/features/assets/queries.ts', 'utf8');
 const page = readFileSync('src/app/(app)/assets/page.tsx', 'utf8');
+const sectorCard = readFileSync('src/features/assets/sector-card.tsx', 'utf8');
 const layout = readFileSync('src/app/(app)/layout.tsx', 'utf8');
 
 describe('R8 stays a read projection and never becomes a universal asset table', () => {
@@ -265,7 +266,7 @@ describe('R8 page renders reasons, not fabricated zeros', () => {
   });
 
   it('explains a withheld converted total rather than printing zero', () => {
-    expect(page).toContain('لا نعرض مبلغًا محوّلًا');
+    expect(sectorCard).toContain('لا نعرض مبلغًا محوّلًا');
   });
 
   it('states plainly that the page owns nothing and writes nothing', () => {

@@ -9,6 +9,9 @@ const ICONS: Record<string, string> = {
   portfolios: 'M2 4.5 8 2l6 2.5-6 2.5zM2 8l6 2.5L14 8M2 11.2 8 13.7l6-2.5',
   assets: 'M3 13.5V6.2L8 2.5l5 3.7v7.3M6.2 13.5V9h3.6v4.5',
   intake: 'M8 2.5v11M2.5 8h11',
+  invoices: 'M3.5 2h9v12l-1.8-1.2L9 14l-1-1.2L7 14l-1.7-1.2L3.5 14zM6 5.5h4M6 8.2h4',
+  reports: 'M2.5 13.5h11M4.5 13.5V8M8 13.5V3.5M11.5 13.5V6',
+  settings: 'M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7',
 };
 
 const LINKS: ReadonlyArray<{ href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean }> = [
@@ -16,6 +19,9 @@ const LINKS: ReadonlyArray<{ href: string; label: string; icon: keyof typeof ICO
   { href: '/projects', label: 'المشاريع', icon: 'projects', match: (p) => p.startsWith('/projects') },
   { href: '/portfolios', label: 'المحافظ', icon: 'portfolios', match: (p) => p.startsWith('/portfolios') },
   { href: '/assets', label: 'الأصول والأداء', icon: 'assets', match: (p) => p.startsWith('/assets') },
+  { href: '/invoices', label: 'الفواتير', icon: 'invoices', match: (p) => p.startsWith('/invoices') },
+  { href: '/reports', label: 'التقارير', icon: 'reports', match: (p) => p.startsWith('/reports') },
+  { href: '/settings', label: 'الإعدادات', icon: 'settings', match: (p) => p.startsWith('/settings') },
   { href: '/intake', label: 'إدخال مشروع', icon: 'intake', match: (p) => p.startsWith('/intake') },
 ];
 

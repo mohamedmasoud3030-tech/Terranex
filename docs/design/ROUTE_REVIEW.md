@@ -6,21 +6,22 @@ has drifted from the code is worse than no count at all.
 
 ## What the numbers say
 
-- **33 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **81 data tables in page files, 81 with an accessible name**, plus
-  458 `scope="col"` header cells. Every table in `src` is named.
-- **196 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
+- **36 route surfaces** (`page.tsx`) — the original brief assumed 25.
+- **83 data tables in page files, 83 with an accessible name**, plus
+  467 `scope="col"` header cells. Every table in `src` is named.
+- **200 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
-- **29 of 29 `force-dynamic` routes have a loading state.**
-- **29 of 30 workspace routes have a route-level `error.tsx`**; the one
+- **32 of 32 `force-dynamic` routes have a loading state.**
+- **32 of 33 workspace routes have a route-level `error.tsx`**; the one
   exception is the redirect-only `/statements` route.
 
 ## Per route
 
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
-| `/assets` | 271 | 1 | 1 | 0 | 2 | 0 | 0 | 2 | 0 | ✓ | ✓ |
+| `/assets` | 206 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
+| `/invoices` | 114 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
 | `/` (home) | 341 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
@@ -49,6 +50,8 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/terms` | 155 | 1 | 1 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
 | `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/reports` | 89 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/settings` | 47 | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/login` | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/reset-password` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
@@ -86,7 +89,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 136 against 6 hand-rolled
+1. **`<Section>` adoption is 142 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
@@ -103,7 +106,7 @@ Applied to every route, and verified rather than asserted:
 4. **No browser in the build sandbox.** Responsive behaviour, focus order and reduced-motion
    were checked by CSS inspection and tests, not by rendering. The 360px target is expressed
    in the breakpoints but has not been looked at on a phone.
-5. **`error.tsx` exists on 29 of the 30 workspace routes.** The one
+5. **`error.tsx` exists on 32 of the 33 workspace routes.** The one
    exception is `/statements`, which is a redirect to the participants page (statements
    wait on the R14 policy pack) and renders nothing of its own — a route-level boundary
    there would be dead weight, so the workspace boundary is the correct net.

@@ -174,9 +174,11 @@ export const getPurchaseReceiptInvoiceBasis = (projectId: string) => many<Purcha
   'purchase_receipt_line_id,organization_id,project_id,purchase_order_id,purchase_order_line_id,purchase_receipt_id,item_description,unit,received_quantity,approved_invoiced_quantity,available_to_invoice_quantity,unit_price_minor_units,currency,receipt_evidence_reference',
   { projectId }, 'purchase_receipt_line_id',
 );
+const SUPPLIER_INVOICE_COLUMNS =
+  'id,organization_id,project_id,purchase_order_id,purchase_order_reference,supplier_id,supplier_name,party_id,invoice_reference,invoice_date,currency,cost_treatment,evidence_reference,notes,status,recorded_by,recorded_at,approved_by,approved_at,cost_obligation_id,authorization_batch_id,invoice_total_minor_units,paid_minor_units,outstanding_minor_units,reconciled_minor_units,payable_is_reversed,payment_state,reconciliation_state,payment_count';
 export const getSupplierInvoices = (projectId: string) => many<SupplierInvoiceRead>(
   'supplier_invoices_read',
-  'id,organization_id,project_id,purchase_order_id,purchase_order_reference,supplier_id,supplier_name,party_id,invoice_reference,invoice_date,currency,cost_treatment,evidence_reference,notes,status,recorded_by,recorded_at,approved_by,approved_at,cost_obligation_id,authorization_batch_id,invoice_total_minor_units,paid_minor_units,outstanding_minor_units,reconciled_minor_units,payable_is_reversed,payment_state,reconciliation_state,payment_count',
+  SUPPLIER_INVOICE_COLUMNS,
   { projectId }, 'recorded_at',
 );
 export const getSupplierInvoiceLines = (projectId: string) => many<SupplierInvoiceLineRead>(
@@ -203,3 +205,10 @@ export async function getProcurementEvidence(projectId: string): Promise<Procure
   if (error) throwOperatorQuery(error);
   return rows.map((row, index) => ({ ...row, download_url: data?.[index]?.signedUrl ?? null }));
 }
+
+/** Supplier invoices across every project of the organization (read-only list). */
+export const getOrganizationSupplierInvoices = (organizationId: string) => many<SupplierInvoiceRead>(
+  'supplier_invoices_read',
+  SUPPLIER_INVOICE_COLUMNS,
+  { organizationId }, 'invoice_date',
+);
