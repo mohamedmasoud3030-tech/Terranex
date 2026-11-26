@@ -276,11 +276,16 @@ export async function getPayments(projectId: string): Promise<PaymentStatus[]> {
   return data as PaymentStatus[];
 }
 
+const LEDGER_COLUMNS =
+  'batch_id,organization_id,project_id,source_type,source_id,batch_transaction_date,posted_at,posted_by,reversal_of_batch_id,line_id,account_id,account_role,account_label,debit_minor_units,credit_minor_units,currency,cash_account_id,obligation_id,party_id,line_transaction_date';
+const STATEMENT_LINE_COLUMNS =
+  'line_id,organization_id,project_id,cash_account_id,import_id,provider_reference,transaction_date,amount_minor_units,currency,description,fingerprint,created_at,is_reconciled,match_id,matched_payment_id,matched_at';
+
 export async function getStatementLines(projectId: string): Promise<BankStatementLineStatus[]> {
   const s = await createClient();
   const { data, error } = await s
     .from('bank_statement_line_status_read')
-    .select('line_id,organization_id,project_id,cash_account_id,import_id,provider_reference,transaction_date,amount_minor_units,currency,description,fingerprint,created_at,is_reconciled,match_id,matched_payment_id,matched_at')
+    .select(STATEMENT_LINE_COLUMNS)
     .eq('project_id', projectId)
     .order('transaction_date', { ascending: false });
   if (error) throwOperatorQuery(error);
@@ -291,7 +296,7 @@ export async function getLedgerForObligation(obligationId: string): Promise<Jour
   const s = await createClient();
   const { data, error } = await s
     .from('journal_ledger_read')
-    .select('batch_id,organization_id,project_id,source_type,source_id,batch_transaction_date,posted_at,posted_by,reversal_of_batch_id,line_id,account_id,account_role,account_label,debit_minor_units,credit_minor_units,currency,cash_account_id,obligation_id,party_id,line_transaction_date')
+    .select(LEDGER_COLUMNS)
     .eq('obligation_id', obligationId)
     .order('posted_at');
   if (error) throwOperatorQuery(error);
@@ -302,7 +307,7 @@ export async function getLedgerForBatch(batchId: string): Promise<JournalLedgerL
   const s = await createClient();
   const { data, error } = await s
     .from('journal_ledger_read')
-    .select('batch_id,organization_id,project_id,source_type,source_id,batch_transaction_date,posted_at,posted_by,reversal_of_batch_id,line_id,account_id,account_role,account_label,debit_minor_units,credit_minor_units,currency,cash_account_id,obligation_id,party_id,line_transaction_date')
+    .select(LEDGER_COLUMNS)
     .eq('batch_id', batchId)
     .order('posted_at');
   if (error) throwOperatorQuery(error);
@@ -356,4 +361,33 @@ export async function getUnpostedContributions(projectId: string): Promise<Contr
 
   const postedSourceIds = activePostedSourceIds(batches ?? [], reversals ?? []);
   return list.filter((contribution) => !postedSourceIds.has(contribution.id));
+}
+
+/** Newest journal lines across the organization. Capped so the page stays fast. */
+export async function getOrganizationLedger(organizationId: string, limit = 300): Promise<JournalLedgerLine[]> {
+  const s = await createClient();
+  const { data, error } = await s
+    .from('journal_ledger_read')
+    .select(LEDGER_COLUMNS)
+    .eq('organization_id', organizationId)
+    .order('posted_at', { ascending: false })
+    .limit(limit);
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as JournalLedgerLine[];
+}
+
+/** Newest bank statement lines across the organization. */
+export async function getOrganizationStatementLines(
+  organizationId: string,
+  limit = 300,
+): Promise<BankStatementLineStatus[]> {
+  const s = await createClient();
+  const { data, error } = await s
+    .from('bank_statement_line_status_read')
+    .select(STATEMENT_LINE_COLUMNS)
+    .eq('organization_id', organizationId)
+    .order('transaction_date', { ascending: false })
+    .limit(limit);
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as BankStatementLineStatus[];
 }

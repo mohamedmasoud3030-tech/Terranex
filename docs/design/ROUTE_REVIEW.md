@@ -6,13 +6,13 @@ has drifted from the code is worse than no count at all.
 
 ## What the numbers say
 
-- **36 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **83 data tables in page files, 83 with an accessible name**, plus
-  467 `scope="col"` header cells. Every table in `src` is named.
-- **200 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
+- **38 route surfaces** (`page.tsx`) — the original brief assumed 25.
+- **84 data tables in page files, 84 with an accessible name**, plus
+  472 `scope="col"` header cells. Every table in `src` is named.
+- **202 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
-- **32 of 32 `force-dynamic` routes have a loading state.**
-- **32 of 33 workspace routes have a route-level `error.tsx`**; the one
+- **34 of 34 `force-dynamic` routes have a loading state.**
+- **34 of 35 workspace routes have a route-level `error.tsx`**; the one
   exception is the redirect-only `/statements` route.
 
 ## Per route
@@ -22,6 +22,7 @@ has drifted from the code is worse than no count at all.
 | `/assets` | 206 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
 | `/invoices` | 114 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/journal` | 49 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
 | `/` (home) | 341 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
@@ -52,6 +53,7 @@ has drifted from the code is worse than no count at all.
 | `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/reports` | 89 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/settings` | 47 | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/transactions` | 92 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/login` | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/reset-password` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
@@ -89,7 +91,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 142 against 6 hand-rolled
+1. **`<Section>` adoption is 144 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
@@ -106,7 +108,7 @@ Applied to every route, and verified rather than asserted:
 4. **No browser in the build sandbox.** Responsive behaviour, focus order and reduced-motion
    were checked by CSS inspection and tests, not by rendering. The 360px target is expressed
    in the breakpoints but has not been looked at on a phone.
-5. **`error.tsx` exists on 32 of the 33 workspace routes.** The one
+5. **`error.tsx` exists on 34 of the 35 workspace routes.** The one
    exception is `/statements`, which is a redirect to the participants page (statements
    wait on the R14 policy pack) and renders nothing of its own — a route-level boundary
    there would be dead weight, so the workspace boundary is the correct net.
