@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/shared/supabase/server';
+import { recoveryRedirectUrl } from './recovery-url';
 
 export type ActionState = {
   error?: string;
@@ -36,19 +37,6 @@ const passwordUpdate = z.object({
   confirmPassword: z.string().min(8, 'تأكيد كلمة المرور مطلوب'),
 });
 
-function recoveryRedirectUrl() {
-  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, '');
-  if (configured) return `${configured}/auth/recovery`;
-
-  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
-  if (vercelHost) {
-    const host = vercelHost.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-    return `https://${host}/auth/recovery`;
-  }
-
-  return 'http://localhost:3000/auth/recovery';
-}
-
 export async function signIn(_: ActionState, form: FormData): Promise<ActionState> {
   const parsed = credentials.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
@@ -66,9 +54,14 @@ export async function requestPasswordReset(
   const parsed = resetRequest.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
+  const redirectTo = recoveryRedirectUrl();
+  if (!redirectTo) {
+    return { error: 'إعداد رابط الاسترجاع غير مكتمل لهذه البيئة. تواصل مع المسؤول.' };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: recoveryRedirectUrl(),
+    redirectTo,
   });
 
   if (error) {

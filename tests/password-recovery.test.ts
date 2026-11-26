@@ -12,7 +12,8 @@ const proxy = readFileSync('src/proxy.ts', 'utf8');
 describe('password recovery flow', () => {
   it('requests a PKCE recovery email without account-enumeration copy', () => {
     expect(actions).toContain('auth.resetPasswordForEmail');
-    expect(actions).toContain("redirectTo: recoveryRedirectUrl()");
+    expect(actions).toContain('const redirectTo = recoveryRedirectUrl();');
+    expect(actions.indexOf('if (!redirectTo)')).toBeLessThan(actions.indexOf('await createClient()', actions.indexOf('const redirectTo')));
     expect(forgotForm).toContain('إذا كان البريد مسجلًا لدينا');
     expect(forgotForm).toContain('role="status"');
     expect(forgotPage).toContain("params.recovery_error === '1'");
