@@ -65,13 +65,25 @@ begin
   end if;
 
   -- 2c. Evidence storage referential integrity FK
-  if not exists (
+  -- The FK exists only where storage.objects keeps a unique (bucket_id, name)
+  -- key; hosted versioned Storage does not, and the migration is a no-op there.
+  if exists (
+    select 1
+      from pg_constraint sc
+      join pg_class st on st.oid = sc.conrelid
+      join pg_namespace sn on sn.oid = st.relnamespace
+     where sn.nspname = 'storage' and st.relname = 'objects'
+       and sc.contype in ('p','u')
+       and (select array_agg(a.attname::text order by a.attname::text)
+              from unnest(sc.conkey) k
+              join pg_attribute a on a.attrelid = sc.conrelid and a.attnum = k) = array['bucket_id','name']
+  ) and not exists (
     select 1 from pg_constraint c
     join pg_class t on t.oid = c.conrelid
     where t.relname = 'procurement_evidence_versions'
       and c.conname = 'procurement_evidence_versions_storage_object_fk'
   ) then
-    v_missing := v_missing || 'evidence_storage_object_fk';
+    v_missing := v_missing || 'evidence_storage_object_fk'::text;
   end if;
 
   -- 2d. Supplier Invoice composite FK to Purchase Order
