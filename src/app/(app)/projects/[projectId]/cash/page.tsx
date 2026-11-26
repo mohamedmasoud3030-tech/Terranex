@@ -84,6 +84,7 @@ export default async function CashPage({ params }: { params: Promise<{ projectId
         items={[
           { href: `/projects/${projectId}/costs`, label: 'التكاليف والالتزامات' },
           { href: `/projects/${projectId}/cash`, label: 'النقدية والبنك', current: true },
+          { href: `/projects/${projectId}/adjustments`, label: 'قيود التسوية' },
         ]}
       />
 

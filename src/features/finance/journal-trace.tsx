@@ -6,6 +6,7 @@ const SOURCE_LABEL: Record<string, string> = {
   COST_OBLIGATION: 'اعتماد التزام',
   PAYMENT: 'دفعة',
   REVERSAL: 'عكس',
+  MANUAL_ADJUSTMENT: 'تسوية يدوية',
 };
 
 export function JournalTrace({ lines }: { lines: JournalLedgerLine[] }) {

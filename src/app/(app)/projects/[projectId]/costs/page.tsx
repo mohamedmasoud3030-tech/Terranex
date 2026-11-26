@@ -173,6 +173,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
         items={[
           { href: `/projects/${projectId}/costs`, label: 'التكاليف والالتزامات', current: true },
           { href: `/projects/${projectId}/cash`, label: 'النقدية والبنك' },
+          { href: `/projects/${projectId}/adjustments`, label: 'قيود التسوية' },
         ]}
       />
 
