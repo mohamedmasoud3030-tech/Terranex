@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getPortfolios } from '@/features/portfolios/queries';
+import { SectorCards } from '@/features/assets/sector-cards';
 import { getRegisteredAssets, getSectorPerformance } from '@/features/assets/queries';
 import { getIntegritySignals, getOrganizationConsolidation } from '@/features/control/queries';
 import { getSectorManagementResult } from '@/features/result/queries';
@@ -187,6 +188,13 @@ export default async function Home() {
           )}
         </Section>
       ) : null}
+
+      <Section
+        title="القطاعات في لمحة"
+        description="مقارنة بصرية داخل كل قطاع وبعملته فقط؛ لا تُقارن العملات ببعضها."
+      >
+        <SectorCards rows={sectorPerformance} />
+      </Section>
 
       <Section
         id="sector-performance-heading"

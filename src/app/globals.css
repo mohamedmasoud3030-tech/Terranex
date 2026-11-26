@@ -1749,3 +1749,20 @@ form.inline button { flex: 0 0 auto; }
 .result-suppressed { color: var(--danger-ink); }
 /* Satisfied, but only on a basis that needs the reader's judgement. */
 .result-caution { color: var(--warning-ink); }
+
+/* Sector cards on the executive home: per sector and currency, bars compare
+   figures within one card only (never across currencies). */
+.sector-cards { display: grid; gap: var(--space-4, 16px); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.sector-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; box-shadow: 0 1px 2px rgba(16, 33, 27, 0.05); }
+.sector-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sector-card-counts { display: flex; gap: 24px; margin: 0; }
+.sector-card-counts div { display: grid; gap: 2px; }
+.sector-card-counts dt { color: var(--muted); font-size: 0.8rem; }
+.sector-card-counts dd { margin: 0; font-size: 1.6rem; font-weight: 700; color: var(--ink); }
+.sector-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sector-bar-label { display: flex; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: var(--ink-2); }
+.sector-bar-track { height: 8px; background: var(--paper-2); border-radius: 999px; overflow: hidden; margin-top: 4px; }
+.sector-bar-fill { display: block; height: 100%; border-radius: 999px; }
+.sector-bar-fill.cash { background: var(--info); }
+.sector-bar-fill.rev { background: var(--success); }
+.sector-bar-fill.exp { background: var(--warning); }
