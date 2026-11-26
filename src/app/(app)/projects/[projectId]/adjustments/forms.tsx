@@ -59,7 +59,7 @@ export function AdjustmentForm(props: {
           <p className="status" role="status">تم ترحيل القيد بنجاح.</p>
         ) : null}
         <FormActions>
-          <button disabled={pending}>{pending ? 'جارٍ الترحيل…' : 'ترحيل قيد التسوية'}</button>
+          <button type="submit" disabled={pending}>{pending ? 'جارٍ الترحيل…' : 'ترحيل قيد التسوية'}</button>
         </FormActions>
       </div>
     </form>
