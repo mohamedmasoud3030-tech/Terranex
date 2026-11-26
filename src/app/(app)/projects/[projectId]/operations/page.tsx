@@ -34,10 +34,8 @@ import {
 import {
   AcquisitionForm,
   ApprovalButton,
-  ASSET_STATE,
   AssetForm,
   BudgetForm,
-  CATEGORY,
   ControlForm,
   CostClassificationForm,
   MilestoneForm,
@@ -48,9 +46,9 @@ import {
   ProfileForm,
   PropertyTransitionForm,
   SectorEventForm,
-  STEP_STATE,
   ValuationForm,
 } from './forms';
+import { ASSET_STATE, CATEGORY, STEP_STATE } from './labels';
 import {
   ApproveDispositionForm,
   CollectionForm,

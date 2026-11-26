@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useSyncExternalStore } from 'react';
+import { ASSET_STATE, CATEGORY, STEP_STATE } from './labels';
 import type { Party } from '@/features/funding/queries';
 import type { ObligationPosition } from '@/features/finance/queries';
 import type {
@@ -78,30 +79,6 @@ function Result({
     </>
   );
 }
-const ASSET_STATE: Record<string, string> = {
-  CANDIDATE: 'مرشح',
-  DUE_DILIGENCE: 'فحص نافي للجهالة',
-  ACQUIRING: 'قيد الاستحواذ',
-  HELD: 'مُحتفظ به / تحت السيطرة',
-  DEVELOPING: 'قيد التطوير',
-  EXITING: 'قيد التخارج',
-  DISPOSED: 'تم التصرف',
-};
-const STEP_STATE: Record<string, string> = {
-  PLANNED: 'مخطط',
-  ACTIVE: 'نشط',
-  COMPLETED: 'مكتمل',
-  CANCELLED: 'ملغى',
-};
-const CATEGORY: Record<string, string> = {
-  ACQUISITION: 'استحواذ',
-  LEGAL_DUE_DILIGENCE: 'فحص قانوني',
-  SITE_PREPARATION: 'تجهيز الموقع',
-  CONSTRUCTION: 'إنشاءات',
-  PROFESSIONAL_FEES: 'أتعاب مهنية',
-  HOLDING: 'تكاليف احتفاظ',
-  OTHER: 'أخرى',
-};
 const CATEGORIES = Object.keys(CATEGORY);
 
 function AssetOptions({ assets }: { assets: PropertyWorkspace[] }) {
@@ -972,4 +949,3 @@ export function SectorEventForm({
   );
 }
 
-export { ASSET_STATE, STEP_STATE, CATEGORY };
