@@ -61,7 +61,7 @@ const populated = {
     { id: 'p3', organization_id: ORG, legal_name: 'مستثمر خاص — محمد علي', party_type: 'PERSON' },
   ],
   project_participants: [
-    { id: 'pp1', project_id: RE, party_id: 'p3', role: 'INVESTOR', created_at: NOW, parties: { legal_name: 'مستثمر خاص — محمد علي' } },
+    { id: 'pp1', organization_id: ORG, project_id: RE, party_id: 'p3', role: 'INVESTOR', created_at: NOW, parties: { legal_name: 'مستثمر خاص — محمد علي' } },
   ],
   agreement_versions: [
     { id: 'av1', project_id: RE, version_no: 1, status: 'ACTIVE', effective_date: '2026-03-15', activated_at: '2026-03-15T09:00:00.000Z', terms_hash: 'demo' },
