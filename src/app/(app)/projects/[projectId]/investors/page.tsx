@@ -48,7 +48,7 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
 
             <Section
         title="المشاركون المسجلون"
-        description="الهوية المسجلة لا تعني تلقائيًا ملكية أو entitlement أو حصة في الربح."
+        description="الهوية المسجلة لا تعني تلقائيًا ملكية أو استحقاق أو حصة في الربح."
       >
         {participants.length === 0 ? (
           <p className="muted">لا يوجد مشاركون مسجلون لهذا المشروع.</p>
@@ -100,7 +100,7 @@ export default async function InvestorsPage({ params }: { params: Promise<{ proj
           <li>مستندات وتحديثات وأدلة منشورة عندما يكتمل مسار النشر المصرح.</li>
           <li>تواريخ as-of وحالة حداثة البيانات في أي read model لاحق.</li>
         </ul>
-        <p className="muted">أي حقل entitlement أو allocation أو distribution يظل غير فعال حتى R14.</p>
+        <p className="muted">أي حقل استحقاق أو تخصيص أو توزيع يظل غير فعال حتى R14.</p>
       </Section>
     </section>
   );

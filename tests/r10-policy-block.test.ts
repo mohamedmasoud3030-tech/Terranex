@@ -62,13 +62,13 @@ describe('R10 keeps unresolved investor economics inert until R14', () => {
   it('states the policy block explicitly instead of silently showing zeros', () => {
     expect(investorPage).toContain('Policy Blocked — BD-003 / BD-004 / BD-006 / BD-008');
     expect(investorPage).toContain('لا يعرض Terranex حاليًا نسبة ملكية');
-    expect(investorPage).toContain('أي حقل entitlement أو allocation أو distribution يظل غير فعال حتى R14');
+    expect(investorPage).toContain('أي حقل استحقاق أو تخصيص أو توزيع يظل غير فعال حتى R14');
   });
 
   it('allows identity and agreement transparency without inferring economics', () => {
     expect(investorPage).toContain('getParticipants');
     expect(investorPage).toContain('getActiveVersion');
-    expect(investorPage).toContain('الهوية المسجلة لا تعني تلقائيًا ملكية أو entitlement أو حصة في الربح');
+    expect(investorPage).toContain('الهوية المسجلة لا تعني تلقائيًا ملكية أو استحقاق أو حصة في الربح');
   });
 
   it('redirects the legacy partner statement surface to the safe R10 page', () => {

@@ -1,4 +1,4 @@
-import { ASSET_STATE_LABEL } from '@/features/assets/labels';
+import { ASSET_CLASSIFICATION_LABEL, ASSET_STATE_LABEL } from '@/features/assets/labels';
 import { recordStatusLabel } from '@/features/projects/labels';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -93,7 +93,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
         projectId={projectId}
         active="overview"
         title="نظرة المشروع"
-        subtitle={`${project.name} · ${currency}${profile?.strategy ? ` · ${profile.strategy}` : ''}`}
+        subtitle={`${project.name} · ${currency}${profile?.strategy ? ` · ${ASSET_CLASSIFICATION_LABEL[profile.strategy] ?? profile.strategy}` : ''}`}
         internalReference={project.internal_reference}
         sector={project.sector}
       />
@@ -110,7 +110,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
           capital.positions.map((p) => (
             <div className="overview-kpis" key={`capital-${p.currency}`}>
               <article className="overview-kpi"><span>رأس المال الملتزم — {p.currency}</span><strong className="num">{presentCapitalAmount(p.committed)}</strong><small>واقعة تمويل مسجلة؛ لا تعني ملكية أو حصة ربح</small></article>
-              <article className="overview-kpi"><span>رأس المال المساهم به — {p.currency}</span><strong className="num">{presentCapitalAmount(p.contributed)}</strong><small>مساهمات مسجلة؛ لا تُستخدم كأساس entitlement</small></article>
+              <article className="overview-kpi"><span>رأس المال المساهم به — {p.currency}</span><strong className="num">{presentCapitalAmount(p.contributed)}</strong><small>مساهمات مسجلة؛ لا تُستخدم كأساس استحقاق</small></article>
               <article className="overview-kpi"><span>المتبقي استلامه — {p.currency}</span><strong className="num">{presentCapitalAmount(p.receivable)}</strong><small>وفق وقائع التمويل المسجلة فقط</small></article>
             </div>
           ))
@@ -189,7 +189,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ proje
         </div>
         {assets.length === 0 ? <p className="muted">لا توجد أصول عقارية مسجّلة بعد.</p> : (
           <div className="table-wrap"><table className="table-stackable"><caption className="sr-only">الأصول العقارية: الاسم والحالة التشغيلية والاستراتيجية</caption><thead><tr><th scope="col">الأصل</th><th scope="col">الحالة</th><th scope="col">الاستراتيجية</th></tr></thead><tbody>
-            {assets.map((asset) => <tr key={asset.property_asset_id}><td data-label="الأصل">{asset.name}</td><td data-label="الحالة"><span className="status">{ASSET_STATE_LABEL[asset.operational_state] ?? asset.operational_state}</span></td><td data-label="الاستراتيجية">{asset.strategy ?? '—'}</td></tr>)}
+            {assets.map((asset) => <tr key={asset.property_asset_id}><td data-label="الأصل">{asset.name}</td><td data-label="الحالة"><span className="status">{ASSET_STATE_LABEL[asset.operational_state] ?? asset.operational_state}</span></td><td data-label="الاستراتيجية">{asset.strategy ? (ASSET_CLASSIFICATION_LABEL[asset.strategy] ?? asset.strategy) : '—'}</td></tr>)}
           </tbody></table></div>
         )}
       </Section>

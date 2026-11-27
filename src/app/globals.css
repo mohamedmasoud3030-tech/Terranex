@@ -1922,3 +1922,6 @@ table { font-size: 0.875rem; }
 
 /* Entry shortcuts on organization list pages. */
 .entry-links { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px dashed var(--line); border-radius: var(--r-lg); background: var(--brand-softer); }
+
+/* Touch-friendly targets for page-level action buttons. */
+.page-actions > .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }

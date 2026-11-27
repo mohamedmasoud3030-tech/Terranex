@@ -46,6 +46,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // A malformed project id can never exist: answer 404 here, because the
+  // route-level loading boundary otherwise streams the not-found page with 200.
+  const projectSegment = /^\/projects\/([^/]+)/.exec(pathname)?.[1];
+  if (
+    projectSegment &&
+    projectSegment !== 'new' &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectSegment)
+  ) {
+    const notFoundUrl = request.nextUrl.clone();
+    notFoundUrl.pathname = '/missing-project';
+    return NextResponse.rewrite(notFoundUrl, { status: 404 });
+  }
+
   return response;
 }
 
