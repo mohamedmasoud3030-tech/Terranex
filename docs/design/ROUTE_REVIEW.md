@@ -7,8 +7,8 @@ has drifted from the code is worse than no count at all.
 ## What the numbers say
 
 - **45 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **85 data tables in page files, 85 with an accessible name**, plus
-  477 `scope="col"` header cells. Every table in `src` is named.
+- **86 data tables in page files, 86 with an accessible name**, plus
+  482 `scope="col"` header cells. Every table in `src` is named.
 - **204 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
 - **39 of 40 `force-dynamic` routes have a loading state.**
@@ -19,48 +19,48 @@ has drifted from the code is worse than no count at all.
 
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
-| `/assets` | 206 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/documents` | 81 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/assets` | 208 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/documents` | 127 | 2 | 2 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/health` | 101 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
-| `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
-| `/inventory` | 77 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/intake` | 69 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
+| `/inventory` | 79 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/invite/[token]` | 66 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/invoices` | 117 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/journal` | 49 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/invoices` | 119 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/journal` | 51 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/missing-project` | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
-| `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
-| `/` (home) | 341 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/onboarding` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
+| `/` (home) | 343 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
-| `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
-| `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/portfolios/new` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
+| `/portfolios` | 73 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/adjustments` | 61 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/agriculture` | 1800 | 15 | 15 | 0 | 14 | 0 | 0 | 9 | 13 | ✓ | ✓ |
+| `/projects/[projectId]/agriculture` | 1802 | 15 | 15 | 0 | 14 | 0 | 0 | 9 | 13 | ✓ | ✓ |
 | `/projects/[projectId]/budget` | 307 | 3 | 3 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/cash` | 320 | 4 | 4 | 0 | 6 | 0 | 0 | 2 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/close` | 425 | 2 | 2 | 0 | 3 | 0 | 0 | 4 | 3 | ✓ | ✓ |
-| `/projects/[projectId]/controls` | 183 | 1 | 1 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/costs` | 511 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/controls` | 177 | 1 | 1 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/costs` | 507 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/funding` | 232 | 3 | 3 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/governance` | 181 | 3 | 3 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/intake` | 1015 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/intake` | 1036 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/integrity` | 466 | 8 | 8 | 0 | 7 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/livestock` | 910 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
-| `/projects/[projectId]/operations` | 1486 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
+| `/projects/[projectId]/livestock` | 912 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
+| `/projects/[projectId]/operations` | 1478 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
 | `/projects/[projectId]/overview` | 213 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 161 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/pilot` | 665 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
+| `/projects/[projectId]/pilot` | 659 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
 | `/projects/[projectId]/procurement` | 674 | 4 | 4 | 0 | 6 | 0 | 0 | 10 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/revenue` | 531 | 6 | 6 | 1 | 6 | 1 | 2 | 6 | 5 | ✓ | ✓ |
+| `/projects/[projectId]/revenue` | 526 | 6 | 6 | 1 | 6 | 1 | 2 | 6 | 5 | ✓ | ✓ |
 | `/projects/[projectId]/statements` | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
 | `/projects/[projectId]/terms` | 155 | 1 | 1 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
-| `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/reports` | 89 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/settings` | 69 | 0 | 0 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/transactions` | 95 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/vat` | 43 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects` | 138 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/reports` | 91 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/settings` | 71 | 0 | 0 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/transactions` | 97 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/vat` | 45 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/login` | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/reset-password` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
@@ -98,7 +98,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 152 against 6 hand-rolled
+1. **`<Section>` adoption is 153 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
