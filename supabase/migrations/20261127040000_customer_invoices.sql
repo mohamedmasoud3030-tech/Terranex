@@ -383,6 +383,46 @@ from public.customer_invoice_collections c;
 -- 6. Reporting: GENERAL_SALE_REVENUE counts as recognized project revenue in
 --    every existing read model (same reversal rules, same columns).
 -- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- Reporting widenings. The views and the roll-up body below are owned by the
+-- finance core (F3/F4/F9/F10, R4/R5, H1, GF-013/GF-014). They are restated here
+-- only to admit GENERAL_SALE_REVENUE and customer-invoice activity, so they are
+-- applied only when the whole core is present. A partial schema that predates
+-- that core (a forward-upgrade fixture) keeps its own definitions instead of
+-- failing on a relation it never had.
+-- ---------------------------------------------------------------------------
+do $widen$
+declare
+  v_missing text;
+begin
+  select string_agg(sentinel, ', ' order by sentinel)
+    into v_missing
+  from unnest(array[
+    'public.cost_obligation_due_read',
+    'public.cost_obligations',
+    'public.field_activities',
+    'public.fx_rate_snapshots',
+    'public.harvest_events',
+    'public.input_applications',
+    'public.journal_batches',
+    'public.journal_lines',
+    'public.livestock_cohort_movements',
+    'public.policy_authority',
+    'public.portfolio_project_assignments',
+    'public.project_budgets',
+    'public.property_cost_items',
+    'public.purchase_orders',
+    'public.semantic_accounts',
+    'public.supplier_invoices'
+  ]) as sentinel
+  where to_regclass(sentinel) is null;
+
+  if v_missing is not null then
+    raise notice 'customer invoices: finance reporting core absent (%), reporting widenings skipped', v_missing;
+    return;
+  end if;
+
+  execute $widen_ddl$
 -- widened from latest definition in 20260816060000_r5_basic_property_rental_income.sql
 create or replace view public.project_financial_position_read with (security_invoker=on) as
 with active_postings as (
@@ -1428,6 +1468,9 @@ left join sector_stats2 ss2
 where pf2.id = p_portfolio_id and pf2.organization_id = p_organization_id
 group by pa.organization_id, pf2.name, pa.currency, pa.org_reporting_currency;
 $$;
+  $widen_ddl$;
+end
+$widen$;
 
 -- ===========================================================================
 -- 7. RLS / grants. Browser users read authorized tenant facts; all writes go
