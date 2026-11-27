@@ -7,9 +7,9 @@ has drifted from the code is worse than no count at all.
 ## What the numbers say
 
 - **49 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **90 data tables in page files, 89 with an accessible name**, plus
-  496 `scope="col"` header cells. Every table in `src` is named.
-- **205 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
+- **91 data tables in page files, 90 with an accessible name**, plus
+  503 `scope="col"` header cells. Every table in `src` is named.
+- **209 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
 - **40 of 44 `force-dynamic` routes have a loading state.**
 - **45 of 46 workspace routes have a route-level `error.tsx`**; the one
@@ -25,7 +25,7 @@ has drifted from the code is worse than no count at all.
 | `/intake` | 69 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
 | `/inventory` | 79 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/invite/[token]` | 66 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/invoices` | 119 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/invoices` | 221 | 2 | 2 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/journal` | 51 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/missing-project` | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
 | `/onboarding` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
@@ -33,7 +33,7 @@ has drifted from the code is worse than no count at all.
 | `/owner/bank-import` | 114 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✗ | ✓ |
 | `/owner` | 200 | 2 | 2 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/` (home) | 366 | 1 | 1 | 0 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/parties` | 91 | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
+| `/parties` | 92 | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
 | `/portfolios/new` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
 | `/portfolios` | 73 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
@@ -102,7 +102,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 156 against 6 hand-rolled
+1. **`<Section>` adoption is 158 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
