@@ -69,5 +69,5 @@ export const config = {
   // screen itself, requested before any session exists — both directly and
   // as the /_next/image upstream fetch, which would otherwise inherit this
   // redirect and break the mark on all three auth pages.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|logo(?:-full)?\\.png).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|logo(?:-full)?\\.png|icon\\.png).*)'],
 };
