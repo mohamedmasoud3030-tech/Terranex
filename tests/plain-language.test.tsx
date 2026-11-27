@@ -110,7 +110,7 @@ describe('JourneySteps', () => {
   it('marks only the current step', () => {
     render(<JourneySteps current={2} />);
     const current = document.querySelectorAll('[aria-current="step"]');
-    expect(current.length).toBe(1);
+    expect(current).toHaveLength(1);
     expect(current[0]?.textContent).toContain(JOURNEY_STEPS[1].title);
   });
 

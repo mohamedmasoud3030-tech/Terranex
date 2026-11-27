@@ -55,7 +55,7 @@ export default function NewProjectForm({ organizationId, commandNonce }: NewProj
         </fieldset>
         <label>
           {PROJECT_FORM_COPY.nameLabel}
-          <input name="name" required autoFocus maxLength={160} placeholder={PROJECT_FORM_COPY.namePlaceholder} />
+          <input name="name" required maxLength={160} placeholder={PROJECT_FORM_COPY.namePlaceholder} />
         </label>
         <label>
           {PROJECT_FORM_COPY.referenceLabel} <span className="muted">(اختياري)</span>

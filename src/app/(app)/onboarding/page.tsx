@@ -23,7 +23,7 @@ export default function Onboarding() {
       <form action={action} className="stack">
         <label>
           {ONBOARDING_COPY.nameLabel}
-          <input name="name" required autoFocus placeholder={ONBOARDING_COPY.namePlaceholder} />
+          <input name="name" required placeholder={ONBOARDING_COPY.namePlaceholder} />
         </label>
         <p className="muted">{ONBOARDING_COPY.nameHint}</p>
         {state.error && (
@@ -31,7 +31,7 @@ export default function Onboarding() {
             {state.error}
           </p>
         )}
-        <button disabled={pending}>{pending ? ONBOARDING_COPY.pending : ONBOARDING_COPY.submit}</button>
+        <button type="submit" disabled={pending}>{pending ? ONBOARDING_COPY.pending : ONBOARDING_COPY.submit}</button>
         <p className="muted">{ONBOARDING_COPY.afterNote}</p>
       </form>
     </section>

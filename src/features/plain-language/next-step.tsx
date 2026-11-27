@@ -13,12 +13,12 @@ export function NextStep({
   description,
   href,
   actionLabel,
-}: {
+}: Readonly<{
   title: string;
   description: string;
   href: string;
   actionLabel: string;
-}) {
+}>) {
   const action = href.startsWith('#') ? (
     <a className="button" href={href}>
       {actionLabel}

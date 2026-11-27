@@ -8,7 +8,7 @@ import { PAGE_INTROS, type PageIntroKey } from './copy';
  * in everyday words before any dense content. Pure presentation: the copy
  * lives in copy.ts so the sentence is never re-authored inline.
  */
-export function PlainIntro({ page }: { page: PageIntroKey }) {
+export function PlainIntro({ page }: Readonly<{ page: PageIntroKey }>) {
   const text = PAGE_INTROS[page];
   if (!text) return null;
   return (

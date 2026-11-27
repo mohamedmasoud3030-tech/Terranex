@@ -7,12 +7,14 @@ import { JOURNEY_STEPS } from './copy';
  * knows where they are and what comes after. Presentation only; the flow
  * itself (forms, redirects) is unchanged.
  */
-export function JourneySteps({ current }: { current: 1 | 2 | 3 }) {
+export function JourneySteps({ current }: Readonly<{ current: 1 | 2 | 3 }>) {
   return (
     <nav className="journey-steps" aria-label="خطوات البدء">
       {JOURNEY_STEPS.map((step, index) => {
         const position = index + 1;
-        const state = position < current ? 'done' : position === current ? 'current' : 'todo';
+        let state: 'done' | 'current' | 'todo' = 'todo';
+        if (position < current) state = 'done';
+        else if (position === current) state = 'current';
         return (
           <div
             key={step.id}
