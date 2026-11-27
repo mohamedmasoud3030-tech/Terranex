@@ -6,13 +6,13 @@ has drifted from the code is worse than no count at all.
 
 ## What the numbers say
 
-- **46 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **87 data tables in page files, 86 with an accessible name**, plus
-  482 `scope="col"` header cells. Every table in `src` is named.
+- **49 route surfaces** (`page.tsx`) — the original brief assumed 25.
+- **90 data tables in page files, 89 with an accessible name**, plus
+  496 `scope="col"` header cells. Every table in `src` is named.
 - **205 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
-- **39 of 41 `force-dynamic` routes have a loading state.**
-- **42 of 43 workspace routes have a route-level `error.tsx`**; the one
+- **40 of 44 `force-dynamic` routes have a loading state.**
+- **45 of 46 workspace routes have a route-level `error.tsx`**; the one
   exception is the redirect-only `/statements` route.
 
 ## Per route
@@ -29,6 +29,9 @@ has drifted from the code is worse than no count at all.
 | `/journal` | 51 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/missing-project` | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
 | `/onboarding` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
+| `/owner/ask` | 77 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
+| `/owner/bank-import` | 114 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✗ | ✓ |
+| `/owner` | 200 | 2 | 2 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/` (home) | 343 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/parties` | 91 | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
@@ -99,7 +102,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 154 against 6 hand-rolled
+1. **`<Section>` adoption is 160 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
@@ -116,7 +119,7 @@ Applied to every route, and verified rather than asserted:
 4. **No browser in the build sandbox.** Responsive behaviour, focus order and reduced-motion
    were checked by CSS inspection and tests, not by rendering. The 360px target is expressed
    in the breakpoints but has not been looked at on a phone.
-5. **`error.tsx` exists on 42 of the 43 workspace routes.** The one
+5. **`error.tsx` exists on 45 of the 46 workspace routes.** The one
    exception is `/statements`, which is a redirect to the participants page (statements
    wait on the R14 policy pack) and renders nothing of its own — a route-level boundary
    there would be dead weight, so the workspace boundary is the correct net.
