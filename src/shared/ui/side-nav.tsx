@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const ICONS: Record<string, string> = {
   home: 'M2.5 7.5 8 2.5l5.5 5v6h-3.8V9.6H6.3v3.9H2.5z',
+  owner: 'M8 2.5l1.8 3.7 4 .6-2.9 2.8.7 4L8 11.7l-3.6 1.9.7-4L2.2 6.8l4-.6z',
   projects: 'M2 5.2h12v8.3H2zM5.5 5.2V3h5v2.2M2 8.6h12',
   portfolios: 'M2 4.5 8 2l6 2.5-6 2.5zM2 8l6 2.5L14 8M2 11.2 8 13.7l6-2.5',
   assets: 'M3 13.5V6.2L8 2.5l5 3.7v7.3M6.2 13.5V9h3.6v4.5',
@@ -21,6 +22,7 @@ const ICONS: Record<string, string> = {
 
 const LINKS: ReadonlyArray<{ href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean }> = [
   { href: '/', label: 'لوحة الإدارة', icon: 'home', match: (p) => p === '/' },
+  { href: '/owner', label: 'للمالك', icon: 'owner', match: (p) => p.startsWith('/owner') },
   { href: '/projects', label: 'المشاريع', icon: 'projects', match: (p) => p.startsWith('/projects') },
   { href: '/portfolios', label: 'المحافظ', icon: 'portfolios', match: (p) => p.startsWith('/portfolios') },
   { href: '/assets', label: 'الأصول والأداء', icon: 'assets', match: (p) => p.startsWith('/assets') },

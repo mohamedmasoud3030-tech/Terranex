@@ -47,6 +47,18 @@ const populated = {
     { id: 'a1', organization_id: ORG, portfolio_id: PF, investment_project_id: RE, project_name: projects[0].name, project_sector: 'REAL_ESTATE', project_internal_reference: 'DEMO-UI-RE-001', project_lifecycle_state: 'FUNDING', assigned_by: USER, assigned_at: '2026-06-06T09:00:00.000Z', removed_by: null, removed_at: null, removal_reason: null },
     { id: 'a2', organization_id: ORG, portfolio_id: PF, investment_project_id: AG, project_name: projects[1].name, project_sector: 'AGRICULTURE', project_internal_reference: 'DEMO-UI-AG-001', project_lifecycle_state: 'DRAFT', assigned_by: USER, assigned_at: '2026-06-07T09:00:00.000Z', removed_by: null, removed_at: null, removal_reason: null },
   ],
+  owner_weekly_cash_read: [
+    { organization_id: ORG, week_start: '2026-11-23', currency: 'EGP', in_minor_units: '240000000', out_minor_units: '90000000' },
+    { organization_id: ORG, week_start: '2026-11-16', currency: 'EGP', in_minor_units: '180000000', out_minor_units: '120000000' },
+    { organization_id: ORG, week_start: '2026-11-09', currency: 'EGP', in_minor_units: '60000000', out_minor_units: '80000000' },
+  ],
+  owner_overdue_obligations_read: [
+    { organization_id: ORG, project_id: RE, obligation_id: 'o1', description: 'مقاول الهيكل الخرساني — الدفعة الثانية', currency: 'EGP', outstanding_minor_units: '550000000', due_date: '2026-11-10', days_overdue: 17 },
+  ],
+  owner_bank_line_suggestions_read: [
+    { line_id: 'sl1', organization_id: ORG, project_id: RE, cash_account_id: 'c1', transaction_date: '2026-11-25', amount_minor_units: '-550000000', currency: 'EGP', description: 'تحويل صادر — شركة البناء الحديث', suggestion_kind: 'PAY_OBLIGATION', suggested_obligation_id: 'o1', suggested_obligation_description: 'مقاول الهيكل الخرساني — الدفعة الثانية' },
+    { line_id: 'sl2', organization_id: ORG, project_id: RE, cash_account_id: 'c1', transaction_date: '2026-11-26', amount_minor_units: '240000000', currency: 'EGP', description: 'إيداع وارد — تحصيل قسط', suggestion_kind: 'RECORD_INFLOW', suggested_obligation_id: null, suggested_obligation_description: null },
+  ],
   project_cash_position_read: [
     { cash_account_id: 'c1', organization_id: ORG, project_id: RE, name: 'البنك الأهلي — حساب المشروع', currency: 'EGP', balance_minor_units: '1250000000', last_posting_date: '2026-08-28' },
     { cash_account_id: 'c2', organization_id: ORG, project_id: RE, name: 'صندوق الموقع', currency: 'EGP', balance_minor_units: '4500000', last_posting_date: '2026-08-30' },
