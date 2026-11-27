@@ -2040,3 +2040,80 @@ table { font-size: 0.875rem; }
 .health-issue-message {
   flex: 1 1 320px;
 }
+
+/* ----------------------------------------------------------------------- */
+/* Stream A: mobile design pass                                             */
+/* One focus per screen on the phone: a calm hero with three numbers and   */
+/* one clear action; dense sections become on-demand disclosures            */
+/* (MobileFold). Larger screens keep the full executive density — the       */
+/* rules below only apply inside the phone media query.                     */
+/* ----------------------------------------------------------------------- */
+.focus-hero { display: none; }
+
+@media (max-width: 960px) {
+  .focus-hero {
+    display: grid;
+    gap: var(--sp-5);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: var(--sp-6) var(--sp-5);
+    text-align: center;
+  }
+  .focus-hello {
+    margin: 0;
+    font-size: var(--fs-600);
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .focus-numbers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-3);
+  }
+  .focus-number {
+    display: grid;
+    gap: var(--sp-1);
+    background: var(--brand-softer);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-lg);
+    padding: var(--sp-3) var(--sp-2);
+  }
+  .focus-number strong {
+    font-size: var(--fs-800);
+    font-variant-numeric: tabular-nums;
+    color: var(--brand-ink);
+  }
+  .focus-number span { font-size: var(--fs-300); }
+  .focus-hero .hero-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    font-size: var(--fs-500);
+    font-weight: 650;
+    border-radius: var(--r-lg);
+  }
+
+  /* The hero carries the primary action on the phone; the home header's
+     duplicate action buttons stay on larger screens only. The destinations
+     remain reachable from the hero, the nav, and the sections below. */
+  .dash-grid > .page-header .page-actions { display: none; }
+
+  /* On-demand disclosures: one calm row per card, comfortable to tap. */
+  .m-fold > summary {
+    min-height: 52px;
+    align-items: center;
+    font-size: var(--fs-500);
+  }
+  .intake-fold-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+
+  /* Comfortable tap targets on the phone. */
+  .button { min-height: 44px; }
+}

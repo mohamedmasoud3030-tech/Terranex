@@ -15,6 +15,8 @@ import {
 } from '@/features/result/qualified-result';
 import { sectorLandingHref } from '@/features/workspace/nav';
 import { PlainIntro } from '@/features/plain-language/plain-intro';
+import { FocusHero } from '@/features/mobile-focus/focus-hero';
+import { MobileFold } from '@/features/mobile-focus/mobile-fold';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { SEVERITY_LABEL, severityTone } from '@/features/projects/labels';
@@ -90,9 +92,30 @@ export default async function Home() {
   const integritySubjects = integritySignals.reduce((sum, signal) => sum + signal.subject_count, 0);
   const criticalSignals = integritySignals.filter((signal) => signal.severity === 'CRITICAL');
 
+  const firstProject = projects.at(0);
+  const focusCash =
+    consolidated &&
+    canShowConsolidatedMoney &&
+    reportingCurrency &&
+    consolidated.converted_cash_balance_minor_units !== null
+      ? formatMinorUnits(consolidated.converted_cash_balance_minor_units, reportingCurrency)
+      : '—';
+  const focusAction = firstProject
+    ? { href: sectorLandingHref(firstProject.sector, firstProject.id), label: 'افتح مشروعك' }
+    : { href: '/intake', label: 'ابدأ إدخال أول مشروع' };
+
   return (
     <section className="stack-lg dash-grid">
       <PlainIntro page="home" />
+      <FocusHero
+        orgName={org.name}
+        numbers={[
+          { label: 'مشاريع', value: projects.length },
+          { label: 'أصول مسجلة', value: assets.length },
+          { label: 'النقدية', value: focusCash },
+        ]}
+        action={focusAction}
+      />
       <PageHeader
         eyebrow={org.name}
         title="لوحة الإدارة التنفيذية"
@@ -152,7 +175,7 @@ export default async function Home() {
       ) : null}
 
       {consolidated ? (
-        <Section
+        <MobileFold
           title="الموقف المالي على مستوى المنظمة"
           description={`${FX_STATUS_AR[consolidated.fx_status] ?? consolidated.fx_status}${
             reportingCurrency ? ` · عملة التقرير ${reportingCurrency}` : ''
@@ -187,17 +210,17 @@ export default async function Home() {
               لا نعرض إجماليًا نقديًا موحدًا حتى تتوفر عملة تقرير وسعر صرف صالح لكل مشروع مطلوب تحويله. التفاصيل حسب العملة والقطاع ظاهرة أدناه.
             </div>
           )}
-        </Section>
+        </MobileFold>
       ) : null}
 
-      <Section
+      <MobileFold
         title="القطاعات في لمحة"
         description="مقارنة بصرية داخل كل قطاع وبعملته فقط؛ لا تُقارن العملات ببعضها."
       >
         <SectorCards rows={sectorPerformance} />
-      </Section>
+      </MobileFold>
 
-      <Section
+      <MobileFold
         id="sector-performance-heading"
         title="أداء القطاعات"
         description={`كل صف يحتفظ بعملته الأصلية. ${RESULT_TERM_AR} تظهر بأساسها القطاعي وحالة تصنيف تكلفتها؛ لا يُعرض رقم بلا أساس.`}
@@ -308,9 +331,9 @@ export default async function Home() {
           الرقم القديم «النتيجة المحققة» كان يخصم تكلفة المبيعات للعقار فقط، فيظهر إيراد الزراعة
           والماشية وكأنه نتيجة صافية. أُزيل من المقارنة ولم يُعتمد عليه.
         </p>
-      </Section>
+      </MobileFold>
 
-      <Section
+      <MobileFold
         title="المشاريع الاستثمارية"
         className="dash-wide"
         description="كل مشروع يحتفظ بدورته وأصوله ودفتره المالي بشكل مستقل."
@@ -336,7 +359,7 @@ export default async function Home() {
             ))}
           </ul>
         )}
-      </Section>
+      </MobileFold>
     </section>
   );
 }
