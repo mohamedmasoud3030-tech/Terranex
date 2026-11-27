@@ -1419,11 +1419,12 @@ tr.row-actions-row:hover { background: transparent; }
   table.table-stackable tbody tr:hover { background: var(--surface); }
   table.table-stackable td {
     display: grid;
-    grid-template-columns: minmax(96px, 40%) 1fr;
+    grid-template-columns: minmax(96px, 40%) minmax(0, 1fr);
     gap: var(--sp-2);
     border: 0;
     padding: 3px 0;
     min-width: 0;
+    overflow-wrap: anywhere;
     text-align: start;
   }
   table.table-stackable td::before {
@@ -1925,3 +1926,9 @@ table { font-size: 0.875rem; }
 
 /* Touch-friendly targets for page-level action buttons. */
 .page-actions > .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Narrow screens: workspace section chips sit two per row instead of one per line. */
+@media (max-width: 640px) {
+  .workspace-nav:not(.tab-strip) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+  .workspace-nav:not(.tab-strip) .workspace-nav-item { padding: var(--sp-3); min-width: 0; overflow-wrap: anywhere; }
+}
