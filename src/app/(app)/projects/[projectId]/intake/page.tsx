@@ -51,6 +51,7 @@ import { newCommandNonce } from '@/shared/idempotency';
 import { JourneySteps } from '@/features/plain-language/journey-steps';
 import { PlainIntro } from '@/features/plain-language/plain-intro';
 import { NextStep } from '@/features/plain-language/next-step';
+import { MobileFold } from '@/features/mobile-focus/mobile-fold';
 import { NEXT_STEP_COPY } from '@/features/plain-language/copy';
 import { CreatePartyForm, AddParticipantForm, AgreementDraftForm } from '../terms/forms';
 import { CapitalCallForm, ContributionForm } from '../funding/forms';
@@ -116,15 +117,8 @@ function Badge({ status }: { status: SectionStatus }) {
 }
 
 function SectionCard({ item, children }: { item: IntakeSection; children?: React.ReactNode }) {
-  return (
-    <article id={item.code} className="card stack scroll-target">
-      <div className="topline">
-        <div>
-          <h3>{item.titleAr}</h3>
-          <p className="muted">{item.summaryAr}</p>
-        </div>
-        <Badge status={item.status} />
-      </div>
+  const body = (
+    <>
       {item.blockingReasons.length > 0 && (
         <ul className="error" role="alert">
           {item.blockingReasons.map((reason) => (
@@ -138,6 +132,37 @@ function SectionCard({ item, children }: { item: IntakeSection; children?: React
         </p>
       ))}
       {children}
+    </>
+  );
+  // Finished cards open on demand on the phone: the intake page is long and
+  // the owner's focus belongs on the next unfinished step. Desktop keeps
+  // every card expanded (see MobileFold).
+  if (item.status === 'COMPLETE' || item.status === 'NOT_APPLICABLE') {
+    return (
+      <MobileFold
+        id={item.code}
+        headingLevel={3}
+        title={
+          <span className="intake-fold-title">
+            {item.titleAr} <Badge status={item.status} />
+          </span>
+        }
+        description={item.summaryAr}
+      >
+        {body}
+      </MobileFold>
+    );
+  }
+  return (
+    <article id={item.code} className="card stack scroll-target">
+      <div className="topline">
+        <div>
+          <h3>{item.titleAr}</h3>
+          <p className="muted">{item.summaryAr}</p>
+        </div>
+        <Badge status={item.status} />
+      </div>
+      {body}
     </article>
   );
 }

@@ -86,7 +86,10 @@ export function Section({
           <span className="section-summary-title">{title}</span>
           {description ? <span className="muted section-summary-desc">{description}</span> : null}
         </summary>
-        <div className="stack section-body">{children}</div>
+        <div className="stack section-body">
+          {actions ? <div className="section-actions">{actions}</div> : null}
+          {children}
+        </div>
       </details>
     );
   }

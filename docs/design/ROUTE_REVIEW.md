@@ -32,7 +32,7 @@ has drifted from the code is worse than no count at all.
 | `/owner/ask` | 77 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
 | `/owner/bank-import` | 114 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✗ | ✓ |
 | `/owner` | 200 | 2 | 2 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/` (home) | 343 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/` (home) | 366 | 1 | 1 | 0 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/parties` | 91 | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✗ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
 | `/portfolios/new` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
@@ -46,7 +46,7 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/costs` | 507 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/funding` | 232 | 3 | 3 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/governance` | 181 | 3 | 3 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/intake` | 1036 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/intake` | 1061 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/integrity` | 466 | 8 | 8 | 0 | 7 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
@@ -102,7 +102,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 160 against 6 hand-rolled
+1. **`<Section>` adoption is 156 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
