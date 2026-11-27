@@ -187,7 +187,7 @@ select 1/case when exists (
 select 1/case when exists (
   select 1 from public.project_result_by_currency_read
   where project_id = '20000000-0000-4000-8000-000000000301'
-    and sale_revenue_minor = 2500000
+    and sale_revenue_minor_units = '2500000'
 ) then 1 end as s102_result_counts_revenue;
 
 drop function s102_run(uuid, text);
