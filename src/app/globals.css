@@ -2019,3 +2019,24 @@ table { font-size: 0.875rem; }
 .next-step-text strong { color: var(--success-ink); font-size: var(--fs-500); }
 .next-step-text p { margin: 0; color: var(--ink-2); line-height: 1.6; }
 .next-step > .button { min-height: 44px; display: inline-flex; align-items: center; }
+
+/* Company health check (/health) */
+.health-issues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-sm, 8px);
+}
+.health-issue {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+  border: 1px solid var(--line, currentColor);
+  border-radius: var(--radius-md, 8px);
+}
+.health-issue-message {
+  flex: 1 1 320px;
+}

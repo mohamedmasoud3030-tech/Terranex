@@ -238,6 +238,10 @@ const populated = {
     { organization_id: ORG, project_id: RE, signal_code: 'OBLIGATION_OVERDUE', signal_label_ar: 'التزامات متأخرة السداد', severity: 'WARNING', subject_count: 1, amount_minor_units: '550000000', currency: 'EGP' },
     { organization_id: ORG, project_id: RE, signal_code: 'BANK_LINES_UNRECONCILED', signal_label_ar: 'سطور بنكية غير مطابقة', severity: 'CRITICAL', subject_count: 3, amount_minor_units: null, currency: 'EGP' },
   ],
+  bank_statement_line_status_read: [
+    { line_id: 'bl1', organization_id: ORG, project_id: RE, cash_account_id: 'c1', transaction_date: '2026-08-29', amount_minor_units: '150000000', currency: 'EGP', description: 'تحويل وارد — دفعة من مشترٍ', provider_reference: 'DEMO-UI-BANK-001', is_reconciled: false },
+    { line_id: 'bl2', organization_id: ORG, project_id: RE, cash_account_id: 'c1', transaction_date: '2026-08-31', amount_minor_units: '25000000', currency: 'EGP', description: 'إيداع نقدي فرع التجمع', provider_reference: 'DEMO-UI-BANK-002', is_reconciled: false },
+  ],
   // --- Cost control, per currency -----------------------------------------
   // `property_cost_control_read` unions budget lines and cost items into `keys`
   // keyed by (organization, project, asset, parcel, phase, category, currency),

@@ -35,7 +35,7 @@ const PF = '44444444-4444-4444-8444-444444444441';
 
 export const ROUTES = [
   '/login', '/forgot-password',
-  '/', '/projects', '/projects/new', '/portfolios', '/portfolios/new', `/portfolios/${PF}`, '/assets', '/invoices', '/journal', '/transactions', '/documents', '/inventory', '/vat', '/reports', '/settings', '/intake', '/onboarding',
+  '/', '/projects', '/projects/new', '/portfolios', '/portfolios/new', `/portfolios/${PF}`, '/assets', '/invoices', '/journal', '/transactions', '/documents', '/inventory', '/vat', '/reports', '/settings', '/intake', '/onboarding', '/health',
   `/projects/${RE}`, `/projects/${RE}/overview`, `/projects/${RE}/funding`, `/projects/${RE}/terms`, `/projects/${RE}/operations`,
   `/projects/${RE}/costs`, `/projects/${RE}/cash`, `/projects/${RE}/adjustments`, `/projects/${RE}/revenue`, `/projects/${RE}/close`, `/projects/${RE}/investors`,
   `/projects/${RE}/pilot`, `/projects/${RE}/controls`, `/projects/${RE}/intake`, `/projects/${RE}/budget`, `/projects/${RE}/integrity`,
