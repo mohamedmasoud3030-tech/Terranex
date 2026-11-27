@@ -153,7 +153,8 @@ select s100_run('00000000-0000-4000-8000-000000000101',
   as s100_token_expired \gset
 
 update public.organization_invites
-  set expires_at = now() - interval '1 hour'
+  set created_at = now() - interval '8 days',
+      expires_at = now() - interval '1 hour'
 where organization_id = '10000000-0000-4000-8000-000000000101'
   and idempotency_key = 'org-invite-create-0005';
 
