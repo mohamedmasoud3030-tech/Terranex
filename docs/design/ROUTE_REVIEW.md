@@ -37,8 +37,8 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/budget` | 307 | 3 | 3 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/cash` | 320 | 4 | 4 | 0 | 6 | 0 | 0 | 2 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/close` | 425 | 2 | 2 | 0 | 3 | 0 | 0 | 4 | 3 | ✓ | ✓ |
-| `/projects/[projectId]/controls` | 183 | 1 | 1 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/costs` | 511 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/controls` | 177 | 1 | 1 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/costs` | 507 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/funding` | 232 | 3 | 3 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/governance` | 181 | 3 | 3 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/intake` | 1036 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
@@ -46,12 +46,12 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock` | 912 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
-| `/projects/[projectId]/operations` | 1486 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
+| `/projects/[projectId]/operations` | 1478 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
 | `/projects/[projectId]/overview` | 213 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 161 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/pilot` | 665 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
+| `/projects/[projectId]/pilot` | 659 | 8 | 8 | 0 | 9 | 0 | 10 | 6 | 12 | ✓ | ✓ |
 | `/projects/[projectId]/procurement` | 674 | 4 | 4 | 0 | 6 | 0 | 0 | 10 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/revenue` | 531 | 6 | 6 | 1 | 6 | 1 | 2 | 6 | 5 | ✓ | ✓ |
+| `/projects/[projectId]/revenue` | 526 | 6 | 6 | 1 | 6 | 1 | 2 | 6 | 5 | ✓ | ✓ |
 | `/projects/[projectId]/statements` | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
 | `/projects/[projectId]/terms` | 155 | 1 | 1 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
