@@ -14,7 +14,7 @@ export function PlainIntro({ page }: { page: PageIntroKey }) {
   return (
     <p className="plain-intro" role="note">
       <span className="plain-intro-marker" aria-hidden="true">
-        💡
+        ℹ
       </span>
       <span>{text}</span>
     </p>

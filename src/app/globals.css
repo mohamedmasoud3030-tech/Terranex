@@ -1952,7 +1952,7 @@ table { font-size: 0.875rem; }
   font-size: var(--fs-400);
   line-height: 1.6;
 }
-.plain-intro-marker { flex: 0 0 auto; line-height: 1.5; }
+.plain-intro-marker { flex: 0 0 auto; line-height: 1.5; color: var(--brand); font-weight: 700; }
 
 /* First-run journey: organization → first project → record. Three cards in
    a row on wide screens, stacked on phones. */
