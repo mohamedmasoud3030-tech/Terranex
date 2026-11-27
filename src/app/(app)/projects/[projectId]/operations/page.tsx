@@ -61,6 +61,8 @@ import {
 import { WorkspaceChrome } from '@/features/workspace/chrome';
 import { Section, EmptyState, InPageTabs, Stat, StatGrid } from '@/shared/ui';
 import { BarList, countBy } from '@/shared/ui/insight';
+import { ASSET_CLASSIFICATION_LABEL } from '@/features/assets/labels';
+import { DISPOSITION_STATUS_LABEL } from '@/shared/labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,11 +80,6 @@ const EVENT_LABEL: Record<string, string> = {
   MILESTONE_NOTE: 'ملاحظة علامة',
   OTHER: 'واقعة أخرى',
 };
-const STRATEGY: Record<string, string> = {
-  ACQUIRE_HOLD: 'استحواذ واحتفاظ',
-  DEVELOP_SELL: 'تطوير ثم بيع',
-  LAND_TRADE: 'تجارة أراضٍ',
-};
 const PAYMENT: Record<string, string> = {
   NOT_LINKED: 'غير مربوط بالتزام',
   OBLIGATION_DRAFT: 'التزام مسودة',
@@ -90,11 +87,6 @@ const PAYMENT: Record<string, string> = {
   PARTIALLY_PAID: 'مدفوع جزئيًا',
   PAID: 'مدفوع',
   OBLIGATION_REVERSED: 'التزام معكوس',
-};
-const DISPOSITION_STATUS: Record<string, string> = {
-  DRAFT: 'مسودة اتفاق',
-  APPROVED: 'اتفاق معتمد',
-  CONTROL_TRANSFERRED: 'انتقلت السيطرة',
 };
 const FACT_LABEL: Record<string, string> = {
   SALE_RECOGNITION: 'قيد الاعتراف بالبيع',
@@ -225,7 +217,7 @@ export default async function OperationsPage({
   const costCurrencies = costRollups[0].rollup.totals.map((item) => item.currency);
   const costRowsRejected = costRollups[0].rollup.unparseableRowCount;
   const profileLabel = profile
-    ? (STRATEGY[profile.strategy] ?? profile.strategy)
+    ? (ASSET_CLASSIFICATION_LABEL[profile.strategy] ?? profile.strategy)
     : 'لم يُنشأ الملف العقاري';
 
   return (
@@ -313,7 +305,7 @@ export default async function OperationsPage({
                 <p className="muted">الأصل الاقتصادي منفصل عن المشروع والقطعة والعقد والدفع.</p>
               </div>
               <span className="status">
-                {STRATEGY[profile.strategy] ?? profile.strategy}
+                {ASSET_CLASSIFICATION_LABEL[profile.strategy] ?? profile.strategy}
                 {profile.jurisdiction ? ` · ${profile.jurisdiction}` : ''}
               </span>
             </div>
@@ -907,7 +899,7 @@ export default async function OperationsPage({
                             {date(d.agreement_date)} · دليل {d.agreement_evidence_reference}
                           </p>
                         </div>
-                        <span className="status">{DISPOSITION_STATUS[d.status]}</span>
+                        <span className="status">{DISPOSITION_STATUS_LABEL[d.status]}</span>
                       </div>
                       <dl className="facts">
                         <div>

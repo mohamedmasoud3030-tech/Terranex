@@ -30,6 +30,7 @@ const agricultureForms = readFileSync(
 const actions = readFileSync('src/features/agriculture/actions.ts', 'utf8');
 const queries = readFileSync('src/features/agriculture/queries.ts', 'utf8');
 const labels = readFileSync('src/features/agriculture/labels.ts', 'utf8');
+const sharedLabels = readFileSync('src/shared/labels.ts', 'utf8');
 
 const uuid = '00000000-0000-4000-8000-000000000001';
 const farmId = '00000000-0000-4000-8000-000000000002';
@@ -202,8 +203,9 @@ describe('GF-013 agriculture database contract', () => {
 
 describe('GF-013 agriculture operator workflow', () => {
   it('preserves truthful Arabic foundation labels as later bounded slices add operational terms', () => {
-    expect(labels).toContain("'عقارات'");
-    expect(labels).toContain("'زراعة'");
+    expect(labels).toContain("@/shared/labels");
+    expect(sharedLabels).toContain("'عقارات'");
+    expect(sharedLabels).toContain("'زراعة'");
     expect(labels).toContain("'مخططة'");
     expect(labels).toContain("'فشلت'");
     expect(labels).not.toMatch(/ربح مقدر|هامش مقدر|قيمة مخزون مقدرة/);

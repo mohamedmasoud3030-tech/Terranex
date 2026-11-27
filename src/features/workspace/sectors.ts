@@ -7,16 +7,16 @@
  * either side import them safely.
  */
 
+import { SECTOR_LABEL } from '@/shared/labels';
+
 export type SectorKey = 'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK';
 
 export const SECTOR_KEYS: ReadonlyArray<SectorKey> = ['REAL_ESTATE', 'AGRICULTURE', 'LIVESTOCK'];
 
-/** Arabic operator label. Authored source language; English is a translation. */
-export const SECTOR_AR: Record<SectorKey, string> = {
-  REAL_ESTATE: 'عقارات',
-  AGRICULTURE: 'زراعة',
-  LIVESTOCK: 'ثروة حيوانية',
-};
+/** Arabic operator label. Authored source language; English is a translation.
+ * Single source of truth lives in `@/shared/labels` (which imports nothing,
+ * so depending on it cannot create the cycle this module exists to avoid). */
+export const SECTOR_AR: Record<SectorKey, string> = SECTOR_LABEL;
 
 /** Colour token class for chips and rails. Identity only — never meaning. */
 export const SECTOR_TONE_CLASS: Record<SectorKey, string> = {

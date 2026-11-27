@@ -41,13 +41,9 @@ import {
   PaymentForm,
   ReverseBatchForm,
 } from './finance-command-forms';
+import { COST_TREATMENT_LABEL } from '@/shared/labels';
 
 export const dynamic = 'force-dynamic';
-
-const TREATMENT_LABEL: Record<string, string> = {
-  EXPENSE: 'مصروف',
-  CAPITALIZABLE_WIP: 'أعمال تحت التطوير',
-};
 
 const AGING_LABEL: Record<string, string> = {
   NO_TERMS: 'بدون شروط',
@@ -245,7 +241,7 @@ export default async function CostsPage({ params }: { params: Promise<{ projectI
                     <tr key={obligation.obligation_id} id={obligation.obligation_id}>
                       <td data-label="المورد">{partyName.get(obligation.party_id) ?? '—'}</td>
                       <td data-label="الوصف">{obligation.description}</td>
-                      <td data-label="المعالجة">{TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
+                      <td data-label="المعالجة">{COST_TREATMENT_LABEL[obligation.cost_treatment] ?? obligation.cost_treatment}</td>
                       <td className="num" data-label="المبلغ">{formatMinorUnits(obligation.amount_minor_units, obligation.currency)}</td>
                       <td className="num" data-label="المتبقي">{formatMinorUnits(obligation.outstanding_minor_units, obligation.currency)}</td>
                       <td data-label="الاستحقاق">

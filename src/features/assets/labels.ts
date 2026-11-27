@@ -67,11 +67,7 @@ export const FX_STATUS_LABEL: Record<string, string> = {
   CONVERTED_AT_RATE: 'محوّلة بسعر مسجّل',
 };
 
-export const SECTOR_LABEL: Record<string, string> = {
-  REAL_ESTATE: 'عقارات',
-  AGRICULTURE: 'زراعة',
-  LIVESTOCK: 'ثروة حيوانية',
-};
+export { SECTOR_LABEL } from '@/shared/labels';
 
 /** Resolves any status string to operator Arabic, falling back to the raw
  * token rather than to a dash: an unexplained blank is worse than an

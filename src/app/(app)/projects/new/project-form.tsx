@@ -3,12 +3,7 @@ import { useActionState, useMemo, useState } from 'react';
 import { createProject } from '@/features/projects/actions';
 import { SECTORS } from '@/features/projects/schema';
 import { commandIdempotencyKey } from '@/shared/idempotency';
-
-const SECTOR_LABEL: Record<(typeof SECTORS)[number], string> = {
-  REAL_ESTATE: 'عقارات',
-  AGRICULTURE: 'زراعة',
-  LIVESTOCK: 'ثروة حيوانية',
-};
+import { SECTOR_LABEL } from '@/shared/labels';
 
 const SECTOR_DESCRIPTION: Record<(typeof SECTORS)[number], string> = {
   REAL_ESTATE: 'سيُفتح المشروع في المسار الموجّه للعقارات بعد إنشائه.',

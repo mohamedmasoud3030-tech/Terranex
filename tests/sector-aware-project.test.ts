@@ -5,6 +5,7 @@ import { SECTORS, projectSchema } from '../src/features/projects/schema';
 const migration = readFileSync('supabase/migrations/20260813000900_sector_aware_project.sql', 'utf8');
 const navSource = readFileSync('src/features/workspace/nav.tsx', 'utf8');
 const projectFormSource = readFileSync('src/app/(app)/projects/new/project-form.tsx', 'utf8');
+const sharedLabels = readFileSync('src/shared/labels.ts', 'utf8');
 const homeSource = readFileSync('src/app/(app)/page.tsx', 'utf8');
 const projectPageSource = readFileSync('src/app/(app)/projects/[projectId]/page.tsx', 'utf8');
 const agriculturePageSource = readFileSync('src/app/(app)/projects/[projectId]/agriculture/page.tsx', 'utf8');
@@ -83,11 +84,13 @@ describe('GF-013 sector-aware navigation', () => {
   });
 
   it('the new project form surfaces a truthful sector selector with explicit Arabic labels', () => {
-    expect(projectFormSource).toContain('عقارات');
-    expect(projectFormSource).toContain('زراعة');
+    expect(projectFormSource).toContain("SECTOR_LABEL");
+    expect(projectFormSource).toContain("@/shared/labels");
+    expect(sharedLabels).toContain('عقارات');
+    expect(sharedLabels).toContain('زراعة');
     expect(projectFormSource).toMatch(/name="sector"/);
     expect(projectFormSource).toContain('LIVESTOCK');
-    expect(projectFormSource).toContain('ثروة حيوانية');
+    expect(sharedLabels).toContain('ثروة حيوانية');
   });
 
   it('the project home page links Agriculture projects to the agriculture workspace and Real Estate to operations', () => {
