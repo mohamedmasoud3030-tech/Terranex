@@ -35,3 +35,14 @@ export async function getObligationUsage(organizationId: string): Promise<Obliga
   if (error) throwOperatorQuery(error);
   return (data ?? []) as ObligationUsage[];
 }
+
+/** Customer usage: open (unsettled, not reversed) customer invoices per party. */
+export async function getCustomerInvoiceUsage(organizationId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('customer_invoices_read')
+    .select('customer_party_id,outstanding_minor_units,is_reversed')
+    .eq('organization_id', organizationId);
+  if (error) throwOperatorQuery(error);
+  return (data ?? []) as import('./directory').CustomerInvoiceUsage[];
+}

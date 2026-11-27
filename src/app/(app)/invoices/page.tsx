@@ -9,12 +9,22 @@ import { formatDate, formatPaymentState } from '@/features/procurement/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { presentRollup, totalsByCurrency } from '@/shared/money/by-currency';
 import { PlainIntro } from '@/features/plain-language/plain-intro';
+import { newCommandNonce } from '@/shared/idempotency';
+import { getParties } from '@/features/funding/queries';
+import { getCashAccountPositions } from '@/features/finance/queries';
+import { getCustomerInvoices } from '@/features/invoices/queries';
+import { customerInvoiceState } from '@/features/invoices/labels';
+import {
+  CollectCustomerInvoiceForm,
+  CreateCustomerPartyForm,
+  IssueCustomerInvoiceForm,
+} from '@/features/invoices/forms';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * فواتير الموردين عبر كل مشاريع المنظمة. قراءة فقط: الإدخال والاعتماد
- * يتمّان من صفحة المشتريات داخل كل مشروع. لا توجد فواتير عملاء في النظام الحالي.
+ * فواتير الموردين عبر كل مشاريع المنظمة (قراءة فقط: الإدخال والاعتماد من صفحة
+ * المشتريات داخل كل مشروع)، وفواتير العملاء المستقلة التي تُصدر وتُحصَّل من هنا.
  */
 export default async function InvoicesPage() {
   const { organization: org } = await getActiveOrganization();
@@ -27,10 +37,15 @@ export default async function InvoicesPage() {
       />
     );
   }
-  const [invoices, projects] = await Promise.all([
+  const [invoices, projects, customerInvoices, parties] = await Promise.all([
     getOrganizationSupplierInvoices(org.id),
     getProjects(org.id),
+    getCustomerInvoices(org.id),
+    getParties(org.id),
   ]);
+  const cashAccounts = (
+    await Promise.all(projects.map((p) => getCashAccountPositions(p.id)))
+  ).flat();
   const projectName = new Map(projects.map((p) => [p.id, p.name]));
   const total = totalsByCurrency(invoices, (i) => i.currency, (i) => i.invoice_total_minor_units);
   const paid = totalsByCurrency(invoices, (i) => i.currency, (i) => i.paid_minor_units);
@@ -42,9 +57,95 @@ export default async function InvoicesPage() {
       <PlainIntro page="invoices" />
       <PageHeader
         eyebrow={org.name}
-        title="فواتير الموردين"
-        description="كل فواتير الموردين عبر المشاريع، قراءة فقط. التسجيل والاعتماد من صفحة المشتريات في المشروع. لا توجد فواتير عملاء في النظام."
+        title="الفواتير"
+        description="فواتير الموردين عبر المشاريع (قراءة فقط)، وفواتير العملاء المستقلة التي تُصدر وتُحصَّل من هذه الصفحة."
       />
+      <Section
+        title="فواتير العملاء"
+        description="فواتير مبيعات مستقلة لا ترتبط بأصل أو محصول: تُقيد إيراد مبيعات وذمة مدينة على العميل، وتُحصَّل إلى حساب نقدي بالمشروع."
+      >
+        {customerInvoices.length === 0 ? (
+          <EmptyState
+            title="لا توجد فواتير عملاء بعد"
+            description="أضف العميل ثم أصدر أول فاتورة؛ تظهر هنا مع حالة التحصيل."
+          />
+        ) : (
+          <div className="table-wrap">
+            <table className="table-stackable">
+              <caption className="sr-only">فواتير العملاء: الرقم والعميل والمشروع والتاريخ والمبلغ والمحصَّل والمتبقي والحالة</caption>
+              <thead>
+                <tr>
+                  <th scope="col">الفاتورة</th>
+                  <th scope="col">العميل</th>
+                  <th scope="col">المشروع</th>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col" className="num">المبلغ</th>
+                  <th scope="col" className="num">المتبقي</th>
+                  <th scope="col">الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customerInvoices.map((i) => {
+                  const state = customerInvoiceState(i.outstanding_minor_units, i.is_reversed);
+                  return (
+                    <tr key={i.invoice_id}>
+                      <td data-label="الفاتورة">
+                        <strong>{i.invoice_reference}</strong>
+                        {i.description ? <><br /><small className="muted">{i.description}</small></> : null}
+                      </td>
+                      <td data-label="العميل">{i.customer_name}</td>
+                      <td data-label="المشروع">{projectName.get(i.project_id) ?? 'مشروع'}</td>
+                      <td data-label="التاريخ">{formatDate(i.invoice_date)}</td>
+                      <td data-label="المبلغ" className="num">{formatMinorUnits(i.amount_minor_units, i.currency)}</td>
+                      <td data-label="المتبقي" className="num">{formatMinorUnits(i.outstanding_minor_units, i.currency)}</td>
+                      <td data-label="الحالة">
+                        <StatusBadge tone={state.key === 'SETTLED' ? 'success' : state.key === 'REVERSED' ? 'neutral' : 'warning'}>
+                          {state.label}
+                        </StatusBadge>
+                        {state.key === 'OPEN' ? (
+                          <details>
+                            <summary className="muted">تسجيل تحصيل</summary>
+                            <CollectCustomerInvoiceForm
+                              organizationId={org.id}
+                              invoiceId={i.invoice_id}
+                              projectId={i.project_id}
+                              currency={i.currency}
+                              outstandingMajorHint={formatMinorUnits(i.outstanding_minor_units, i.currency)}
+                              cashAccounts={cashAccounts}
+                              commandNonce={newCommandNonce()}
+                            />
+                          </details>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <details>
+          <summary><strong>إصدار فاتورة عميل</strong></summary>
+          {projects.length === 0 ? (
+            <p className="muted">تحتاج الفاتورة إلى مشروع؛ أنشئ مشروعًا أولًا.</p>
+          ) : parties.length === 0 ? (
+            <p className="muted">أضف العميل أولًا من نموذج «إضافة عميل» بالأسفل.</p>
+          ) : (
+            <IssueCustomerInvoiceForm
+              organizationId={org.id}
+              projects={projects}
+              parties={parties}
+              commandNonce={newCommandNonce()}
+            />
+          )}
+        </details>
+        <details>
+          <summary><strong>إضافة عميل</strong></summary>
+          <CreateCustomerPartyForm organizationId={org.id} commandNonce={newCommandNonce()} />
+        </details>
+      </Section>
+
+      <Section title="فواتير الموردين" description="قراءة فقط؛ التسجيل والاعتماد من صفحة المشتريات في المشروع.">
       <StatGrid label="ملخص الفواتير">
         <Stat label="عدد الفواتير" value={invoices.length} hint={`${submitted} بانتظار الاعتماد`} />
         {total.totals.map((t) => (
@@ -113,6 +214,7 @@ export default async function InvoicesPage() {
           </div>
         </Section>
       )}
+      </Section>
     </section>
   );
 }
