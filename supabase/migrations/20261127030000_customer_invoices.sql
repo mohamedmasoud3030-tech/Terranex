@@ -873,7 +873,7 @@ select
 from derived d;
 
 -- widened from latest definition in 20260904010600_h1_project_result_by_currency.sql
-create view public.project_result_by_currency_read with (security_invoker=on) as
+create or replace view public.project_result_by_currency_read with (security_invoker=on) as
 with active_postings as (
   -- Reversal-aware base population: a batch that is itself a reversal is
   -- excluded, and so is any batch that has been reversed. An original economic
