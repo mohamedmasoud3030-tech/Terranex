@@ -17,7 +17,7 @@ export default function NewProjectForm({ organizationId, commandNonce }: NewProj
     error: undefined,
     successCount: 0,
   });
-  const [sector, setSector] = useState<(typeof SECTORS)[number]>('REAL_ESTATE');
+  const [sector, setSector] = useState<'REAL_ESTATE' | 'AGRICULTURE' | 'LIVESTOCK'>('REAL_ESTATE');
   const idempotencyKey = useMemo(
     () => commandIdempotencyKey('project-create', commandNonce, state.successCount ?? 0),
     [commandNonce, state.successCount],
