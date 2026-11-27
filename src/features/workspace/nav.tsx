@@ -41,49 +41,49 @@ type SectionDef = {
 };
 
 const REAL_ESTATE_SECTIONS: ReadonlyArray<SectionDef> = [
-  { id: 'overview', label: 'نظرة عامة', description: 'الوضع المالي والتشغيلي للمشروع من المصادر الرسمية', href: (p) => `/projects/${p}/overview` },
-  { id: 'capital', label: 'رأس المال', description: 'وقائع الالتزامات والمساهمات المسجلة دون استنتاج ملكية أو حصة ربح', href: (p) => `/projects/${p}/funding` },
-  { id: 'property', label: 'الأصول العقارية', description: 'الأصول، السيطرة، التطوير، دورة حياة العقار', href: (p) => `/projects/${p}/operations` },
-  { id: 'costs-cash', label: 'التكاليف والنقدية', description: 'الالتزامات، المدفوعات، النقدية ومطابقة البنك', href: (p) => `/projects/${p}/costs` },
-  { id: 'revenue', label: 'الإيراد والبيع', description: 'التصرف، اعتراف البيع، التحصيل والنتيجة المحققة', href: (p) => `/projects/${p}/revenue` },
-  { id: 'close', label: 'الإغلاق المالي', description: 'الفترات، بوابات الإغلاق، اللقطات والتصحيحات', href: (p) => `/projects/${p}/close` },
-  { id: 'statements', label: 'شفافية المشاركين', description: 'هوية المشاركين والنسخة الاتفاقية؛ الاستحقاقات محجوبة حتى R14', href: (p) => `/projects/${p}/investors` },
-  { id: 'opening', label: 'الاستيراد والمطابقة', description: 'الأرصدة الافتتاحية، مجاميع الرقابة، مطابقة المصدر', href: (p) => `/projects/${p}/pilot` },
-  { id: 'controls', label: 'الرقابة والجاهزية', description: 'الرقابة الداخلية، الوصول، والجاهزية للبيانات الحقيقية', href: (p) => `/projects/${p}/controls` },
+  { id: 'overview', label: 'نظرة عامة', description: 'صورة المشروع اليوم: أمواله وأصوله وما يستحق الانتباه', href: (p) => `/projects/${p}/overview` },
+  { id: 'capital', label: 'رأس المال', description: 'من وعد بمبلغ ومن دفع حتى الآن، دون حساب حصص أرباح', href: (p) => `/projects/${p}/funding` },
+  { id: 'property', label: 'الأصول العقارية', description: 'عقارات المشروع: تسجيلها وتطويرها وحالة كل منها', href: (p) => `/projects/${p}/operations` },
+  { id: 'costs-cash', label: 'التكاليف والنقدية', description: 'ما عليك من مصاريف، وما دفعته، ورصيدك النقدي', href: (p) => `/projects/${p}/costs` },
+  { id: 'revenue', label: 'الإيراد والبيع', description: 'مبيعات المشروع وما قُبض منها ونتيجتها', href: (p) => `/projects/${p}/revenue` },
+  { id: 'close', label: 'الإغلاق المالي', description: 'قفل حسابات كل فترة بشكل صحيح ومراجعة التصحيحات', href: (p) => `/projects/${p}/close` },
+  { id: 'statements', label: 'شفافية المشاركين', description: 'من يشارك في المشروع ونص الاتفاق؛ حصص الأرباح لا تُعرض بعد', href: (p) => `/projects/${p}/investors` },
+  { id: 'opening', label: 'الاستيراد والمطابقة', description: 'إدخال الأرصدة السابقة والتأكد أنها تطابق مصدرها', href: (p) => `/projects/${p}/pilot` },
+  { id: 'controls', label: 'الرقابة والجاهزية', description: 'فحوص تؤكد أن بيانات المشروع سليمة وجاهزة للعمل الحقيقي', href: (p) => `/projects/${p}/controls` },
 ];
 
 const LIVESTOCK_SECTIONS: ReadonlyArray<SectionDef> = [
-  { id: 'livestock', label: 'المواقع والقطعان', description: 'مواقع التشغيل، القطعان الإدارية، والدفعات القابلة للعد', href: (p) => `/projects/${p}/livestock` },
-  { id: 'livestock-operations', label: 'العمليات الحيوانية', description: 'الصحة والتكاثر والهوية والتغذية وقياسات التشغيل', href: (p) => `/projects/${p}/livestock/operations` },
+  { id: 'livestock', label: 'المواقع والقطعان', description: 'مواقعك وقطعانك والدفعات التي تتابع أعدادها', href: (p) => `/projects/${p}/livestock` },
+  { id: 'livestock-operations', label: 'العمليات الحيوانية', description: 'العمليات اليومية على القطيع: الصحة والتغذية والتكاثر والأوزان', href: (p) => `/projects/${p}/livestock/operations` },
 ];
 
 const PROCUREMENT_SECTION: SectionDef = {
   id: 'procurement',
   label: 'المشتريات',
-  description: 'الموردون المشتركون، طلبات الشراء وأوامر الشراء',
+  description: 'موردوك وما طلبته منهم وما وصل من طلباتك',
   href: (p) => `/projects/${p}/procurement`,
 };
 
 const FINANCE_CONTROL_SECTIONS: ReadonlyArray<SectionDef> = [
-  { id: 'budget', label: 'الموازنة', description: 'نسخ الموازنة، بنود السقوف، الاستهلاك والمراجعات', href: (p) => `/projects/${p}/budget` },
-  { id: 'integrity', label: 'مركز النزاهة', description: 'إشارات الرقابة المالية، الاستثناءات وسياسات الاعتماد', href: (p) => `/projects/${p}/integrity` },
+  { id: 'budget', label: 'الموازنة', description: 'خطتك للصرف وما استُهلك منها والمراجعات عليها', href: (p) => `/projects/${p}/budget` },
+  { id: 'integrity', label: 'مركز النزاهة', description: 'تنبيهات تكشف أي خلل في الأرقام لتراجعه مبكرًا', href: (p) => `/projects/${p}/integrity` },
 ];
 
 const GOVERNANCE_SECTION: SectionDef = {
   id: 'governance',
   label: 'المخاطر والقرارات',
-  description: 'مخاطر المشروع وسجل القرارات الموثق دون تغيير الحقائق المالية',
+  description: 'مخاطر المشروع وسجل قراراتك الموثقة',
   href: (p) => `/projects/${p}/governance`,
 };
 
 const AGRICULTURE_SECTIONS: ReadonlyArray<SectionDef> = [
-  { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'المزارع، الحقول، دورات المحصول، ودورة حياة الدورة', href: (p) => `/projects/${p}/agriculture` },
-  { id: 'land-assets', label: 'الأراضي والأصول', description: 'أصل الأرض، أساس السيطرة، العقد، والطرف المقابل وربط المزرعة', href: (p) => `/projects/${p}/agriculture#land-assets` },
-  { id: 'field-activities', label: 'أنشطة الحقل', description: 'تسجيل ما حدث في الحقل على تخصيص دورة قائم', href: (p) => `/projects/${p}/agriculture#activities` },
-  { id: 'field-inputs', label: 'المدخلات والتطبيقات', description: 'المدخلات وتشغيلاتها وتطبيقها الفعلي على نشاط حقل قائم', href: (p) => `/projects/${p}/agriculture#inputs` },
-  { id: 'harvest-inventory', label: 'الحصاد والمخزون', description: 'أحداث الحصاد، تشغيلات المحصول، مواقع التخزين، وحركات المخزون', href: (p) => `/projects/${p}/agriculture#harvest` },
-  { id: 'agriculture-sales', label: 'المبيعات والتحصيل', description: 'المشتري، صرف البيع، الإيراد، الذمم والتحصيلات', href: (p) => `/projects/${p}/agriculture#sales` },
-  { id: 'agriculture-results', label: 'النتائج والإغلاق', description: 'نتيجة الدورة، تكلفة التشغيل، المراكز المفتوحة والإغلاق الآمن', href: (p) => `/projects/${p}/agriculture#results-closeout` },
+  { id: 'agriculture', label: 'المزرعة والمحاصيل', description: 'مزارعك وحقولك ومحاصيل كل موسم', href: (p) => `/projects/${p}/agriculture` },
+  { id: 'land-assets', label: 'الأراضي والأصول', description: 'الأرض: ملكيتها أو إيجارها وعقدها وربطها بالمزرعة', href: (p) => `/projects/${p}/agriculture#land-assets` },
+  { id: 'field-activities', label: 'أنشطة الحقل', description: 'سجّل أعمال الحقل: حرث وري وتسميد وحماية', href: (p) => `/projects/${p}/agriculture#activities` },
+  { id: 'field-inputs', label: 'المدخلات والتطبيقات', description: 'البذور والأسمدة والمبيدات المستخدمة في كل نشاط', href: (p) => `/projects/${p}/agriculture#inputs` },
+  { id: 'harvest-inventory', label: 'الحصاد والمخزون', description: 'الحصاد وأماكن التخزين وحركة المخزون', href: (p) => `/projects/${p}/agriculture#harvest` },
+  { id: 'agriculture-sales', label: 'المبيعات والتحصيل', description: 'مبيعات المحصول وما قُبض منها وما تبقى على المشترين', href: (p) => `/projects/${p}/agriculture#sales` },
+  { id: 'agriculture-results', label: 'النتائج والإغلاق', description: 'نتيجة كل موسم وتكاليفه وقفله بأمان', href: (p) => `/projects/${p}/agriculture#results-closeout` },
 ];
 
 export const REAL_ESTATE_SECTION_IDS = [

@@ -18,6 +18,7 @@ import {
 import { formatMinorUnits } from '@/shared/money';
 import { SectorCard } from '@/features/assets/sector-card';
 import { sectorLandingHref } from '@/features/workspace/nav';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -147,6 +148,7 @@ export default async function AssetsPage() {
 
   return (
     <section className="stack-lg">
+      <PlainIntro page="assets" />
       <PageHeader
         eyebrow={org.name}
         title="الأصول وأداء القطاعات"

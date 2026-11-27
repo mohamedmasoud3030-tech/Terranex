@@ -84,6 +84,7 @@ import {
   SplitForm,
   WeightEventForm,
 } from './forms';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -713,6 +714,7 @@ export default async function LivestockPage({
         internalReference={project.internal_reference}
         lifecycleState={project.lifecycle_state}
       />
+      <PlainIntro page="project-livestock" />
       <Section title="الموقف في لمحة" description="أعداد من السجلات المسجلة فقط، بلا تقدير.">
         <StatGrid label="ملخص الثروة الحيوانية">
           <Stat label="الدفعات النشطة" value={operationalActiveCohorts.length} hint={`${cohorts.length} دفعة إجمالًا`} href="#batches" />

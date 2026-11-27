@@ -9,6 +9,7 @@ import { InviteManager } from '@/features/invites/invite-manager';
 import { newCommandNonce } from '@/shared/idempotency';
 import { signOut } from '@/features/auth/actions';
 import { createClient } from '@/shared/supabase/server';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,7 @@ export default async function SettingsPage() {
     : [null, [], []];
   return (
     <section className="stack-lg">
+      <PlainIntro page="settings" />
       <PageHeader eyebrow={organization?.name} title="الإعدادات" description="بيانات الحساب والمنظمة النشطة والمظهر." />
       <StatGrid label="ملخص الحساب">
         <Stat label="البريد الإلكتروني" value={auth.user?.email ?? '—'} />

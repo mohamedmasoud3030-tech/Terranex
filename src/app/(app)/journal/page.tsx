@@ -4,6 +4,7 @@ import { getActiveOrganization } from '@/features/organizations/context';
 import { getOrganizationLedger } from '@/features/finance/queries';
 import { JournalTrace } from '@/features/finance/journal-trace';
 import { presentRollup, totalsByCurrency } from '@/shared/money/by-currency';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export default async function JournalPage() {
   const debit = totalsByCurrency(lines, (l) => l.currency, (l) => l.debit_minor_units);
   return (
     <section className="stack-lg">
+      <PlainIntro page="journal" />
       <PageHeader
         eyebrow={org.name}
         title="دفتر القيود"

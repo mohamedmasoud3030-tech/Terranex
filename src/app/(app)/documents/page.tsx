@@ -10,6 +10,7 @@ import { getOrganizationGeneralDocuments } from '@/features/documents/queries';
 import { GeneralDocumentUploadForm } from '@/features/documents/upload-form';
 import { DOCUMENT_CATEGORY_LABEL } from '@/features/documents/labels';
 import { newCommandNonce } from '@/shared/idempotency';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export default async function DocumentsPage() {
   const kinds = Object.keys(EVIDENCE_CLASSIFICATION_LABEL);
   return (
     <section className="stack-lg">
+      <PlainIntro page="documents" />
       <PageHeader
         eyebrow={org.name}
         title="المستندات"

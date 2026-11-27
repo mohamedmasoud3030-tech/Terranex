@@ -6,6 +6,7 @@ import { getSectorPerformance } from '@/features/assets/queries';
 import { SectorCard } from '@/features/assets/sector-card';
 import { SECTOR_LABEL } from '@/features/assets/labels';
 import { PROJECT_LIFECYCLE_LABEL } from '@/features/projects/labels';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export default async function ReportsPage() {
   const [projects, performance] = await Promise.all([getProjects(org.id), getSectorPerformance(org.id)]);
   return (
     <section className="stack-lg">
+      <PlainIntro page="reports" />
       <PageHeader
         eyebrow={org.name}
         title="التقارير"

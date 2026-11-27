@@ -3,6 +3,7 @@ import { EmptyState, PageHeader, Section, Stat, StatGrid } from '@/shared/ui';
 import { getActiveOrganization } from '@/features/organizations/context';
 import { getTaxRegistry } from '@/features/control/queries';
 import { TaxRegistryTable } from '@/features/control/tax-registry-table';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function VatPage() {
   const active = rows.filter((r) => r.status === 'ACTIVE').length;
   return (
     <section className="stack-lg">
+      <PlainIntro page="vat" />
       <PageHeader
         eyebrow={org.name}
         title="الضريبة"

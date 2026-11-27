@@ -48,6 +48,10 @@ import type { ConditionalSectionCode } from '@/features/intake/schema';
 import type { IntakeSection, SectionStatus } from '@/features/intake/readiness';
 import { formatMinorUnits } from '@/shared/money';
 import { newCommandNonce } from '@/shared/idempotency';
+import { JourneySteps } from '@/features/plain-language/journey-steps';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
+import { NextStep } from '@/features/plain-language/next-step';
+import { NEXT_STEP_COPY } from '@/features/plain-language/copy';
 import { CreatePartyForm, AddParticipantForm, AgreementDraftForm } from '../terms/forms';
 import { CapitalCallForm, ContributionForm } from '../funding/forms';
 import { CashAccountForm, BankImportForm } from '../cash/forms';
@@ -298,6 +302,23 @@ export default async function IntakePage({ params }: { params: Promise<{ project
 
   return (
     <section className="stack">
+      <JourneySteps current={3} />
+      <PlainIntro page="project-intake" />
+      {next ? (
+        <NextStep
+          title={NEXT_STEP_COPY.continueIntake.title}
+          description={`أكمل خطوة «${next.titleAr}» — ${next.summaryAr}`}
+          href={`#${next.code}`}
+          actionLabel={NEXT_STEP_COPY.continueIntake.actionLabel}
+        />
+      ) : (
+        <NextStep
+          title={NEXT_STEP_COPY.intakeDone.title}
+          description={NEXT_STEP_COPY.intakeDone.description}
+          href={`/projects/${projectId}`}
+          actionLabel={NEXT_STEP_COPY.intakeDone.actionLabel}
+        />
+      )}
       <header className="project-context card">
         <div>
           <Link className="back-link" href={`/projects/${projectId}`}>

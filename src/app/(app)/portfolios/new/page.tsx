@@ -5,6 +5,7 @@ import { getOrganizationMembers } from '@/features/portfolios/queries';
 import { newCommandNonce } from '@/shared/idempotency';
 import { memberDisplayLabel } from '@/features/workspace/chrome';
 import { PortfolioForm } from '../forms';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export default async function NewPortfolioPage() {
 
   return (
     <section className="card stack shell-form">
+      <PlainIntro page="portfolios-new" />
       <div>
         <Link className="back-link" href="/portfolios">→ المحافظ الاستثمارية</Link>
         <h1>إنشاء محفظة استثمارية</h1>

@@ -77,6 +77,7 @@ import {
   StorageLocationForm,
   TransferHarvestInventoryForm,
 } from './forms';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -457,6 +458,7 @@ export default async function AgriculturePage({
         internalReference={project.internal_reference}
         lifecycleState={project.lifecycle_state}
       />
+      <PlainIntro page="project-agriculture" />
       <Section title="الدورات والحقول بصريًا" description="من السجلات المسجلة فقط، بلا تقدير.">
         <div className="insight-panels">
           <article className="insight-panel">

@@ -5,6 +5,7 @@ import { getActiveOrganization } from '@/features/organizations/context';
 import { getProjects } from '@/features/projects/queries';
 import { getOrganizationHarvestInventory } from '@/features/agriculture/queries';
 import { formatDate } from '@/features/procurement/labels';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export default async function InventoryPage() {
   const units = [...new Set(rows.map((r) => r.quantity_unit))];
   return (
     <section className="stack-lg">
+      <PlainIntro page="inventory" />
       <PageHeader
         eyebrow={org.name}
         title="المخزون"

@@ -19,21 +19,21 @@ has drifted from the code is worse than no count at all.
 
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
-| `/assets` | 206 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/documents` | 125 | 2 | 2 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
-| `/inventory` | 77 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/assets` | 208 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/documents` | 127 | 2 | 2 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/intake` | 69 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
+| `/inventory` | 79 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/invite/[token]` | 66 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/invoices` | 117 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/journal` | 49 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/invoices` | 119 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/journal` | 51 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/missing-project` | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
-| `/onboarding` | 3 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
-| `/` (home) | 341 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/onboarding` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | — | ✓ |
+| `/` (home) | 343 | 1 | 1 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/portfolios/[portfolioId]` | 424 | 3 | 3 | 0 | 6 | 0 | 2 | 2 | 0 | ✓ | ✓ |
-| `/portfolios/new` | 38 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
-| `/portfolios` | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/portfolios/new` | 40 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ✓ | ✓ |
+| `/portfolios` | 73 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/adjustments` | 61 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/agriculture` | 1800 | 15 | 15 | 0 | 14 | 0 | 0 | 9 | 13 | ✓ | ✓ |
+| `/projects/[projectId]/agriculture` | 1802 | 15 | 15 | 0 | 14 | 0 | 0 | 9 | 13 | ✓ | ✓ |
 | `/projects/[projectId]/budget` | 307 | 3 | 3 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/cash` | 320 | 4 | 4 | 0 | 6 | 0 | 0 | 2 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/close` | 425 | 2 | 2 | 0 | 3 | 0 | 0 | 4 | 3 | ✓ | ✓ |
@@ -41,11 +41,11 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/costs` | 507 | 3 | 3 | 0 | 5 | 0 | 0 | 4 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/funding` | 232 | 3 | 3 | 0 | 5 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/governance` | 181 | 3 | 3 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/intake` | 1015 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/projects/[projectId]/intake` | 1036 | 3 | 3 | 7 | 1 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/integrity` | 466 | 8 | 8 | 0 | 7 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/livestock` | 910 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
+| `/projects/[projectId]/livestock` | 912 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
 | `/projects/[projectId]/operations` | 1478 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
 | `/projects/[projectId]/overview` | 213 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 161 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
@@ -55,11 +55,11 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/statements` | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | — |
 | `/projects/[projectId]/terms` | 155 | 1 | 1 | 0 | 3 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/new` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | — | ✓ |
-| `/projects` | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/reports` | 89 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/settings` | 69 | 0 | 0 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/transactions` | 95 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
-| `/vat` | 43 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/projects` | 138 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ✓ | ✓ |
+| `/reports` | 91 | 1 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/settings` | 71 | 0 | 0 | 0 | 4 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/transactions` | 97 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/vat` | 45 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/forgot-password` | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/login` | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
 | `/reset-password` | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | ✓ | — |
