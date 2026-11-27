@@ -23,14 +23,9 @@ import {
   RentalRecognitionForm,
   RentalReconciliationForm,
 } from './rental-forms';
+import { DISPOSITION_STATUS_LABEL } from '@/shared/labels';
 
 export const dynamic = 'force-dynamic';
-
-const DISPOSITION_STATUS: Record<string, string> = {
-  DRAFT: 'مسودة اتفاق',
-  APPROVED: 'اتفاق معتمد',
-  CONTROL_TRANSFERRED: 'انتقلت السيطرة',
-};
 
 function d(value: string | null | undefined) {
   return value ? new Date(value).toLocaleDateString('ar-EG') : '—';
@@ -364,7 +359,7 @@ export default async function RevenuePage({ params }: { params: Promise<{ projec
                     </td>
                     <td data-label="الحالة">
                       <span className="status">
-                        {DISPOSITION_STATUS[disposition.status] ?? disposition.status}
+                        {DISPOSITION_STATUS_LABEL[disposition.status] ?? disposition.status}
                       </span>
                     </td>
                     <td data-label="المتحصّل المتفق عليه">

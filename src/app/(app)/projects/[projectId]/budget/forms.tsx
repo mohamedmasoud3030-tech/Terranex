@@ -11,11 +11,7 @@ import {
   deleteDraftBudget,
   supersedeBudget,
 } from '@/features/control/actions';
-
-const TREATMENT_LABEL: Record<string, string> = {
-  EXPENSE: 'مصروف',
-  CAPITALIZABLE_WIP: 'أعمال تحت التطوير',
-};
+import { COST_TREATMENT_LABEL } from '@/shared/labels';
 
 const initialState: ActionState = {};
 
@@ -165,7 +161,7 @@ export function DeleteDraftBudgetButton({
 }
 
 export function budgetLineTreatmentLabel(costTreatment: string): string {
-  return TREATMENT_LABEL[costTreatment] ?? costTreatment;
+  return COST_TREATMENT_LABEL[costTreatment] ?? costTreatment;
 }
 
 export function formatMoney(minorUnits: string | null | undefined, currency: string): string {

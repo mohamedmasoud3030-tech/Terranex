@@ -10,15 +10,9 @@ import {
   getReconciliationCheckpoints,
 } from '@/features/pilot/queries';
 import { WorkspaceChrome, ForbiddenCard } from '@/features/workspace/chrome';
+import { UAT_STATUS_LABEL } from '@/shared/labels';
 
 export const dynamic = 'force-dynamic';
-
-const UAT_AR: Record<string, string> = {
-  NOT_STARTED: 'لم يبدأ',
-  PENDING: 'قيد التنفيذ — لم يُقبل بعد',
-  ACCEPTED: 'مقبول بدليل بشري',
-  REJECTED: 'مرفوض',
-};
 
 function Gate({
   label,
@@ -143,7 +137,7 @@ export default async function ControlsPage({ params }: { params: Promise<{ proje
           <div className="panel">
             <h3>تشغيل وقبول</h3>
             <Gate label="دورة حياة حقيقية في بيئة مرحلَة" satisfied={false} note="تشغيل وقائع عميل فعلية في بيئة تجريبية" />
-            <Gate label="قبول بشري (UAT)" satisfied={report?.human_uat_status === 'ACCEPTED'} note={`الحالة: ${UAT_AR[report?.human_uat_status ?? 'NOT_STARTED'] ?? 'لم يبدأ'}`} />
+            <Gate label="قبول بشري (UAT)" satisfied={report?.human_uat_status === 'ACCEPTED'} note={`الحالة: ${UAT_STATUS_LABEL[report?.human_uat_status ?? 'NOT_STARTED'] ?? 'لم يبدأ'}`} />
             <Gate label="قبول المشتري" satisfied={false} note="موافقة العميل على نتائج التشغيل التجريبي" />
             <Gate label="أسابيع تشغيل مدفوعة" satisfied={false} note="أسبوع تشغيل تجريبي مدفوع واحد على الأقل" />
           </div>

@@ -35,6 +35,7 @@ import {
   StageOpeningImportForm,
   ValidateOpeningImportForm,
 } from './forms';
+import { UAT_STATUS_LABEL } from '@/shared/labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,13 +95,6 @@ const UAT_STATUS_AR: Record<string, string> = {
   EXECUTED: 'نُفِّذت — بانتظار قبول العميل',
   ACCEPTED: 'مقبولة من العميل',
   REJECTED: 'مرفوضة من العميل',
-};
-
-const HUMAN_UAT_AR: Record<string, string> = {
-  NOT_STARTED: 'لم يبدأ',
-  PENDING: 'قيد التنفيذ — لم يُقبل بعد',
-  ACCEPTED: 'مقبول بدليل بشري',
-  REJECTED: 'مرفوض',
 };
 
 const REHEARSAL_AR: Record<string, string> = {
@@ -262,7 +256,7 @@ export default async function PilotPage({
             </div>
             <div className="result-highlight">
               <span className="muted">قبول العميل البشري</span>
-              <strong>{HUMAN_UAT_AR[report.human_uat_status] ?? report.human_uat_status}</strong>
+              <strong>{UAT_STATUS_LABEL[report.human_uat_status] ?? report.human_uat_status}</strong>
               <p className="muted">
                 {report.uat_accepted_tasks} مقبولة · {report.uat_rejected_tasks} مرفوضة · {report.uat_total_tasks} إجمالي المهام.
                 هذه الحالة تُشتق من قبول بشري موثق فقط.

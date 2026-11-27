@@ -16,11 +16,7 @@ export function projectLifecycleTone(state: string): BadgeTone {
   return 'info';
 }
 
-export const SECTOR_LABEL: Record<string, string> = {
-  REAL_ESTATE: 'عقارات',
-  AGRICULTURE: 'زراعة',
-  LIVESTOCK: 'ثروة حيوانية',
-};
+export { SECTOR_LABEL } from '@/shared/labels';
 
 /** Arabic labels + tones for integrity-signal severity. */
 export const SEVERITY_LABEL: Record<string, string> = {
