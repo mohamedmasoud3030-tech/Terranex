@@ -7,8 +7,8 @@ has drifted from the code is worse than no count at all.
 ## What the numbers say
 
 - **44 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **85 data tables in page files, 85 with an accessible name**, plus
-  477 `scope="col"` header cells. Every table in `src` is named.
+- **86 data tables in page files, 86 with an accessible name**, plus
+  482 `scope="col"` header cells. Every table in `src` is named.
 - **204 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
 - **39 of 39 `force-dynamic` routes have a loading state.**
@@ -20,7 +20,7 @@ has drifted from the code is worse than no count at all.
 | Route | Lines | Tables | Named | `<h2>` | `<Section>` | hand-rolled cards | empty states | status pills | tabs | loading | error |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|:--:|:--:|
 | `/assets` | 206 | 1 | 1 | 0 | 2 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/documents` | 81 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
+| `/documents` | 125 | 2 | 2 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/intake` | 57 | 0 | 0 | 0 | 1 | 1 | 0 | 2 | 0 | ✓ | ✓ |
 | `/inventory` | 77 | 1 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/invite/[token]` | 66 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | ✓ | ✓ |
@@ -97,7 +97,7 @@ Applied to every route, and verified rather than asserted:
 
 ## Where it is not done — the honest remainder
 
-1. **`<Section>` adoption is 151 against 6 hand-rolled
+1. **`<Section>` adoption is 152 against 6 hand-rolled
    `<section className="card stack">`.** Every titled card section in the workspace now
    composes the primitive. The six that remain are deliberate: three page shells
    (`shell-form*` — an h1 form surface, not a titled section) and three heading-less
