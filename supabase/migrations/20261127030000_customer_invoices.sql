@@ -1127,8 +1127,11 @@ select
   d.evidence_subject_count as evidence_subject_count,
   current_date as as_of
 from derived d;
--- widened from latest definition in 20260816058100_f4_fac_f10_scope.sql
-create or replace function public.portfolio_financial_rollup_asof(
+-- Widened body, same return shape. The public wrapper
+-- portfolio_financial_rollup_asof() from 20260816058500 is the auth + membership
+-- guard and delegates here, so customer-invoice revenue joins the roll-up
+-- without re-opening the cross-tenant path.
+create or replace function public.portfolio_financial_rollup_asof_impl(
   p_organization_id uuid,
   p_portfolio_id uuid,
   p_asof_date date
