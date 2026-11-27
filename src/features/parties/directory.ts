@@ -29,12 +29,19 @@ export interface ObligationUsage {
   readonly is_posted: boolean;
 }
 
+export interface CustomerInvoiceUsage {
+  readonly customer_party_id: string;
+  readonly outstanding_minor_units: string;
+  readonly is_reversed: boolean;
+}
+
 export interface PartyDirectoryRow {
   readonly id: string;
   readonly legalName: string;
   readonly partyType: 'PERSON' | 'ORGANIZATION';
   readonly investorProjectCount: number;
   readonly openObligationCount: number;
+  readonly openCustomerInvoiceCount: number;
   /** Outstanding supplier balance per currency; a party can be owed in two. */
   readonly outstandingByCurrency: Readonly<Record<string, string>>;
 }
@@ -43,6 +50,7 @@ export function buildPartyDirectory(
   parties: readonly PartyBase[],
   participants: readonly ParticipantUsage[],
   obligations: readonly ObligationUsage[],
+  customerInvoices: readonly CustomerInvoiceUsage[] = [],
 ): PartyDirectoryRow[] {
   const investorProjects = new Map<string, Set<string>>();
   for (const participant of participants) {
@@ -60,6 +68,11 @@ export function buildPartyDirectory(
     entry.byCurrency.set(obligation.currency, (entry.byCurrency.get(obligation.currency) ?? 0n) + outstanding);
     supplierOpen.set(obligation.party_id, entry);
   }
+  const customerOpen = new Map<string, number>();
+  for (const invoice of customerInvoices) {
+    if (invoice.is_reversed || BigInt(invoice.outstanding_minor_units) <= 0n) continue;
+    customerOpen.set(invoice.customer_party_id, (customerOpen.get(invoice.customer_party_id) ?? 0) + 1);
+  }
   return parties.map((party) => {
     const supplier = supplierOpen.get(party.id);
     const outstandingByCurrency: Record<string, string> = {};
@@ -72,6 +85,7 @@ export function buildPartyDirectory(
       partyType: party.party_type,
       investorProjectCount: investorProjects.get(party.id)?.size ?? 0,
       openObligationCount: supplier?.count ?? 0,
+      openCustomerInvoiceCount: customerOpen.get(party.id) ?? 0,
       outstandingByCurrency,
     };
   });
@@ -85,6 +99,9 @@ export function partyRolesAr(row: PartyDirectoryRow): string {
   }
   if (row.openObligationCount > 0) {
     roles.push(row.openObligationCount === 1 ? 'مورد عليه التزام مفتوح' : `مورد عليه ${row.openObligationCount} التزامات مفتوحة`);
+  }
+  if (row.openCustomerInvoiceCount > 0) {
+    roles.push(row.openCustomerInvoiceCount === 1 ? 'عميل عليه فاتورة مفتوحة' : `عميل عليه ${row.openCustomerInvoiceCount} فواتير مفتوحة`);
   }
   return roles.length > 0 ? roles.join(' · ') : 'لم يُستخدم بعد في أي مشروع';
 }

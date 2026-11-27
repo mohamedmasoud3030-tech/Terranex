@@ -52,3 +52,30 @@ describe('party directory', () => {
     expect(partyRolesAr(rows.find((row) => row.id === 'p1')!)).toContain('مورد');
   });
 });
+
+describe('party directory customer role', () => {
+  it('counts only open, non-reversed customer invoices', () => {
+    const rows = buildPartyDirectory(parties, [], [], [
+      { customer_party_id: 'p1', outstanding_minor_units: '2500', is_reversed: false },
+      { customer_party_id: 'p1', outstanding_minor_units: '100', is_reversed: false },
+      { customer_party_id: 'p1', outstanding_minor_units: '900', is_reversed: true }, // reversed: excluded
+      { customer_party_id: 'p2', outstanding_minor_units: '0', is_reversed: false }, // settled: excluded
+    ]);
+    expect(rows.find((row) => row.id === 'p1')!.openCustomerInvoiceCount).toBe(2);
+    expect(rows.find((row) => row.id === 'p2')!.openCustomerInvoiceCount).toBe(0);
+    expect(partyRolesAr(rows.find((row) => row.id === 'p1')!)).toBe('عميل عليه 2 فواتير مفتوحة');
+    expect(partyRolesAr(rows.find((row) => row.id === 'p3')!)).toBe('لم يُستخدم بعد في أي مشروع');
+  });
+
+  it('combines the customer role with investor and supplier roles', () => {
+    const rows = buildPartyDirectory(
+      parties,
+      [{ party_id: 'p1', project_id: 'pr1' }],
+      [{ party_id: 'p1', currency: 'EGP', outstanding_minor_units: '5000', is_posted: true }],
+      [{ customer_party_id: 'p1', outstanding_minor_units: '700', is_reversed: false }],
+    );
+    expect(partyRolesAr(rows.find((row) => row.id === 'p1')!)).toBe(
+      'مستثمر في مشروع واحد · مورد عليه التزام مفتوح · عميل عليه فاتورة مفتوحة',
+    );
+  });
+});

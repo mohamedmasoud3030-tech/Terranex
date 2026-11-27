@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getActiveOrganization } from '@/features/organizations/context';
-import { getParties, getParticipantUsage, getObligationUsage } from '@/features/parties/queries';
+import { getParties, getParticipantUsage, getObligationUsage, getCustomerInvoiceUsage } from '@/features/parties/queries';
 import { buildPartyDirectory, partyRolesAr, type PartyDirectoryRow } from '@/features/parties/directory';
 import { formatMinorUnits } from '@/shared/money';
 import { EmptyState, PageHeader, Section } from '@/shared/ui';
@@ -50,12 +50,13 @@ export default async function PartiesPage() {
     );
   }
 
-  const [parties, participants, obligations] = await Promise.all([
+  const [parties, participants, obligations, customerInvoices] = await Promise.all([
     getParties(org.id),
     getParticipantUsage(org.id),
     getObligationUsage(org.id),
+    getCustomerInvoiceUsage(org.id),
   ]);
-  const rows = buildPartyDirectory(parties, participants, obligations);
+  const rows = buildPartyDirectory(parties, participants, obligations, customerInvoices);
 
   return (
     <>
