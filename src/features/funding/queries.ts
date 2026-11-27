@@ -84,7 +84,7 @@ export async function getParties(organizationId: string): Promise<Party[]> {
 export async function getParticipants(projectId: string): Promise<Participant[]> {
   const s = await createClient();
   const { data, error } = await s.from('project_participants')
-    .select('id,party_id,role,parties(legal_name)').eq('project_id', projectId).order('created_at');
+    .select('id,party_id,role,parties!project_participants_party_id_fkey(legal_name)').eq('project_id', projectId).order('created_at');
   if (error) throwOperatorQuery(error);
   return data as unknown as Participant[];
 }
