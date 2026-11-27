@@ -5,6 +5,7 @@ import { PROJECT_LIFECYCLE_LABEL, SECTOR_LABEL, projectLifecycleTone } from '@/f
 import { EmptyState, PageHeader, SectorChip, StatusBadge } from '@/shared/ui';
 import { SECTOR_THEME_CLASS } from '@/features/workspace/sectors';
 import type { ProjectSector } from '@/features/projects/queries';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +79,7 @@ export default async function ProjectsPage({
 
   return (
     <section className="stack-lg">
+      <PlainIntro page="projects" />
       <PageHeader
         eyebrow={organization.name}
         title="المشاريع الاستثمارية"

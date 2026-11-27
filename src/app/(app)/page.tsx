@@ -14,6 +14,7 @@ import {
   type QualifiedResultView,
 } from '@/features/result/qualified-result';
 import { sectorLandingHref } from '@/features/workspace/nav';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 import { SECTOR_LABEL } from '@/features/agriculture/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { SEVERITY_LABEL, severityTone } from '@/features/projects/labels';
@@ -91,6 +92,7 @@ export default async function Home() {
 
   return (
     <section className="stack-lg dash-grid">
+      <PlainIntro page="home" />
       <PageHeader
         eyebrow={org.name}
         title="لوحة الإدارة التنفيذية"

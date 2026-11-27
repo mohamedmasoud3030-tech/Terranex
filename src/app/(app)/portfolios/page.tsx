@@ -9,6 +9,7 @@ import {
   PORTFOLIO_STATUS_BADGE_CLASS,
   PORTFOLIO_STATUS_LABEL,
 } from '@/features/portfolios/labels';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,7 @@ export default async function PortfoliosPage() {
 
   return (
     <section className="stack-lg">
+      <PlainIntro page="portfolios" />
       <PageHeader
         eyebrow={org.name}
         title="المحافظ الاستثمارية"

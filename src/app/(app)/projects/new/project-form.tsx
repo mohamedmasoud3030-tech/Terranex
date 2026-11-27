@@ -4,12 +4,8 @@ import { createProject } from '@/features/projects/actions';
 import { SECTORS } from '@/features/projects/schema';
 import { commandIdempotencyKey } from '@/shared/idempotency';
 import { SECTOR_LABEL } from '@/shared/labels';
-
-const SECTOR_DESCRIPTION: Record<(typeof SECTORS)[number], string> = {
-  REAL_ESTATE: 'سيُفتح المشروع في المسار الموجّه للعقارات بعد إنشائه.',
-  AGRICULTURE: 'سيُفتح المشروع في مساحة الزراعة بعد إنشائه.',
-  LIVESTOCK: 'سيُفتح المشروع في مساحة الثروة الحيوانية بعد إنشائه.',
-};
+import { JourneySteps } from '@/features/plain-language/journey-steps';
+import { PROJECT_FORM_COPY, SECTOR_PLAIN } from '@/features/plain-language/copy';
 
 type NewProjectFormProps = Readonly<{
   organizationId: string;
@@ -29,15 +25,17 @@ export default function NewProjectForm({ organizationId, commandNonce }: NewProj
 
   return (
     <section className="card stack shell-reading">
+      <JourneySteps current={2} />
       <div>
-        <h1>مشروع استثماري جديد</h1>
-        <p className="muted">اختر القطاع أولًا؛ الحالة والعملة محددتان مبدئيًا: مسودة، جنيه مصري.</p>
+        <h1>{PROJECT_FORM_COPY.title}</h1>
+        <p className="muted">{PROJECT_FORM_COPY.plain}</p>
+        <p className="muted">{PROJECT_FORM_COPY.defaultsNote}</p>
       </div>
       <form action={action} className="stack">
         <input type="hidden" name="organizationId" value={organizationId} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <fieldset className="stack">
-          <legend>القطاع</legend>
+          <legend>{PROJECT_FORM_COPY.sectorLegend}</legend>
           <div className="form-grid">
             {SECTORS.map((value) => (
               <label key={value}>
@@ -53,22 +51,22 @@ export default function NewProjectForm({ organizationId, commandNonce }: NewProj
               </label>
             ))}
           </div>
-          <small className="muted">
-            {SECTOR_DESCRIPTION[sector]}
-          </small>
+          <small className="muted">{SECTOR_PLAIN[sector]}</small>
         </fieldset>
         <label>
-          اسم المشروع
-          <input name="name" required autoFocus maxLength={160} />
+          {PROJECT_FORM_COPY.nameLabel}
+          <input name="name" required autoFocus maxLength={160} placeholder={PROJECT_FORM_COPY.namePlaceholder} />
         </label>
         <label>
-          المرجع الداخلي <span className="muted">(اختياري)</span>
+          {PROJECT_FORM_COPY.referenceLabel} <span className="muted">(اختياري)</span>
           <input name="internalReference" maxLength={80} />
         </label>
+        <small className="muted">{PROJECT_FORM_COPY.referenceHint}</small>
         <label>
-          الوصف <span className="muted">(اختياري)</span>
+          {PROJECT_FORM_COPY.descriptionLabel} <span className="muted">(اختياري)</span>
           <textarea name="description" maxLength={2000} />
         </label>
+        <small className="muted">{PROJECT_FORM_COPY.descriptionHint}</small>
         {state.error && (
           <p className="error" role="alert">{state.error}</p>
         )}

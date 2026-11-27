@@ -8,6 +8,7 @@ import { getOrganizationSupplierInvoices } from '@/features/procurement/queries'
 import { formatDate, formatPaymentState } from '@/features/procurement/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { presentRollup, totalsByCurrency } from '@/shared/money/by-currency';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ export default async function InvoicesPage() {
 
   return (
     <section className="stack-lg">
+      <PlainIntro page="invoices" />
       <PageHeader
         eyebrow={org.name}
         title="فواتير الموردين"

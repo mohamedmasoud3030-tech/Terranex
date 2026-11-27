@@ -8,6 +8,7 @@ import { getOrganizationStatementLines } from '@/features/finance/queries';
 import { formatDate } from '@/features/procurement/labels';
 import { formatMinorUnits } from '@/shared/money';
 import { presentRollup, totalsByCurrency } from '@/shared/money/by-currency';
+import { PlainIntro } from '@/features/plain-language/plain-intro';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,7 @@ export default async function TransactionsPage() {
   const outflow = totalsByCurrency(lines.filter((l) => BigInt(l.amount_minor_units) < 0n), (l) => l.currency, (l) => l.amount_minor_units);
   return (
     <section className="stack-lg">
+      <PlainIntro page="transactions" />
       <PageHeader
         eyebrow={org.name}
         title="حركات البنك"
