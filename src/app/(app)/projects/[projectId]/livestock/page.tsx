@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { formatMinorUnits } from '@/shared/money';
 import { getCurrentMembership, getCashAccountPositions } from '@/features/finance/queries';
 import { getParties } from '@/features/funding/queries';
 import {
@@ -338,6 +339,7 @@ function QuantityRollforward({
 }: Readonly<{ rows: readonly QuantityRollforwardRead[] }>) {
   if (rows.length === 0) return <p className="muted">لا توجد دفعات لعرض عددها.</p>;
   return (
+    <div className="table-wrap">
     <table>
       <caption className="muted">
         العدد الحالي المشتق = عدد افتتاحي + أحداث سارية حتى الآن + وارد من تقسيم/دمج − نفوق − صادر إلى تقسيم/دمج.
@@ -372,6 +374,7 @@ function QuantityRollforward({
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 
@@ -470,9 +473,11 @@ function WeightLog({ events }: Readonly<{ events: readonly WeightEventRead[] }>)
 function Purchases({
   purchases,
   lines,
+  currency,
 }: Readonly<{
   purchases: readonly LivestockPurchaseRead[];
   lines: readonly LivestockPurchaseLineRead[];
+  currency: string;
 }>) {
   if (purchases.length === 0) return <p className="muted">لا توجد مشتريات إضافية بعد.</p>;
   return (
@@ -491,7 +496,7 @@ function Purchases({
                 <li key={line.purchase_line_id}>
                   {line.cohort_reference} · {line.quantity} رأس
                   {line.agreed_amount_minor_units
-                    ? <> · لقطة الاتفاق (لا تُرحَّل): {line.agreed_amount_minor_units}</>
+                    ? <> · لقطة الاتفاق (لا تُرحَّل): {formatMinorUnits(line.agreed_amount_minor_units, currency)}</>
                     : null}
                 </li>
               ))}
@@ -522,16 +527,16 @@ function Sales({
             المشتري: {sale.buyer_name} · <span className="muted">{sale.sale_date}</span>
           </p>
           <dl className="facts">
-            <div><dt>الإيراد المعترف به</dt><dd>{sale.recognized_revenue_minor_units}</dd></div>
-            <div><dt>المحصَّل</dt><dd>{sale.collected_minor_units}</dd></div>
-            <div><dt>الذمة المتبقية</dt><dd>{sale.outstanding_receivable_minor_units}</dd></div>
+            <div><dt>الإيراد المعترف به</dt><dd>{formatMinorUnits(sale.recognized_revenue_minor_units, sale.currency)}</dd></div>
+            <div><dt>المحصَّل</dt><dd>{formatMinorUnits(sale.collected_minor_units, sale.currency)}</dd></div>
+            <div><dt>الذمة المتبقية</dt><dd>{formatMinorUnits(sale.outstanding_receivable_minor_units, sale.currency)}</dd></div>
           </dl>
           <ul className="muted">
             {lines
               .filter((line) => line.sale_id === sale.sale_id)
               .map((line) => (
                 <li key={line.sale_line_id}>
-                  {line.cohort_reference} · {line.quantity} رأس × {line.unit_price_minor_units}
+                  {line.cohort_reference} · {line.quantity} رأس × {formatMinorUnits(line.unit_price_minor_units, sale.currency)}
                 </li>
               ))}
           </ul>
@@ -543,7 +548,7 @@ function Sales({
                   .filter((collection) => collection.sale_id === sale.sale_id)
                   .map((collection) => (
                     <li key={collection.collection_id}>
-                      {collection.collection_date} · {collection.amount_minor_units} · {collection.cash_account_name}
+                      {collection.collection_date} · {formatMinorUnits(collection.amount_minor_units, collection.currency)} · {collection.cash_account_name}
                     </li>
                   ))}
               </ul>
@@ -558,38 +563,28 @@ function Sales({
 function CohortResults({ results }: Readonly<{ results: readonly LivestockCohortResultRead[] }>) {
   if (results.length === 0) return <p className="muted">لا توجد نتائج لعرضها.</p>;
   return (
-    <table>
-      <caption className="muted">
+    <>
+      <p className="muted">
         نتيجة تشغيلية قابلة لإعادة الحساب من حقائق ثابتة. الإيراد المعترف به والمحصَّل والتكلفة المُحمَّلة منفصلة؛
         لا توجد تكلفة بضاعة مباعة ولا تقييم أصل حيوي ولا ربح قابل للتحرير.
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">الدفعة</th>
-          <th scope="col">العدد الحي غير المباع</th>
-          <th scope="col">الكمية المباعة</th>
-          <th className="num" scope="col">الإيراد المعترف به</th>
-          <th scope="col">النقد المحصَّل</th>
-          <th className="num" scope="col">التكلفة التشغيلية المُحمَّلة</th>
-          <th className="num" scope="col">النتيجة التشغيلية حتى الآن</th>
-          <th className="num" scope="col">حالة تكلفة البضاعة</th>
-        </tr>
-      </thead>
-      <tbody>
+      </p>
+      <div className="responsive-grid">
         {results.map((row) => (
-          <tr key={row.cohort_id}>
-            <th scope="row">{row.cohort_reference}</th>
-            <td>{row.unsold_live_quantity}</td>
-            <td>{row.sale_out}</td>
-            <td>{row.recognized_revenue_minor_units}</td>
-            <td>{row.cash_collected_minor_units}</td>
-            <td>{row.attributed_operating_cost_minor_units}</td>
-            <td>{row.operating_result_to_date_minor_units}</td>
-            <td><span className="muted">{formatMetricStatus(row.cogs_status)}</span></td>
-          </tr>
+          <article className="card" key={row.cohort_id}>
+            <h3>{row.cohort_reference}</h3>
+            <dl className="facts">
+              <div><dt>العدد الحي غير المباع</dt><dd>{row.unsold_live_quantity} رأس</dd></div>
+              <div><dt>الكمية المباعة</dt><dd>{row.sale_out} رأس</dd></div>
+              <div><dt>الإيراد المعترف به</dt><dd>{formatMinorUnits(row.recognized_revenue_minor_units, row.currency)}</dd></div>
+              <div><dt>النقد المحصَّل</dt><dd>{formatMinorUnits(row.cash_collected_minor_units, row.currency)}</dd></div>
+              <div><dt>التكلفة التشغيلية المُحمَّلة</dt><dd>{formatMinorUnits(row.attributed_operating_cost_minor_units, row.currency)}</dd></div>
+              <div><dt>النتيجة التشغيلية حتى الآن</dt><dd><strong>{formatMinorUnits(row.operating_result_to_date_minor_units, row.currency)}</strong></dd></div>
+              <div><dt>حالة تكلفة البضاعة</dt><dd className="muted">{formatMetricStatus(row.cogs_status)}</dd></div>
+            </dl>
+          </article>
         ))}
-      </tbody>
-    </table>
+      </div>
+    </>
   );
 }
 
@@ -856,7 +851,7 @@ export default async function LivestockPage({
           cohorts={operationalActiveCohorts}
           parties={partyOptions}
         />
-        <Purchases purchases={purchases} lines={purchaseLines} />
+        <Purchases purchases={purchases} lines={purchaseLines} currency={project.reporting_currency} />
       </Section>
       <Section title="المبيعات">
         <SaleForm
