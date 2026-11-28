@@ -130,6 +130,10 @@ function parseExactInteger(value: string | number | bigint): bigint | null {
   }
 }
 
+/** Egyptian convention writes the pound as ج.م, not the narrow-symbol glyph
+ * Intl returns for EGP. Every other currency keeps its locale symbol. */
+const CURRENCY_TEXT: Record<string, string> = { EGP: 'ج.م' };
+
 /** Formats integer minor units as user-facing Arabic/RTL currency text.
  * Accepts text (exact), bigint, or safe integers only; values that cannot be
  * represented exactly render as an em dash instead of rounding. */
@@ -158,7 +162,7 @@ export function formatMinorUnits(minorUnits: string | number | bigint, currency:
         minimumIntegerDigits: decimals,
         maximumFractionDigits: 0,
       }).format(Number(fraction));
-  const currencyText = new Intl.NumberFormat('ar-EG', {
+  const currencyText = CURRENCY_TEXT[currency] ?? new Intl.NumberFormat('ar-EG', {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',

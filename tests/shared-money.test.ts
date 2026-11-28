@@ -75,4 +75,10 @@ describe('shared exact money — currency scales', () => {
     expect(() => parseMajorUnitsToMinor('1.23', 'XXX')).toThrow(/unsupported currency/);
     expect(isValidMajorMoney('1.23', 'XXX')).toBe(false);
   });
+
+  it('writes the Egyptian pound the Egyptian way, and leaves other currencies alone', () => {
+    expect(formatMinorUnits('297600000', 'EGP')).toBe('٢٬٩٧٦٬٠٠٠٫٠٠ ج.م');
+    expect(formatMinorUnits('297600000', 'EGP')).not.toContain('E£');
+    expect(formatMinorUnits('1234', 'OMR')).toBe('١٫٢٣٤ ر.ع.');
+  });
 });
