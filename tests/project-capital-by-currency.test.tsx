@@ -129,7 +129,7 @@ describe('H1 capital by currency — TypeScript contract', () => {
     const amount = view.positions[0]!.committed;
     // The currency symbol is part of the rendered string; the branded type
     // makes it impossible to format a figure whose currency was left behind.
-    expect(norm(presentCapitalAmount(amount))).toBe('١٬٠٠٠٬٠٠٠٫٠٠ E£');
+    expect(norm(presentCapitalAmount(amount))).toBe('١٬٠٠٠٬٠٠٠٫٠٠ ج.م');
     expect(amount.currency).toBe('EGP');
   });
 
