@@ -51,7 +51,10 @@ begin
      where p.id <> v_project limit 1;
   end if;
   select m.user_id into v_other_user from public.memberships m
-   where m.organization_id <> v_org and m.status='ACTIVE' limit 1;
+   where m.organization_id <> v_org and m.status='ACTIVE'
+     and not exists (select 1 from public.memberships x
+                      where x.user_id=m.user_id and x.organization_id=v_org and x.status='ACTIVE')
+   limit 1;
 
   v_name := v_org::text || '/' || gen_random_uuid()::text;
   insert into storage.objects(id,bucket_id,name,owner_id,metadata)
