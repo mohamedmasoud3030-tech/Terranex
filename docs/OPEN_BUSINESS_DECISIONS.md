@@ -83,3 +83,11 @@ Still deferred / not implied:
 ```
 
 An explicit answer from the authorized decision-maker is valid business evidence once it is recorded here (or in a linked approved ADR) with its scope and effective context. An unrecorded casual remark, UI label, legacy field, synthetic demo, existing code path, or matching monetary amount is not sufficient authority by itself.
+
+## 6. Owner input log (not a resolution)
+
+This log keeps answers the product owner gave in conversation. An entry here is evidence for a later decision. It does not change any status above and does not authorize investor logic (§5 still governs).
+
+| Date | Question asked | Answer given | Maps to | Effect |
+|---|---|---|---|---|
+| 2026-11-28 | Is the money in the projects from external investors, or only the owner's own money? | External investors ("مستثمرين"), via the product owner's Telegram reply. | BD-002 (who provides capital), and it makes BD-003, BD-004 and BD-006 to BD-012 relevant rather than optional | BD-002 stays OPEN: the answer names the source class but not which investors, which projects, or lenders and co-investment by the operating company. BD-001 to BD-012 stay OPEN. No investor logic is built. |
