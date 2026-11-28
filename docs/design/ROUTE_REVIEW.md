@@ -7,9 +7,9 @@ has drifted from the code is worse than no count at all.
 ## What the numbers say
 
 - **49 route surfaces** (`page.tsx`) — the original brief assumed 25.
-- **91 data tables in page files, 90 with an accessible name**, plus
-  503 `scope="col"` header cells. Every table in `src` is named.
-- **209 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
+- **90 data tables in page files, 89 with an accessible name**, plus
+  495 `scope="col"` header cells. Every table in `src` is named.
+- **205 figure cells** carry `.num` (tabular numerals, end-aligned in RTL).
 - **0 inline `style={{}}`** in `src` — the visual system is tokens and classes only.
 - **40 of 44 `force-dynamic` routes have a loading state.**
 - **45 of 46 workspace routes have a route-level `error.tsx`**; the one
@@ -50,7 +50,7 @@ has drifted from the code is worse than no count at all.
 | `/projects/[projectId]/integrity` | 466 | 8 | 8 | 0 | 7 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/investors` | 108 | 1 | 1 | 0 | 3 | 0 | 0 | 0 | 0 | ✓ | ✓ |
 | `/projects/[projectId]/livestock/operations` | 161 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
-| `/projects/[projectId]/livestock` | 912 | 2 | 2 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
+| `/projects/[projectId]/livestock` | 907 | 1 | 1 | 0 | 24 | 0 | 0 | 4 | 14 | ✓ | ✓ |
 | `/projects/[projectId]/operations` | 1478 | 7 | 7 | 9 | 9 | 2 | 0 | 10 | 9 | ✓ | ✓ |
 | `/projects/[projectId]/overview` | 213 | 1 | 1 | 0 | 4 | 0 | 0 | 1 | 0 | ✓ | ✓ |
 | `/projects/[projectId]` | 161 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | ✓ | ✓ |

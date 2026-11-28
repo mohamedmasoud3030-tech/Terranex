@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { formatMinorUnits } from '@/shared/money';
 import type { ActionState } from '@/features/auth/actions';
 import { useCommandIdempotencyKey } from '@/features/livestock/use-command-idempotency-key';
 import {
@@ -1212,7 +1213,7 @@ export function SaleCollectionForm({
         <select name="recognitionId">
           {sales.map((sale) => (
             <option key={sale.recognition_id!} value={sale.recognition_id!}>
-              {sale.sale_reference} · المتبقي {sale.outstanding_receivable_minor_units}
+              {sale.sale_reference} · المتبقي {formatMinorUnits(sale.outstanding_receivable_minor_units, sale.currency)}
             </option>
           ))}
         </select>
@@ -1274,7 +1275,7 @@ export function CostAttributionForm({
         <select name="sourceJournalLineId">
           {sources.map((source) => (
             <option key={source.source_journal_line_id} value={source.source_journal_line_id}>
-              {source.description} · المتاح {source.available_amount_minor_units}
+              {source.description} · المتاح {formatMinorUnits(source.available_amount_minor_units, source.currency)}
             </option>
           ))}
         </select>
@@ -1326,7 +1327,7 @@ export function CostAttributionReversalForm({
         <select name="attributionId">
           {attributions.map((attribution) => (
             <option key={attribution.id} value={attribution.id}>
-              {LIVESTOCK_COST_CATEGORY_LABEL[attribution.cost_category]} · {attribution.attributed_amount_minor_units}
+              {LIVESTOCK_COST_CATEGORY_LABEL[attribution.cost_category]} · {formatMinorUnits(attribution.attributed_amount_minor_units, attribution.currency)}
             </option>
           ))}
         </select>
