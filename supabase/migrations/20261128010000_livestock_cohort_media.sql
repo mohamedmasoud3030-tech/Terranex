@@ -166,8 +166,8 @@ begin
     raise exception 'invalid media storage path';
   end if;
 
-  -- Core sha256() rather than pgcrypto's digest(): no extension schema to
-  -- resolve, so this function is schema-compatible on hosted and local.
+  -- Core sha256() rather than the pgcrypto hash routine: no extension schema
+  -- to resolve, so this function is schema-compatible on hosted and local.
   v_hash := encode(sha256(convert_to(
     p_project_id::text || '|' || p_cohort_id::text || '|' || trim(p_title) || '|'
     || p_storage_object_name || '|' || trim(p_original_filename) || '|'
