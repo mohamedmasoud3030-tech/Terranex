@@ -13,13 +13,34 @@
 -- quantity effect: a photo is evidence, never an accounting fact.
 
 -- ---------------------------------------------------------------------------
+-- 0. One place that names the bucket and its envelope.
+-- ---------------------------------------------------------------------------
+create or replace function public.livestock_media_bucket()
+returns text language sql immutable as $$ select 'livestock-media'::text $$;
+
+create or replace function public.livestock_media_mime_types()
+returns text[] language sql immutable as $$
+  select array['image/jpeg','image/png','image/webp','video/mp4','video/quicktime','video/webm']::text[]
+$$;
+
+create or replace function public.livestock_media_max_bytes()
+returns bigint language sql immutable as $$ select 52428800::bigint $$;
+
+revoke all on function public.livestock_media_bucket() from public,anon;
+revoke all on function public.livestock_media_mime_types() from public,anon;
+revoke all on function public.livestock_media_max_bytes() from public,anon;
+grant execute on function public.livestock_media_bucket() to authenticated;
+grant execute on function public.livestock_media_mime_types() to authenticated;
+grant execute on function public.livestock_media_max_bytes() to authenticated;
+
+-- ---------------------------------------------------------------------------
 -- 1. Private media bucket. Object names stay server-generated as
 --    <organization>/<uuid>, exactly like the document library.
 -- ---------------------------------------------------------------------------
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
 values (
-  'livestock-media', 'livestock-media', false, 52428800,
-  array['image/jpeg','image/png','image/webp','video/mp4','video/quicktime','video/webm']::text[]
+  public.livestock_media_bucket(), public.livestock_media_bucket(), false,
+  public.livestock_media_max_bytes(), public.livestock_media_mime_types()
 )
 on conflict (id) do update set
   public = false,
@@ -39,7 +60,8 @@ grant execute on function public.livestock_media_can_upload_object(text) to auth
 
 create policy livestock_media_object_insert on storage.objects
 for insert to authenticated with check (
-  bucket_id='livestock-media' and public.livestock_media_can_upload_object(name)
+  bucket_id = public.livestock_media_bucket()
+  and public.livestock_media_can_upload_object(name)
 );
 
 -- ---------------------------------------------------------------------------
@@ -64,28 +86,26 @@ create index general_documents_livestock_cohort_idx
   on public.general_documents(livestock_cohort_id, created_at desc);
 
 -- The version chain already stores transport metadata for every file. Widen
--- its envelope to admit the private media bucket, its MIME types and a
--- 50 MiB ceiling; the document library's own PDF/JPEG/PNG rows stay valid.
+-- its envelope to admit the private media bucket, its MIME types and its
+-- ceiling; the document library's own PDF/JPEG/PNG rows stay valid.
 alter table public.general_document_versions
   drop constraint general_document_versions_storage_bucket_check;
 alter table public.general_document_versions
   add constraint general_document_versions_storage_bucket_check
-  check (storage_bucket in ('general-documents','livestock-media'));
+  check (storage_bucket = 'general-documents' or storage_bucket = public.livestock_media_bucket());
 
 alter table public.general_document_versions
   drop constraint general_document_versions_mime_type_check;
 alter table public.general_document_versions
   add constraint general_document_versions_mime_type_check
-  check (mime_type in (
-    'application/pdf','image/jpeg','image/png',
-    'image/webp','video/mp4','video/quicktime','video/webm'
-  ));
+  check (mime_type in ('application/pdf','image/jpeg','image/png')
+    or mime_type = any (public.livestock_media_mime_types()));
 
 alter table public.general_document_versions
   drop constraint general_document_versions_size_bytes_check;
 alter table public.general_document_versions
   add constraint general_document_versions_size_bytes_check
-  check (size_bytes between 1 and 52428800);
+  check (size_bytes between 1 and public.livestock_media_max_bytes());
 
 -- ---------------------------------------------------------------------------
 -- 3. One atomic command: attach an already-uploaded object to a cohort.
@@ -130,10 +150,10 @@ begin
      or p_original_filename ~ E'[\\\\/\\n\\r]' then
     raise exception 'invalid media filename';
   end if;
-  if p_mime_type not in ('image/jpeg','image/png','image/webp','video/mp4','video/quicktime','video/webm') then
+  if p_mime_type is null or not (p_mime_type = any (public.livestock_media_mime_types())) then
     raise exception 'unsupported media file type';
   end if;
-  if p_size_bytes is null or p_size_bytes not between 1 and 52428800 then
+  if p_size_bytes is null or p_size_bytes not between 1 and public.livestock_media_max_bytes() then
     raise exception 'media file size is invalid';
   end if;
   if p_sha256 is null or p_sha256 !~ '^[0-9a-f]{64}$' then
@@ -144,17 +164,19 @@ begin
     raise exception 'invalid media storage path';
   end if;
 
-  v_hash := encode(digest(
+  -- Core sha256() rather than pgcrypto's digest(): no extension schema to
+  -- resolve, so this function is schema-compatible on hosted and local.
+  v_hash := encode(sha256(convert_to(
     p_project_id::text || '|' || p_cohort_id::text || '|' || trim(p_title) || '|'
     || p_storage_object_name || '|' || trim(p_original_filename) || '|'
-    || p_mime_type || '|' || p_size_bytes::text || '|' || lower(p_sha256), 'sha256'), 'hex');
+    || p_mime_type || '|' || p_size_bytes::text || '|' || lower(p_sha256), 'UTF8')), 'hex');
   perform pg_advisory_xact_lock(hashtextextended(
     p_organization_id::text || ':ls-media:' || trim(p_idempotency_key), 0));
 
   -- Storage is authoritative for existence and transport metadata.
   select o.bucket_id,o.name,o.metadata into v_object
     from storage.objects o
-   where o.bucket_id='livestock-media' and o.name=p_storage_object_name
+   where o.bucket_id = public.livestock_media_bucket() and o.name=p_storage_object_name
    for share;
   if not found then raise exception 'media storage object not found'; end if;
   if coalesce(v_object.metadata->>'size','') !~ '^[0-9]+$' then
@@ -189,7 +211,7 @@ begin
     original_filename,mime_type,size_bytes,sha256,uploaded_by,
     idempotency_key,request_hash
   ) values (
-    p_organization_id,v_document_id,1,'livestock-media',p_storage_object_name,
+    p_organization_id,v_document_id,1,public.livestock_media_bucket(),p_storage_object_name,
     trim(p_original_filename),p_mime_type,p_size_bytes,lower(p_sha256),v_actor,
     trim(p_idempotency_key),v_hash
   ) returning id into v_version_id;
@@ -207,7 +229,7 @@ grant execute on function public.register_livestock_cohort_media(uuid,uuid,uuid,
   to authenticated;
 
 -- ---------------------------------------------------------------------------
--- 4. Read projection: one row per uploaded media object, latest version first.
+-- 4. Read projection: one row per uploaded media object.
 -- ---------------------------------------------------------------------------
 create view public.livestock_cohort_media_read with (security_invoker=on) as
 select
@@ -232,7 +254,7 @@ join public.general_documents d
   on (d.id, d.organization_id) = (v.document_id, v.organization_id)
 join public.livestock_cohorts c
   on (c.id, c.organization_id, c.project_id) = (d.livestock_cohort_id, d.organization_id, d.project_id)
-where v.storage_bucket = 'livestock-media';
+where v.storage_bucket = public.livestock_media_bucket();
 
 revoke all on public.livestock_cohort_media_read from public,anon;
 grant select on public.livestock_cohort_media_read to authenticated;

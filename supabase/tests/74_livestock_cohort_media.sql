@@ -13,7 +13,7 @@ create or replace function lcm_attach(
 begin
   return public.register_livestock_cohort_media(
     p_org,p_project,p_cohort,p_title,p_name,p_filename,p_mime,p_size,
-    encode(digest(p_key,'sha256'),'hex'),p_key);
+    encode(sha256(convert_to(p_key,'UTF8')),'hex'),p_key);
 end $$;
 
 create or replace function lcm_catch(p_sql text) returns text language plpgsql as $$

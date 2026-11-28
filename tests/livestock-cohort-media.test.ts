@@ -7,12 +7,13 @@ const gate = read('supabase/tests/74_livestock_cohort_media.sql');
 
 describe('livestock cohort media', () => {
   it('keeps media in a private bucket with a photo and video envelope', () => {
-    expect(migration).toContain("'livestock-media', 'livestock-media', false, 52428800");
+    expect(migration).toContain("select 'livestock-media'::text");
     for (const mime of ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm']) {
       expect(migration).toContain(`'${mime}'`);
     }
+    expect(migration).toContain('select 52428800::bigint');
     expect(migration).toContain('livestock_media_can_upload_object');
-    expect(migration).toContain("bucket_id='livestock-media'");
+    expect(migration).toContain('bucket_id = public.livestock_media_bucket()');
   });
 
   it('ties every media document to one cohort inside the same project and organization', () => {
@@ -24,7 +25,7 @@ describe('livestock cohort media', () => {
   it('registers through one authenticated command that validates storage truth', () => {
     expect(migration).toContain('create or replace function public.register_livestock_cohort_media(');
     expect(migration).toContain('security definer set search_path=pg_catalog,public');
-    expect(migration).toContain("where o.bucket_id='livestock-media' and o.name=p_storage_object_name");
+    expect(migration).toContain('where o.bucket_id = public.livestock_media_bucket() and o.name=p_storage_object_name');
     expect(migration).toContain('media size does not match storage object');
     expect(migration).toContain('media MIME type does not match storage object');
     expect(migration).toContain("raise exception 'livestock cohort not found'");
@@ -43,7 +44,7 @@ describe('livestock cohort media', () => {
 
   it('exposes a tenant-scoped read view', () => {
     expect(migration).toContain('create view public.livestock_cohort_media_read with (security_invoker=on)');
-    expect(migration).toContain("where v.storage_bucket = 'livestock-media'");
+    expect(migration).toContain('where v.storage_bucket = public.livestock_media_bucket()');
     expect(migration).toContain('grant select on public.livestock_cohort_media_read to authenticated');
     expect(migration).toContain('revoke all on public.livestock_cohort_media_read from public,anon');
   });
