@@ -6,6 +6,15 @@
 -- oversized file and a non-member; the attachment creates no quantity fact;
 -- and the read view is cohort-scoped.
 
+create or replace function lcm_call(
+  p_org uuid, p_project uuid, p_cohort uuid, p_title text, p_name text,
+  p_filename text, p_mime text, p_size bigint, p_sha text, p_key text
+) returns text language sql immutable as $$
+  select format(
+    'select public.register_livestock_cohort_media(%L,%L,%L,%L,%L,%L,%L,%s,%L,%L)',
+    p_org, p_project, p_cohort, p_title, p_name, p_filename, p_mime, p_size, p_sha, p_key)
+$$;
+
 create or replace function lcm_attach(
   p_org uuid, p_project uuid, p_cohort uuid, p_title text, p_name text,
   p_filename text, p_mime text, p_size bigint, p_key text
@@ -46,7 +55,7 @@ begin
 
   v_name := v_org::text || '/' || gen_random_uuid()::text;
   insert into storage.objects(id,bucket_id,name,owner_id,metadata)
-  values (gen_random_uuid(),'livestock-media',v_name,v_owner::text,
+  values (gen_random_uuid(),public.livestock_media_bucket(),v_name,v_owner::text,
           jsonb_build_object('size',2048,'mimetype','image/jpeg'));
 
   select count(*) into v_qty_before from public.livestock_quantity_events where cohort_id=v_cohort;
@@ -78,58 +87,44 @@ begin
   end if;
   execute 'reset role';
 
-  -- A cohort outside the stated project is refused.
+  -- Cross-project cohort, non-member, unsupported type and oversized file.
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  perform set_config('role','authenticated',false);
   if v_other_cohort is not null then
-    perform set_config('request.jwt.claim.sub',v_owner::text,true);
-    perform set_config('role','authenticated',false);
-    v_error := lcm_catch(format(
-      'select public.register_livestock_cohort_media(%L,%L,%L,%L,%L,%L,%L,%s,%L,%L)',
-      v_org, v_other_project, v_other_cohort, 'صورة', v_name, 'x.jpg', 'image/jpeg', 2048,
-      repeat('a',64), 'lcm-media-key-0002'));
-    execute 'reset role';
+    v_error := lcm_catch(lcm_call(v_org,v_other_project,v_other_cohort,'صورة',v_name,
+      'x.jpg','image/jpeg',2048,repeat('a',64),'lcm-media-key-0002'));
     if v_error not like '%livestock cohort not found%' then
       raise exception 'LCM_FAIL cross-project cohort accepted: %', v_error;
     end if;
   end if;
+  v_error := lcm_catch(lcm_call(v_org,v_project,v_cohort,'ملف',v_name,
+    'x.exe','application/x-msdownload',2048,repeat('c',64),'lcm-media-key-0004'));
+  if v_error not like '%unsupported media file type%' then
+    raise exception 'LCM_FAIL unsupported type accepted: %', v_error;
+  end if;
+  v_error := lcm_catch(lcm_call(v_org,v_project,v_cohort,'فيديو',v_name,
+    'clip.mp4','video/mp4',public.livestock_media_max_bytes()+1,repeat('d',64),'lcm-media-key-0005'));
+  execute 'reset role';
+  if v_error not like '%media file size is invalid%' then
+    raise exception 'LCM_FAIL oversized file accepted: %', v_error;
+  end if;
 
-  -- A non-member is refused.
   if v_other_user is not null then
     perform set_config('request.jwt.claim.sub',v_other_user::text,true);
     perform set_config('role','authenticated',false);
-    v_error := lcm_catch(format(
-      'select public.register_livestock_cohort_media(%L,%L,%L,%L,%L,%L,%L,%s,%L,%L)',
-      v_org, v_project, v_cohort, 'صورة', v_name, 'x.jpg', 'image/jpeg', 2048,
-      repeat('b',64), 'lcm-media-key-0003'));
+    v_error := lcm_catch(lcm_call(v_org,v_project,v_cohort,'صورة',v_name,
+      'x.jpg','image/jpeg',2048,repeat('b',64),'lcm-media-key-0003'));
     execute 'reset role';
     if v_error not like '%forbidden%' then
       raise exception 'LCM_FAIL non-member accepted: %', v_error;
     end if;
   end if;
 
-  -- Unsupported type and oversized file are refused.
-  perform set_config('request.jwt.claim.sub',v_owner::text,true);
-  perform set_config('role','authenticated',false);
-  v_error := lcm_catch(format(
-    'select public.register_livestock_cohort_media(%L,%L,%L,%L,%L,%L,%L,%s,%L,%L)',
-    v_org, v_project, v_cohort, 'ملف', v_name, 'x.exe', 'application/x-msdownload', 2048,
-    repeat('c',64), 'lcm-media-key-0004'));
-  if v_error not like '%unsupported media file type%' then
-    raise exception 'LCM_FAIL unsupported type accepted: %', v_error;
-  end if;
-  v_error := lcm_catch(format(
-    'select public.register_livestock_cohort_media(%L,%L,%L,%L,%L,%L,%L,%s,%L,%L)',
-    v_org, v_project, v_cohort, 'فيديو', v_name, 'clip.mp4', 'video/mp4', 52428801,
-    repeat('d',64), 'lcm-media-key-0005'));
-  execute 'reset role';
-  if v_error not like '%media file size is invalid%' then
-    raise exception 'LCM_FAIL oversized file accepted: %', v_error;
-  end if;
-
   -- The bucket carries the media envelope and stays private.
   if not exists (
     select 1 from storage.buckets b
-     where b.id='livestock-media' and b.public = false
-       and b.file_size_limit = 52428800
+     where b.id = public.livestock_media_bucket() and b.public = false
+       and b.file_size_limit = public.livestock_media_max_bytes()
        and b.allowed_mime_types @> array['image/jpeg','image/png','image/webp','video/mp4']::text[]
   ) then raise exception 'LCM_FAIL media bucket envelope'; end if;
 

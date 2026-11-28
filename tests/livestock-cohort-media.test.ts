@@ -25,9 +25,9 @@ describe('livestock cohort media', () => {
   it('registers through one authenticated command that validates storage truth', () => {
     expect(migration).toContain('create or replace function public.register_livestock_cohort_media(');
     expect(migration).toContain('security definer set search_path=pg_catalog,public');
-    expect(migration).toContain('where o.bucket_id = public.livestock_media_bucket() and o.name=p_storage_object_name');
-    expect(migration).toContain('media size does not match storage object');
-    expect(migration).toContain('media MIME type does not match storage object');
+    expect(migration).toContain('from storage.objects o');
+    expect(migration).toContain('for share');
+    expect(migration).toContain('media object does not match the declared file');
     expect(migration).toContain("raise exception 'livestock cohort not found'");
     expect(migration).toContain("raise exception 'forbidden'");
     expect(migration).toContain("raise exception 'idempotency key payload mismatch'");

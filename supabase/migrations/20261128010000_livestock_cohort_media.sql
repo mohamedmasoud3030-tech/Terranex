@@ -38,14 +38,17 @@ grant execute on function public.livestock_media_max_bytes() to authenticated;
 --    <organization>/<uuid>, exactly like the document library.
 -- ---------------------------------------------------------------------------
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
-values (
-  public.livestock_media_bucket(), public.livestock_media_bucket(), false,
-  public.livestock_media_max_bytes(), public.livestock_media_mime_types()
-)
-on conflict (id) do update set
+select public.livestock_media_bucket(), public.livestock_media_bucket(), false,
+       public.livestock_media_max_bytes(), public.livestock_media_mime_types()
+where not exists (
+  select 1 from storage.buckets b where b.id = public.livestock_media_bucket()
+);
+
+update storage.buckets set
   public = false,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
+  file_size_limit = public.livestock_media_max_bytes(),
+  allowed_mime_types = public.livestock_media_mime_types()
+where id = public.livestock_media_bucket();
 
 create or replace function public.livestock_media_can_upload_object(p_name text)
 returns boolean language sql stable security definer set search_path=pg_catalog,public as $$
@@ -124,7 +127,6 @@ create or replace function public.register_livestock_cohort_media(
 ) returns uuid language plpgsql security definer set search_path=pg_catalog,public as $$
 declare
   v_actor uuid := auth.uid();
-  v_object record;
   v_storage_size bigint;
   v_storage_mime text;
   v_existing public.general_document_versions%rowtype;
@@ -174,21 +176,16 @@ begin
     p_organization_id::text || ':ls-media:' || trim(p_idempotency_key), 0));
 
   -- Storage is authoritative for existence and transport metadata.
-  select o.bucket_id,o.name,o.metadata into v_object
+  select (o.metadata->>'size')::bigint, lower(coalesce(o.metadata->>'mimetype',''))
+    into v_storage_size, v_storage_mime
     from storage.objects o
-   where o.bucket_id = public.livestock_media_bucket() and o.name=p_storage_object_name
+   where o.bucket_id = public.livestock_media_bucket() and o.name = p_storage_object_name
    for share;
-  if not found then raise exception 'media storage object not found'; end if;
-  if coalesce(v_object.metadata->>'size','') !~ '^[0-9]+$' then
-    raise exception 'media storage object has invalid size metadata';
+  if v_storage_size is null or v_storage_mime = '' then
+    raise exception 'media storage object not found';
   end if;
-  v_storage_size := (v_object.metadata->>'size')::bigint;
-  v_storage_mime := lower(coalesce(v_object.metadata->>'mimetype',''));
-  if v_storage_size is distinct from p_size_bytes then
-    raise exception 'media size does not match storage object';
-  end if;
-  if v_storage_mime is distinct from lower(p_mime_type) then
-    raise exception 'media MIME type does not match storage object';
+  if v_storage_size <> p_size_bytes or v_storage_mime <> lower(p_mime_type) then
+    raise exception 'media object does not match the declared file';
   end if;
 
   select * into v_existing from public.general_document_versions
@@ -207,13 +204,13 @@ begin
   ) returning id into v_document_id;
 
   insert into public.general_document_versions(
-    organization_id,document_id,version_number,storage_bucket,storage_object_name,
-    original_filename,mime_type,size_bytes,sha256,uploaded_by,
-    idempotency_key,request_hash
+    document_id,organization_id,version_number,storage_bucket,storage_object_name,
+    sha256,size_bytes,mime_type,original_filename,uploaded_by,
+    request_hash,idempotency_key
   ) values (
-    p_organization_id,v_document_id,1,public.livestock_media_bucket(),p_storage_object_name,
-    trim(p_original_filename),p_mime_type,p_size_bytes,lower(p_sha256),v_actor,
-    trim(p_idempotency_key),v_hash
+    v_document_id,p_organization_id,1,public.livestock_media_bucket(),p_storage_object_name,
+    lower(p_sha256),p_size_bytes,p_mime_type,trim(p_original_filename),v_actor,
+    v_hash,trim(p_idempotency_key)
   ) returning id into v_version_id;
 
   insert into public.audit_events(organization_id,actor_id,event_type,entity_type,entity_id,payload)
